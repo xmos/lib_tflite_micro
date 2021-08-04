@@ -1,0 +1,474 @@
+
+# You can set flags specifically for your module by using the MODULE_XCC_FLAGS
+# variable. So the following
+#
+#   MODULE_XCC_FLAGS = $(XCC_FLAGS) -O3
+#
+# specifies that everything in the modules should have the application
+# build flags with -O3 appended (so the files will build at
+# optimization level -O3).
+#
+# You can also set MODULE_XCC_C_FLAGS, MODULE_XCC_XC_FLAGS etc..
+
+VERSION = 0.1.0
+
+DEPENDENT_MODULES = lib_nn(>=0.0.0)
+
+SHARED_FLAGS = -Wno-xcore-fptrgroup -DXCORE -O2 \
+-DTF_LITE_STATIC_MEMORY \
+-DXCORE \
+-DUSE_EXTMEM -g \
+-I ../../../lib_nn/ # Required due to full include paths in xmos/tensorflow
+
+MODULE_XCC_C_FLAGS = $(SHARED_FLAGS)
+
+MODULE_XCC_CPP_FLAGS = -std=c++11 $(SHARED_FLAGS) 
+
+SOURCE_DIRS = src 
+SOURCE_DIRS += src/tflite-xcore-kernels
+SOURCE_DIRS += submodules/tflite-micro/tensorflow/lite/micro
+SOURCE_DIRS += submodules/tflite-micro/tensorflow/lite/micro/xcore
+SOURCE_DIRS += submodules/tflite-micro/tensorflow/lite/micro/memory_planner
+SOURCE_DIRS += submodules/tflite-micro/tensorflow/lite/micro/kernels
+SOURCE_DIRS += submodules/tflite-micro/tensorflow/lite/micro/kernels/xcore
+SOURCE_DIRS += submodules/tflite-micro/tensorflow/lite/c
+SOURCE_DIRS += submodules/tflite-micro/tensorflow/lite
+SOURCE_DIRS += submodules/tflite-micro/tensorflow/lite/schema
+SOURCE_DIRS += submodules/tflite-micro/tensorflow/lite/core/api
+SOURCE_DIRS += submodules/tflite-micro/tensorflow/lite/kernels/internal
+SOURCE_DIRS += submodules/tflite-micro/tensorflow/lite/kernels
+
+EXPORT_INCLUDE_DIRS = api
+
+INCLUDE_DIRS = $(EXPORT_INCLUDE_DIRS)
+INCLUDE_DIRS += src/tflite-xcore-kernels
+INCLUDE_DIRS += submodules/tflite-micro/tensorflow/lite/micro/
+INCLUDE_DIRS += submodules/tflite-micro/tensorflow/lite/micro/kernels/xcore/ 
+INCLUDE_DIRS += submodules/tflite-micro/ 
+INCLUDE_DIRS += submodules/tflite-micro/tensorflow/core/graph/ 
+INCLUDE_DIRS += submodules/flatbuffers/include/
+INCLUDE_DIRS += submodules/gemmlowp/
+INCLUDE_DIRS += submodules/tflite-micro/third_party/eigen3/
+INCLUDE_DIRS += submodules/ruy/
+
+#lite/micro
+EXCLUDE_FILES += micro/memory_arena_threshold_test.cc
+EXCLUDE_FILES += micro/micro_allocator_test.cc
+EXCLUDE_FILES += memory_helpers_test.cc
+EXCLUDE_FILES += micro_string_test.cc
+EXCLUDE_FILES += micro/micro_time.cc
+EXCLUDE_FILES += micro/micro_time_test.cc
+EXCLUDE_FILES += micro_utils_test.cc
+EXCLUDE_FILES += recording_micro_allocator_test.cc
+EXCLUDE_FILES += recording_simple_memory_allocator_test.cc
+EXCLUDE_FILES += simple_memory_allocator_test.cc
+EXCLUDE_FILES += lite/micro/all_ops_resolver.cc 
+EXCLUDE_FILES += lite/micro/test_helpers.cc
+EXCLUDE_FILES += lite/micro/micro_error_reporter_test.cc
+EXCLUDE_FILES += testing_helpers_test.cc
+
+#lite/micro/kernels
+EXCLUDE_FILES += lite/micro/kernels/squeeze_test.cc
+EXCLUDE_FILES += lite/micro/kernels/l2_pool_2d_test.cc
+EXCLUDE_FILES += lite/micro/kernels/div.cc # TODO do not exclude
+EXCLUDE_FILES += lite/micro/kernels/elu.cc # TODO do not exclude
+EXCLUDE_FILES += lite/micro/kernels/elu_test.cc
+EXCLUDE_FILES += lite/micro/kernels/leaky_relu.cc #TODO do not exclude
+EXCLUDE_FILES += lite/micro/kernels/leaky_relu_test.cc
+EXCLUDE_FILES += lite/micro/kernels/transpose.cc #TODO do not exclude
+EXCLUDE_FILES += lite/micro/kernels/transpose_test.cc
+EXCLUDE_FILES += lite/micro/kernels/cast_test.cc
+EXCLUDE_FILES += lite/micro/kernels/zeros_like_test.cc
+EXCLUDE_FILES += lite/micro/kernels/space_to_batch_nd_test.cc
+EXCLUDE_FILES += lite/micro/mock_micro_graph.cc
+EXCLUDE_FILES += lite/micro/flatbuffer_utils_test.cc
+EXCLUDE_FILES += activations_test.cc
+EXCLUDE_FILES += add_test.cc
+EXCLUDE_FILES += arg_min_max_test.cc
+EXCLUDE_FILES += ceil_test.cc
+EXCLUDE_FILES += circular_buffer_test.cc
+EXCLUDE_FILES += comparisons_test.cc
+EXCLUDE_FILES += concatenation_test.cc
+EXCLUDE_FILES += lite/micro/conv_test.cc
+EXCLUDE_FILES += lite/micro/debug_log.cc
+EXCLUDE_FILES += lite/micro/xcore/debug_log.cc
+EXCLUDE_FILES += detection_postprocess_test.cc
+EXCLUDE_FILES += elementwise_test.cc
+EXCLUDE_FILES += floor_test.cc
+EXCLUDE_FILES += fully_connected_test.cc
+EXCLUDE_FILES += hard_swish_test.cc
+EXCLUDE_FILES += l2norm_test.cc
+EXCLUDE_FILES += logical_test.cc
+EXCLUDE_FILES += logistic_test.cc
+EXCLUDE_FILES += maximum_minimum_test.cc
+EXCLUDE_FILES += mul_test.cc
+EXCLUDE_FILES += neg_test.cc
+EXCLUDE_FILES += pack_test.cc
+EXCLUDE_FILES += pad_test.cc
+EXCLUDE_FILES += pooling_test.cc
+EXCLUDE_FILES += prelu_test.cc
+EXCLUDE_FILES += quantization_util_test.cc
+EXCLUDE_FILES += quantize_test.cc
+EXCLUDE_FILES += reduce_test.cc
+EXCLUDE_FILES += reshape_test.cc
+EXCLUDE_FILES += resize_nearest_neighbor_test.cc
+EXCLUDE_FILES += round_test.cc
+EXCLUDE_FILES += shape_test.cc
+EXCLUDE_FILES += softmax_test.cc
+EXCLUDE_FILES += split_test.cc
+EXCLUDE_FILES += strided_slice_test.cc
+EXCLUDE_FILES += sub_test.cc
+EXCLUDE_FILES += svdf_test.cc
+EXCLUDE_FILES += transpose_conv_test.cc
+EXCLUDE_FILES += unpack_test.cc
+EXCLUDE_FILES += micro_interpreter_test.cc
+EXCLUDE_FILES += micro_mutable_op_resolver_test.cc
+EXCLUDE_FILES += tanh_test.cc
+EXCLUDE_FILES += split_v_test.cc
+EXCLUDE_FILES += cast.cc #submodules/tflite-micro/tensorflow/lite/micros/kernels/
+EXCLUDE_FILES += depth_to_space.cc #submodules/tflite-micro/tensorflow/lite/micros/kernels/
+EXCLUDE_FILES += depth_to_space_test.cc #submodules/tflite-micro/tensorflow/lite/micros/kernels/
+EXCLUDE_FILES += exp.cc #submodules/tflite-micro/tensorflow/lite/micros/kernels/
+EXCLUDE_FILES += exp_test.cc #submodules/tflite-micro/tensorflow/lite/micros/kernels/
+EXCLUDE_FILES += fill.cc #submodules/tflite-micro/tensorflow/lite/micros/kernels/
+EXCLUDE_FILES += fill_test.cc #submodules/tflite-micro/tensorflow/lite/micros/kernels/
+EXCLUDE_FILES += space_to_depth.cc #submodules/tflite-micro/tensorflow/lite/micros/kernels/
+EXCLUDE_FILES += space_to_depth_test.cc #submodules/tflite-micro/tensorflow/lite/micros/kernels/
+
+#lite/micro/memory/planner
+EXCLUDE_FILES += lite/micro/memory_planner/greedy_memory_planner_test.cc 
+EXCLUDE_FILES += lite/micro/memory_planner/linear_memory_planner_test.cc
+
+#lite
+EXCLUDE_FILES += lite/allocation.cc \
+lite/arena_planner.cc \
+lite/arena_planner_test.cc \
+lite/allocation.cc \
+lite/interpreter_test.cc \
+lite/graph_info.cc \
+lite/create_op_resolver_with_builtin_ops.cc \
+lite/create_op_resolver_with_selected_ops.cc \
+lite/external_cpu_backend_context.cc \
+lite/graph_info.cc \
+lite/graph_info_test.cc \
+lite/interpreter.cc \
+lite/interpreter_builder.cc \
+lite/interpreter_test.cc \
+lite/minimal_logging.cc \
+lite/minimal_logging_android.cc \
+lite/minimal_logging_default.cc \
+lite/minimal_logging_ios.cc \
+lite/minimal_logging_test.cc \
+lite/mmap_allocation.cc \
+lite/mmap_allocation_disabled.cc \
+lite/model_builder.cc \
+lite/model_flex_test.cc \
+lite/model_test.cc \
+lite/model_xnnpack_test.cc \
+lite/mutable_op_resolver.cc \
+lite/mutable_op_resolver_test.cc \
+lite/optional_debug_tools.cc \
+lite/simple_memory_arena.cc \
+lite/simple_memory_arena_test.cc \
+lite/stderr_reporter.cc \
+lite/stderr_reporter_test.cc \
+lite/string_util.cc \
+lite/string_util_test.cc \
+lite/tflite_with_xnnpack.cc \
+lite/tflite_with_xnnpack_optional.cc \
+lite/type_to_tflitetype_test.cc \
+lite/util_test.cc \
+lite/util.cc 
+
+#lite/core/api
+EXCLUDE_FILES += lite/core/api/error_reporter_test.cc
+EXCLUDE_FILES += conv_test_common.cc #submodules/tflite-micro/tensorflow/lite/core/api
+EXCLUDE_FILES += flatbuffer_conversions_test.cc #submodules/tflite-micro/tensorflow/lite/core/api
+EXCLUDE_FILES += op_resolver_test.cc #submodules/tflite-micro/tensorflow/lite/core/api
+
+#lite/c
+EXCLUDE_FILES += common_test.cc #submodules/tflite-micro/tensorflow/lite/c
+EXCLUDE_FILES += c_api_test.cc #submodules/tflite-micro/tensorflow/lite/c
+EXCLUDE_FILES += c_api.cc #submodules/tflite-micro/tensorflow/lite/c
+EXCLUDE_FILES += c_api_experimental.cc #submodules/tflite-micro/tensorflow/lite/c
+EXCLUDE_FILES += c_api_experimental_test.cc #submodules/tflite-micro/tensorflow/lite/c
+EXCLUDE_FILES += builtin_op_data_test.cc #submodules/tflite-micro/tensorflow/lite/c
+EXCLUDE_FILES += c_test.c #submodules/tflite-micro/tensorflow/lite/c
+
+#lite/schema
+EXCLUDE_FILES += flatbuffer_compatibility_test.cc 
+
+#lite/kernels
+EXCLUDE_FILES += lite/kernels/activations.cc 
+EXCLUDE_FILES += lite/kernels/space_to_batch_nd_test.cc
+EXCLUDE_FILES += lite/kernels/add.cc 
+EXCLUDE_FILES += lite/kernels/sub.cc 
+EXCLUDE_FILES += lite/kernels/conv.cc
+EXCLUDE_FILES += lite/kernels/ceil.cc 
+EXCLUDE_FILES += lite/kernels/spectrogram.cc
+EXCLUDE_FILES += lite/kernels/comparisons.cc 
+EXCLUDE_FILES += lite/kernels/dequantize.cc 
+EXCLUDE_FILES += lite/kernels/arg_min_max.cc
+EXCLUDE_FILES += lite/kernels/activations.cc 
+EXCLUDE_FILES += lite/kernels/logical.cc 
+EXCLUDE_FILES += lite/kernels/concatenation.cc 
+EXCLUDE_FILES += lite/kernels/pooling.cc 
+EXCLUDE_FILES += lite/kernels/fully_connected.cc 
+EXCLUDE_FILES += lite/kernels/fully_connected_common.cc 
+EXCLUDE_FILES += lite/kernels/floor.cc 
+EXCLUDE_FILES += lite/kernels/svdf.cc 
+EXCLUDE_FILES += lite/kernels/logistic.cc 
+EXCLUDE_FILES += lite/kernels/tanh.cc
+EXCLUDE_FILES += lite/kernels/mul.cc
+EXCLUDE_FILES += lite/kernels/cast_test.cc
+EXCLUDE_FILES += lite/kernels/zeros_like_test.cc
+
+EXCLUDE_FILES += acceleration_test_util.cc \
+acceleration_test_util.h \
+acceleration_test_util_internal.cc \
+acceleration_test_util_internal.h \
+acceleration_test_util_internal_test.cc \
+activations_test.cc \
+add_n.cc \
+add_n_test.cc \
+add_test.cc \
+arg_min_max.cc \
+arg_min_max_test.cc \
+assign_variable.cc \
+audio_spectrogram.cc \
+audio_spectrogram_test.cc \
+basic_rnn.cc \
+basic_rnn_test.cc \
+batch_matmul.cc \
+batch_matmul_test.cc \
+batch_to_space_nd.cc \
+batch_to_space_nd_test.cc \
+bidirectional_sequence_lstm.cc \
+bidirectional_sequence_lstm_test.cc \
+bidirectional_sequence_rnn.cc \
+bidirectional_sequence_rnn_test.cc \
+broadcast_to.cc \
+broadcast_to_test.cc \
+call_once.cc \
+call_once_test.cc \
+lite/kernels/cast.cc \
+lite/kernels/cast_test.cc \
+lite/kernels/ceil.cc \
+ceil_test.cc \
+lite/kernels/comparisons.cc \
+comparisons_test.cc \
+complex_support.cc \
+complex_support_test.cc \
+lite/kernels/concatenation.cc \
+concatenation_test.cc \
+conv3d.cc \
+conv3d_test.cc \
+conv_test.cc \
+cpu_backend_context.cc \
+cpu_backend_gemm_eigen.cc \
+cpu_backend_gemm_test.cc \
+cpu_backend_threadpool_test.cc \
+cumsum.cc \
+cumsum_test.cc \
+densify.cc \
+densify_test.cc \
+deprecated_backends.cc \
+depth_to_space.cc \
+depth_to_space_test.cc \
+depthwise_conv_hybrid_test.cc \
+depthwise_conv_test.cc \
+lite/kernels/dequantize.cc \
+dequantize_test.cc \
+detection_postprocess.cc \
+detection_postprocess_test.cc \
+lite/kernels/div.cc \
+div_test.cc \
+eigen_support.cc \
+eigen_support_test.cc \
+elementwise.cc \
+elementwise_test.cc \
+embedding_lookup.cc \
+embedding_lookup_sparse.cc \
+embedding_lookup_sparse_test.cc \
+embedding_lookup_test.cc \
+exp.cc \
+exp_test.cc \
+expand_dims.cc \
+expand_dims_test.cc \
+fake_quant.cc \
+fake_quant_test.cc \
+fill.cc \
+fill_test.cc \
+floor.cc \
+floor_div.cc \
+floor_div_test.cc \
+floor_mod.cc \
+floor_mod_test.cc \
+floor_test.cc \
+fully_connected_test.cc \
+gather.cc \
+gather_nd.cc \
+gather_nd_test.cc \
+gather_test.cc \
+hashtable_lookup.cc \
+hashtable_lookup_test.cc \
+if.cc \
+if_test.cc \
+kernel_util_test.cc \
+lite/kernels/l2norm.cc \
+l2norm_test.cc \
+local_response_norm.cc \
+local_response_norm_test.cc \
+log_softmax_test.cc \
+lite/kernels/logical.cc \
+logical_test.cc \
+lsh_projection.cc \
+lsh_projection_test.cc \
+lstm.cc \
+lstm_eval.cc \
+lstm_eval_test.cc \
+lstm_test.cc \
+matrix_diag.cc \
+matrix_diag_test.cc \
+matrix_set_diag.cc \
+matrix_set_diag_test.cc \
+maximum_minimum.cc \
+maximum_minimum_test.cc \
+mfcc.cc \
+mfcc_test.cc \
+mirror_pad.cc \
+mirror_pad_test.cc \
+lite/kernels/mul.cc \
+mul_test.cc \
+multinomial.cc \
+multinomial_test.cc \
+lite/kernels/neg.cc \
+neg_test.cc \
+non_max_suppression.cc \
+non_max_suppression_test.cc \
+numeric_verify.cc \
+numeric_verify_test.cc \
+one_hot.cc \
+one_hot_test.cc \
+optional_tensor_test.cc \
+lite/kernels/pack.cc \
+lite/kernels/pack_test.cc \
+lite/kernels/pad.cc \
+lite/kernels/pad_test.cc \
+lite/kernels/pooling_test.cc \
+lite/kernels/pow.cc \
+lite/kernels/pow_test.cc \
+lite/kernels/quant_basic_lstm_test.cc \
+lite/kernels/quantize.cc \
+lite/kernels/quantize_test.cc \
+lite/kernels/random_standard_normal.cc \
+lite/kernels/random_standard_normal_test.cc \
+lite/kernels/range.cc \
+lite/kernels/range_test.cc \
+lite/kernels/rank.cc \
+lite/kernels/rank_test.cc \
+lite/kernels/read_variable.cc \
+lite/kernels/reduce.cc \
+lite/kernels/reduce_test.cc \
+lite/kernels/register.cc \
+lite/kernels/register_ref.cc \
+lite/kernels/reshape.cc \
+lite/kernels/reshape_test.cc \
+lite/kernels/resize_bilinear.cc \
+lite/kernels/resize_bilinear_test.cc \
+lite/kernels/resize_nearest_neighbor.cc \
+lite/kernels/resize_nearest_neighbor_test.cc \
+lite/kernels/reverse.cc \
+lite/kernels/reverse_sequence.cc \
+lite/kernels/reverse_sequence_test.cc \
+lite/kernels/reverse_test.cc \
+lite/kernels/rfft2d.cc \
+lite/kernels/rfft2d_test.cc \
+lite/kernels/round.cc \
+lite/kernels/round_test.cc \
+lite/kernels/scatter_nd.cc \
+lite/kernels/scatter_nd_test.cc \
+lite/kernels/segment_sum.cc \
+lite/kernels/segment_sum_test.cc \
+lite/kernels/select.cc \
+lite/kernels/select_test.cc \
+lite/kernels/shape.cc \
+lite/kernels/shape_test.cc \
+lite/kernels/skip_gram.cc \
+lite/kernels/skip_gram_test.cc \
+lite/kernels/slice.cc \
+lite/kernels/slice_test.cc \
+lite/kernels/softmax_test.cc \
+lite/kernels/space_to_batch_nd.cc \
+lite/kernels/space_to_batch_nd_test.cc \
+lite/kernels/space_to_depth.cc \
+lite/kernels/space_to_depth_test.cc \
+lite/kernels/sparse_to_dense.cc \
+lite/kernels/sparse_to_dense_test.cc \
+lite/kernels/split.cc \
+lite/kernels/split_test.cc \
+lite/kernels/split_v.cc \
+lite/kernels/split_v_test.cc \
+lite/kernels/squared_difference.cc \
+lite/kernels/squared_difference_test.cc \
+lite/kernels/squeeze.cc \
+lite/kernels/squeeze_test.cc \
+lite/kernels/strided_slice.cc \
+lite/kernels/strided_slice_test.cc \
+lite/kernels/sub.cc \
+lite/kernels/sub_test.cc \
+lite/kernels/subgraph_test_util.cc \
+lite/kernels/subgraph_test_util_test.cc \
+lite/kernels/svdf.cc \
+lite/kernels/svdf_test.cc \
+lite/kernels/test_delegate_providers.cc \
+lite/kernels/test_delegate_providers_test.cc \
+lite/kernels/test_main.cc \
+lite/kernels/test_util.cc \
+lite/kernels/test_util_test.cc \
+lite/kernels/tile.cc \
+lite/kernels/tile_test.cc \
+lite/kernels/topk_v2.cc \
+lite/kernels/topk_v2_test.cc \
+lite/kernels/transpose.cc \
+lite/kernels/transpose_conv.cc \
+lite/kernels/transpose_conv_test.cc \
+lite/kernels/transpose_test.cc \
+lite/kernels/unidirectional_sequence_lstm.cc \
+lite/kernels/unidirectional_sequence_lstm_test.cc \
+lite/kernels/unidirectional_sequence_rnn.cc \
+lite/kernels/unidirectional_sequence_rnn_test.cc \
+lite/kernels/unique.cc \
+lite/kernels/unique_test.cc \
+lite/kernels/unpack.cc \
+lite/kernels/unpack_test.cc \
+lite/kernels/variable_ops_test.cc \
+lite/kernels/where.cc \
+lite/kernels/where_test.cc \
+lite/kernels/while.cc \
+lite/kernels/while_test.cc \
+lite/kernels/zeros_like.cc \
+lite/kernels/zeros_like_test.cc
+
+#lite/kernels/internal 
+EXCLUDE_FILES += lite/kernels/internal/tensor_utils.cc
+EXCLUDE_FILES += averagepool_quantized_test.cc 
+EXCLUDE_FILES += batch_to_space_nd_test.cc 
+EXCLUDE_FILES += conv_per_channel_quantized_16x8_test.cc  
+EXCLUDE_FILES += conv_per_channel_quantized_test.cc 
+EXCLUDE_FILES += depthwiseconv_float_test.cc
+EXCLUDE_FILES += depthwiseconv_quantized_test.cc
+EXCLUDE_FILES += log_quantized_test.cc
+EXCLUDE_FILES += logsoftmax_quantized_test.cc
+EXCLUDE_FILES += maxpool_quantized_test.cc 
+EXCLUDE_FILES += non_max_suppression_test.cc 
+EXCLUDE_FILES += per_channel_dequantization_test.cc 
+EXCLUDE_FILES += quantization_util_test.cc
+EXCLUDE_FILES += resize_bilinear_test.cc
+EXCLUDE_FILES += softmax_quantized_test.cc
+EXCLUDE_FILES += strided_slice_logic_test.cc 
+EXCLUDE_FILES += tensor_test.cc
+EXCLUDE_FILES += tensor_utils_test.cc 
+EXCLUDE_FILES += transpose_utils_test.cc 
+EXCLUDE_FILES += kernel_utils.cc 
+EXCLUDE_FILES += test_util.cc 

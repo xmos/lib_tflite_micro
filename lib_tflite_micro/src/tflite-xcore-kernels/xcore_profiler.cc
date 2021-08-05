@@ -11,16 +11,12 @@ namespace xcore {
 
 void XCoreProfiler::Init(tflite::MicroAllocator* allocator,
                          size_t max_event_count) {
-    std::cout << "INITINTININT\n";
   max_event_count_ = max_event_count;
   event_durations_ = static_cast<uint32_t*>(
       allocator->AllocatePersistentBuffer(max_event_count * sizeof(uint32_t)));
-  std::cout << (unsigned int) event_durations_ << " "<< max_event_count_ << " BLAH\n";
 }
 
-uint32_t const* XCoreProfiler::GetEventDurations() {
-  std::cout << (unsigned int) event_durations_ << " "<< max_event_count_ << " BLAH2\n";
-    return event_durations_; }
+uint32_t const* XCoreProfiler::GetEventDurations() { return event_durations_; }
 
 size_t XCoreProfiler::GetNumEvents() { return event_count_; }
 

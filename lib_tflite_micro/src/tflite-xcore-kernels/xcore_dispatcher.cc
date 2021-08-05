@@ -16,7 +16,7 @@ namespace xcore {
 
 static Dispatcher *kDispatcher = nullptr;
 
-    void SetDispatcher(Dispatcher *dispatcher) { kDispatcher = dispatcher; std::cout << (unsigned int) dispatcher << '\n'; }
+    void SetDispatcher(Dispatcher *dispatcher) { kDispatcher = dispatcher; }
 
 Dispatcher *GetDispatcher() {
   assert(kDispatcher);

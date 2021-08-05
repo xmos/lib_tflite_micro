@@ -17,7 +17,6 @@ XCoreInterpreter::XCoreInterpreter(const tflite::Model* model,
       dispatcher_(reporter, use_current_thread) {
   SetDispatcher(&dispatcher_);
   if (profiler) {
-      std::cout << profiler << " INIT\n";
       profiler->Init(allocator, model->subgraphs()->Get(0)->operators()->size());
   }
 }

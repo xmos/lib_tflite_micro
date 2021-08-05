@@ -1,3 +1,12 @@
 [submodule "lib_tflite_micro/submodules/tflite-micro"]
 	path = lib_tflite_micro/submodules/tflite-micro
 	url = git@github.com:tensorflow/tflite-micro.git
+[submodule "lib_tflite_micro/submodules/flatbuffers"]
+	path = lib_tflite_micro/submodules/flatbuffers
+	url = git@github.com:google/flatbuffers.git
+[submodule "lib_tflite_micro/submodules/gemmlowp"]
+	path = lib_tflite_micro/submodules/gemmlowp
+	url = https://github.com/google/gemmlowp.git
+[submodule "lib_tflite_micro/submodules/ruy"]
+	path = lib_tflite_micro/submodules/ruy
+	url = https://github.com/google/ruy.git

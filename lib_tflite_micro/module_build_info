@@ -14,15 +14,15 @@ VERSION = 0.1.0
 
 DEPENDENT_MODULES = lib_nn(>=0.0.0)
 
-SHARED_FLAGS = -Wno-xcore-fptrgroup -DXCORE -O2 \
+TLFLITE_MICRO_SHARED_FLAGS = -Wno-xcore-fptrgroup -DXCORE -O2 \
 -DTF_LITE_STATIC_MEMORY \
 -DXCORE \
 -DUSE_EXTMEM -g \
 -I ../../../lib_nn/ # Required due to full include paths in xmos/tensorflow
 
-MODULE_XCC_C_FLAGS = $(SHARED_FLAGS)
+MODULE_XCC_C_FLAGS = $(TLFLITE_MICRO_SHARED_FLAGS)
 
-MODULE_XCC_CPP_FLAGS = -std=c++11 $(SHARED_FLAGS) 
+MODULE_XCC_CPP_FLAGS = -std=c++11 $(TLFLITE_MICRO_SHARED_FLAGS) 
 
 SOURCE_DIRS = src 
 SOURCE_DIRS += src/tflite-xcore-kernels

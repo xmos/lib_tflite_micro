@@ -14,7 +14,7 @@ VERSION = 0.1.0
 
 DEPENDENT_MODULES = lib_nn(>=0.0.0)
 
-TLFLITE_MICRO_SHARED_FLAGS = -Wno-xcore-fptrgroup -DXCORE -O2 \
+TLFLITE_MICRO_SHARED_FLAGS = -Wno-xcore-fptrgroup -DXCORE -Os \
 -DTF_LITE_STATIC_MEMORY \
 -DXCORE \
 -DUSE_EXTMEM -g \
@@ -92,6 +92,7 @@ EXCLUDE_FILES += concatenation_test.cc
 EXCLUDE_FILES += lite/micro/conv_test.cc
 EXCLUDE_FILES += lite/micro/debug_log.cc
 EXCLUDE_FILES += lite/micro/xcore/debug_log.cc
+EXCLUDE_FILES += detection_postprocess.cc
 EXCLUDE_FILES += detection_postprocess_test.cc
 EXCLUDE_FILES += elementwise_test.cc
 EXCLUDE_FILES += floor_test.cc

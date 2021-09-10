@@ -6,10 +6,10 @@
 #include <cstring>
 #include <new>
 
-#if !defined(TF_LITE_STRIP_ERROR_STRINGS)
+//#if !defined(TF_LITE_STRIP_ERROR_STRINGS)
 #include "tensorflow/lite/micro/debug_log.h"
 #include "tensorflow/lite/micro/micro_string.h"
-#endif
+//#endif
 
 namespace tflite {
 namespace micro {
@@ -24,7 +24,7 @@ namespace xcore {
     }
 
     void XCoreErrorReporter::Log(const char* format, va_list args) {
-#if !defined(TF_LITE_STRIP_ERROR_STRINGS)
+//#if !defined(TF_LITE_STRIP_ERROR_STRINGS)
         static constexpr int kMaxLogLen = 256;
         if (len + kMaxLogLen > max_len) {
             int new_len = max_len - kMaxLogLen;
@@ -39,7 +39,7 @@ namespace xcore {
         MicroVsnprintf(buffer + len, kMaxLogLen, format, args);
         printstr((const unsigned char *)buffer + len);
         len = strlen(buffer);
-#endif
+//#endif
     }
 
     int XCoreErrorReporter::Report(const char* format, va_list args) {

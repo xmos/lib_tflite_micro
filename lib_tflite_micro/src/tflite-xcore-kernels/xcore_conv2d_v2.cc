@@ -90,23 +90,23 @@ struct Conv2DOpData {
 // -------------------------------------------------------------------- //
 
 template <typename T, bool pointer_serialization>
-T* getDeserializedParams(TfLiteContext* context, std::string str) {
+T* getDeserializedParams(TfLiteContext* context, const uint8_t* data) {
   char* allocated_memory;
   int allocationByteCount =
-      T::get_allocation_byte_count(str.c_str()) + sizeof(T);
+      T::get_allocation_byte_count((const char*)data) + sizeof(T);
   allocated_memory =
       (char*)context->AllocatePersistentBuffer(context, allocationByteCount);
-  T* param = T::template deserialise<T>(allocated_memory, str.c_str());
+  T* param = T::template deserialise<T>(allocated_memory, (const char*)data);
   return param;
 }
 
 template <typename T>
-T* getDeserializedParams(TfLiteContext* context, std::string str) {
+T* getDeserializedParams(TfLiteContext* context, const uint8_t* data) {
   char* allocated_memory;
   int allocationByteCount = sizeof(T);
   allocated_memory =
       (char*)context->AllocatePersistentBuffer(context, allocationByteCount);
-  T* param = T::template deserialise<T>(allocated_memory, str.c_str());
+  T* param = T::template deserialise<T>(allocated_memory, (const char*)data);
   return param;
 }
 
@@ -135,16 +135,16 @@ printf("\n in conv2d_v2 before kernel type\n");
       case Conv2dValidDirect_t: {
         nn::Filter2D::Params* ak_params =
             getDeserializedParams<nn::Filter2D::Params>(
-                context, params[2].As<std::string>());
+                context, params[2].AsBlob().data());
         nn::DerefInputFn::Params* mf_params =
             getDeserializedParams<nn::DerefInputFn::Params>(
-                context, params[3].As<std::string>());
+                context, params[3].AsBlob().data());
         nn::MatMulDirectFn::Params* af_params =
             getDeserializedParams<nn::MatMulDirectFn::Params, true>(
-                context, params[4].As<std::string>());
+                context, params[4].AsBlob().data());
         nn::OT_int8::Params* ot_params =
             getDeserializedParams<nn::OT_int8::Params, true>(
-                context, params[5].As<std::string>());
+                context, params[5].AsBlob().data());
 
         // TODO: Make part of construct_persistent_object
         auto memcpy = new (context->AllocatePersistentBuffer(
@@ -165,16 +165,16 @@ printf("\n in conv2d_v2 before kernel type\n");
       case Conv2dValidIndirect_t: {
         nn::Filter2D::Params* ak_params =
             getDeserializedParams<nn::Filter2D::Params>(
-                context, params[2].As<std::string>());
+                context, params[2].AsBlob().data());
         nn::ImToColValid::Params* mf_params =
             getDeserializedParams<nn::ImToColValid::Params>(
-                context, params[3].As<std::string>());
+                context, params[3].AsBlob().data());
         nn::MatMulInt8::Params* af_params =
             getDeserializedParams<nn::MatMulInt8::Params, true>(
-                context, params[4].As<std::string>());
+                context, params[4].AsBlob().data());
         nn::OT_int8::Params* ot_params =
             getDeserializedParams<nn::OT_int8::Params, true>(
-                context, params[5].As<std::string>());
+                context, params[5].AsBlob().data());
 
         auto memcpy = new (context->AllocatePersistentBuffer(
             context, sizeof(nn::ImToColValid))) nn::ImToColValid(mf_params);
@@ -194,16 +194,16 @@ printf("\n in conv2d_v2 before kernel type\n");
       case Conv2dPaddedInDirect_t: {
         nn::Filter2D::Params* ak_params =
             getDeserializedParams<nn::Filter2D::Params>(
-                context, params[2].As<std::string>());
+                context, params[2].AsBlob().data());
         nn::ImToColPadded::Params* mf_params =
             getDeserializedParams<nn::ImToColPadded::Params>(
-                context, params[3].As<std::string>());
+                context, params[3].AsBlob().data());
         nn::MatMulInt8::Params* af_params =
             getDeserializedParams<nn::MatMulInt8::Params, true>(
-                context, params[4].As<std::string>());
+                context, params[4].AsBlob().data());
         nn::OT_int8::Params* ot_params =
             getDeserializedParams<nn::OT_int8::Params, true>(
-                context, params[5].As<std::string>());
+                context, params[5].AsBlob().data());
 
         auto memcpy = new (context->AllocatePersistentBuffer(
             context, sizeof(nn::ImToColPadded))) nn::ImToColPadded(mf_params);

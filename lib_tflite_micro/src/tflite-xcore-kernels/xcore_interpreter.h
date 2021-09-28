@@ -27,7 +27,8 @@ class XCoreInterpreter : public tflite::MicroInterpreter {
                    XCoreProfiler* profiler = nullptr);
 
   TfLiteTensor* tensor(size_t tensor_index);
-
+  const char *node_name(int sub_idx, int i);
+  
  private:
   tflite::ops::micro::xcore::Dispatcher dispatcher_;
 };

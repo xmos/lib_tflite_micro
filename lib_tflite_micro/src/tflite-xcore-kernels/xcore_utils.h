@@ -11,6 +11,12 @@
 namespace tflite {
 namespace ops {
 namespace micro {
+
+struct XCoreOpData {
+    const char *name;
+};
+
+
 namespace xcore {
 
 /* Get size (in bytes) given a TfLiteType enum

@@ -87,7 +87,7 @@ struct Conv2DThreadInfo {
 // That means it must contain:
 // - T sets of work, i.e. a list of jobs for each thread.
 // - T scratch allocations, i.e. an amount of scratch memory for each thread.
-struct Conv2DOpData {
+struct Conv2DOpData : XCoreOpData {   // Inherits the operator name field from XCoreOpData
   size_t thread_count;
   Conv2DThreadInfo* threads;
 };
@@ -166,6 +166,7 @@ void* Init(TfLiteContext* context, const char* buffer, size_t length) {
             nn::Conv2dValidDirect(ak_params, memcpy, aggregator, ot);
 
         op_data->threads[t].filter2D = conv2d;
+        op_data->name = "XC_Conv2DValidDir";
       } break;
       case Conv2DValidIndirect_t: {
         nn::Filter2D::Params* ak_params =
@@ -195,6 +196,7 @@ void* Init(TfLiteContext* context, const char* buffer, size_t length) {
             nn::Conv2dValidIndirect(ak_params, memcpy, aggregator, ot);
 
         op_data->threads[t].filter2D = conv2d;
+        op_data->name = "XC_Conv2DValidInd";
       } break;
       case Conv2DPaddedIndirect_t: {
         nn::Filter2D::Params* ak_params =
@@ -224,6 +226,7 @@ void* Init(TfLiteContext* context, const char* buffer, size_t length) {
             nn::Conv2dPaddedInDirect(ak_params, memcpy, aggregator, ot);
 
         op_data->threads[t].filter2D = conv2d;
+        op_data->name = "XC_Conv2DPadInd";
       } break;
       case DepthwiseConv2DValidDirect_t: {
         nn::Filter2D_DW::Params* ak_params =
@@ -254,6 +257,7 @@ void* Init(TfLiteContext* context, const char* buffer, size_t length) {
             nn::Conv2dDepthwiseValidDirect(ak_params, memcpy, aggregator, ot);
 
         op_data->threads[t].filter2D = conv2d;
+        op_data->name = "XC_DWConv2DValidInd";
       } break;
       case DepthwiseConv2DPaddedIndirect_t: {
         nn::Filter2D_DW::Params* ak_params =
@@ -285,6 +289,7 @@ void* Init(TfLiteContext* context, const char* buffer, size_t length) {
                                               ot);
 
         op_data->threads[t].filter2D = conv2d;
+        op_data->name = "XC_DWConv2DPadInd";
       } break;
     }
   }

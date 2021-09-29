@@ -316,6 +316,7 @@ hashtable_lookup_test.cc \
 if.cc \
 if_test.cc \
 kernel_util_test.cc \
+kernel_runner.cc \
 lite/kernels/l2norm.cc \
 l2norm_test.cc \
 local_response_norm.cc \
@@ -472,4 +473,5 @@ EXCLUDE_FILES += tensor_test.cc
 EXCLUDE_FILES += tensor_utils_test.cc 
 EXCLUDE_FILES += transpose_utils_test.cc 
 EXCLUDE_FILES += kernel_utils.cc 
+EXCLUDE_FILES += kernel_runner.cc 
 EXCLUDE_FILES += test_util.cc 

@@ -23,9 +23,12 @@ limitations under the License.
 #include "xcore_dispatcher.h"
 #include "xcore_utils.h"
 extern "C" {
-#include "xcore_load_from_flash_ll.h"
 #include "nn_operator.h"
 }
+#ifdef __xcore__
+#include <xcore/channel.h>
+#include <xcore/channel_transaction.h>
+#endif
 
 namespace tflite {
 namespace ops {
@@ -67,9 +70,25 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
   int8_t *data_ptr = (int8_t*)tflite::micro::GetTensorData<int8_t>(output);
   auto* op_data = reinterpret_cast<FlashOpData*>(node->user_data);
 
-  // TODO: replace this by using lib_xcore
-  load_from_flash_ll(op_data->c_flash, data_ptr, op_data->address, op_data->bytes);
+#ifdef __xcore__
+  chanend_t c_flash = (chanend_t) op_data->c_flash;
+  chan_out_word(c_flash, op_data->address);
+  chan_out_word(c_flash, op_data->bytes);
+  transacting_chanend_t t = chan_init_transaction_slave(c_flash);
+  for(int i = 0; i < op_data->bytes; i++) {
+      data_ptr[i] = t_chan_in_byte(&t);
+  }
+  chan_complete_transaction(t);
 
+  // load_from_flash_ll(op_data->c_flash, data_ptr, op_data->address, op_data->bytes);
+#else
+  // TODO: debug this
+  FILE *fd = fopen("flash.bin", "rb");
+  fseek(fd, SEEK_SET, op_data->address);
+  fread(data_ptr, op_data->bytes, 1, fd);
+  fclose(fd);
+#endif
+  
   return kTfLiteOk;
 }
 

@@ -72,9 +72,10 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
 
 #ifdef __xcore__
   chanend_t c_flash = (chanend_t) op_data->c_flash;
+  chan_out_word(c_flash, 0);               // TODO: share with aiserver.
+  transacting_chanend_t t = chan_init_transaction_slave(c_flash);
   chan_out_word(c_flash, op_data->address);
   chan_out_word(c_flash, op_data->bytes);
-  transacting_chanend_t t = chan_init_transaction_slave(c_flash);
   for(int i = 0; i < op_data->bytes; i++) {
       data_ptr[i] = t_chan_in_byte(&t);
   }

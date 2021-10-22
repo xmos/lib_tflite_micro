@@ -15,8 +15,6 @@ namespace tflite {
 namespace micro {
 namespace xcore {
 
-    extern "C" int printstr(const unsigned char s[]);
-    
     void XCoreErrorReporter::Init(char *debugBuffer, int debugBufferLength) {
         buffer = debugBuffer;
         max_len = debugBufferLength;
@@ -37,7 +35,6 @@ namespace xcore {
             len = new_len;
         }
         MicroVsnprintf(buffer + len, kMaxLogLen, format, args);
-        printstr((const unsigned char *)buffer + len);
         len = strlen(buffer);
 #endif
     }

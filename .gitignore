@@ -2,3 +2,4 @@ host_cmd_line_interpreter/build
 host_python_encapsulated_interpreter/build
 host_python_encapsulated_interpreter/tflm_interpreter/libs/
 host_python_encapsulated_interpreter/tflm_interpreter/__pycache__/
+host_cmd_line_interpreter/bin

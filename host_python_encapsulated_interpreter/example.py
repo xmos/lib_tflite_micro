@@ -4,9 +4,9 @@
 import sys
 import numpy as np
 import cv2
-from tflm_interpreter import XCOREInterpreter
+from tflm_interpreter import TFLMInterpreter
 
-ie = XCOREInterpreter(model_path = sys.argv[1])
+ie = TFLMInterpreter(model_path = sys.argv[1])
 
 img = cv2.imread(sys.argv[2])
 img = cv2.resize(img, (128,128))
@@ -16,5 +16,5 @@ img = img / 256.0
 
 ie.set_input_tensor(0, img)
 ie.invoke()
-answer = ie.get_output_tensor(0)
-print(len(answer), answer)
+answer = ie.get_output_tensor(0, tensor = np.zeros((10), dtype=np.float32))
+print(answer)

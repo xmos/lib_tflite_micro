@@ -76,6 +76,14 @@ size_t outputs_size(inference_engine* ie) {
     return ie->outputs;
 }
 
+size_t get_input_tensor_size(inference_engine* ie, int tensor_index) {
+    return ie->input_sizes[tensor_index];
+}
+
+size_t get_output_tensor_size(inference_engine* ie, int tensor_index) {
+    return ie->output_sizes[tensor_index];
+}
+
 size_t arena_used_bytes(inference_engine* ie) {
   return ie->tflm->interpreter->arena_used_bytes();
 }

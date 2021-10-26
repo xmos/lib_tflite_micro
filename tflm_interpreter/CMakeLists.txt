@@ -5,8 +5,6 @@ project(tflm_python VERSION 1.0.1)
 # set host build
 set(X86 ON)
 
-#include("${PROJECT_SOURCE_DIR}/../../ai_deployment_framework.cmake")
-
 # This variable is ignored on platforms other than Apple
 set(CMAKE_OSX_SYSROOT /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk) 
 

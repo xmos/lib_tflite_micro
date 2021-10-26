@@ -33,6 +33,9 @@ inference_engine* new_interpreter() {
     resolver->AddReshape();
     resolver->AddConcatenation();
     resolver->AddAdd();
+    resolver->AddMinimum();
+    resolver->AddMaximum();
+    resolver->AddRelu();
     resolver->AddLogistic();
     resolver->AddConv2D();
     resolver->AddQuantize();
@@ -104,9 +107,34 @@ int invoke(inference_engine* ie) {
     return interp_invoke(ie);
 }
 
+    
+size_t get_tensor_details_buffer_sizes(inference_engine* ie,
+                                       size_t tensor_index, size_t* dims,
+                                       size_t* scales, size_t* zero_points) {
+  return ie->tflm->interpreter->GetTensorDetailsBufferSizes(tensor_index, dims,
+                                                       scales, zero_points);
+}
+
+int get_tensor_details(inference_engine* ie,
+                       size_t tensor_index, char* name, int name_len,
+                       int* shape, int* type, float* scale, int* zero_point) {
+  return ie->tflm->interpreter->GetTensorDetails(tensor_index, name, name_len, shape,
+                                            type, scale, zero_point);
+}
+
 size_t get_error(inference_engine* ie, char* msg) {
     std::strcpy(msg, (const char *)ie->debug_log_buffer);
     return strlen(msg);
+}
+    
+size_t input_tensor_index(inference_engine* ie,
+                          size_t input_index) {
+  return ie->tflm->interpreter->input_tensor_index(input_index);
+}
+
+size_t output_tensor_index(inference_engine* ie,
+                           size_t output_index) {
+  return ie->tflm->interpreter->output_tensor_index(output_index);
 }
 #else    
 int allocate_tensors(inference_engine* ie) {
@@ -138,27 +166,6 @@ int set_tensor(inference_engine* ie, size_t tensor_index,
 int get_tensor(inference_engine* ie, size_t tensor_index,
                void* value, const int size, const int* shape, const int type) {
   return ie->tflm->interpreter->GetTensor(tensor_index, value, size, shape, type);
-}
-
-size_t get_tensor_details_buffer_sizes(inference_engine* ie,
-                                       size_t tensor_index, size_t* dims,
-                                       size_t* scales, size_t* zero_points) {
-  return ie->tflm->interpreter->GetTensorDetailsBufferSizes(tensor_index, dims,
-                                                       scales, zero_points);
-}
-
-int get_tensor_details(inference_engine* ie,
-                       size_t tensor_index, char* name, int name_len,
-                       int* shape, int* type, float* scale, int* zero_point) {
-  return ie->tflm->interpreter->GetTensorDetails(tensor_index, name, name_len, shape,
-                                            type, scale, zero_point);
-}
-
-size_t get_operator_details_buffer_sizes(inference_engine* ie,
-                                         size_t operator_index, size_t* inputs,
-                                         size_t* outputs) {
-  return ie->tflm->interpreter->GetOperatorDetailsBufferSizes(operator_index, inputs,
-                                                         outputs);
 }
 
 int get_operator_details(inference_engine* ie,

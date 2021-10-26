@@ -31,7 +31,18 @@ class XCoreInterpreter : public tflite::MicroInterpreter {
   TfLiteTensor* tensor(size_t tensor_index);
   const char *node_name(int sub_idx, int i);
   unsigned c_flash;  // channel to flash reader.
-  
+
+  TfLiteStatus GetTensorDetails(
+    size_t tensor_index, char* name, int name_len, int* shape, int* type,
+    float* scale, int32_t* zero_point);
+
+  TfLiteStatus GetTensorDetailsBufferSizes(size_t tensor_index, size_t* dims,
+                                           size_t* scales, size_t* zero_points);
+
+  size_t input_tensor_index(size_t input_index);
+  size_t output_tensor_index(size_t output_index);
+  const Model *model__;
+  ErrorReporter* error_reporter__;
  private:
   tflite::ops::micro::xcore::Dispatcher dispatcher_;
 };

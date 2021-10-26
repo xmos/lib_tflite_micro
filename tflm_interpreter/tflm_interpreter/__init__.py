@@ -35,6 +35,38 @@ from .exceptions import (
 
 MAX_TENSOR_ARENA_SIZE = 10000000
 
+class TfLiteType(Enum):
+    # originally defined in tensorflow/tensorflow/lite/c/common.h
+    kTfLiteNoType = 0
+    kTfLiteFloat32 = 1
+    kTfLiteInt32 = 2
+    kTfLiteUInt8 = 3
+    kTfLiteInt64 = 4
+    kTfLiteString = 5
+    kTfLiteBool = 6
+    kTfLiteInt16 = 7
+    kTfLiteComplex64 = 8
+    kTfLiteInt8 = 9
+    kTfLiteFloat16 = 10
+    kTfLiteFloat64 = 11
+
+
+__TfLiteType_to_numpy_dtype = {
+    # TfLiteType.kTfLiteString: None,  # intentionally not supported
+    # TfLiteType.kTfLiteNoType: None,  # intentionally not supported
+    TfLiteType.kTfLiteFloat64: np.dtype(np.float64),
+    TfLiteType.kTfLiteFloat32: np.dtype(np.float32),
+    TfLiteType.kTfLiteFloat16: np.dtype(np.float16),
+    TfLiteType.kTfLiteComplex64: np.dtype(np.complex64),
+    TfLiteType.kTfLiteInt64: np.dtype(np.int64),
+    TfLiteType.kTfLiteInt32: np.dtype(np.int32),
+    TfLiteType.kTfLiteInt16: np.dtype(np.int16),
+    TfLiteType.kTfLiteInt8: np.dtype(np.int8),
+    TfLiteType.kTfLiteUInt8: np.dtype(np.uint8),
+    TfLiteType.kTfLiteBool: np.dtype(np.bool_),
+}
+TfLiteType.to_numpy_dtype = lambda self: __TfLiteType_to_numpy_dtype[self]
+
 class TFLMInterpreterStatus(Enum):
     OK = 0
     ERROR = 1
@@ -96,6 +128,33 @@ class TFLMInterpreter:
             ctypes.c_size_t,
         ]
 
+        lib.get_tensor_details_buffer_sizes.restype = ctypes.c_int
+        lib.get_tensor_details_buffer_sizes.argtypes = [
+            ctypes.c_void_p,
+            ctypes.c_size_t,
+            ctypes.POINTER(ctypes.c_size_t),
+            ctypes.POINTER(ctypes.c_size_t),
+            ctypes.POINTER(ctypes.c_size_t),
+        ]
+        
+        lib.get_tensor_details.restype = ctypes.c_int
+        lib.get_tensor_details.argtypes = [
+            ctypes.c_void_p,
+            ctypes.c_size_t,
+            ctypes.c_char_p,
+            ctypes.c_int,
+            ctypes.POINTER(ctypes.c_int),
+            ctypes.POINTER(ctypes.c_int),
+            ctypes.POINTER(ctypes.c_float),
+            ctypes.POINTER(ctypes.c_int32),
+        ]
+
+        lib.input_tensor_index.restype = ctypes.c_size_t
+        lib.input_tensor_index.argtypes = [ctypes.c_void_p, ctypes.c_size_t]
+
+        lib.output_tensor_index.restype = ctypes.c_size_t
+        lib.output_tensor_index.argtypes = [ctypes.c_void_p, ctypes.c_size_t]
+        
         lib.invoke.restype = ctypes.c_int
         lib.invoke.argtypes = [ctypes.c_void_p]
 
@@ -142,7 +201,7 @@ class TFLMInterpreter:
         return lib.arena_used_bytes(self.obj)
 
     def close(self) -> None:
-        if self.obj:
+        if False and self.obj:
             lib.delete_interpreter(self.obj)
             self.obj = None
 
@@ -163,21 +222,28 @@ class TFLMInterpreter:
             lib.set_input_tensor(self.obj, tensor_index, data, l)
         )
 
-    def get_output_tensor(self, tensor_index, tensor = None):
-        l = self.get_output_tensor_size(tensor_index)
+    def get_output_tensor(self, tensor_index, output_index, tensor = None):
+        l = self.get_output_tensor_size(output_index)
         if tensor is None:
-            tensor = np.zeros((l), dtype=np.int8)
+            tensor_details = self._get_tensor_details(tensor_index)
+            tensor = np.zeros(tensor_details["shape"], dtype=tensor_details["dtype"])
         else:
             l2 = len(tensor.tobytes())
             if l2 != l:
-                print('ERROR: mismatching size in set_input_tensor %d vs %d' % (l, l2))
+                print('ERROR: mismatching size in get_output_tensor %d vs %d' % (l, l2))
         
         data_ptr = tensor.ctypes.data_as(ctypes.c_void_p)
         self._check_status(
-            lib.get_output_tensor(self.obj, tensor_index, data_ptr, l)
+            lib.get_output_tensor(self.obj, output_index, data_ptr, l)
         )
 
         return tensor
+
+    def set_tensor(self, tensor_index, data):
+        self.set_input_tensor(0, data)
+
+    def get_tensor(self, tensor_index):
+        return self.get_output_tensor(tensor_index, 0)
 
     def get_input_tensor_size(self, tensor_index):
         return lib.get_input_tensor_size(self.obj, tensor_index)
@@ -185,3 +251,77 @@ class TFLMInterpreter:
     def get_output_tensor_size(self, tensor_index):
         return lib.get_output_tensor_size(self.obj, tensor_index)
 
+    def allocate_tensors(self):
+        pass
+
+    def _get_tensor_details(self, tensor_index: int):
+        # first get the dimensions of the tensor
+        shape_size = ctypes.c_size_t()
+        scale_size = ctypes.c_size_t()
+        zero_point_size = ctypes.c_size_t()
+
+        self._check_status(
+            lib.get_tensor_details_buffer_sizes(
+                self.obj,
+                tensor_index,
+                ctypes.byref(shape_size),
+                ctypes.byref(scale_size),
+                ctypes.byref(zero_point_size),
+            )
+        )
+
+        # allocate buffer for shape
+        tensor_shape = (ctypes.c_int * shape_size.value)()
+        tensor_name_max_len = 1024
+        tensor_name = ctypes.create_string_buffer(tensor_name_max_len)
+        tensor_type = ctypes.c_int()
+        tensor_scale = (ctypes.c_float * scale_size.value)()
+        tensor_zero_point = (ctypes.c_int32 * zero_point_size.value)()
+
+        self._check_status(
+            lib.get_tensor_details(
+                self.obj,
+                tensor_index,
+                tensor_name,
+                tensor_name_max_len,
+                tensor_shape,
+                ctypes.byref(tensor_type),
+                tensor_scale,
+                tensor_zero_point,
+            )
+        )
+        scales = np.array(tensor_scale, dtype=np.float32)
+        if len(tensor_scale) == 1:
+            scales = scales[0]
+
+        zero_points = np.array(tensor_zero_point, dtype=np.int32)
+        if len(tensor_scale) == 1:
+            zero_points = zero_points[0]
+
+        return {
+            "index": tensor_index,
+            "name": tensor_name.value.decode("utf-8"),
+            "shape": np.array(tensor_shape, dtype=np.int32),
+            "dtype": TfLiteType(tensor_type.value).to_numpy_dtype(),
+            "quantization": (scales, zero_points),
+        }
+
+    def get_input_details(self):
+        inputs_size = lib.inputs_size(self.obj)
+        inputs_size = 1
+        input_indices = [
+            lib.input_tensor_index(self.obj, input_index)
+            for input_index in range(inputs_size)
+        ]
+
+        return [self._get_tensor_details(idx) for idx in input_indices]
+
+    def get_output_details(self):
+        outputs_size = lib.outputs_size(self.obj)
+        outputs_size = 1
+        output_indices = [
+            lib.output_tensor_index(self.obj, output_index)
+            for output_index in range(outputs_size)
+        ]
+
+        return [self._get_tensor_details(idx) for idx in output_indices]

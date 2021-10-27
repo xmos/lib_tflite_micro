@@ -222,7 +222,8 @@ class TFLMInterpreter:
             lib.set_input_tensor(self.obj, tensor_index, data, l)
         )
 
-    def get_output_tensor(self, tensor_index, output_index, tensor = None):
+    def get_output_tensor(self, output_index, tensor = None):
+        tensor_index = lib.output_tensor_index(self.obj, output_index)
         l = self.get_output_tensor_size(output_index)
         if tensor is None:
             tensor_details = self._get_tensor_details(tensor_index)
@@ -243,7 +244,14 @@ class TFLMInterpreter:
         self.set_input_tensor(0, data)
 
     def get_tensor(self, tensor_index):
-        return self.get_output_tensor(tensor_index, 0)
+        tensor_details = self._get_tensor_details(tensor_index)
+        tensor = np.zeros(tensor_details["shape"], dtype=tensor_details["dtype"])
+        data_ptr = tensor.ctypes.data_as(ctypes.c_void_p)
+        l = len(tensor.tobytes())
+        self._check_status(
+            lib.get_output_tensor(self.obj, 0, data_ptr, l)  # TODO: this 0 assumes single output
+        )
+        return tensor
 
     def get_input_tensor_size(self, tensor_index):
         return lib.get_input_tensor_size(self.obj, tensor_index)
@@ -308,7 +316,6 @@ class TFLMInterpreter:
 
     def get_input_details(self):
         inputs_size = lib.inputs_size(self.obj)
-        inputs_size = 1
         input_indices = [
             lib.input_tensor_index(self.obj, input_index)
             for input_index in range(inputs_size)
@@ -318,7 +325,6 @@ class TFLMInterpreter:
 
     def get_output_details(self):
         outputs_size = lib.outputs_size(self.obj)
-        outputs_size = 1
         output_indices = [
             lib.output_tensor_index(self.obj, output_index)
             for output_index in range(outputs_size)

@@ -16,5 +16,5 @@ img = img / 256.0
 
 ie.set_input_tensor(0, img)
 ie.invoke()
-answer = ie.get_output_tensor(0, tensor = np.zeros((10), dtype=np.float32))
+answer = ie.get_output_tensor(0)
 print(answer)

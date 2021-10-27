@@ -3,3 +3,8 @@ tflm_interpreter/build
 tflm_interpreter/tflm_interpreter/libs/
 tflm_interpreter/tflm_interpreter/__pycache__/
 host_cmd_line_interpreter/bin
+.DS_Store
+tflm_interpreter/.eggs/
+tflm_interpreter/tflm_interpreter.egg-info/
+
+

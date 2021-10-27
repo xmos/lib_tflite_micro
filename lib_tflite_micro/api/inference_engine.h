@@ -8,10 +8,7 @@
 #define UNSAFE unsafe
 #endif
 
-#ifdef __cplusplus
-
 #if !defined(TFLM_DISABLED)
-
 
 #if defined( __tflm_conf_h_exists__)
 #include "tflm_conf.h"
@@ -20,6 +17,8 @@
 #define TFLM_OPERATORS 10
 
 #endif
+
+#ifdef __cplusplus
 
 #include "tensorflow/lite/micro/micro_mutable_op_resolver.h"
 #include "xcore_ops.h"

@@ -1,5 +1,3 @@
-build:
-	mkdir build
-	cd build
-	cmake ..
-	make install
+install:
+	mkdir -p build
+	(cd build && cmake .. && make install)

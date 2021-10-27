@@ -1,2 +1,2 @@
 build:
-	(cd tflm_interpreter && make build)
+	(cd tflm_interpreter && make install)

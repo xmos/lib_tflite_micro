@@ -136,6 +136,7 @@ list(APPEND ALL_SOURCES  "${TFLM_SRC_DIR}/kernels/kernel_util.cc")
 list(APPEND ALL_SOURCES  "${TFLM_SRC_DIR}/kernels/l2_pool_2d.cc")
 list(APPEND ALL_SOURCES  "${TFLM_SRC_DIR}/kernels/l2norm.cc")
 list(APPEND ALL_SOURCES  "${TFLM_SRC_DIR}/kernels/leaky_relu.cc")
+list(APPEND ALL_SOURCES  "${TFLM_SRC_DIR}/kernels/leaky_relu_common.cc")
 list(APPEND ALL_SOURCES  "${TFLM_SRC_DIR}/kernels/log_softmax.cc")
 list(APPEND ALL_SOURCES  "${TFLM_SRC_DIR}/kernels/logical.cc")
 list(APPEND ALL_SOURCES  "${TFLM_SRC_DIR}/kernels/logical_common.cc")
@@ -174,6 +175,7 @@ list(APPEND ALL_SOURCES  "${TFLM_SRC_DIR}/kernels/transpose_conv.cc")
 list(APPEND ALL_SOURCES  "${TFLM_SRC_DIR}/kernels/unpack.cc")
 list(APPEND ALL_SOURCES  "${TFLM_SRC_DIR}/kernels/zeros_like.cc")
 
+list(APPEND ALL_SOURCES  "${CMAKE_CURRENT_SOURCE_DIR}/../lib_tflite_micro/submodules/flatbuffers/src/util.cpp")
 
 set(ALL_INCLUDES "")
 

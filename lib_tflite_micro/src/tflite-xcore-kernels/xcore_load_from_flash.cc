@@ -34,7 +34,7 @@ namespace tflite {
 namespace ops {
 namespace micro {
 namespace xcore {
-namespace flash_v2 {
+namespace flash {
 
 // This is the struct that contains the data required to fully describe the work
 // that the operator will perform. It needs to descibe the work for T threads.
@@ -56,7 +56,7 @@ void* Init(TfLiteContext* context, const char* buffer, size_t length) {
   op_data->size   = parser.parseNamedCustomOption("size").AsInt32();
   tflite::micro::xcore::XCoreInterpreter* xint = reinterpret_cast<tflite::micro::xcore::XCoreInterpreter*>(context->impl_);
   op_data->c_flash = xint->c_flash;
-  op_data->name    = "XC_Load_Flash_v2";
+  op_data->name    = "XC_Load_Flash";
   return op_data;
 }
 
@@ -93,11 +93,11 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
   return kTfLiteOk;
 }
 
-}  // namespace flash_v2
+}  // namespace flash
 
-TfLiteRegistration* Register_LoadFromFlash_V2() {
-  static TfLiteRegistration r = {flash_v2::Init, nullptr, flash_v2::Prepare,
-                                 flash_v2::Eval};
+TfLiteRegistration* Register_LoadFromFlash() {
+  static TfLiteRegistration r = {flash::Init, nullptr, flash::Prepare,
+                                 flash::Eval};
   return &r;
 }
 

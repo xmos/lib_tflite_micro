@@ -42,8 +42,8 @@ namespace flash_v2 {
 // - T sets of work, i.e. a list of jobs for each thread.
 // - T scratch allocations, i.e. an amount of scratch memory for each thread.
 struct FlashOpData : XCoreOpData {   // Inherits the operator name field from XCoreOpData
-    uint32_t address;
-    uint32_t bytes;
+    uint32_t addr;
+    uint32_t size;
     unsigned c_flash;
 };
 
@@ -52,8 +52,8 @@ void* Init(TfLiteContext* context, const char* buffer, size_t length) {
   
   auto op_data = construct_persistent_object<FlashOpData>(context);
   auto parser = CustomOptionParser(buffer, length);
-  op_data->address = parser.parseNamedCustomOption("address").AsInt32();
-  op_data->bytes   = parser.parseNamedCustomOption("bytes").AsInt32();
+  op_data->addr = parser.parseNamedCustomOption("addr").AsInt32();
+  op_data->size   = parser.parseNamedCustomOption("size").AsInt32();
   tflite::micro::xcore::XCoreInterpreter* xint = reinterpret_cast<tflite::micro::xcore::XCoreInterpreter*>(context->impl_);
   op_data->c_flash = xint->c_flash;
   op_data->name    = "XC_Load_Flash_v2";
@@ -74,9 +74,9 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
   chanend_t c_flash = (chanend_t) op_data->c_flash;
   chan_out_word(c_flash, 0);               // TODO: share with aiserver.
   transacting_chanend_t t = chan_init_transaction_slave(c_flash);
-  chan_out_word(c_flash, op_data->address);
-  chan_out_word(c_flash, op_data->bytes);
-  for(int i = 0; i < op_data->bytes; i++) {
+  chan_out_word(c_flash, op_data->addr);
+  chan_out_word(c_flash, op_data->size);
+  for(int i = 0; i < op_data->size; i++) {
       data_ptr[i] = t_chan_in_byte(&t);
   }
   chan_complete_transaction(t);
@@ -85,8 +85,8 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
 #else
   // TODO: debug this
   FILE *fd = fopen("flash.bin", "rb");
-  fseek(fd, SEEK_SET, op_data->address);
-  fread(data_ptr, op_data->bytes, 1, fd);
+  fseek(fd, SEEK_SET, op_data->addr);
+  fread(data_ptr, op_data->size, 1, fd);
   fclose(fd);
 #endif
   

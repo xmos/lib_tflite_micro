@@ -81,6 +81,7 @@ struct Conv2DThreadInfo {
   // TODO: Clean up
   // Using AbstractKernel to be able to assign Filter2D or Filter2D_DW
   nn::AbstractKernel* filter2D;  // The job to be done by this thread
+  KernelType kt;
 };
 
 // This is the struct that contains the data required to fully describe the work
@@ -96,17 +97,6 @@ struct Conv2DOpData : XCoreOpData {   // Inherits the operator name field from X
 // -------------------------------------------------------------------- //
 // op function implementations
 // -------------------------------------------------------------------- //
-
-template <typename T, bool pointer_serialization>
-T* getDeserializedParams(TfLiteContext* context, const uint8_t* data) {
-  char* allocated_memory;
-  int allocationByteCount =
-      T::get_allocation_byte_count((const char*)data) + sizeof(T);
-  allocated_memory =
-      (char*)context->AllocatePersistentBuffer(context, allocationByteCount);
-  T* param = T::template deserialise<T>(allocated_memory, (const char*)data);
-  return param;
-}
 
 template <typename T>
 T* getDeserializedParams(TfLiteContext* context, const uint8_t* data) {
@@ -135,6 +125,7 @@ void* Init(TfLiteContext* context, const char* buffer, size_t length) {
     op_data->threads[t].scratch_size = params[0].AsInt32();
     // read the kernel type
     KernelType kt = (KernelType)params[1].AsInt32();
+    op_data->threads[t].kt = kt;
 
     switch (kt) {
       // TODO : Cleanup to combine
@@ -146,10 +137,10 @@ void* Init(TfLiteContext* context, const char* buffer, size_t length) {
             getDeserializedParams<nn::DerefInputFn::Params>(
                 context, params[3].AsBlob().data());
         nn::MatMulDirectFn::Params* af_params =
-            getDeserializedParams<nn::MatMulDirectFn::Params, true>(
+            getDeserializedParams<nn::MatMulDirectFn::Params>(
                 context, params[4].AsBlob().data());
         nn::OT_int8::Params* ot_params =
-            getDeserializedParams<nn::OT_int8::Params, true>(
+            getDeserializedParams<nn::OT_int8::Params>(
                 context, params[5].AsBlob().data());
 
         // TODO: Make part of construct_persistent_object
@@ -177,10 +168,10 @@ void* Init(TfLiteContext* context, const char* buffer, size_t length) {
             getDeserializedParams<nn::ImToColValid::Params>(
                 context, params[3].AsBlob().data());
         nn::MatMulInt8::Params* af_params =
-            getDeserializedParams<nn::MatMulInt8::Params, true>(
+            getDeserializedParams<nn::MatMulInt8::Params>(
                 context, params[4].AsBlob().data());
         nn::OT_int8::Params* ot_params =
-            getDeserializedParams<nn::OT_int8::Params, true>(
+            getDeserializedParams<nn::OT_int8::Params>(
                 context, params[5].AsBlob().data());
 
         auto memcpy = new (context->AllocatePersistentBuffer(
@@ -207,10 +198,10 @@ void* Init(TfLiteContext* context, const char* buffer, size_t length) {
             getDeserializedParams<nn::ImToColPadded::Params>(
                 context, params[3].AsBlob().data());
         nn::MatMulInt8::Params* af_params =
-            getDeserializedParams<nn::MatMulInt8::Params, true>(
+            getDeserializedParams<nn::MatMulInt8::Params>(
                 context, params[4].AsBlob().data());
         nn::OT_int8::Params* ot_params =
-            getDeserializedParams<nn::OT_int8::Params, true>(
+            getDeserializedParams<nn::OT_int8::Params>(
                 context, params[5].AsBlob().data());
 
         auto memcpy = new (context->AllocatePersistentBuffer(
@@ -237,10 +228,10 @@ void* Init(TfLiteContext* context, const char* buffer, size_t length) {
             getDeserializedParams<nn::DerefInputFn::Params>(
                 context, params[3].AsBlob().data());
         nn::MatMulDirectFn_DW::Params* af_params =
-            getDeserializedParams<nn::MatMulDirectFn_DW::Params, true>(
+            getDeserializedParams<nn::MatMulDirectFn_DW::Params>(
                 context, params[4].AsBlob().data());
         nn::OT_int8::Params* ot_params =
-            getDeserializedParams<nn::OT_int8::Params, true>(
+            getDeserializedParams<nn::OT_int8::Params>(
                 context, params[5].AsBlob().data());
 
         auto memcpy = new (context->AllocatePersistentBuffer(
@@ -268,10 +259,10 @@ void* Init(TfLiteContext* context, const char* buffer, size_t length) {
             getDeserializedParams<nn::ImToColPadded::Params>(
                 context, params[3].AsBlob().data());
         nn::MatMulDirectFn_DW::Params* af_params =
-            getDeserializedParams<nn::MatMulDirectFn_DW::Params, true>(
+            getDeserializedParams<nn::MatMulDirectFn_DW::Params>(
                 context, params[4].AsBlob().data());
         nn::OT_int8::Params* ot_params =
-            getDeserializedParams<nn::OT_int8::Params, true>(
+            getDeserializedParams<nn::OT_int8::Params>(
                 context, params[5].AsBlob().data());
 
         auto memcpy = new (context->AllocatePersistentBuffer(
@@ -321,6 +312,10 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
 TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
   const TfLiteEvalTensor* input = tflite::micro::GetEvalInput(context, node, 0);
   TfLiteEvalTensor* output = tflite::micro::GetEvalOutput(context, node, 0);
+  const TfLiteEvalTensor *weights_tensor =
+      tflite::micro::GetEvalInput(context, node, 1);
+  const TfLiteEvalTensor *multipliers_and_biases_tensor =
+      tflite::micro::GetEvalInput(context, node, 2);
 
   auto* op_data = reinterpret_cast<Conv2DOpData*>(node->user_data);
   int n_threads = op_data->thread_count;
@@ -336,6 +331,12 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
                            op_data->threads[t].stack_size);
   }
 
+  // If the no of threads is more than one, we need to split the weights and
+  // point to the correct offset for each thread
+  assert(n_threads == 1);
+  int8_t *weights = (int8_t*)tflite::micro::GetTensorData<int8_t>(weights_tensor);
+  int16_t *multipliers_and_biases = (int16_t*)tflite::micro::GetTensorData<int16_t>(multipliers_and_biases_tensor);
+
   Conv2DThread thread_data[n_threads];
   void* dispatcher_args[n_threads];
   for (int t = 0; t < n_threads; ++t) {
@@ -343,6 +344,34 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
     thread_data[t].Y = (int8_t*)tflite::micro::GetTensorData<int8_t>(output);
     thread_data[t].scratch = (int8_t*)context->GetScratchBuffer(
         context, op_data->threads[t].stack_scratch_index);
+
+    switch (op_data->threads[t].kt) {
+    case Conv2DValidDirect_t: {
+      nn::Filter2D *f = (nn::Filter2D *)op_data->threads[t].filter2D;
+      nn::MatMulDirectFn *aggr = (nn::MatMulDirectFn *)(f->aggregate_handler);
+      aggr->setWeights(weights);
+      nn::OT_int8 *ot = (nn::OT_int8 *)(f->ot_handler);
+      ot->setMultipliersAndBiases(multipliers_and_biases);
+    } break;
+    case Conv2DValidIndirect_t:
+    case Conv2DPaddedIndirect_t: {
+      nn::Filter2D *f = (nn::Filter2D *)op_data->threads[t].filter2D;
+      nn::MatMulInt8 *aggr = (nn::MatMulInt8 *)(f->aggregate_handler);
+      aggr->setWeights(weights);
+      nn::OT_int8 *ot = (nn::OT_int8 *)(f->ot_handler);
+      ot->setMultipliersAndBiases(multipliers_and_biases);
+    } break;
+    case DepthwiseConv2DPaddedIndirect_t:
+    case DepthwiseConv2DValidDirect_t: {
+      nn::Filter2D_DW *f = (nn::Filter2D_DW *)op_data->threads[t].filter2D;
+      nn::MatMulDirectFn_DW *aggr =
+          (nn::MatMulDirectFn_DW *)(f->aggregate_handler);
+      aggr->setWeights(weights);
+      nn::OT_int8 *ot = (nn::OT_int8 *)(f->ot_handler);
+      ot->setMultipliersAndBiases(multipliers_and_biases);
+    } break;
+    }
+
     thread_data[t].f = op_data->threads[t].filter2D;
     dispatcher->AddTask(reinterpret_cast<void*>(&thread_data[t]));
   }

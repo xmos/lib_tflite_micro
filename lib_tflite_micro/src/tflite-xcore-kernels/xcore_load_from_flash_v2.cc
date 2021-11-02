@@ -44,7 +44,7 @@ namespace flash_v2 {
 struct FlashOpData : XCoreOpData {   // Inherits the operator name field from XCoreOpData
     uint32_t address;
     uint32_t bytes;
-    unsigned c_flash;
+    void *flash_data;
 };
 
 void* Init(TfLiteContext* context, const char* buffer, size_t length) {
@@ -55,7 +55,7 @@ void* Init(TfLiteContext* context, const char* buffer, size_t length) {
   op_data->address = parser.parseNamedCustomOption("address").AsInt32();
   op_data->bytes   = parser.parseNamedCustomOption("bytes").AsInt32();
   tflite::micro::xcore::XCoreInterpreter* xint = reinterpret_cast<tflite::micro::xcore::XCoreInterpreter*>(context->impl_);
-  op_data->c_flash = xint->c_flash;
+  op_data->flash_data = xint->flash_data;
   op_data->name    = "XC_Load_Flash_v2";
   return op_data;
 }
@@ -71,7 +71,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
   auto* op_data = reinterpret_cast<FlashOpData*>(node->user_data);
 
 #ifdef __xcore__
-  chanend_t c_flash = (chanend_t) op_data->c_flash;
+  chanend_t c_flash = (chanend_t) static_cast<int>(op_data->flash_data);
   chan_out_word(c_flash, 0);               // TODO: share with aiserver.
   transacting_chanend_t t = chan_init_transaction_slave(c_flash);
   chan_out_word(c_flash, op_data->address);
@@ -83,11 +83,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
 
   // load_from_flash_ll(op_data->c_flash, data_ptr, op_data->address, op_data->bytes);
 #else
-  // TODO: debug this
-  FILE *fd = fopen("flash.bin", "rb");
-  fseek(fd, SEEK_SET, op_data->address);
-  fread(data_ptr, op_data->bytes, 1, fd);
-  fclose(fd);
+  memcpy(data_ptr, op_data->flash_data, op_data->bytes);
 #endif
   
   return kTfLiteOk;

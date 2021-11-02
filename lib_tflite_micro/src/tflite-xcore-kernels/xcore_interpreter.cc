@@ -14,10 +14,10 @@ XCoreInterpreter::XCoreInterpreter(const tflite::Model* model,
                                    tflite::ErrorReporter* reporter,
                                    bool use_current_thread,
                                    XCoreProfiler* profiler,
-                                   unsigned c_flash)
-    : tflite::MicroInterpreter(model, resolver, allocator, reporter, profiler),
+                                   void *flash_data)
+    : tflite::MicroInterpreter(model, resolver, allocator, reporter, nullptr, profiler),
       dispatcher_(reporter, use_current_thread) {
-  this->c_flash = c_flash;
+  this->flash_data = flash_data;
   this->model__ = model;
   this->error_reporter__ = reporter;
   SetDispatcher(&dispatcher_);
@@ -32,10 +32,10 @@ XCoreInterpreter::XCoreInterpreter(const tflite::Model* model,
                                    tflite::ErrorReporter* reporter,
                                    bool use_current_thread,
                                    XCoreProfiler* profiler,
-                                   unsigned c_flash)
+                                   void *flash_data)
     : XCoreInterpreter::XCoreInterpreter(
           model, resolver, MicroAllocator::Create(arena, arena_size, reporter),
-          reporter, use_current_thread, profiler, c_flash) {}
+          reporter, use_current_thread, profiler, flash_data) {}
 
 TfLiteTensor* XCoreInterpreter::tensor(size_t tensor_index) {
   auto ctx = context();

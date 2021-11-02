@@ -353,6 +353,9 @@ numeric_verify_test.cc \
 one_hot.cc \
 one_hot_test.cc \
 optional_tensor_test.cc \
+micro_resource_variable_test.cc \
+non_persistent_buffer_planner_shim_test.cc \
+slice_test.cc \
 lite/kernels/pack.cc \
 lite/kernels/pack_test.cc \
 lite/kernels/pad.cc \

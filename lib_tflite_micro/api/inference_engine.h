@@ -160,7 +160,7 @@ extern "C" {
 #ifdef __XC__
     int inference_engine_load_model(inference_engine_t * UNSAFE ie, uint32_t model_bytes, uint32_t * UNSAFE model_data, chanend ?c_flash);
 #else
-    int inference_engine_load_model(inference_engine_t * UNSAFE ie, uint32_t model_bytes, uint32_t * UNSAFE model_data, unsigned c_flash);
+    int inference_engine_load_model(inference_engine_t * UNSAFE ie, uint32_t model_bytes, uint32_t * UNSAFE model_data, void *flash_data);
 #endif
 
 /** Function that invokes the inference engine.

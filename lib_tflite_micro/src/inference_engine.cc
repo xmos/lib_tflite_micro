@@ -39,7 +39,7 @@ void inference_engine_unload_model(inference_engine *ie)
 
 int inference_engine_load_model(inference_engine *ie,
                                 uint32_t model_bytes, uint32_t *model_data,
-                                unsigned c_flash) 
+                                void *flash_data) 
 {
 
     if (ie->tflm->interpreter)
@@ -80,7 +80,7 @@ int inference_engine_load_model(inference_engine *ie,
                                                &ie->tflm->error_reporter,
                                                true,
                                                &ie->tflm->xcore_profiler,
-                                               c_flash);
+                                               flash_data);
 
     // Allocate memory from the kTensorArena for the model's tensors.
     TfLiteStatus allocate_tensors_status = ie->tflm->interpreter->AllocateTensors();

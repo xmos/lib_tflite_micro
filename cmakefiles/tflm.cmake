@@ -52,7 +52,7 @@ list(APPEND ALL_SOURCES  "${TFLIB_SRC_DIR}/xcore_error_reporter.cc")
 list(APPEND ALL_SOURCES  "${TFLIB_SRC_DIR}/xcore_extended_interpreter.cc")
 list(APPEND ALL_SOURCES  "${TFLIB_SRC_DIR}/xcore_fully_connected.cc")
 list(APPEND ALL_SOURCES  "${TFLIB_SRC_DIR}/xcore_interpreter.cc")
-list(APPEND ALL_SOURCES  "${TFLIB_SRC_DIR}/xcore_load_from_flash_v2.cc")
+list(APPEND ALL_SOURCES  "${TFLIB_SRC_DIR}/xcore_load_from_flash.cc")
 list(APPEND ALL_SOURCES  "${TFLIB_SRC_DIR}/xcore_pad.cc")
 list(APPEND ALL_SOURCES  "${TFLIB_SRC_DIR}/xcore_planning.cc")
 list(APPEND ALL_SOURCES  "${TFLIB_SRC_DIR}/xcore_pooling.cc")
@@ -185,6 +185,7 @@ list(APPEND ALL_SOURCES  "${TFLM_SRC_DIR}/kernels/unpack.cc")
 list(APPEND ALL_SOURCES  "${TFLM_SRC_DIR}/kernels/var_handle.cc")
 list(APPEND ALL_SOURCES  "${TFLM_SRC_DIR}/kernels/zeros_like.cc")
 
+list(APPEND ALL_SOURCES  "${CMAKE_CURRENT_SOURCE_DIR}/../lib_tflite_micro/submodules/flatbuffers/src/util.cpp")
 
 set(ALL_INCLUDES "")
 

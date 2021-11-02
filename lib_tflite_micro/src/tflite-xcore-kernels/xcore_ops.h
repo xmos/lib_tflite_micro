@@ -21,7 +21,7 @@ constexpr const char* Conv2D_1x1_OpCode = "XC_conv2d_1x1";
 constexpr const char* Conv2D_Depthwise_OpCode = "XC_conv2d_depthwise";
 constexpr const char* Add_8_OpCode = "XC_add_8";
 constexpr const char* Pad_OpCode = "XC_pad";
-constexpr const char* Load_Flash_V2_OpCode = "XC_Load_Flash_v2";
+constexpr const char* Load_Flash_OpCode = "XC_Load_Flash";
 
 // Binarized ops
 constexpr const char* Bsign_8_OpCode = "XC_bsign_8";
@@ -71,7 +71,7 @@ TfLiteRegistration* Register_Conv2D_1x1();
 TfLiteRegistration* Register_Conv2D_Depthwise();
 TfLiteRegistration* Register_FullyConnected_8();
 TfLiteRegistration* Register_Conv2D_V2();
-TfLiteRegistration* Register_LoadFromFlash_V2();
+TfLiteRegistration* Register_LoadFromFlash();
 TfLiteRegistration* Register_MaxPool2D();
 TfLiteRegistration* Register_AvgPool2D();
 TfLiteRegistration* Register_AvgPool2D_Global();

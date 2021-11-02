@@ -3,7 +3,6 @@
 #define XCORE_PLANNING_H_
 #include <cassert>
 #include <cstdint>
-#include <iostream>
 
 #include "tensorflow/lite/c/common.h"
 #include "xcore_utils.h"

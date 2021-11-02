@@ -2,7 +2,6 @@
 
 #include "xcore_interpreter.h"
 #include "xcore_utils.h"
-#include <iostream>
 
 namespace tflite {
 namespace micro {

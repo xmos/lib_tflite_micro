@@ -77,6 +77,8 @@ class TFLMInterpreter:
         model_path=None,
         model_content=None,
         max_tensor_arena_size=MAX_TENSOR_ARENA_SIZE,
+        params_path=None,
+        params_content=None,
     ) -> None:
         self._error_msg = ctypes.create_string_buffer(4096)
 
@@ -92,6 +94,7 @@ class TFLMInterpreter:
             ctypes.c_char_p,
             ctypes.c_size_t,
             ctypes.c_size_t,
+            ctypes.c_char_p,
         ]
 
         lib.inputs_size.restype = ctypes.c_size_t
@@ -172,6 +175,14 @@ class TFLMInterpreter:
         else:
             self._model_content = model_content
 
+        if params_path:
+            with open(params_path, "rb") as fd:
+                self._params_content = fd.read()
+        elif params_content is None:
+            self._params_content = bytes([])
+        else:
+            self._params_content = params_content
+
         self._max_tensor_arena_size = max_tensor_arena_size
         self._op_states = []
 
@@ -181,6 +192,7 @@ class TFLMInterpreter:
             self._model_content,
             len(self._model_content),
             self._max_tensor_arena_size,
+            self._params_content,
         )
         if TFLMInterpreterStatus(status) is TFLMInterpreterStatus.ERROR:
             raise RuntimeError("Unable to initialize interpreter")

@@ -18,7 +18,7 @@ class XCoreInterpreter : public tflite::MicroInterpreter {
                    size_t arena_size, tflite::ErrorReporter* reporter,
                    bool use_curent_thread = true,
                    XCoreProfiler* profiler = nullptr,
-                   unsigned c_flash = 0);
+                   void *flash_data = nullptr);
 
   XCoreInterpreter(const tflite::Model* model,
                    const tflite::MicroOpResolver& resolver,
@@ -26,11 +26,11 @@ class XCoreInterpreter : public tflite::MicroInterpreter {
                    tflite::ErrorReporter* reporter,
                    bool use_current_thread = true,
                    XCoreProfiler* profiler = nullptr,
-                   unsigned c_flash = 0);
+                   void *flash_data = nullptr);
 
   TfLiteTensor* tensor(size_t tensor_index);
   const char *node_name(int sub_idx, int i);
-  unsigned c_flash;  // channel to flash reader.
+  void *flash_data;  // channel to flash reader.
 
   TfLiteStatus GetTensorDetails(
     size_t tensor_index, char* name, int name_len, int* shape, int* type,

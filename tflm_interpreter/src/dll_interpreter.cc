@@ -61,12 +61,13 @@ void delete_interpreter(inference_engine* ie) {
 }
 
 int initialize(inference_engine* ie, const char* model_content,
-               size_t model_content_size, size_t tensor_arena_size) {
+               size_t model_content_size, size_t tensor_arena_size,
+               const char *param_content) {
     // We need to keep a copy of the model content
     inference_engine_unload_model(ie);
     uint32_t *m = (uint32_t *) model_content;
     memcpy(ie->model_data_tensor_arena, m, model_content_size);
-    int r = inference_engine_load_model(ie, model_content_size, m, 0);
+    int r = inference_engine_load_model(ie, model_content_size, m, param_content);
     return kTfLiteOk;
 }
 #if 1

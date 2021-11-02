@@ -7,8 +7,10 @@
 #include "inference_engine.h"
 
 #define MAX_MODEL_CONTENT_SIZE 5000000
+#define MAX_PARAMS_SIZE 5000000
 
 uint32_t model_content[MAX_MODEL_CONTENT_SIZE / sizeof(uint32_t)];
+uint32_t params_content[MAX_MODEL_CONTENT_SIZE / sizeof(uint32_t)];
 
 struct tflite_micro_objects s0;
 
@@ -37,7 +39,7 @@ void inference_engine_initialize(inference_engine_t *ie) {
 
 
 
-static int load_model(const char *filename, uint32_t *content,
+static int load_binary_file(const char *filename, uint32_t *content,
                       size_t size) {
     FILE *fd = fopen(filename, "rb");
     int s = fread(content, 1, size, fd);
@@ -48,6 +50,9 @@ static int load_model(const char *filename, uint32_t *content,
 
 static int load_input(const char *filename, uint32_t *input,
                       size_t esize) {
+    if (strcmp(filename, "-") == 0) {
+        return 0;
+    }
     FILE *fd = fopen(filename, "rb");
     int s = fread(input, 1, esize, fd);
     fclose(fd);
@@ -68,11 +73,11 @@ static int save_output(const char *filename, const uint32_t *output,
 }
 
 int main(int argc, char *argv[]) {
-    int carg = 2;
-    if (argc < 4) {
+    int carg = 3;
+    if (argc < 5) {
         fprintf(stderr, "Usage\n");
-        fprintf(stderr, "   %s: model.tflite input-file output-file; or\n", argv[0]);
-        fprintf(stderr, "   %s: model.tflite -i input-files ... -o output-files ...\n", argv[0]);
+        fprintf(stderr, "   %s: model.tflite model.params input-file output-file; or\n", argv[0]);
+        fprintf(stderr, "   %s: model.tflite model.params -i input-files ... -o output-files ...\n", argv[0]);
         return -1;
     }
 
@@ -82,11 +87,13 @@ int main(int argc, char *argv[]) {
     inference_engine_initialize(&ie);
 
     // load model
-    size_t model_size = load_model(model_filename, ie.model_data_tensor_arena, MAX_MODEL_CONTENT_SIZE);
+    size_t model_size = load_binary_file(model_filename, ie.model_data_tensor_arena, MAX_MODEL_CONTENT_SIZE);
 
+    char *params_filename = argv[2];
+    (void) load_binary_file(params_filename, params_content, MAX_PARAMS_SIZE);
 
     inference_engine_unload_model(&ie);
-    int error = inference_engine_load_model(&ie, model_size, ie.model_data_tensor_arena, 0); // TODO: c_flash!!
+    int error = inference_engine_load_model(&ie, model_size, ie.model_data_tensor_arena, params_content);
 
     if (strcmp(argv[carg], "-i") == 0) {
         int tensor_num = 0;

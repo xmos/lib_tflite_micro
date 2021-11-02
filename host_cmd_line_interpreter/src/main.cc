@@ -41,7 +41,14 @@ void inference_engine_initialize(inference_engine_t *ie) {
 
 static int load_binary_file(const char *filename, uint32_t *content,
                       size_t size) {
+    if (strcmp(filename, "-") == 0) {
+        return 0;
+    }
     FILE *fd = fopen(filename, "rb");
+    if (fd == NULL) {
+        fprintf(stderr, "Cannot read model/param file %s\n", filename);
+        exit(1);
+    }
     int s = fread(content, 1, size, fd);
     fclose(fd);
 
@@ -50,15 +57,16 @@ static int load_binary_file(const char *filename, uint32_t *content,
 
 static int load_input(const char *filename, uint32_t *input,
                       size_t esize) {
-    if (strcmp(filename, "-") == 0) {
-        return 0;
-    }
     FILE *fd = fopen(filename, "rb");
+    if (fd == NULL) {
+        fprintf(stderr, "Cannot read input file %s\n", filename);
+        exit(1);
+    }
     int s = fread(input, 1, esize, fd);
     fclose(fd);
 
     if (s != esize) {
-        printf("ERROR: Incorrect input file size. Expected %zu bytes.\n", esize);
+        printf("ERROR: Incorrect input file '%s'. Expected %zu bytes got %d.\n", filename, esize, s);
     }
     return s;
 }
@@ -66,6 +74,10 @@ static int load_input(const char *filename, uint32_t *input,
 static int save_output(const char *filename, const uint32_t *output,
                        size_t osize) {
     FILE *fd = fopen(filename, "wb");
+    if (fd == NULL) {
+        fprintf(stderr, "Cannot write output file %s\n", filename);
+        exit(1);
+    }
     fwrite(output, 1, osize, fd);
     fclose(fd);
 
@@ -80,7 +92,6 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "   %s: model.tflite model.params -i input-files ... -o output-files ...\n", argv[0]);
         return -1;
     }
-
     char *model_filename = argv[1];
 
     inference_engine_t ie;
@@ -108,8 +119,8 @@ int main(int argc, char *argv[]) {
             tensor_num++;
         }
     } else {
-        char *input_filename = argv[2];
-        char *output_filename = argv[3];
+        char *input_filename = argv[carg];
+        char *output_filename = argv[carg+1];
         load_input(input_filename, ie.input_buffers[0], ie.input_sizes[0]);
         interp_invoke(&ie);
         save_output(output_filename, ie.output_buffers[0], ie.output_sizes[0]);

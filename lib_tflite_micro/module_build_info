@@ -458,6 +458,8 @@ lite/kernels/zeros_like_test.cc
 #lite/kernels/internal 
 EXCLUDE_FILES += lite/kernels/internal/tensor_utils.cc
 EXCLUDE_FILES += averagepool_quantized_test.cc 
+EXCLUDE_FILES += circular_buffer_flexbuffers_generated_data.cc
+EXCLUDE_FILES += detection_postprocess_flexbuffers_generated_data.cc
 EXCLUDE_FILES += batch_to_space_nd_test.cc 
 EXCLUDE_FILES += conv_per_channel_quantized_16x8_test.cc  
 EXCLUDE_FILES += conv_per_channel_quantized_test.cc 

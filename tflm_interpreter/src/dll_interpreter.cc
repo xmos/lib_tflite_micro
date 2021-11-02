@@ -67,7 +67,7 @@ int initialize(inference_engine* ie, const char* model_content,
     inference_engine_unload_model(ie);
     uint32_t *m = (uint32_t *) model_content;
     memcpy(ie->model_data_tensor_arena, m, model_content_size);
-    int r = inference_engine_load_model(ie, model_content_size, m, param_content);
+    int r = inference_engine_load_model(ie, model_content_size, m, (void *)param_content);
     return kTfLiteOk;
 }
 #if 1

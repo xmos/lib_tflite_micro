@@ -3,7 +3,6 @@
 
 #include "tensorflow/lite/kernels/internal/compatibility.h"
 #include "tensorflow/lite/micro/micro_time.h"
-#include <iostream>
 
 namespace tflite {
 namespace micro {

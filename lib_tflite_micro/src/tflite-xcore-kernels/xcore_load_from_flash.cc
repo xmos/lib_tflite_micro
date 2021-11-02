@@ -71,11 +71,11 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
   auto* op_data = reinterpret_cast<FlashOpData*>(node->user_data);
 
 #ifdef __xcore__
-  chanend_t c_flash = (chanend_t) static_cast<int>(op_data->flash_data);
+  chanend_t c_flash = (chanend_t) static_cast<int>(reinterpret_cast<intptr_t>(op_data->flash_data));
   chan_out_word(c_flash, 0);               // TODO: share with aiserver.
   transacting_chanend_t t = chan_init_transaction_slave(c_flash);
-  chan_out_word(c_flash, op_data->addr);
-  chan_out_word(c_flash, op_data->size);
+  t_chan_out_word(&t, op_data->addr);
+  t_chan_out_word(&t, op_data->size);
   for(int i = 0; i < op_data->size; i++) {
       data_ptr[i] = t_chan_in_byte(&t);
   }

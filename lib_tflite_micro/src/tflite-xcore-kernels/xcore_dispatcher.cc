@@ -4,7 +4,6 @@
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
-#include <iostream>
 
 #include "tensorflow/lite/c/common.h"
 #include "xcore_planning.h"

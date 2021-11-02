@@ -44,7 +44,7 @@ namespace flash {
 struct FlashOpData : XCoreOpData {   // Inherits the operator name field from XCoreOpData
     uint32_t addr;
     uint32_t size;
-    unsigned c_flash;
+    void  *flash_data;
 };
 
 void* Init(TfLiteContext* context, const char* buffer, size_t length) {
@@ -55,7 +55,7 @@ void* Init(TfLiteContext* context, const char* buffer, size_t length) {
   op_data->addr = parser.parseNamedCustomOption("addr").AsInt32();
   op_data->size   = parser.parseNamedCustomOption("size").AsInt32();
   tflite::micro::xcore::XCoreInterpreter* xint = reinterpret_cast<tflite::micro::xcore::XCoreInterpreter*>(context->impl_);
-  op_data->c_flash = xint->flash_data;
+  op_data->flash_data = xint->flash_data;
   op_data->name    = "XC_Load_Flash";
   return op_data;
 }
@@ -83,7 +83,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
 
   // load_from_flash_ll(op_data->c_flash, data_ptr, op_data->address, op_data->bytes);
 #else
-  memcpy(data_ptr, op_data->flash_data + op_data->addr, op_data->size);
+  memcpy(data_ptr, ((int8_t *)op_data->flash_data) + op_data->addr, op_data->size);
 #endif
   
   return kTfLiteOk;

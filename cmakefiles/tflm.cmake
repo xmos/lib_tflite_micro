@@ -16,7 +16,7 @@ list(APPEND ALL_SOURCES  "${TFLITE_SRC_DIR}/c/common.c")
 
 list(APPEND ALL_SOURCES  "${NN_SRC_DIR}/cpp/AggregateFn.cpp")
 list(APPEND ALL_SOURCES  "${NN_SRC_DIR}/cpp/AggregateFn_DW.cpp")
-list(APPEND ALL_SOURCES  "${NN_SRC_DIR}/cpp/Filter2d.cpp")
+list(APPEND ALL_SOURCES  "${NN_SRC_DIR}/cpp/Filter2D.cpp")
 list(APPEND ALL_SOURCES  "${NN_SRC_DIR}/cpp/MaxPool2d.cpp")
 list(APPEND ALL_SOURCES  "${NN_SRC_DIR}/cpp/MaxPoolAgg.cpp")
 list(APPEND ALL_SOURCES  "${NN_SRC_DIR}/cpp/MemCpyFn.cpp")

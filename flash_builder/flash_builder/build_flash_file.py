@@ -8,7 +8,7 @@ from flash_builder import FlashBuilder
 parser = argparse.ArgumentParser(description='Build parameter/flash images')
 parser.add_argument('--output', default='image.bin',  help='output file')
 parser.add_argument('--target', default='host',       help='"flash" or "host" (default)')
-parser.add_argument('files',    nargs='+', help='Model and parameter files, - indicates a missing one, must be an even number of files for "flash", or a single file for "host"')
+parser.add_argument('files',    nargs='+', help='Model and parameter files, - indicates a missing one, must be an even number of files for "flash" (model params model params ...), or a single file for "host" (params)')
 
 args = parser.parse_args()
 

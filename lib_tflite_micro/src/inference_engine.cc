@@ -10,18 +10,18 @@ extern "C" void DebugLog(const char* s) { while (*s) { putchar(*s); s++; }}  // 
 
 tflite::MicroMutableOpResolver<TFLM_OPERATORS> *
      inference_engine_initialize(inference_engine *ie,
-                                 uint32_t data_tensor_arena[], uint32_t n_tensor_arena,
-                                 uint32_t data_ext[], uint32_t n_ext,
+                                 uint32_t memory_primary[], uint32_t n_primary,
+                                 uint32_t memory_secondary[], uint32_t n_secondary,
                                  struct tflite_micro_objects *tflmo)
 {
     // First initialise the structure with the three memory objects
     // internal memory, external memory, and TFLM objects.
     memset(ie, 0, sizeof(*ie));
     ie->tflm = tflmo;
-    ie->model_data_tensor_arena = data_tensor_arena;
-    ie->model_data_ext          = data_ext;
-    ie->model_data_tensor_arena_bytes = n_tensor_arena;
-    ie->model_data_ext_bytes          = n_ext;
+    ie->memory_primary         = memory_primary;
+    ie->memory_secondary       = memory_secondary;
+    ie->memory_primary_bytes   = n_primary;
+    ie->memory_secondary_bytes = n_secondary;
     ie->tflm->error_reporter.Init((char *)ie->debug_log_buffer, MAX_DEBUG_LOG_LENGTH);
     // Now add all the operators that we need
     auto *resolver = &ie->tflm->resolver;
@@ -59,10 +59,10 @@ int inference_engine_load_model(inference_engine *ie,
     }
 
     // Now work out where the tensor arena goes
-    uint8_t *kTensorArena = (uint8_t *) ie->model_data_tensor_arena;
-    int kTensorArenaSize = ie->model_data_tensor_arena_bytes;
+    uint8_t *kTensorArena = (uint8_t *) ie->memory_primary;
+    int kTensorArenaSize = ie->memory_primary_bytes;
     
-    if(model_data != ie->model_data_ext)
+    if(model_data != ie->memory_secondary)
     {
         uint32_t model_ints = (model_bytes + 3) & ~0x03; // Align 4
         kTensorArena     += model_ints; 

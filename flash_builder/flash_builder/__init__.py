@@ -1,5 +1,7 @@
-BYTES_FOR_HEADER = 0
+BYTES_FOR_HEADER = 4
 BYTES_PER_ENGINE_BLOCK = 16
+VERSION_MAJOR = 1
+VERSION_MINOR = 2
 
 class FlashBuilder:
 
@@ -89,7 +91,7 @@ class FlashBuilder:
                                 len(self.xips[i]), start)
             start += headers[i].length
 
-        output = bytes([])                                # TODO: add version num
+        output = bytes([VERSION_MAJOR, VERSION_MINOR, 0xff ^ VERSION_MAJOR, 0xff ^ VERSION_MINOR])
 
         for i in range(self.engines):
             output += FlashBuilder.tobytes(headers[i].model_start)     # encode start of model

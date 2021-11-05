@@ -1,7 +1,7 @@
-import flexbuffers
-
-BYTES_FOR_HEADER = 0
+BYTES_FOR_HEADER = 4
 BYTES_PER_ENGINE_BLOCK = 16
+VERSION_MAJOR = 1
+VERSION_MINOR = 2
 
 class FlashBuilder:
 
@@ -43,16 +43,10 @@ class FlashBuilder:
             return None
 
     @staticmethod
-    def create_params_image(flexbuf = None, filename = None):
-        if flexbuf is None:
-            flexbuf = FlashBuilder.read_whole_binary_file(filename)
-            
-        try:
-            r = flexbuffers.Loads(flexbuf)
-            return b"".join(r['params'])
-        except:
-            print('Data "%s" is not a flexbuffer with a "params" field' % (flexbuf, filename))
-            return None
+    def create_params_image(params = None, filename = None):
+        if params is None:
+            params = FlashBuilder.read_whole_binary_file(filename)
+        return params
 
     @staticmethod
     def create_model_image(model = None, filename = None):
@@ -61,8 +55,8 @@ class FlashBuilder:
         return model
 
     @staticmethod
-    def create_params_file(params_filename, flexbuf = None, input_filename = None):
-        image = FlashBuilder.create_params_image(flexbuf = flexbuf, filename = input_filename)
+    def create_params_file(params_filename, params = None, input_filename = None):
+        image = FlashBuilder.create_params_image(params = params, filename = input_filename)
         with open(params_filename, 'wb') as output_fd:
             output_fd.write(image)
 
@@ -74,8 +68,8 @@ class FlashBuilder:
             data.append((integr >> (8*i)) & 0xff)
         return bytes(data)
 
-    def add_params(self, engine, flexbuf = None, filename = None):
-        image = FlashBuilder.create_params_image(flexbuf, filename)
+    def add_params(self, engine, params = None, filename = None):
+        image = FlashBuilder.create_params_image(params, filename)
         self.params[engine] = image
 
     def add_model(self, engine, model = None, filename = None):
@@ -97,7 +91,7 @@ class FlashBuilder:
                                 len(self.xips[i]), start)
             start += headers[i].length
 
-        output = bytes([])                                # TODO: add version num
+        output = bytes([VERSION_MAJOR, VERSION_MINOR, 0xff ^ VERSION_MAJOR, 0xff ^ VERSION_MINOR])
 
         for i in range(self.engines):
             output += FlashBuilder.tobytes(headers[i].model_start)     # encode start of model

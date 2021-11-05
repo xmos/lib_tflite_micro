@@ -63,8 +63,8 @@ typedef struct inference_engine {
     uint32_t input_sizes[NUM_INPUT_TENSORS];    ///< Size of each input tensor in bytes.
     uint32_t output_size;                       ///< Total size of all outputs - TODO: obsolete?
     uint32_t input_size;                        ///< Total size of all inputs - TODO: obsolete?
-    uint32_t memory_primary_bytes;               ///< Number of bytes available in tensor arena space
-    uint32_t memory_secondary_bytes;            ///< Number of bytes available in model space
+    uint32_t memory_primary_bytes;              ///< Number of bytes available in primary memory
+    uint32_t memory_secondary_bytes;            ///< Number of bytes available in secondary memory
     uint32_t output_times_size;                 ///< Number of bytes available to store profiling data
     uint32_t operators_size;                    ///< ???
     uint32_t * UNSAFE output_times;             ///< pointer to profiling data, one per layer

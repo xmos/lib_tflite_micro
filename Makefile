@@ -4,6 +4,8 @@ build:
 clean:
 	(cd tflm_interpreter && make clean)
 
+init:
+	python3 fetch_dependencies.py
 
 test:
 	(cd host_cmd_line_interpreter && make test)

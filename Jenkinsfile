@@ -2,7 +2,7 @@ def date_str_bld = new Date().format("yyyy-mm-dd")
 
 pipeline {
     agent {
-        label "tech&&xcore.ai"
+        label "xcore.ai"
     }
     options {
         disableConcurrentBuilds()

@@ -6,6 +6,10 @@ clean:
 
 init:
 	python3 fetch_dependencies.py
+	echo '.'
+	ls
+	echo '..'
+	ls ..
 
 test:
 	(cd host_cmd_line_interpreter && make test)

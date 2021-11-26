@@ -33,16 +33,13 @@ set(BUILD_FLAGS
   "-DNN_USE_REF"
 )
 
-set(LINK_FLAGS
-  "-lpthread"
-)
-
 #**********************
 # firmware targets
 #**********************
 add_executable(tflm_interpreter_cmdline)
 target_compile_options(tflm_interpreter_cmdline PRIVATE ${BUILD_FLAGS})
-target_link_options(tflm_interpreter_cmdline PRIVATE ${LINK_FLAGS})
+target_link_options(tflm_interpreter_cmdline PRIVATE ${BUILD_FLAGS})
+target_link_libraries(tflm_interpreter_cmdline PRIVATE "-lpthread")
 
 include(../cmakefiles/tflm.cmake)
 

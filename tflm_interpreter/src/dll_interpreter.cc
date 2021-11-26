@@ -50,12 +50,6 @@ inference_engine* new_interpreter() {
 
 void delete_interpreter(inference_engine* ie) {
     inference_engine_unload_model(ie);
-#if 0    
-    if (ie->resolver) delete ie->resolver;
-    if (ie->reporter) delete ie->reporter;
-    if (ie->memory_primary) delete[] ie->memory_primary;
-    if (ie->model_buffer) delete[] ie->model_buffer;
-#endif
     free(ie->tflm);
     free(ie);
 }

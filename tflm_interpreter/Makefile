@@ -1,6 +1,6 @@
 install:
 	mkdir -p build
-	(cd build && cmake .. && make install)
+	(cd build && cmake .. && make install -j4)
 
 clean:
 	rm -rf build

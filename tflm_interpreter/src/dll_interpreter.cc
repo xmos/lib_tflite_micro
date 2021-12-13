@@ -26,24 +26,38 @@ inference_engine* new_interpreter() {
                                                  s0);
     ie->tflm->interpreter = nullptr;
     
-    resolver->AddDequantize();
-    resolver->AddSoftmax();
-    resolver->AddMean();
-    resolver->AddPad();
-    resolver->AddReshape();
-    resolver->AddConcatenation();
     resolver->AddAdd();
-    resolver->AddMinimum();
-    resolver->AddMaximum();
-    resolver->AddRelu();
-    resolver->AddLogistic();
+    resolver->AddAddN();
+    resolver->AddCast();
+    resolver->AddConcatenation();
     resolver->AddConv2D();
-    resolver->AddQuantize();
-    resolver->AddDepthwiseConv2D();
     resolver->AddCustom(tflite::ops::micro::xcore::Conv2D_V2_OpCode,
                         tflite::ops::micro::xcore::Register_Conv2D_V2());
     resolver->AddCustom(tflite::ops::micro::xcore::Load_Flash_OpCode,
                         tflite::ops::micro::xcore::Register_LoadFromFlash());
+    resolver->AddDepthwiseConv2D();
+    resolver->AddDequantize();
+    resolver->AddFloor();
+    resolver->AddGreater();
+    resolver->AddGreaterEqual();
+    resolver->AddLess();
+    resolver->AddLessEqual();
+    resolver->AddLogicalAnd();
+    resolver->AddLogistic();
+    resolver->AddMaximum();
+    resolver->AddMean();
+    resolver->AddMinimum();
+    resolver->AddMul();
+    resolver->AddPad();
+    resolver->AddPadV2();
+    resolver->AddQuantize();
+    resolver->AddRelu();
+    resolver->AddReshape();
+    resolver->AddResizeBilinear();
+    resolver->AddRound();
+    resolver->AddSoftmax();
+    resolver->AddStridedSlice();
+    resolver->AddSub();
 
     return ie;
 }

@@ -63,7 +63,7 @@ extern "C"
         resolver->AddCustom(tflite::ops::micro::xcore::Conv2D_V2_OpCode,
                             tflite::ops::micro::xcore::Register_Conv2D_V2());
         resolver->AddCustom(tflite::ops::micro::xcore::Load_Flash_OpCode,
-                            tflite::ops::micro::xcore::Register_LoadFromFlash());
+                        tflite::ops::micro::xcore::Register_LoadFromFlash());
 
         add_lib_vision_ops(resolver);
 

@@ -63,6 +63,8 @@ inference_engine* new_interpreter() {
     resolver->AddCustom(tflite::ops::micro::xcore::Load_Flash_OpCode,
                         tflite::ops::micro::xcore::Register_LoadFromFlash());
 
+    add_lib_vision_ops(resolver);
+
     return ie;
 }
 

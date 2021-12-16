@@ -13,6 +13,24 @@
 
 #define MAX_MODEL_SIZE 5000000
 
+void add_lib_vision_ops(tflite::MicroMutableOpResolver<TFLM_OPERATORS> *resolver)
+{
+    resolver->AddAddN();
+    resolver->AddCast();
+    resolver->AddFloor();
+    resolver->AddGreater();
+    resolver->AddGreaterEqual();
+    resolver->AddLess();
+    resolver->AddLessEqual();
+    resolver->AddLogicalAnd();
+    resolver->AddMul();
+    resolver->AddPadV2();
+    resolver->AddResizeBilinear();
+    resolver->AddRound();
+    resolver->AddStridedSlice();
+    resolver->AddSub();
+}
+
 extern "C" {
 inference_engine* new_interpreter() {
     inference_engine* ie = (inference_engine *) calloc(sizeof(inference_engine), 1);
@@ -44,6 +62,8 @@ inference_engine* new_interpreter() {
                         tflite::ops::micro::xcore::Register_Conv2D_V2());
     resolver->AddCustom(tflite::ops::micro::xcore::Load_Flash_OpCode,
                         tflite::ops::micro::xcore::Register_LoadFromFlash());
+
+    add_lib_vision_ops(resolver);
 
     return ie;
 }

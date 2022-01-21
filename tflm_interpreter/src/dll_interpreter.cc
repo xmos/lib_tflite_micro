@@ -30,6 +30,7 @@ void add_lib_vision_ops(tflite::MicroMutableOpResolver<TFLM_OPERATORS> *resolver
     resolver->AddRound();
     resolver->AddStridedSlice();
     resolver->AddSub();
+    resolver->AddTranspose();
 }
 
 extern "C" {

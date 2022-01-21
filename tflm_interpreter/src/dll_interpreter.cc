@@ -25,6 +25,7 @@ void add_lib_vision_ops(tflite::MicroMutableOpResolver<TFLM_OPERATORS> *resolver
     resolver->AddLogicalAnd();
     resolver->AddMul();
     resolver->AddPadV2();
+    resolver->AddReduceMax();
     resolver->AddResizeBilinear();
     resolver->AddResizeNearestNeighbor();
     resolver->AddRound();

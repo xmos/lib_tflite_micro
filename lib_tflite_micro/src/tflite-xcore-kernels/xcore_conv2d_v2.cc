@@ -302,9 +302,6 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
       nn::MatMulBinaryDirectFn::Params *af_params =
           getDeserializedParams<nn::MatMulBinaryDirectFn::Params>(
               context, params[4].AsBlob().data());
-      //   nn::OT_binary::Params *ot_params =
-      //       getDeserializedParams<nn::OT_binary::Params>(context,
-      //                                                  params[5].AsBlob().data());
 
       // TODO: Make part of construct_persistent_object
       auto memcpy = new (context->AllocatePersistentBuffer(
@@ -334,9 +331,6 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
       nn::MatMulBinary::Params *af_params =
           getDeserializedParams<nn::MatMulBinary::Params>(
               context, params[4].AsBlob().data());
-      //   nn::OT_binary::Params *ot_params =
-      //       getDeserializedParams<nn::OT_binary::Params>(context,
-      //                                                  params[5].AsBlob().data());
 
       // TODO: Make part of construct_persistent_object
       auto memcpy = new (context->AllocatePersistentBuffer(
@@ -494,7 +488,7 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
     case Conv2DValidIndirect_t:
     case Conv2DPaddedIndirect_t: {
       nn::Filter2D *f = (nn::Filter2D *)op_data->threads[t].filter2D;
-      nn::MatMulBinary *aggr = (nn::MatMulBinary *)(f->aggregate_handler);
+      nn::MatMulInt8 *aggr = (nn::MatMulInt8 *)(f->aggregate_handler);
       aggr->setWeights(weights);
       nn::OT_int8 *ot = (nn::OT_int8 *)(f->ot_handler);
       ot->setMultipliersAndBiases(multipliers_and_biases);

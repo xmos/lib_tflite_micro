@@ -6,6 +6,8 @@
 #include "xcore_profiler.h"
 #include "tensorflow/lite/micro/micro_allocator.h"
 #include "tensorflow/lite/micro/micro_interpreter.h"
+#include "tensorflow/lite/micro/memory_planner/greedy_memory_planner.h"
+#include "tensorflow/lite/micro/memory_planner/micro_memory_planner.h"
 
 namespace tflite {
 namespace micro {
@@ -14,20 +16,25 @@ namespace xcore {
 class XCoreInterpreter : public tflite::MicroInterpreter {
  public:
   XCoreInterpreter(const tflite::Model* model,
-                   const tflite::MicroOpResolver& resolver, uint8_t* arena,
-                   size_t arena_size, tflite::ErrorReporter* reporter,
-                   bool use_curent_thread = true,
-                   XCoreProfiler* profiler = nullptr,
-                   void *flash_data = nullptr);
-
-  XCoreInterpreter(const tflite::Model* model,
                    const tflite::MicroOpResolver& resolver,
                    tflite::MicroAllocator* allocator,
                    tflite::ErrorReporter* reporter,
-                   bool use_current_thread = true,
+                   tflite::GreedyMemoryPlanner* memory_planner__,
+                   bool use_curent_thread = true,
                    XCoreProfiler* profiler = nullptr,
-                   void *flash_data = nullptr);
+                   void *flash_data = nullptr
+      );
 
+  static XCoreInterpreter *Create(uint8_t interpreter_buffer[],
+                           const tflite::Model* model,
+                           const tflite::MicroOpResolver& resolver,
+                           uint8_t* arena, size_t arena_size,
+                           tflite::ErrorReporter* reporter,
+                           bool use_current_thread,
+                           XCoreProfiler* profiler,
+                           void *flash_data);
+    
+  void PrintMemoryPlan();
   TfLiteTensor* tensor(size_t tensor_index);
   const char *node_name(int sub_idx, int i);
   void *flash_data;  // channel to flash reader.
@@ -43,6 +50,7 @@ class XCoreInterpreter : public tflite::MicroInterpreter {
   size_t output_tensor_index(size_t output_index);
   const Model *model__;
   ErrorReporter* error_reporter__;
+  tflite::GreedyMemoryPlanner* memory_planner__;
  private:
   tflite::ops::micro::xcore::Dispatcher dispatcher_;
 };

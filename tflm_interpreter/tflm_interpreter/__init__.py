@@ -79,11 +79,18 @@ class TFLMInterpreter:
         max_tensor_arena_size=MAX_TENSOR_ARENA_SIZE,
         params_path=None,
         params_content=None,
+        max_model_size=50000000,
+        print_memory_plan=False
     ) -> None:
         self._error_msg = ctypes.create_string_buffer(4096)
 
         lib.new_interpreter.restype = ctypes.c_void_p
-        lib.new_interpreter.argtypes = None
+        lib.new_interpreter.argtypes = [
+            ctypes.c_size_t,
+        ]
+
+        lib.print_memory_plan.restype = None
+        lib.print_memory_plan.argtypes = [ctypes.c_void_p]
 
         lib.delete_interpreter.restype = None
         lib.delete_interpreter.argtypes = [ctypes.c_void_p]
@@ -186,7 +193,7 @@ class TFLMInterpreter:
         self._max_tensor_arena_size = max_tensor_arena_size
         self._op_states = []
 
-        self.obj = lib.new_interpreter()
+        self.obj = lib.new_interpreter(max_model_size)
         status = lib.initialize(
             self.obj,
             self._model_content,
@@ -196,6 +203,8 @@ class TFLMInterpreter:
         )
         if TFLMInterpreterStatus(status) is TFLMInterpreterStatus.ERROR:
             raise RuntimeError("Unable to initialize interpreter")
+        if print_memory_plan:
+            lib.print_memory_plan(self.obj)
 
     def __enter__(self) -> "TFLMInterpreter":
         return self

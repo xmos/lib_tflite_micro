@@ -65,6 +65,8 @@ inference_engine* new_interpreter() {
                         tflite::ops::micro::xcore::Register_Conv2D_V2());
     resolver->AddCustom(tflite::ops::micro::xcore::Load_Flash_OpCode,
                         tflite::ops::micro::xcore::Register_LoadFromFlash());
+    resolver->AddCustom(tflite::ops::micro::xcore::Bsign_8_OpCode,
+                        tflite::ops::micro::xcore::Register_BSign_8());
 
     add_lib_vision_ops(resolver);
 

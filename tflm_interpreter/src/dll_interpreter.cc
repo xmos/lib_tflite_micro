@@ -11,17 +11,36 @@
 // C-API callable from Python
 //*****************************************
 
-#define MAX_MODEL_SIZE 5000000
+void add_lib_vision_ops(tflite::MicroMutableOpResolver<TFLM_OPERATORS> *resolver)
+{
+    resolver->AddAddN();
+    resolver->AddCast();
+    resolver->AddFloor();
+    resolver->AddGreater();
+    resolver->AddGreaterEqual();
+    resolver->AddLess();
+    resolver->AddLessEqual();
+    resolver->AddLogicalAnd();
+    resolver->AddMul();
+    resolver->AddPadV2();
+    resolver->AddReduceMax();
+    resolver->AddResizeBilinear();
+    resolver->AddResizeNearestNeighbor();
+    resolver->AddRound();
+    resolver->AddStridedSlice();
+    resolver->AddSub();
+    resolver->AddTranspose();
+}
 
 extern "C" {
-inference_engine* new_interpreter() {
+inference_engine* new_interpreter(size_t max_model_size) {
     inference_engine* ie = (inference_engine *) calloc(sizeof(inference_engine), 1);
-    uint32_t *model_content = (uint32_t *)calloc(MAX_MODEL_SIZE, 1);
+    uint32_t *model_content = (uint32_t *)calloc(max_model_size, 1);
 
     struct tflite_micro_objects *s0 = new struct tflite_micro_objects;
 
     auto *resolver = inference_engine_initialize(ie,
-                                                 model_content, MAX_MODEL_SIZE,
+                                                 model_content, max_model_size,
                                                  nullptr,  0,
                                                  s0);
     ie->tflm->interpreter = nullptr;
@@ -44,6 +63,10 @@ inference_engine* new_interpreter() {
                         tflite::ops::micro::xcore::Register_Conv2D_V2());
     resolver->AddCustom(tflite::ops::micro::xcore::Load_Flash_OpCode,
                         tflite::ops::micro::xcore::Register_LoadFromFlash());
+    resolver->AddCustom(tflite::ops::micro::xcore::Bsign_8_OpCode,
+                        tflite::ops::micro::xcore::Register_BSign_8());
+
+    add_lib_vision_ops(resolver);
 
     return ie;
 }
@@ -65,6 +88,10 @@ int initialize(inference_engine* ie, const char* model_content,
     return kTfLiteOk;
 }
 #if 1
+
+void print_memory_plan(inference_engine *ie) {
+    ie->tflm->interpreter->PrintMemoryPlan();
+}
 
 size_t inputs_size(inference_engine* ie) {
     return ie->inputs;

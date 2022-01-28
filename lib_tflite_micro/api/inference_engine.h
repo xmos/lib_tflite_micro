@@ -14,7 +14,9 @@
 #include "tflm_conf.h"
 #else
 
+#ifndef TFLM_OPERATORS
 #define TFLM_OPERATORS 10
+#endif
 
 #endif
 

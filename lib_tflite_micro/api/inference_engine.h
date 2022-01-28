@@ -54,9 +54,9 @@ struct tflite_micro_objects;
  * This structure contains no C++, just standard C pointers and arrays.
  */
 typedef struct inference_engine {
-    uint32_t * UNSAFE model_data_tensor_arena;  ///< Pointer to space for tensor arena.
-    uint32_t * UNSAFE model_data_ext;           ///< Pointer to space for model. If null,
-                                                // use the first part of the tensor arena above.
+    uint32_t * UNSAFE memory_primary;           ///< Pointer to space for tensor arena and optional model
+    uint32_t * UNSAFE memory_secondary;         ///< Pointer to secondary space. If null,
+                                                // use the primary for model and tensor arena
     uint32_t outputs;                           ///< Number of output tensors, initialised on loading a model.
     uint32_t inputs;                            ///< Number of input tensors, initialised on loading a model.
     uint32_t * UNSAFE output_buffers[NUM_OUTPUT_TENSORS]; ///< Pointers to output tensors.
@@ -65,8 +65,8 @@ typedef struct inference_engine {
     uint32_t input_sizes[NUM_INPUT_TENSORS];    ///< Size of each input tensor in bytes.
     uint32_t output_size;                       ///< Total size of all outputs - TODO: obsolete?
     uint32_t input_size;                        ///< Total size of all inputs - TODO: obsolete?
-    uint32_t model_data_tensor_arena_bytes;     ///< Number of bytes available in tensor arena space
-    uint32_t model_data_ext_bytes;              ///< Number of bytes available in model space
+    uint32_t memory_primary_bytes;              ///< Number of bytes available in primary memory
+    uint32_t memory_secondary_bytes;            ///< Number of bytes available in secondary memory
     uint32_t output_times_size;                 ///< Number of bytes available to store profiling data
     uint32_t operators_size;                    ///< ???
     uint32_t * UNSAFE output_times;             ///< pointer to profiling data, one per layer
@@ -113,23 +113,23 @@ typedef struct inference_engine {
  * 
  * \param ie                  Pointer to an uninitialized inference engine object,
  *                            allocated by the caller.
- * \param data_tensor_arena   Pointer to the space to be used for the tensor arena, 
+ * \param memory_primary      Pointer to the space to be used for the tensor arena, 
  *                            allocated by the caller. If the fourth parameter is null,
  *                            then this space will be used for both model and tensor arena.
- * \param n_tensor_arena      Number of bytes available for the tensor arena.
- * \param data_model          Pointer to the space to be used for the model
+ * \param n_primary           Number of bytes available in primary memory
+ * \param memory_secondary    Pointer to the space to be used for the model
  *                            allocated by the caller. If this parameter is null,
- *                            then the tensor arena space will be used for both model
+ *                            then the primary memory will be used for both model
  *                            and tensor arena.
- * \param n_model             Number of bytes available for the model
+ * \param n_secondary         Number of bytes available in secondary memory
  * \param tflmo               C++ structure for storing the TFLM data structures.
  *                            Must be allocated by the caller.
  *
  */
 tflite::MicroMutableOpResolver<TFLM_OPERATORS> *
      inference_engine_initialize(inference_engine_t * UNSAFE ie,
-                                 uint32_t data_tensor_arena[], uint32_t n_tensor_arena,
-                                 uint32_t data_model[], uint32_t n_model,
+                                 uint32_t memory_primary[], uint32_t n_memory_primary,
+                                 uint32_t memory_secondary[], uint32_t n_secondary,
                                  struct tflite_micro_objects * UNSAFE tflmo);
 #endif
 extern "C" {

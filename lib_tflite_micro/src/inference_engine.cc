@@ -73,8 +73,9 @@ int inference_engine_load_model(inference_engine *ie,
     memset(kTensorArena, 0, kTensorArenaSize);
 
     // Build an interpreter to run the model with
-    ie->tflm->interpreter = new (ie->tflm->interpreter_buffer)
-        tflite::micro::xcore::XCoreInterpreter(ie->tflm->model,
+    ie->tflm->interpreter =
+        tflite::micro::xcore::XCoreInterpreter::Create(ie->tflm->interpreter_buffer,
+                                               ie->tflm->model,
                                                ie->tflm->resolver,
                                                kTensorArena, kTensorArenaSize,
                                                &ie->tflm->error_reporter,
@@ -133,7 +134,6 @@ int interp_invoke(inference_engine *ie)
 
     return 0;
 }
-
 
 void print_profiler_summary(inference_engine *ie)
 {

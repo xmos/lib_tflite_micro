@@ -32,4 +32,4 @@ int32_t ticks_per_second() { return PLATFORM_REFERENCE_HZ; }
 
 int32_t GetCurrentTimeTicks() { return get_reference_time(); }
 
-}  // namespace tflite
+} // namespace tflite

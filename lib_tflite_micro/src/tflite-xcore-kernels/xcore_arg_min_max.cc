@@ -13,16 +13,16 @@ namespace micro {
 namespace xcore {
 namespace argmax {
 
-TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
+TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
   TF_LITE_ENSURE_EQ(context, NumInputs(node), 1);
   TF_LITE_ENSURE_EQ(context, NumOutputs(node), 1);
 
   return kTfLiteOk;
 }
 
-TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
-  const TfLiteEvalTensor* input = tflite::micro::GetEvalInput(context, node, 0);
-  TfLiteEvalTensor* output = tflite::micro::GetEvalOutput(context, node, 0);
+TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
+  const TfLiteEvalTensor *input = tflite::micro::GetEvalInput(context, node, 0);
+  TfLiteEvalTensor *output = tflite::micro::GetEvalOutput(context, node, 0);
 
   const RuntimeShape input_shape = tflite::micro::GetTensorShape(input);
 
@@ -33,15 +33,15 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
   return kTfLiteOk;
 }
 
-}  // namespace argmax
+} // namespace argmax
 
-TfLiteRegistration* Register_ArgMax_16() {
+TfLiteRegistration *Register_ArgMax_16() {
   static TfLiteRegistration r = {nullptr, nullptr, argmax::Prepare,
                                  argmax::Eval};
   return &r;
 }
 
-}  // namespace xcore
-}  // namespace micro
-}  // namespace ops
-}  // namespace tflite
+} // namespace xcore
+} // namespace micro
+} // namespace ops
+} // namespace tflite

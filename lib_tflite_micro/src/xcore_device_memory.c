@@ -17,8 +17,8 @@
 
 #ifdef USE_SWMEM
 #ifdef USE_QSPI_SWMEM_DEV
-#include "soc.h"
 #include "qspi_flash_dev.h"
+#include "soc.h"
 
 static chanend_t swmem_c;
 #else
@@ -102,23 +102,22 @@ void memload(void *dest, void *src, size_t size) {
     local_cmd.byte_address = ((uintptr_t)src - XS1_SWMEM_BASE);
     local_cmd.byte_count = size;
 
-    if(local_cmd.byte_count <= QSPI_FLASH_DEV_WRITE_BUFSIZE) {
-        soc_peripheral_function_code_tx(swmem_c, QSPI_DEV_SWMEM_REQ);
-        soc_peripheral_varlist_tx(swmem_c, 1, sizeof(qspi_flash_dev_cmd_t),
-                                  &local_cmd);
-        soc_peripheral_varlist_rx(swmem_c, 1, local_cmd.byte_count,
-                                  (unsigned int *)dest);
+    if (local_cmd.byte_count <= QSPI_FLASH_DEV_WRITE_BUFSIZE) {
+      soc_peripheral_function_code_tx(swmem_c, QSPI_DEV_SWMEM_REQ);
+      soc_peripheral_varlist_tx(swmem_c, 1, sizeof(qspi_flash_dev_cmd_t),
+                                &local_cmd);
+      soc_peripheral_varlist_rx(swmem_c, 1, local_cmd.byte_count,
+                                (unsigned int *)dest);
 
     } else {
       size_t read_bytes = 0;
 
-      while(read_bytes < size) {
-        local_cmd.byte_address =
-            ((uintptr_t)src - XS1_SWMEM_BASE) + read_bytes;
+      while (read_bytes < size) {
+        local_cmd.byte_address = ((uintptr_t)src - XS1_SWMEM_BASE) + read_bytes;
         local_cmd.byte_count =
             ((size - read_bytes) >= QSPI_FLASH_DEV_WRITE_BUFSIZE)
-            ? QSPI_FLASH_DEV_WRITE_BUFSIZE
-            : (size - read_bytes);
+                ? QSPI_FLASH_DEV_WRITE_BUFSIZE
+                : (size - read_bytes);
 
         soc_peripheral_function_code_tx(swmem_c, QSPI_DEV_SWMEM_REQ);
         soc_peripheral_varlist_tx(swmem_c, 1, sizeof(qspi_flash_dev_cmd_t),
@@ -140,4 +139,4 @@ void memload(void *dest, void *src, size_t size) {
   }
 }
 
-#endif  // XCORE
+#endif // XCORE

@@ -7,7 +7,7 @@ It wraps this third-party C++ software up in a library that exposes three interf
 
 #. A C interface for use on embedded systems (``lib_tflite_micro``).
 
-#. A Python interface for use on a host (``tflm_interpreters``)
+#. A Python interface for use on a host (``xtflm_interpreter``)
 
 #. A command line interface for use on a host (``host_command_line_interface``)
 
@@ -22,9 +22,9 @@ It provides the following services:
   
 * lib_tflite_micro/api: .h files for the above
 
-* tflm_interpreters: a wrapper of the full interpreter for Python, enabling TFLM to be instantiated from, for example pytest.
+* xtflm_interpreter: a wrapper of the full interpreter for Python, enabling XTFLM to be instantiated from, for example pytest.
 
-* host_cmd_line_interpeter: a command line wrapper for TFLM, enabling it to be used over the command line.
+* host_cmd_line_interpeter: a command line wrapper for XTFLM, enabling it to be used over the command line.
 
 
 C interface
@@ -43,12 +43,12 @@ Python interface
 ----------------
 
 The Python interface uses the C interface above and makes it accessible
-in Python, enabling a python program to create a TFLM interpreter and execute
-models on it. The TFLM intepreter will have XCORE specific operators
+in Python, enabling a python program to create a XTFLM interpreter and execute
+models on it. The XTFLM intepreter will have XCORE specific operators
 (such as 2D convolutions, loading from flash) that are emulated on the host.
 
 The python interface is built by invoking ``make install`` at top level or
-inside ``tflm_interpreters``.
+inside ``xtflm_interpreter``.
 
 The python interface cane be tested by invoking ``make test`` at either level. 
 
@@ -57,7 +57,7 @@ Command line interface
 
 The command line interface uses the C interface above and makes it accessible
 from the command line, enabling the end user to send data through a TFLite model
-using the XMOS TFLM interpreter. The TFLM intepreter will have XCORE specific operators
+using the XTFLM interpreter. The XTFLM intepreter will have XCORE specific operators
 (such as 2D convolutions, loading from flash) that are emulated on the host.
 
 The command line interface is built by invoking ``make install`` at top level or

@@ -29,27 +29,27 @@ set(CMAKE_CXX_FLAGS "-std=c++11" CACHE STRING "C++ Compiler Base Flags" FORCE)
 
 set(BUILD_FLAGS
   "-O3"
-  "-D__tflm_conf_h_exists__"
+  "-D__xtflm_conf_h_exists__"
   "-DNN_USE_REF"
 )
 
 #**********************
 # firmware targets
 #**********************
-add_executable(tflm_interpreter_cmdline)
-target_compile_options(tflm_interpreter_cmdline PRIVATE ${BUILD_FLAGS})
-target_link_options(tflm_interpreter_cmdline PRIVATE ${BUILD_FLAGS})
-target_link_libraries(tflm_interpreter_cmdline PRIVATE "-lpthread")
+add_executable(xtflm_interpreter_cmdline)
+target_compile_options(xtflm_interpreter_cmdline PRIVATE ${BUILD_FLAGS})
+target_link_options(xtflm_interpreter_cmdline PRIVATE ${BUILD_FLAGS})
+target_link_libraries(xtflm_interpreter_cmdline PRIVATE "-lpthread")
 
-include(../cmakefiles/tflm.cmake)
+include(../cmakefiles/xtflm.cmake)
 
-target_sources(tflm_interpreter_cmdline
+target_sources(xtflm_interpreter_cmdline
   PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/main.cc"
   PRIVATE ${ALL_SOURCES}
 )
 
-target_include_directories(tflm_interpreter_cmdline
+target_include_directories(xtflm_interpreter_cmdline
   PRIVATE ${ALL_INCLUDES}
 )
 
-install(TARGETS tflm_interpreter_cmdline DESTINATION ${INSTALL_DIR})
+install(TARGETS xtflm_interpreter_cmdline DESTINATION ${INSTALL_DIR})

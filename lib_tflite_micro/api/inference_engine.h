@@ -8,14 +8,14 @@
 #define UNSAFE unsafe
 #endif
 
-#if !defined(TFLM_DISABLED)
+#if !defined(XTFLM_DISABLED)
 
-#if defined( __tflm_conf_h_exists__)
-#include "tflm_conf.h"
+#if defined( __xtflm_conf_h_exists__)
+#include "xtflm_conf.h"
 #else
 
-#ifndef TFLM_OPERATORS
-#define TFLM_OPERATORS 10
+#ifndef XTFLM_OPERATORS
+#define XTFLM_OPERATORS 10
 #endif
 
 #endif
@@ -38,7 +38,7 @@ struct tflite_micro_objects {
     tflite::micro::xcore::XCoreErrorReporter error_reporter;
     tflite::micro::xcore::XCoreProfiler xcore_profiler;
     uint8_t interpreter_buffer[sizeof(tflite::micro::xcore::XCoreInterpreter)];
-    tflite::MicroMutableOpResolver<TFLM_OPERATORS> resolver;
+    tflite::MicroMutableOpResolver<XTFLM_OPERATORS> resolver;
     
     tflite::micro::xcore::XCoreInterpreter *interpreter;
     const tflite::Model *model;
@@ -70,7 +70,7 @@ typedef struct inference_engine {
     uint32_t output_times_size;                 ///< Number of bytes available to store profiling data
     uint32_t operators_size;                    ///< ???
     uint32_t * UNSAFE output_times;             ///< pointer to profiling data, one per layer
-    struct tflite_micro_objects * UNSAFE tflm;  ///< Pointer to C++ TFLM object - opaque to C
+    struct tflite_micro_objects * UNSAFE xtflm;  ///< Pointer to C++ XTFLM object - opaque to C
 // status for the engine to maintain
     uint32_t haveModel;                         ///< if 1: we have a model
     uint32_t chainToNext;                       ///< if 1: we are chained (could be implicit in c_push being non-null?)
@@ -83,7 +83,7 @@ typedef struct inference_engine {
 
 
 #ifdef __cplusplus
-#ifndef TFLM_DISABLED
+#ifndef XTFLM_DISABLED
 /** Function that initializes the inference_engine object, given a tflite_micro_objects object.
  * This function has to be called from a C++ source files, and it performs the initialisation
  * of the inference engine. This involves setting up basic pointers inside the IE object, nothing
@@ -106,7 +106,7 @@ typedef struct inference_engine {
  *    [...]
  *
  * Note that when tensorflow lite for micro is disabled this function will not exist
- * as it depends on all and sundry in TFLM.
+ * as it depends on all and sundry in XTFLM.
  *
  * Note that the lifetime of all spaces passed to this function should be longer than the
  * lifetime of the inference engine. Typically all spaces are declared globally.
@@ -122,15 +122,15 @@ typedef struct inference_engine {
  *                            then the primary memory will be used for both model
  *                            and tensor arena.
  * \param n_secondary         Number of bytes available in secondary memory
- * \param tflmo               C++ structure for storing the TFLM data structures.
+ * \param xtflmo               C++ structure for storing the XTFLM data structures.
  *                            Must be allocated by the caller.
  *
  */
-tflite::MicroMutableOpResolver<TFLM_OPERATORS> *
+tflite::MicroMutableOpResolver<XTFLM_OPERATORS> *
      inference_engine_initialize(inference_engine_t * UNSAFE ie,
                                  uint32_t memory_primary[], uint32_t n_memory_primary,
                                  uint32_t memory_secondary[], uint32_t n_secondary,
-                                 struct tflite_micro_objects * UNSAFE tflmo);
+                                 struct tflite_micro_objects * UNSAFE xtflmo);
 #endif
 extern "C" {
 #endif

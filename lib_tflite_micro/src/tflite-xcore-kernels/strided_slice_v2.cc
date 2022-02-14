@@ -13,12 +13,8 @@ extern "C" {
 #include "nn_operator.h"
 }
 #include <cstdio>
-#ifdef __xcore__
-#include <xcore/channel.h>
-#include <xcore/channel_transaction.h>
-#endif
 
-//#define TEST
+#define TEST
 
 namespace tflite {
 namespace ops {
@@ -65,10 +61,10 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
   //TF_LITE_ENSURE_EQ(context, NumInputs(node), 3);
 
   //Get Inputs and set op data
-  const TfLiteTensor* input_in = GetInput(context, node, 0);
-  const TfLiteTensor* begin_in = GetInput(context, node, 1);
-  const TfLiteTensor* end_in = GetInput(context, node, 2);
-  const TfLiteTensor* strides_in = GetInput(context, node, 3);
+  const TfLiteTensor* input_ten = GetInput(context, node, 0);
+  const TfLiteTensor* begin_ten = GetInput(context, node, 1);
+  const TfLiteTensor* end_ten = GetInput(context, node, 2);
+  const TfLiteTensor* strides_ten = GetInput(context, node, 3);
 
   
   #ifdef TEST
@@ -83,23 +79,23 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
     op_data->end_x = 3;
     op_data->end_y = 3;
     
-    op_data->stride_x = 2;
+    op_data->stride_x = 1;
     op_data->stride_y = 2;
 
   #else
-    op_data->width = SizeOfDimension(input_in, 1);
-    op_data->height = SizeOfDimension(input_in, 2);
-    op_data->channels = SizeOfDimension(input_in, 3);  
+    op_data->width = SizeOfDimension(input_ten, 1);
+    op_data->height = SizeOfDimension(input_ten, 2);
+    op_data->channels = SizeOfDimension(input_ten, 3);  
 
-    const uint32_t *begins = GetTensorData<uint32_t>(begin_in);
+    const uint32_t *begins = GetTensorData<uint32_t>(begin_ten);
     op_data->begin_x = begins[1];
     op_data->begin_y = begins[2];
 
-    const uint32_t *ends = GetTensorData<uint32_t>(end_in);
+    const uint32_t *ends = GetTensorData<uint32_t>(end_ten);
     op_data->end_x = ends[1];
     op_data->end_y = ends[2];
     
-    const uint32_t *strides = GetTensorData<uint32_t>(strides_in);
+    const uint32_t *strides = GetTensorData<uint32_t>(strides_ten);
     op_data->stride_x = strides[1];
     op_data->stride_y = strides[2];
   #endif
@@ -119,10 +115,10 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
 
   #ifdef TEST
     //Force Input Tensor
-    int32_t set_channel_count = 0;
-    int8_t setVal = 0;
+    int32_t set_channel_count{0};
+    int8_t setVal{0};
     int8_t* setPtr = ((int8_t*)in_data);
-    for(int i = 0; i<(op_data->width*op_data->height*op_data->channels);i++){
+    for(int i{0}; i<(op_data->width*op_data->height*op_data->channels);i++){
       if(set_channel_count%op_data->channels == 0) setVal++;
       set_channel_count++;
       setPtr[i] = setVal;
@@ -131,10 +127,10 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
 
   uint8_t* output_iter = (uint8_t*)out_data;
 
-  for(uint32_t row_iter = 0; row_iter <= (op_data->end_y - op_data->begin_y); row_iter += op_data->stride_y)
+  for(uint32_t row_iter{0}; row_iter <= (op_data->end_y - op_data->begin_y); row_iter += op_data->stride_y)
   {
     uint8_t* input_iter = ((uint8_t*)in_data) + (op_data->begin_x + (op_data->begin_y + row_iter)*op_data->width)*op_data->channels;
-    for(uint32_t col_iter = 0; col_iter <= (op_data->end_x - op_data->begin_x); col_iter += op_data->stride_x)
+    for(uint32_t col_iter{0}; col_iter <= (op_data->end_x - op_data->begin_x); col_iter += op_data->stride_x)
     {
       memcpy(output_iter, input_iter, op_data->channels);
       output_iter += op_data->channels;
@@ -152,9 +148,9 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
     printf("%d %d\n", op_data->stride_x, op_data->stride_y);
 
     printf("\n\nInput Data\n");
-    int32_t channel_count = 0;
+    int32_t channel_count{0};
     int8_t* intPtr = ((int8_t*)in_data);
-    for(int i = 0; i<(op_data->width*op_data->height*op_data->channels);i++){
+    for(int i{0}; i<(op_data->width*op_data->height*op_data->channels);i++){
       if(channel_count%op_data->channels == 0) printf("\n");
       channel_count++;
       printf("%d, ", intPtr[i]);
@@ -163,7 +159,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
     channel_count = 0;
     printf("\n\nOutput Data\n");
     int8_t* outPtr = ((int8_t*)out_data);
-    for(int i = 0; i< ((op_data->end_x-op_data->begin_x+2-op_data->stride_x)*(op_data->end_y-op_data->begin_y+2-op_data->stride_y)*op_data->channels);i++){
+    for(int i{0}; i< ((op_data->end_x-op_data->begin_x+2-op_data->stride_x)*(op_data->end_y-op_data->begin_y+2-op_data->stride_y)*op_data->channels);i++){
       if(channel_count%op_data->channels == 0) printf("\n");
       channel_count++;
       printf("%d, ", outPtr[i]);
@@ -175,7 +171,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
 
 }  // namespace strided_slice
 
-TfLiteRegistration *Register_StridedSlice_V2() {
+TfLiteRegistration *Register_STRIDED_SLICE_V2() {
   static TfLiteRegistration r = {strided_slice::Init, nullptr, strided_slice::Prepare,
                                  strided_slice::Eval};
   return &r;

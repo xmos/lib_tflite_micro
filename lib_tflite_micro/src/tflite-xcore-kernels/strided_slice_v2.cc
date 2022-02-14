@@ -61,7 +61,7 @@ void* Init(TfLiteContext* context, const char* buffer, size_t length) {
 // Does all the requests for scratches
 TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
   auto* op_data = static_cast<StridedSliceOpData*>(node->user_data);
-
+ 
   //TF_LITE_ENSURE_EQ(context, NumInputs(node), 3);
 
   //Get Inputs and set op data
@@ -131,16 +131,15 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
 
   uint8_t* output_iter = (uint8_t*)out_data;
 
-  for(uint32_t row_it = 0; row_it <= (op_data->end_y - op_data->begin_y); row_it += op_data->stride_y)
+  for(uint32_t row_iter = 0; row_iter <= (op_data->end_y - op_data->begin_y); row_iter += op_data->stride_y)
   {
-    uint8_t* input_iter = ((uint8_t*)in_data) + (op_data->begin_x + (op_data->begin_y + row_it)*op_data->width)*op_data->channels;
-    for(uint32_t col_it = 0; col_it <= (op_data->end_x - op_data->begin_x); col_it += op_data->stride_x)
+    uint8_t* input_iter = ((uint8_t*)in_data) + (op_data->begin_x + (op_data->begin_y + row_iter)*op_data->width)*op_data->channels;
+    for(uint32_t col_iter = 0; col_iter <= (op_data->end_x - op_data->begin_x); col_iter += op_data->stride_x)
     {
       memcpy(output_iter, input_iter, op_data->channels);
       output_iter += op_data->channels;
       input_iter += op_data->stride_x*op_data->channels;
     }
-    //incrememnt input_iter
   }
   
   #ifdef TEST

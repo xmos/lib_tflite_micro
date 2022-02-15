@@ -35,19 +35,19 @@ struct StridedSliceOpData : XCoreOpData {   // Inherits the operator name field 
 };
 
 void* Init(TfLiteContext* context, const char* buffer, size_t length) {
-  //TFLITE_DCHECK(buffer != nullptr);
+  TFLITE_DCHECK(buffer != nullptr);
   
   auto op_data = construct_persistent_object<StridedSliceOpData>(context);
-
-  //TODO custom parse for input data
-  // auto parser = CustomOptionParser(buffer, length);
-  // op_data->width = parser.parseNamedCustomOption("width").AsInt32();
-  // op_data->height = parser.parseNamedCustomOption("height").AsInt32();
-  // op_data->channels = parser.parseNamedCustomOption("channels").AsInt32();
-  // op_data->begin_x = parser.parseNamedCustomOption("begin").AsInt32();
-  // op_data->end_x = parser.parseNamedCustomOption("end").AsInt32();
-  // op_data->x_stride = parser.parseNamedCustomOption("x_stride").AsInt32();
-  // op_data->y_stride = parser.parseNamedCustomOption("y_stride").AsInt32();
+  auto parser = CustomOptionParser(buffer, length);
+  op_data->width = parser.parseNamedCustomOption("width").AsInt32();
+  op_data->height = parser.parseNamedCustomOption("height").AsInt32();
+  op_data->channels = parser.parseNamedCustomOption("channels").AsInt32();
+  op_data->begin_x = parser.parseNamedCustomOption("begin_x").AsInt32();
+  op_data->begin_x = parser.parseNamedCustomOption("begin_y").AsInt32();
+  op_data->end_x = parser.parseNamedCustomOption("end_x").AsInt32();
+  op_data->end_x = parser.parseNamedCustomOption("end_y").AsInt32();
+  op_data->stride_x = parser.parseNamedCustomOption("stride_x").AsInt32();
+  op_data->stride_y = parser.parseNamedCustomOption("stride_y").AsInt32();
   op_data->name = "XC_Strided_Slice";
 
   return op_data;
@@ -55,49 +55,6 @@ void* Init(TfLiteContext* context, const char* buffer, size_t length) {
 
 // Does all the requests for scratches
 TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
-  auto* op_data = static_cast<StridedSliceOpData*>(node->user_data);
- 
-  //TF_LITE_ENSURE_EQ(context, NumInputs(node), 3);
-
-  //Get Inputs and set op data
-  const TfLiteTensor* input_ten = GetInput(context, node, 0);
-  const TfLiteTensor* begin_ten = GetInput(context, node, 1);
-  const TfLiteTensor* end_ten = GetInput(context, node, 2);
-  const TfLiteTensor* strides_ten = GetInput(context, node, 3);
-
-  
-  #ifdef TEST
-    //Force inputs for test case
-    op_data->width = 6;
-    op_data->height = 6;
-    op_data->channels = 3;  
-
-    op_data->begin_x = 1;
-    op_data->begin_y = 1;
-
-    op_data->end_x = 3;
-    op_data->end_y = 3;
-    
-    op_data->stride_x = 1;
-    op_data->stride_y = 2;
-
-  #else
-    op_data->width = SizeOfDimension(input_ten, 1);
-    op_data->height = SizeOfDimension(input_ten, 2);
-    op_data->channels = SizeOfDimension(input_ten, 3);  
-
-    const uint32_t *begins = GetTensorData<uint32_t>(begin_ten);
-    op_data->begin_x = begins[1];
-    op_data->begin_y = begins[2];
-
-    const uint32_t *ends = GetTensorData<uint32_t>(end_ten);
-    op_data->end_x = ends[1];
-    op_data->end_y = ends[2];
-    
-    const uint32_t *strides = GetTensorData<uint32_t>(strides_ten);
-    op_data->stride_x = strides[1];
-    op_data->stride_y = strides[2];
-  #endif
   return kTfLiteOk;
 }
 

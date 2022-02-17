@@ -3,7 +3,7 @@
 #include <cstring>
 #include "server_memory.h"
 
-#if !defined(TFLM_DISABLED)
+#if !defined(XTFLM_DISABLED)
 
 
 #define TENSOR_ARENA_BYTES_0        (20224000)
@@ -16,7 +16,7 @@ uint32_t *data_ext = (uint32_t *)0x10000000;//[TENSOR_ARENA_BYTES_0/sizeof(int)]
 #endif
 
 void inference_engine_initialize_with_memory(inference_engine_t *ie) {
-#if !defined(TFLM_DISABLED)
+#if !defined(XTFLM_DISABLED)
     static struct tflite_micro_objects s0;
     memset(data_ext, 0, TENSOR_ARENA_BYTES_0);
     auto *resolver = inference_engine_initialize(ie,

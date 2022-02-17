@@ -1,4 +1,4 @@
-Python interface for TFLM
+Python interface for XTFLM
 =========================
 
 Build
@@ -19,9 +19,9 @@ Use it for example as follows::
   import sys
   import numpy as np
   import cv2
-  from tflm_interpreter import TFLMInterpreter
+  from xtflm_interpreter import XTFLMInterpreter
 
-  ie = TFLMInterpreter(model_path = sys.argv[1])
+  ie = XTFLMInterpreter(model_path = sys.argv[1])
 
   img = cv2.imread(sys.argv[2])
   img = cv2.resize(img, (128,128))

@@ -29,20 +29,20 @@ void parse_custom_options(TfLiteContext *context, const char *buffer,
                           ExecutionPlan *plan = nullptr);
 
 class CustomOptionParser {
- private:
+private:
   flexbuffers::TypedVector keys_;
   flexbuffers::Vector values_;
 
- public:
+public:
   CustomOptionParser(const flexbuffers::Map &map);
   CustomOptionParser(const char *buffer, size_t buffer_length);
   flexbuffers::Reference parseNamedCustomOption(const std::string &name) const;
   flexbuffers::Vector parseElementwiseJobSizes() const;
 };
 
-}  // namespace xcore
-}  // namespace micro
-}  // namespace ops
-}  // namespace tflite
+} // namespace xcore
+} // namespace micro
+} // namespace ops
+} // namespace tflite
 
-#endif  // XCORE_CUSTOM_OPTIONS_H_
+#endif // XCORE_CUSTOM_OPTIONS_H_

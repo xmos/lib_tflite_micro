@@ -30,7 +30,7 @@ typedef struct ChannelGroup {
 } ChannelGroup;
 
 class ExecutionPlan {
- public:
+public:
   ExecutionPlan();
   ~ExecutionPlan() {}
 
@@ -46,15 +46,15 @@ class ExecutionPlan {
   PersistentArray<RowColRegion> regions;
   PersistentArray<ChannelGroup> changrps;
 
- private:
+private:
   size_t n_threads_;
   size_t bias_scratch_offset_;
   size_t bias_scratch_size_;
 };
 
-}  // namespace xcore
-}  // namespace micro
-}  // namespace ops
-}  // namespace tflite
+} // namespace xcore
+} // namespace micro
+} // namespace ops
+} // namespace tflite
 
-#endif  // XCORE_PLANNING_H_
+#endif // XCORE_PLANNING_H_

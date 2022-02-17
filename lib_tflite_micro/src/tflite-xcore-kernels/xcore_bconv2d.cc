@@ -36,8 +36,8 @@ struct BConv2DArguments {
   };
 
   union {
-    const int32_t *thresholds;     // used in bitpacked only
-    const int16_t *accu_modifier;  // used in generic int8 only
+    const int32_t *thresholds;    // used in bitpacked only
+    const int16_t *accu_modifier; // used in generic int8 only
   };
 
   // for int8 only
@@ -56,13 +56,13 @@ struct BConv2DThreadData {
   // This describes the region that that thread will process
   const RowColRegion *job;
   int thread_scratch_idx = -1;
-  bnn_b32_t *thread_scratch;  // size should be K_h * K_w * C_in / 32 + 8
+  bnn_b32_t *thread_scratch; // size should be K_h * K_w * C_in / 32 + 8
   const BConv2DArguments *args;
 };
 
 extern "C" {
-ATTRIBUTE_THREAD_FUNCTION void bconv2d_bitpacked_deepin_thread_worker(
-    void *context) {
+ATTRIBUTE_THREAD_FUNCTION void
+bconv2d_bitpacked_deepin_thread_worker(void *context) {
   auto *td = static_cast<BConv2DThreadData *>(context);
   auto *args = td->args;
   auto *job = td->job;
@@ -81,8 +81,8 @@ ATTRIBUTE_THREAD_FUNCTION void bconv2d_bitpacked_thread_worker(void *context) {
                     job->top, job->cols, job->rows, 0, args->y.channels);
 }
 
-ATTRIBUTE_THREAD_FUNCTION void bconv2d_int8_deepin_deepout_thread_worker(
-    void *context) {
+ATTRIBUTE_THREAD_FUNCTION void
+bconv2d_int8_deepin_deepout_thread_worker(void *context) {
   auto *td = static_cast<BConv2DThreadData *>(context);
   auto *args = td->args;
   auto *job = td->job;
@@ -135,8 +135,7 @@ enum class BConv2DKernelType {
   kInt8DeepInDeepOut,
 };
 
-template <BConv2DKernelType kernel_type>
-struct BConv2DKernel {
+template <BConv2DKernelType kernel_type> struct BConv2DKernel {
   static inline const thread_function_t get_worker() {
     if (kernel_type == BConv2DKernelType::kBitpacked) {
       return bconv2d_bitpacked_thread_worker;
@@ -246,7 +245,7 @@ TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
 
   if (kernel_type == BConv2DKernelType::kBitpacked ||
       kernel_type ==
-          BConv2DKernelType::kBitpackedDeepIn) {  // output is bitpacked
+          BConv2DKernelType::kBitpackedDeepIn) { // output is bitpacked
     TF_LITE_ENSURE_EQ(context, NumInputs(node), 3);
     TF_LITE_ENSURE_STATUS(request_scratch_if_needed(
         context, GetInput(context, node, 2), op_data->threshold_scratch_idx));
@@ -366,7 +365,7 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   return kTfLiteOk;
 }
 
-}  // namespace bconv
+} // namespace bconv
 
 TfLiteRegistration *Register_BConv2D_Bitpacked_Deepin() {
   static TfLiteRegistration r = {
@@ -399,8 +398,8 @@ TfLiteRegistration *Register_BConv2D_Int8() {
   return &r;
 }
 
-}  // namespace xcore
+} // namespace xcore
 
-}  // namespace micro
-}  // namespace ops
-}  // namespace tflite
+} // namespace micro
+} // namespace ops
+} // namespace tflite

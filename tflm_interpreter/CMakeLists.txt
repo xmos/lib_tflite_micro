@@ -28,7 +28,11 @@ set(CMAKE_C_FLAGS "${BUILD_FLAGS} -std=c99")
 add_library(tflm_python SHARED)
 set_target_properties(tflm_python PROPERTIES VERSION ${PROJECT_VERSION})
 set_target_properties(tflm_python PROPERTIES PREFIX "")
-target_link_libraries(tflm_python stdc++ m pthread)
+if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+  target_link_libraries(tflm_python stdc++ m pthread -static-libgcc)
+elseif (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  target_link_libraries(tflm_python stdc++ m pthread)
+endif()
 
 include(../cmakefiles/tflm.cmake)
 

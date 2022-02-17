@@ -8,20 +8,20 @@ namespace tflite {
 namespace micro {
 namespace xcore {
 
-void XCoreProfiler::Init(tflite::MicroAllocator* allocator,
+void XCoreProfiler::Init(tflite::MicroAllocator *allocator,
                          size_t max_event_count) {
   max_event_count_ = max_event_count;
-  event_durations_ = static_cast<uint32_t*>(
+  event_durations_ = static_cast<uint32_t *>(
       allocator->AllocatePersistentBuffer(max_event_count * sizeof(uint32_t)));
 }
 
-uint32_t const* XCoreProfiler::GetEventDurations() { return event_durations_; }
+uint32_t const *XCoreProfiler::GetEventDurations() { return event_durations_; }
 
 size_t XCoreProfiler::GetNumEvents() { return event_count_; }
 
 void XCoreProfiler::ClearEvents() { event_count_ = 0; }
 
-uint32_t XCoreProfiler::BeginEvent(const char* tag) {
+uint32_t XCoreProfiler::BeginEvent(const char *tag) {
   TFLITE_DCHECK(tag);
   event_tag_ = tag;
   event_start_time_ = tflite::GetCurrentTimeTicks();
@@ -35,6 +35,6 @@ void XCoreProfiler::EndEvent(uint32_t event_handle) {
   event_durations_[event_count_++] = event_end_time - event_start_time_;
 }
 
-}  // namespace xcore
-}  // namespace micro
-}  // namespace tflite
+} // namespace xcore
+} // namespace micro
+} // namespace tflite

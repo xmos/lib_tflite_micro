@@ -21,8 +21,8 @@ CustomOptionParser::CustomOptionParser(const char *buffer, size_t buffer_length)
   assert(buffer_length > 0);
 }
 
-flexbuffers::Reference CustomOptionParser::parseNamedCustomOption(
-    const std::string &name) const {
+flexbuffers::Reference
+CustomOptionParser::parseNamedCustomOption(const std::string &name) const {
   for (int i = 0; i < keys_.size(); ++i) {
     const auto &key = keys_[i].AsString().str();
     if (key.compare(name) == 0) {
@@ -37,7 +37,7 @@ flexbuffers::Vector CustomOptionParser::parseElementwiseJobSizes() const {
       CustomOptionParser(this->parseNamedCustomOption("par").AsMap());
   auto job_sizes = par_parser.parseNamedCustomOption("eg").AsVector();
   auto n_threads = par_parser.parseNamedCustomOption("th").AsInt32();
-  TFLITE_DCHECK_EQ(n_threads, job_sizes.size());  // TODO: remove this check
+  TFLITE_DCHECK_EQ(n_threads, job_sizes.size()); // TODO: remove this check
   return job_sizes;
 }
 
@@ -48,7 +48,7 @@ void parse_custom_options(TfLiteContext *context, const char *buffer,
                           size_t length, ExecutionPlan *plan) {
   parse_custom_options(context, buffer, length, nullptr, nullptr, nullptr,
                        nullptr, nullptr, nullptr,
-                       plan  // ExecutionPlan
+                       plan // ExecutionPlan
   );
 }
 
@@ -61,9 +61,9 @@ void parse_custom_options(TfLiteContext *context, const char *buffer,
   parse_custom_options(context, buffer, length, &pooling_params.stride_h,
                        &pooling_params.stride_w, &pooling_params.pool_h,
                        &pooling_params.pool_w,
-                       nullptr,  // K_w
-                       nullptr,  // pad
-                       plan      // ExecutionPlan
+                       nullptr, // K_w
+                       nullptr, // pad
+                       plan     // ExecutionPlan
   );
 }
 
@@ -75,8 +75,8 @@ void parse_custom_options(TfLiteContext *context, const char *buffer,
                           ExecutionPlan *plan) {
   parse_custom_options(context, buffer, length, &conv2d_params.stride_h,
                        &conv2d_params.stride_w,
-                       nullptr,  // pool_h
-                       nullptr,  // pool_w
+                       nullptr, // pool_h
+                       nullptr, // pool_w
                        &conv2d_params.K_w, &conv2d_params.pad, plan);
 }
 
@@ -99,24 +99,31 @@ void parse_custom_options(TfLiteContext *context, const char *buffer,
 
     if (key.compare("stride") == 0) {
       const auto &vec =
-          values[i].AsVector();  // values represent [stride_h, stride_w]
-      if (stride_h) *stride_h = vec[0].AsInt32();
-      if (stride_w) *stride_w = vec[1].AsInt32();
+          values[i].AsVector(); // values represent [stride_h, stride_w]
+      if (stride_h)
+        *stride_h = vec[0].AsInt32();
+      if (stride_w)
+        *stride_w = vec[1].AsInt32();
     } else if (key.compare("stride_h") == 0) {
-      if (stride_h) *stride_h = values[i].AsInt32();
+      if (stride_h)
+        *stride_h = values[i].AsInt32();
     } else if (key.compare("stride_w") == 0) {
-      if (stride_w) *stride_w = values[i].AsInt32();
+      if (stride_w)
+        *stride_w = values[i].AsInt32();
     } else if (key.compare("Kw") == 0) {
-      if (K_w) *K_w = values[i].AsInt32();
+      if (K_w)
+        *K_w = values[i].AsInt32();
     } else if (key.compare("pool") == 0) {
       const auto &vec =
-          values[i].AsVector();  // values represent [pool_h, pool_w]
-      if (pool_h) *pool_h = vec[0].AsInt32();
-      if (pool_w) *pool_w = vec[1].AsInt32();
+          values[i].AsVector(); // values represent [pool_h, pool_w]
+      if (pool_h)
+        *pool_h = vec[0].AsInt32();
+      if (pool_w)
+        *pool_w = vec[1].AsInt32();
     } else if (key.compare("pad") == 0) {
       if (pad) {
         const auto &vec =
-            values[i].AsVector();  // values represent [top, left, zero_point]
+            values[i].AsVector(); // values represent [top, left, zero_point]
         pad->top = vec[0].AsInt32();
         pad->left = vec[1].AsInt32();
         pad->zero_point = vec[2].AsInt32();
@@ -135,7 +142,7 @@ void parse_custom_options(TfLiteContext *context, const char *buffer,
             plan->changrps.allocate(context, changrps.size());
             for (int k = 0; k < changrps.size(); k++) {
               auto changrp =
-                  changrps[k].AsVector();  // values represent [start, end]
+                  changrps[k].AsVector(); // values represent [start, end]
               plan->changrps.append(
                   {k, changrp[0].AsInt32(),
                    changrp[1].AsInt32() - changrp[0].AsInt32() + 1});
@@ -146,7 +153,7 @@ void parse_custom_options(TfLiteContext *context, const char *buffer,
             for (int k = 0; k < regions.size(); k++) {
               auto region =
                   regions[k]
-                      .AsVector();  // values represent [top, left, rows, cols]
+                      .AsVector(); // values represent [top, left, rows, cols]
               plan->regions.append({region[0].AsInt32(), region[1].AsInt32(),
                                     region[2].AsInt32(), region[3].AsInt32()});
             }
@@ -155,8 +162,8 @@ void parse_custom_options(TfLiteContext *context, const char *buffer,
       }
     } else if (key.compare("mem") == 0) {
       if (plan) {
-        const auto &vec = values[i].AsVector();  // values represent [weights
-                                                 // scratch, bias scratch]
+        const auto &vec = values[i].AsVector(); // values represent [weights
+                                                // scratch, bias scratch]
         plan->SetWeightsScratchSize(vec[0].AsInt32());
         plan->SetBiasScratchSize(vec[1].AsInt32());
       }
@@ -164,7 +171,7 @@ void parse_custom_options(TfLiteContext *context, const char *buffer,
   }
 }
 
-}  // namespace xcore
-}  // namespace micro
-}  // namespace ops
-}  // namespace tflite
+} // namespace xcore
+} // namespace micro
+} // namespace ops
+} // namespace tflite

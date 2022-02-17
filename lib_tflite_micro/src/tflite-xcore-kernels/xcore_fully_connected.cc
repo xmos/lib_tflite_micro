@@ -25,26 +25,26 @@ struct FullyConnectedOpData {
 };
 
 struct FullyConnectedThreadData {
-  int8_t* Y;
-  const nn_tensor_t* X;
-  const nn_tensor_t* W;
-  const nn_bso_block_t* BSO;
+  int8_t *Y;
+  const nn_tensor_t *X;
+  const nn_tensor_t *W;
+  const nn_bso_block_t *BSO;
   channel_count_t C_in;
   channel_count_t C_out_start;
   channel_count_t C_out_end;
 };
 
 extern "C" {
-ATTRIBUTE_THREAD_FUNCTION void fully_connected_thread_worker(void* context) {
-  FullyConnectedThreadData* td = (FullyConnectedThreadData*)context;
+ATTRIBUTE_THREAD_FUNCTION void fully_connected_thread_worker(void *context) {
+  FullyConnectedThreadData *td = (FullyConnectedThreadData *)context;
   fully_connected_8(td->Y, td->W, td->X, td->BSO, td->C_in, td->C_out_start,
                     td->C_out_end);
 }
 }
 
-void* Init_8(TfLiteContext* context, const char* buffer, size_t length) {
-  FullyConnectedOpData* op = nullptr;
-  op = reinterpret_cast<FullyConnectedOpData*>(
+void *Init_8(TfLiteContext *context, const char *buffer, size_t length) {
+  FullyConnectedOpData *op = nullptr;
+  op = reinterpret_cast<FullyConnectedOpData *>(
       context->AllocatePersistentBuffer(context, sizeof(FullyConnectedOpData)));
   op->stack_scratch_index = -1;
   op->stack_size = 0;
@@ -57,15 +57,15 @@ void* Init_8(TfLiteContext* context, const char* buffer, size_t length) {
   return op;
 }
 
-TfLiteStatus Prepare_8(TfLiteContext* context, TfLiteNode* node) {
+TfLiteStatus Prepare_8(TfLiteContext *context, TfLiteNode *node) {
   TF_LITE_ENSURE_EQ(context, NumInputs(node), 3);
   TF_LITE_ENSURE_EQ(context, NumOutputs(node), 1);
 
-  const TfLiteTensor* weights = GetInput(context, node, 1);
-  const TfLiteTensor* bso = GetInput(context, node, 2);
+  const TfLiteTensor *weights = GetInput(context, node, 1);
+  const TfLiteTensor *bso = GetInput(context, node, 2);
 
-  FullyConnectedOpData* op =
-      reinterpret_cast<FullyConnectedOpData*>(node->user_data);
+  FullyConnectedOpData *op =
+      reinterpret_cast<FullyConnectedOpData *>(node->user_data);
 
   // allocate the stack for thread workers
   GET_THREAD_FUNCTION_STACKSIZE(op->stack_size, fully_connected_thread_worker);
@@ -88,24 +88,24 @@ TfLiteStatus Prepare_8(TfLiteContext* context, TfLiteNode* node) {
   return kTfLiteOk;
 }
 
-TfLiteStatus Eval_8(TfLiteContext* context, TfLiteNode* node) {
-  const TfLiteEvalTensor* input = tflite::micro::GetEvalInput(context, node, 0);
-  const TfLiteEvalTensor* weights =
+TfLiteStatus Eval_8(TfLiteContext *context, TfLiteNode *node) {
+  const TfLiteEvalTensor *input = tflite::micro::GetEvalInput(context, node, 0);
+  const TfLiteEvalTensor *weights =
       tflite::micro::GetEvalInput(context, node, 1);
-  const TfLiteEvalTensor* bso = tflite::micro::GetEvalInput(context, node, 2);
-  TfLiteEvalTensor* output = tflite::micro::GetEvalOutput(context, node, 0);
+  const TfLiteEvalTensor *bso = tflite::micro::GetEvalInput(context, node, 2);
+  TfLiteEvalTensor *output = tflite::micro::GetEvalOutput(context, node, 0);
 
   const RuntimeShape weights_shape = tflite::micro::GetTensorShape(weights);
 
-  FullyConnectedOpData* op =
-      reinterpret_cast<FullyConnectedOpData*>(node->user_data);
+  FullyConnectedOpData *op =
+      reinterpret_cast<FullyConnectedOpData *>(node->user_data);
 
   int32_t C_in = weights_shape.Dims(1);
 
-  Dispatcher* dispatcher = GetDispatcher();
+  Dispatcher *dispatcher = GetDispatcher();
 
   // initialize the dispatcher
-  char* stack = static_cast<char*>(
+  char *stack = static_cast<char *>(
       context->GetScratchBuffer(context, op->stack_scratch_index));
   TFLITE_DCHECK(stack != nullptr);
   dispatcher->InitializeTasks(fully_connected_thread_worker, stack,
@@ -123,27 +123,27 @@ TfLiteStatus Eval_8(TfLiteContext* context, TfLiteNode* node) {
   size_t biases_src_offset = 0;
   size_t weights_fetch_size;
   // size_t bias_fetch_size;
-  int8_t *sW, *tW;  // sW points to the head of the weights scratch space, tW
-                    // points to the head of the fetched weights which equals sW
-                    // for the first fetch but not for subsequent fetches
+  int8_t *sW, *tW; // sW points to the head of the weights scratch space, tW
+                   // points to the head of the fetched weights which equals sW
+                   // for the first fetch but not for subsequent fetches
   int8_t *sBSO,
-      *tBSO;  // sBSO points to the head of the BSO scratch space, tBSO
-              // points to the head of the fetched BSO which equals sBSO for
-              // the first fetch but not for subsequent fetches
+      *tBSO; // sBSO points to the head of the BSO scratch space, tBSO
+             // points to the head of the fetched BSO which equals sBSO for
+             // the first fetch but not for subsequent fetches
 
   if (op->weights_scratch_index >= 0) {
-    sW = static_cast<int8_t*>(
+    sW = static_cast<int8_t *>(
         context->GetScratchBuffer(context, op->weights_scratch_index));
     TFLITE_DCHECK(sW != nullptr);
   }
   if (op->bias_scratch_index >= 0) {
-    sBSO = static_cast<int8_t*>(
+    sBSO = static_cast<int8_t *>(
         context->GetScratchBuffer(context, op->bias_scratch_index));
     TFLITE_DCHECK(sBSO != nullptr);
   }
 
   for (int i_cg = 0; i_cg < op->execution_plan.changrps.size(); i_cg++) {
-    const ChannelGroup& changrp = op->execution_plan.changrps[i_cg];
+    const ChannelGroup &changrp = op->execution_plan.changrps[i_cg];
 
     // offset into the temp W and BSO pointers based on how many bytes we
     // have loaded since the last JoinTasks
@@ -158,7 +158,7 @@ TfLiteStatus Eval_8(TfLiteContext* context, TfLiteNode* node) {
     weights_dest_offset += weights_fetch_size;
     weights_src_offset += weights_fetch_size;
 
-    FetchBuffer((int8_t**)&tBSO,
+    FetchBuffer((int8_t **)&tBSO,
                 &tflite::micro::GetTensorData<int8_t>(bso)[biases_src_offset],
                 kBSOChannelGroupBytes);
     biases_dest_offset += kBSOChannelGroupBytes;
@@ -168,11 +168,11 @@ TfLiteStatus Eval_8(TfLiteContext* context, TfLiteNode* node) {
         &tflite::micro::GetTensorData<int8_t>(output)[changrp.start];
     thread_data[i_th].X = tflite::micro::GetTensorData<int8_t>(input);
     thread_data[i_th].W = tW;
-    thread_data[i_th].BSO = (const nn_bso_block_t*)tBSO;
+    thread_data[i_th].BSO = (const nn_bso_block_t *)tBSO;
     thread_data[i_th].C_in = C_in;
     thread_data[i_th].C_out_start = 0;
     thread_data[i_th].C_out_end = thread_data[i_th].C_out_start + changrp.size;
-    dispatcher->AddTask(reinterpret_cast<void*>(&thread_data[i_th]));
+    dispatcher->AddTask(reinterpret_cast<void *>(&thread_data[i_th]));
 
     i_th++;
 
@@ -183,21 +183,21 @@ TfLiteStatus Eval_8(TfLiteContext* context, TfLiteNode* node) {
       biases_dest_offset = 0;
     }
   }
-  dispatcher->JoinTasks();  // finish up any added tasks
+  dispatcher->JoinTasks(); // finish up any added tasks
 
   return kTfLiteOk;
 }
 
-}  // namespace fully_connected
+} // namespace fully_connected
 
-TfLiteRegistration* Register_FullyConnected_8() {
+TfLiteRegistration *Register_FullyConnected_8() {
   static TfLiteRegistration r = {fully_connected::Init_8, nullptr,
                                  fully_connected::Prepare_8,
                                  fully_connected::Eval_8};
   return &r;
 }
 
-}  // namespace xcore
-}  // namespace micro
-}  // namespace ops
-}  // namespace tflite
+} // namespace xcore
+} // namespace micro
+} // namespace ops
+} // namespace tflite

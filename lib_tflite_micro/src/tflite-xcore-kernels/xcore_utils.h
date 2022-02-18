@@ -13,9 +13,8 @@ namespace ops {
 namespace micro {
 
 struct XCoreOpData {
-    const char *name;
+  const char *name;
 };
-
 
 namespace xcore {
 
@@ -37,10 +36,10 @@ TfLiteStatus GetSizeOfType(TfLiteContext *context, const TfLiteType type,
  *      int32_t t0 = unpack<int32_t>(&my_buffer[23]);
  *      int32_t t1 = unpack<int32_t>(&my_buffer[27]);
  */
-template <class T>
-T unpack(const uint8_t *buffer) {
+template <class T> T unpack(const uint8_t *buffer) {
   T retval = 0;
-  for (int i = 0; i < sizeof(T); ++i) retval |= buffer[i] << (8 * i);
+  for (int i = 0; i < sizeof(T); ++i)
+    retval |= buffer[i] << (8 * i);
   return retval;
 }
 
@@ -85,9 +84,9 @@ static inline void memload(void *dest, void *src, size_t size) {
 size_t FetchBuffer(int8_t **dest, int8_t const *src, size_t size);
 
 template <typename T>
-static inline TfLiteStatus fetch_scratch_if_needed(
-    TfLiteContext *context, T *&array, const TfLiteEvalTensor *tensor,
-    int scratch_idx) {
+static inline TfLiteStatus
+fetch_scratch_if_needed(TfLiteContext *context, T *&array,
+                        const TfLiteEvalTensor *tensor, int scratch_idx) {
   if (scratch_idx >= 0) {
     array =
         static_cast<const T *>(context->GetScratchBuffer(context, scratch_idx));
@@ -105,14 +104,13 @@ static inline TfLiteStatus fetch_scratch_if_needed(
   return kTfLiteOk;
 }
 
-template <typename T>
-class PersistentArray {
- private:
+template <typename T> class PersistentArray {
+private:
   size_t max_size_ = 0;
   size_t size_ = 0;
   T *data_ = nullptr;
 
- public:
+public:
   // call this only in the Init phase of operators
   PersistentArray<T> &allocate(TfLiteContext *context,
                                size_t max_size) noexcept {
@@ -159,12 +157,16 @@ class PersistentArray {
 };
 
 #ifndef UNSUPPORTED_KERNEL_TYPE
-#define UNSUPPORTED_KERNEL_TYPE(T) { DebugLog("Unsupported " #T " value"); TFLITE_ABORT; }
+#define UNSUPPORTED_KERNEL_TYPE(T)                                             \
+  {                                                                            \
+    DebugLog("Unsupported " #T " value");                                      \
+    TFLITE_ABORT;                                                              \
+  }
 #endif /*UNSUPPORTED_KERNEL_TYPE*/
 
-}  // namespace xcore
-}  // namespace micro
-}  // namespace ops
-}  // namespace tflite
+} // namespace xcore
+} // namespace micro
+} // namespace ops
+} // namespace tflite
 
-#endif  // XCORE_UTILS_H_
+#endif // XCORE_UTILS_H_

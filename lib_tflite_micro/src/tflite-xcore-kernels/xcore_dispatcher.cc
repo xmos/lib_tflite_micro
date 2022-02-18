@@ -15,7 +15,7 @@ namespace xcore {
 
 static Dispatcher *kDispatcher = nullptr;
 
-    void SetDispatcher(Dispatcher *dispatcher) { kDispatcher = dispatcher; }
+void SetDispatcher(Dispatcher *dispatcher) { kDispatcher = dispatcher; }
 
 Dispatcher *GetDispatcher() {
   assert(kDispatcher);
@@ -35,7 +35,8 @@ Dispatcher::Dispatcher(tflite::ErrorReporter *reporter, bool use_current_core)
 Dispatcher::~Dispatcher() { thread_group_free(group_); }
 
 TfLiteStatus Dispatcher::JoinTasks() {
-  if (tasks_.size == 0) return kTfLiteOk;
+  if (tasks_.size == 0)
+    return kTfLiteOk;
 
   int begin = 0;
 
@@ -88,7 +89,8 @@ Dispatcher::Dispatcher(tflite::ErrorReporter *reporter, bool use_current_core)
 Dispatcher::~Dispatcher() {}
 
 TfLiteStatus Dispatcher::JoinTasks() {
-  if (tasks_.size == 0) return kTfLiteOk;
+  if (tasks_.size == 0)
+    return kTfLiteOk;
 
   // NOTE: use_current_thread_ is ignored on non-xcore targets
   int begin = 0;
@@ -108,7 +110,7 @@ TfLiteStatus Dispatcher::JoinTasks() {
   return kTfLiteOk;
 }
 
-#endif  // XCORE
+#endif // XCORE
 
 //**************************************
 //**************************************
@@ -150,7 +152,7 @@ TfLiteStatus Dispatcher::AddTask(void *argument) {
   return kTfLiteError;
 }
 
-}  // namespace xcore
-}  // namespace micro
-}  // namespace ops
-}  // namespace tflite
+} // namespace xcore
+} // namespace micro
+} // namespace ops
+} // namespace tflite

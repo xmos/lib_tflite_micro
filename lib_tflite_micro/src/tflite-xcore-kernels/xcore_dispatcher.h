@@ -5,8 +5,8 @@
 #include <ctime>
 
 #include "tensorflow/lite/c/common.h"
-#include "xcore_planning.h"
 #include "tensorflow/lite/micro/micro_error_reporter.h"
+#include "xcore_planning.h"
 
 #ifdef XCORE
 extern "C" {
@@ -22,15 +22,15 @@ extern "C" {
 // #define GET_THREAD_FUNCTION_STACKWORDS(DEST, NAME)                     \
 //   asm("ldc %[__dest], " STRINGIFY_THREAD_FUNCTION(NAME) ".nstackwords" \
 //       : [ __dest ] "=r"(DEST))
-#define GET_THREAD_FUNCTION_STACKSIZE(DEST, NAME)                        \
-  {                                                                      \
-    size_t _stack_words;                                                 \
-    asm("ldc %[__dest], " STRINGIFY_THREAD_FUNCTION(NAME) ".nstackwords" \
-        : [__dest] "=r"(_stack_words));                                  \
-    DEST = (_stack_words + 2) * 4;                                       \
+#define GET_THREAD_FUNCTION_STACKSIZE(DEST, NAME)                              \
+  {                                                                            \
+    size_t _stack_words;                                                       \
+    asm("ldc %[__dest], " STRINGIFY_THREAD_FUNCTION(NAME) ".nstackwords"       \
+        : [__dest] "=r"(_stack_words));                                        \
+    DEST = (_stack_words + 2) * 4;                                             \
   }
 
-#else  // not XCORE
+#else // not XCORE
 #include <thread>
 #include <vector>
 
@@ -60,7 +60,7 @@ typedef struct TaskArray {
 } TaskArray;
 
 class Dispatcher {
- public:
+public:
   Dispatcher(tflite::ErrorReporter *reporter, bool use_current_core = true);
   ~Dispatcher();
 
@@ -73,7 +73,7 @@ class Dispatcher {
 
   tflite::ErrorReporter *GetReporter();
 
- private:
+private:
   bool use_current_thread_;
   threadgroup_t group_;
   TaskArray tasks_;
@@ -84,9 +84,9 @@ class Dispatcher {
 Dispatcher *GetDispatcher();
 void SetDispatcher(Dispatcher *);
 
-}  // namespace xcore
-}  // namespace micro
-}  // namespace ops
-}  // namespace tflite
+} // namespace xcore
+} // namespace micro
+} // namespace ops
+} // namespace tflite
 
-#endif  // XCORE_DISPATCHER_H_
+#endif // XCORE_DISPATCHER_H_

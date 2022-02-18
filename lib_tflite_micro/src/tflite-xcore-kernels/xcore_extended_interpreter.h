@@ -23,15 +23,15 @@ typedef void (*invoke_callback_t)(int);
 //****************************
 //****************************
 class BufferedErrorReporter : public tflite::ErrorReporter {
- public:
+public:
   ~BufferedErrorReporter() {}
 
-  int Report(const char* format, ...);
-  int Report(const char* format, va_list args);
+  int Report(const char *format, ...);
+  int Report(const char *format, va_list args);
   std::string GetError();
   void Clear();
 
- private:
+private:
   std::stringstream log_stream_;
 };
 
@@ -43,20 +43,20 @@ class BufferedErrorReporter : public tflite::ErrorReporter {
 //****************************
 //****************************
 class ExtendedXCoreInterpreter : public XCoreInterpreter {
- public:
-  ExtendedXCoreInterpreter(const tflite::Model* model,
-                           const tflite::MicroOpResolver& resolver,
-                           uint8_t* arena, size_t arena_size,
-                           tflite::ErrorReporter* reporter,
+public:
+  ExtendedXCoreInterpreter(const tflite::Model *model,
+                           const tflite::MicroOpResolver &resolver,
+                           uint8_t *arena, size_t arena_size,
+                           tflite::ErrorReporter *reporter,
                            bool use_current_thread = true,
-                           XCoreProfiler* profiler = nullptr);
+                           XCoreProfiler *profiler = nullptr);
 
-  ExtendedXCoreInterpreter(const tflite::Model* model,
-                           const tflite::MicroOpResolver& resolver,
-                           tflite::MicroAllocator* allocator,
-                           tflite::ErrorReporter* reporter,
+  ExtendedXCoreInterpreter(const tflite::Model *model,
+                           const tflite::MicroOpResolver &resolver,
+                           tflite::MicroAllocator *allocator,
+                           tflite::ErrorReporter *reporter,
                            bool use_current_thread = true,
-                           XCoreProfiler* profiler = nullptr);
+                           XCoreProfiler *profiler = nullptr);
 
   size_t input_tensor_index(size_t input_index);
   size_t output_tensor_index(size_t output_index);
@@ -64,31 +64,31 @@ class ExtendedXCoreInterpreter : public XCoreInterpreter {
   TfLiteStatus Invoke(invoke_callback_t preinvoke_callback,
                       invoke_callback_t postinvoke_callback);
 
-  TfLiteStatus SetTensor(size_t tensor_index, const void* value, const int size,
-                         const int* shape, const int type);
+  TfLiteStatus SetTensor(size_t tensor_index, const void *value, const int size,
+                         const int *shape, const int type);
 
-  TfLiteStatus GetTensor(size_t tensor_index, void* value, const int size,
-                         const int* shape, const int type);
+  TfLiteStatus GetTensor(size_t tensor_index, void *value, const int size,
+                         const int *shape, const int type);
 
-  TfLiteStatus GetTensorDetailsBufferSizes(size_t tensor_index, size_t* dims,
-                                           size_t* scales, size_t* zero_points);
+  TfLiteStatus GetTensorDetailsBufferSizes(size_t tensor_index, size_t *dims,
+                                           size_t *scales, size_t *zero_points);
 
-  TfLiteStatus GetTensorDetails(size_t tensor_index, char* name, int name_len,
-                                int* shape, int* type, float* scale,
-                                int32_t* zero_point);
+  TfLiteStatus GetTensorDetails(size_t tensor_index, char *name, int name_len,
+                                int *shape, int *type, float *scale,
+                                int32_t *zero_point);
 
   TfLiteStatus GetOperatorDetailsBufferSizes(size_t operator_index,
-                                             size_t* inputs, size_t* outputs);
+                                             size_t *inputs, size_t *outputs);
 
-  TfLiteStatus GetOperatorDetails(size_t operator_index, char* name,
-                                  int name_len, int* version, int* inputs,
-                                  int* outputs);
+  TfLiteStatus GetOperatorDetails(size_t operator_index, char *name,
+                                  int name_len, int *version, int *inputs,
+                                  int *outputs);
 
- private:
-  const tflite::Model* model_;
-  tflite::ErrorReporter* reporter_;
+private:
+  const tflite::Model *model_;
+  tflite::ErrorReporter *reporter_;
 };
 
-}  // namespace xcore
-}  // namespace micro
-}  // namespace tflite
+} // namespace xcore
+} // namespace micro
+} // namespace tflite

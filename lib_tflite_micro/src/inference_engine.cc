@@ -121,10 +121,20 @@ int inference_engine_load_model(inference_engine *ie,
     return 0;
 }
 
+int interp_invoke_par_4(inference_engine *ie)
+{
+    return thread_invoke_4(ie, &ie->xtflm->interpreter->thread_info);
+}
+
+TfLiteStatus interp_invoke_internal(inference_engine *ie)
+{
+    return ie->xtflm->interpreter->Invoke();
+}
+
 int interp_invoke(inference_engine *ie)
 {
     // Run inference, and report any error
-    TfLiteStatus invoke_status = ie->xtflm->interpreter->Invoke();
+    TfLiteStatus invoke_status = interp_invoke_internal(ie);
 
     if (invoke_status != kTfLiteOk) 
     {

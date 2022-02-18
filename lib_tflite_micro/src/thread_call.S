@@ -3,13 +3,13 @@
 
 #define NSTACKWORDS 4
     
-	.globl	call_with_threads_4_
-	.type	call_with_threads_4_,@function
-	.cc_top call_with_threads_4_.function,call_with_threads_4_
+	.globl	thread_invoke_4
+	.type	thread_invoke_4,@function
+	.cc_top thread_invoke_4.function,thread_invoke_4
     .align 4
-    //    void call_with_threads_4_((void *f)(), thread_info *ptr)
+    //    void thread_invoke_4(inference_engine_t *ie, thread_info *ptr)
 
-call_with_threads_4_:
+thread_invoke_4:
     ENTSP_lu6 NSTACKWORDS
     std r4, r5, sp[1]
     
@@ -45,7 +45,7 @@ call_with_threads_4_:
 
     msync res[r4]                 // let all threads initialise
 
-    bla   r0                      // call invoke
+    bl    interp_invoke_internal  // call invoke
 
     mjoin res[r4]                 // destroy all threads
     freer res[r4]                 // get rid of the evidence
@@ -54,17 +54,17 @@ call_with_threads_4_:
     
 	
 	// RETURN_REG_HOLDER
-	.cc_bottom call_with_threads_4_.function
-	.set	call_with_threads_4_.nstackwords,NSTACKWORDS + 1024 // TODO: invoke.nstackwords
-	.globl	call_with_threads_4_.nstackwords
-	.set	call_with_threads_4_.maxcores,4
-	.globl	call_with_threads_4_.maxcores
-	.set	call_with_threads_4_.maxtimers,0
-	.globl	call_with_threads_4_.maxtimers
-	.set	call_with_threads_4_.maxchanends,0
-	.globl	call_with_threads_4_.maxchanends
-.Ltmp_call_with_threads_4_:
-	.size	call_with_threads_4_, .Ltmp_call_with_threads_4_-call_with_threads_4_
+	.cc_bottom thread_invoke_4.function
+	.set	thread_invoke_4.nstackwords,(NSTACKWORDS + interp_invoke_internal.nstackwords)
+	.globl	thread_invoke_4.nstackwords
+	.set	thread_invoke_4.maxcores,4
+	.globl	thread_invoke_4.maxcores
+	.set	thread_invoke_4.maxtimers,0
+	.globl	thread_invoke_4.maxtimers
+	.set	thread_invoke_4.maxchanends,0
+	.globl	thread_invoke_4.maxchanends
+.Ltmp_thread_invoke_4:
+	.size	thread_invoke_4, .Ltmp_thread_invoke_4-thread_invoke_4
 
 #undef NSTACKWORDS
 
@@ -87,6 +87,7 @@ thread_client:
 thread_client_loop:
     ssync
     bla r11
+    ssync
     bu thread_client_loop
 	
 	// RETURN_REG_HOLDER
@@ -138,36 +139,37 @@ thread_variable_setup:
 
 #define NSTACKWORDS 6
     
-	.globl	thread_function_call
-	.type	thread_function_call,@function
-	.cc_top thread_function_call.function,thread_function_call
+	.globl	thread_call
+	.type	thread_call,@function
+	.cc_top thread_call.function,thread_call
 
-     // void thread_function_call(void *arg0, void *arg1, void *arg2,
+     // void thread_call(void *arg0, void *arg1, void *arg2,
      //                           (void *fp)(), thread_info_t *ptr);
     .issue_mode single
     .align 4
 
-thread_function_call:
+thread_call:
     ENTSP_lu6   NSTACKWORDS
     std     r4, r5, sp[1]           // save r4, r5, r6, r7
     std     r6, r7, sp[2]
     ldw     r4, sp[NSTACKWORDS+1]   // Pick up ptr
     ldd     r6, r7, r4[0]
     set     t[r6]:r11, r3           // set function pointer of thread 0
-    bf      r7, .thread_function_call_start_threads
+    bf      r7, .thread_call_start_threads
     set     t[r7]:r11, r3           // set function pointer of thread 1
     ldd     r6, r7, r4[1]
-    bf      r6, .thread_function_call_start_threads
+    bf      r6, .thread_call_start_threads
     set     t[r6]:r11, r3           // set function pointer of thread 2
-    bf      r7, .thread_function_call_start_threads
+    bf      r7, .thread_call_start_threads
     set     t[r7]:r11, r3           // set function pointer of thread 3
-.thread_function_call_start_threads:   
+.thread_call_start_threads:   
     ldw     r6, r4[4]               // fetch synchroniser
-    msync   res[r6]                 // start all clients
     ldaw    r7, sp[0]
     ldw     r11, r4[6]
     set     sp, r11
+    msync   res[r6]                 // start all clients
     bla     r3                      // start myself
+    msync   res[r6]                 // Wait for all clients to finish
 
     mov     r11, r7
     set     sp, r11
@@ -176,17 +178,17 @@ thread_function_call:
     retsp   NSTACKWORDS
 	
 	// RETURN_REG_HOLDER
-	.cc_bottom thread_function_call.function
-	.set	thread_function_call.nstackwords,NSTACKWORDS
-	.globl	thread_function_call.nstackwords
-	.set	thread_function_call.maxcores,1
-	.globl	thread_function_call.maxcores
-	.set	thread_function_call.maxtimers,0
-	.globl	thread_function_call.maxtimers
-	.set	thread_function_call.maxchanends,0
-	.globl	thread_function_call.maxchanends
-.Ltmp_thread_function_call:
-	.size	thread_function_call, .Ltmp_thread_function_call-thread_function_call
+	.cc_bottom thread_call.function
+	.set	thread_call.nstackwords,NSTACKWORDS
+	.globl	thread_call.nstackwords
+	.set	thread_call.maxcores,1
+	.globl	thread_call.maxcores
+	.set	thread_call.maxtimers,0
+	.globl	thread_call.maxtimers
+	.set	thread_call.maxchanends,0
+	.globl	thread_call.maxchanends
+.Ltmp_thread_call:
+	.size	thread_call, .Ltmp_thread_call-thread_call
 
 #undef NSTACKWORDS
     

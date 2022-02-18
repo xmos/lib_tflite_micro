@@ -1,4 +1,4 @@
-#define TFLM_OPERATORS      (250)
+#define XTFLM_OPERATORS      (250)
 #define NUM_OUTPUT_TENSORS  (40)
 #define NUM_INPUT_TENSORS   (40)
 #define MAX_DEBUG_LOG_LENGTH (1024)

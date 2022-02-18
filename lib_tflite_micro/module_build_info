@@ -13,6 +13,7 @@
 VERSION = 0.1.0
 
 DEPENDENT_MODULES = lib_nn(>=0.0.0)
+OPTIONAL_HEADERS += xtflm_conf.h 
 
 TLFLITE_MICRO_SHARED_FLAGS = -Wno-xcore-fptrgroup -DXCORE -Os \
 -DTF_LITE_STATIC_MEMORY \

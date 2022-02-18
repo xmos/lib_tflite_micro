@@ -8,14 +8,14 @@
 #define UNSAFE unsafe
 #endif
 
-#if !defined(TFLM_DISABLED)
+#if !defined(XTFLM_DISABLED)
 
-#if defined( __tflm_conf_h_exists__)
-#include "tflm_conf.h"
+#if defined( __xtflm_conf_h_exists__)
+#include "xtflm_conf.h"
 #else
 
-#ifndef TFLM_OPERATORS
-#define TFLM_OPERATORS 10
+#ifndef XTFLM_OPERATORS
+#define XTFLM_OPERATORS 10
 #endif
 
 #endif
@@ -38,7 +38,7 @@ struct tflite_micro_objects {
     tflite::micro::xcore::XCoreErrorReporter error_reporter;
     tflite::micro::xcore::XCoreProfiler xcore_profiler;
     uint8_t interpreter_buffer[sizeof(tflite::micro::xcore::XCoreInterpreter)];
-    tflite::MicroMutableOpResolver<TFLM_OPERATORS> resolver;
+    tflite::MicroMutableOpResolver<XTFLM_OPERATORS> resolver;
     
     tflite::micro::xcore::XCoreInterpreter *interpreter;
     const tflite::Model *model;
@@ -54,9 +54,9 @@ struct tflite_micro_objects;
  * This structure contains no C++, just standard C pointers and arrays.
  */
 typedef struct inference_engine {
-    uint32_t * UNSAFE model_data_tensor_arena;  ///< Pointer to space for tensor arena.
-    uint32_t * UNSAFE model_data_ext;           ///< Pointer to space for model. If null,
-                                                // use the first part of the tensor arena above.
+    uint32_t * UNSAFE memory_primary;           ///< Pointer to space for tensor arena and optional model
+    uint32_t * UNSAFE memory_secondary;         ///< Pointer to secondary space. If null,
+                                                // use the primary for model and tensor arena
     uint32_t outputs;                           ///< Number of output tensors, initialised on loading a model.
     uint32_t inputs;                            ///< Number of input tensors, initialised on loading a model.
     uint32_t * UNSAFE output_buffers[NUM_OUTPUT_TENSORS]; ///< Pointers to output tensors.
@@ -65,12 +65,12 @@ typedef struct inference_engine {
     uint32_t input_sizes[NUM_INPUT_TENSORS];    ///< Size of each input tensor in bytes.
     uint32_t output_size;                       ///< Total size of all outputs - TODO: obsolete?
     uint32_t input_size;                        ///< Total size of all inputs - TODO: obsolete?
-    uint32_t model_data_tensor_arena_bytes;     ///< Number of bytes available in tensor arena space
-    uint32_t model_data_ext_bytes;              ///< Number of bytes available in model space
+    uint32_t memory_primary_bytes;              ///< Number of bytes available in primary memory
+    uint32_t memory_secondary_bytes;            ///< Number of bytes available in secondary memory
     uint32_t output_times_size;                 ///< Number of bytes available to store profiling data
     uint32_t operators_size;                    ///< ???
     uint32_t * UNSAFE output_times;             ///< pointer to profiling data, one per layer
-    struct tflite_micro_objects * UNSAFE tflm;  ///< Pointer to C++ TFLM object - opaque to C
+    struct tflite_micro_objects * UNSAFE xtflm;  ///< Pointer to C++ XTFLM object - opaque to C
 // status for the engine to maintain
     uint32_t haveModel;                         ///< if 1: we have a model
     uint32_t chainToNext;                       ///< if 1: we are chained (could be implicit in c_push being non-null?)
@@ -83,7 +83,7 @@ typedef struct inference_engine {
 
 
 #ifdef __cplusplus
-#ifndef TFLM_DISABLED
+#ifndef XTFLM_DISABLED
 /** Function that initializes the inference_engine object, given a tflite_micro_objects object.
  * This function has to be called from a C++ source files, and it performs the initialisation
  * of the inference engine. This involves setting up basic pointers inside the IE object, nothing
@@ -106,31 +106,31 @@ typedef struct inference_engine {
  *    [...]
  *
  * Note that when tensorflow lite for micro is disabled this function will not exist
- * as it depends on all and sundry in TFLM.
+ * as it depends on all and sundry in XTFLM.
  *
  * Note that the lifetime of all spaces passed to this function should be longer than the
  * lifetime of the inference engine. Typically all spaces are declared globally.
  * 
  * \param ie                  Pointer to an uninitialized inference engine object,
  *                            allocated by the caller.
- * \param data_tensor_arena   Pointer to the space to be used for the tensor arena, 
+ * \param memory_primary      Pointer to the space to be used for the tensor arena, 
  *                            allocated by the caller. If the fourth parameter is null,
  *                            then this space will be used for both model and tensor arena.
- * \param n_tensor_arena      Number of bytes available for the tensor arena.
- * \param data_model          Pointer to the space to be used for the model
+ * \param n_primary           Number of bytes available in primary memory
+ * \param memory_secondary    Pointer to the space to be used for the model
  *                            allocated by the caller. If this parameter is null,
- *                            then the tensor arena space will be used for both model
+ *                            then the primary memory will be used for both model
  *                            and tensor arena.
- * \param n_model             Number of bytes available for the model
- * \param tflmo               C++ structure for storing the TFLM data structures.
+ * \param n_secondary         Number of bytes available in secondary memory
+ * \param xtflmo               C++ structure for storing the XTFLM data structures.
  *                            Must be allocated by the caller.
  *
  */
-tflite::MicroMutableOpResolver<TFLM_OPERATORS> *
+tflite::MicroMutableOpResolver<XTFLM_OPERATORS> *
      inference_engine_initialize(inference_engine_t * UNSAFE ie,
-                                 uint32_t data_tensor_arena[], uint32_t n_tensor_arena,
-                                 uint32_t data_model[], uint32_t n_model,
-                                 struct tflite_micro_objects * UNSAFE tflmo);
+                                 uint32_t memory_primary[], uint32_t n_memory_primary,
+                                 uint32_t memory_secondary[], uint32_t n_secondary,
+                                 struct tflite_micro_objects * UNSAFE xtflmo);
 #endif
 extern "C" {
 #endif

@@ -18,14 +18,14 @@ namespace xcore {
 namespace pooling {
 
 struct PoolingThreadData {
-  int8_t* Y;
-  const int8_t* X;
+  int8_t *Y;
+  const int8_t *X;
 };
 
 struct PoolingThreadParams {
-  const nn_image_params_t* x_image;
-  const nn_image_params_t* y_image;
-  const nn_window_params_t* window;
+  const nn_image_params_t *x_image;
+  const nn_image_params_t *y_image;
+  const nn_window_params_t *window;
   nn_window_op_job_params_t job;
 };
 
@@ -51,16 +51,16 @@ struct MaxPoolThreadData {
 };
 
 extern "C" {
-ATTRIBUTE_THREAD_FUNCTION void maxpool_thread_worker(void* context) {
-  MaxPoolThreadData* td = (MaxPoolThreadData*)context;
+ATTRIBUTE_THREAD_FUNCTION void maxpool_thread_worker(void *context) {
+  MaxPoolThreadData *td = (MaxPoolThreadData *)context;
   maxpool2d_ext(td->data.Y, td->data.X, td->params.x_image, td->params.y_image,
                 td->params.window, &td->params.job, MAXPOOL2D_FLAG_NONE);
 }
 }
 
-void* Init(TfLiteContext* context, const char* buffer, size_t length) {
-  MaxPoolOpData* op = nullptr;
-  op = reinterpret_cast<MaxPoolOpData*>(
+void *Init(TfLiteContext *context, const char *buffer, size_t length) {
+  MaxPoolOpData *op = nullptr;
+  op = reinterpret_cast<MaxPoolOpData *>(
       context->AllocatePersistentBuffer(context, sizeof(MaxPoolOpData)));
   op->stack_scratch_index = -1;
   op->stack_size = 0;
@@ -73,11 +73,11 @@ void* Init(TfLiteContext* context, const char* buffer, size_t length) {
   return op;
 }
 
-TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
+TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
   TF_LITE_ENSURE_EQ(context, NumInputs(node), 1);
   TF_LITE_ENSURE_EQ(context, NumOutputs(node), 1);
 
-  MaxPoolOpData* op = reinterpret_cast<MaxPoolOpData*>(node->user_data);
+  MaxPoolOpData *op = reinterpret_cast<MaxPoolOpData *>(node->user_data);
 
   // allocate the stack for thread workers
   GET_THREAD_FUNCTION_STACKSIZE(op->stack_size, maxpool_thread_worker);
@@ -88,18 +88,18 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
   return kTfLiteOk;
 }
 
-TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
-  const TfLiteEvalTensor* input = tflite::micro::GetEvalInput(context, node, 0);
-  TfLiteEvalTensor* output = tflite::micro::GetEvalOutput(context, node, 0);
+TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
+  const TfLiteEvalTensor *input = tflite::micro::GetEvalInput(context, node, 0);
+  TfLiteEvalTensor *output = tflite::micro::GetEvalOutput(context, node, 0);
 
   const RuntimeShape input_shape = tflite::micro::GetTensorShape(input);
   const RuntimeShape output_shape = tflite::micro::GetTensorShape(output);
 
-  MaxPoolOpData* op = reinterpret_cast<MaxPoolOpData*>(node->user_data);
-  Dispatcher* dispatcher = GetDispatcher();
+  MaxPoolOpData *op = reinterpret_cast<MaxPoolOpData *>(node->user_data);
+  Dispatcher *dispatcher = GetDispatcher();
 
   // initialize the dispatcher
-  char* stack = static_cast<char*>(
+  char *stack = static_cast<char *>(
       context->GetScratchBuffer(context, op->stack_scratch_index));
   TFLITE_DCHECK(stack != nullptr);
   dispatcher->InitializeTasks(maxpool_thread_worker, stack, op->stack_size);
@@ -122,7 +122,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
 
   // create tasks
   for (int i_rg = 0; i_rg < op->execution_plan.regions.size(); i_rg++) {
-    const RowColRegion& region = op->execution_plan.regions[i_rg];
+    const RowColRegion &region = op->execution_plan.regions[i_rg];
     thread_data[i_rg].data.Y = tflite::micro::GetTensorData<nn_image_t>(output);
     thread_data[i_rg].data.X = tflite::micro::GetTensorData<nn_image_t>(input);
     thread_data[i_rg].params.x_image = &in_image;
@@ -132,7 +132,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
         {region.top, region.left, 0},
         {region.rows, region.cols, output_shape.Dims(3)}};
 
-    dispatcher->AddTask(reinterpret_cast<void*>(&thread_data[i_rg]));
+    dispatcher->AddTask(reinterpret_cast<void *>(&thread_data[i_rg]));
   }
 
   // start and wait for tasks to complete
@@ -141,7 +141,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
   return kTfLiteOk;
 }
 
-}  // namespace maxpool
+} // namespace maxpool
 
 //**************************************
 //**************************************
@@ -165,16 +165,16 @@ struct AvgPoolThreadData {
 };
 
 extern "C" {
-ATTRIBUTE_THREAD_FUNCTION void avgpool_thread_worker(void* context) {
-  AvgPoolThreadData* td = (AvgPoolThreadData*)context;
+ATTRIBUTE_THREAD_FUNCTION void avgpool_thread_worker(void *context) {
+  AvgPoolThreadData *td = (AvgPoolThreadData *)context;
   avgpool2d_ext(td->data.Y, td->data.X, td->params.x_image, td->params.y_image,
                 td->params.window, &td->params.job, AVGPOOL2D_FLAG_NONE);
 }
 }
 
-void* Init(TfLiteContext* context, const char* buffer, size_t length) {
-  AvgPoolOpData* op = nullptr;
-  op = reinterpret_cast<AvgPoolOpData*>(
+void *Init(TfLiteContext *context, const char *buffer, size_t length) {
+  AvgPoolOpData *op = nullptr;
+  op = reinterpret_cast<AvgPoolOpData *>(
       context->AllocatePersistentBuffer(context, sizeof(AvgPoolOpData)));
   op->stack_scratch_index = -1;
   op->stack_size = 0;
@@ -187,11 +187,11 @@ void* Init(TfLiteContext* context, const char* buffer, size_t length) {
   return op;
 }
 
-TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
+TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
   TF_LITE_ENSURE_EQ(context, NumInputs(node), 1);
   TF_LITE_ENSURE_EQ(context, NumOutputs(node), 1);
 
-  AvgPoolOpData* op = reinterpret_cast<AvgPoolOpData*>(node->user_data);
+  AvgPoolOpData *op = reinterpret_cast<AvgPoolOpData *>(node->user_data);
 
   // allocate the stack for thread workers
   GET_THREAD_FUNCTION_STACKSIZE(op->stack_size, avgpool_thread_worker);
@@ -202,18 +202,18 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
   return kTfLiteOk;
 }
 
-TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
-  const TfLiteEvalTensor* input = tflite::micro::GetEvalInput(context, node, 0);
-  TfLiteEvalTensor* output = tflite::micro::GetEvalOutput(context, node, 0);
+TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
+  const TfLiteEvalTensor *input = tflite::micro::GetEvalInput(context, node, 0);
+  TfLiteEvalTensor *output = tflite::micro::GetEvalOutput(context, node, 0);
 
   const RuntimeShape input_shape = tflite::micro::GetTensorShape(input);
   const RuntimeShape output_shape = tflite::micro::GetTensorShape(output);
 
-  AvgPoolOpData* op = reinterpret_cast<AvgPoolOpData*>(node->user_data);
-  Dispatcher* dispatcher = GetDispatcher();
+  AvgPoolOpData *op = reinterpret_cast<AvgPoolOpData *>(node->user_data);
+  Dispatcher *dispatcher = GetDispatcher();
 
   // initialize the dispatcher
-  char* stack = static_cast<char*>(
+  char *stack = static_cast<char *>(
       context->GetScratchBuffer(context, op->stack_scratch_index));
   TFLITE_DCHECK(stack != nullptr);
   dispatcher->InitializeTasks(avgpool_thread_worker, stack, op->stack_size);
@@ -236,7 +236,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
 
   // create tasks
   for (int i_rg = 0; i_rg < op->execution_plan.regions.size(); i_rg++) {
-    const RowColRegion& region = op->execution_plan.regions[i_rg];
+    const RowColRegion &region = op->execution_plan.regions[i_rg];
     thread_data[i_rg].data.Y = tflite::micro::GetTensorData<nn_image_t>(output);
     thread_data[i_rg].data.X = tflite::micro::GetTensorData<nn_image_t>(input);
     thread_data[i_rg].params.x_image = &in_image;
@@ -245,7 +245,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
     thread_data[i_rg].params.job = {
         {region.top, region.left, 0},
         {region.rows, region.cols, output_shape.Dims(3)}};
-    dispatcher->AddTask(reinterpret_cast<void*>(&thread_data[i_rg]));
+    dispatcher->AddTask(reinterpret_cast<void *>(&thread_data[i_rg]));
   }
 
   // start and wait for tasks to complete
@@ -254,7 +254,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
   return kTfLiteOk;
 }
 
-}  // namespace avgpool
+} // namespace avgpool
 
 //**************************************
 //**************************************
@@ -281,21 +281,21 @@ struct AvgPoolGlobalThreadData {
   uint16_t shift;
   int32_t chan_start;
   int32_t chan_count;
-  const nn_image_params_t* x_image;
+  const nn_image_params_t *x_image;
 };
 
 extern "C" {
-ATTRIBUTE_THREAD_FUNCTION void avgpool_global_thread_worker(void* context) {
-  AvgPoolGlobalThreadData* td = (AvgPoolGlobalThreadData*)context;
+ATTRIBUTE_THREAD_FUNCTION void avgpool_global_thread_worker(void *context) {
+  AvgPoolGlobalThreadData *td = (AvgPoolGlobalThreadData *)context;
   avgpool2d_global_ext(td->data.Y, td->data.X, td->bias, td->scale, td->shift,
                        td->x_image, td->chan_start, td->chan_count,
                        AVGPOOL2D_GLOBAL_FLAG_NONE);
 }
 }
 
-void* Init(TfLiteContext* context, const char* buffer, size_t length) {
-  AvgPoolGlobalOpData* op = nullptr;
-  op = reinterpret_cast<AvgPoolGlobalOpData*>(
+void *Init(TfLiteContext *context, const char *buffer, size_t length) {
+  AvgPoolGlobalOpData *op = nullptr;
+  op = reinterpret_cast<AvgPoolGlobalOpData *>(
       context->AllocatePersistentBuffer(context, sizeof(AvgPoolGlobalOpData)));
   op->stack_scratch_index = -1;
   op->stack_size = 0;
@@ -307,14 +307,14 @@ void* Init(TfLiteContext* context, const char* buffer, size_t length) {
   return op;
 }
 
-TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
+TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
   TF_LITE_ENSURE_EQ(context, NumInputs(node), 2);
   TF_LITE_ENSURE_EQ(context, NumOutputs(node), 1);
 
-  const TfLiteTensor* bss = GetInput(context, node, 1);
+  const TfLiteTensor *bss = GetInput(context, node, 1);
 
-  AvgPoolGlobalOpData* op =
-      reinterpret_cast<AvgPoolGlobalOpData*>(node->user_data);
+  AvgPoolGlobalOpData *op =
+      reinterpret_cast<AvgPoolGlobalOpData *>(node->user_data);
 
   op->bias = unpack<int32_t>(&bss->data.uint8[0]);
   op->shift = unpack<uint16_t>(&bss->data.uint8[5]);
@@ -331,18 +331,18 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
   return kTfLiteOk;
 }
 
-TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
-  const TfLiteEvalTensor* input = tflite::micro::GetEvalInput(context, node, 0);
-  TfLiteEvalTensor* output = tflite::micro::GetEvalOutput(context, node, 0);
+TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
+  const TfLiteEvalTensor *input = tflite::micro::GetEvalInput(context, node, 0);
+  TfLiteEvalTensor *output = tflite::micro::GetEvalOutput(context, node, 0);
 
   const RuntimeShape input_shape = tflite::micro::GetTensorShape(input);
 
-  AvgPoolGlobalOpData* op =
-      reinterpret_cast<AvgPoolGlobalOpData*>(node->user_data);
-  Dispatcher* dispatcher = GetDispatcher();
+  AvgPoolGlobalOpData *op =
+      reinterpret_cast<AvgPoolGlobalOpData *>(node->user_data);
+  Dispatcher *dispatcher = GetDispatcher();
 
   // initialize the dispatcher
-  char* stack = static_cast<char*>(
+  char *stack = static_cast<char *>(
       context->GetScratchBuffer(context, op->stack_scratch_index));
   TFLITE_DCHECK(stack != nullptr);
   dispatcher->InitializeTasks(avgpool_global_thread_worker, stack,
@@ -360,7 +360,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
 
   // create tasks
   for (int i_cg = 0; i_cg < op->execution_plan.changrps.size(); i_cg++) {
-    const ChannelGroup& changrp = op->execution_plan.changrps[i_cg];
+    const ChannelGroup &changrp = op->execution_plan.changrps[i_cg];
     thread_data[i_th].data.Y = tflite::micro::GetTensorData<int8_t>(output);
     thread_data[i_th].data.X = tflite::micro::GetTensorData<int8_t>(input);
     thread_data[i_th].bias = op->bias;
@@ -370,7 +370,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
     thread_data[i_th].chan_count = changrp.size;
     thread_data[i_th].x_image = &in_image;
 
-    dispatcher->AddTask(reinterpret_cast<void*>(&thread_data[i_th]));
+    dispatcher->AddTask(reinterpret_cast<void *>(&thread_data[i_th]));
 
     i_th++;
     if (i_th == n_th) {
@@ -379,36 +379,36 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
       i_th = 0;
     }
   }
-  dispatcher->JoinTasks();  // finish up any added tasks
+  dispatcher->JoinTasks(); // finish up any added tasks
 
   return kTfLiteOk;
 }
 
-}  // namespace avgpool_global
-}  // namespace pooling
+} // namespace avgpool_global
+} // namespace pooling
 
-TfLiteRegistration* Register_MaxPool2D() {
+TfLiteRegistration *Register_MaxPool2D() {
   static TfLiteRegistration r = {pooling::maxpool::Init, nullptr,
                                  pooling::maxpool::Prepare,
                                  pooling::maxpool::Eval};
   return &r;
 }
 
-TfLiteRegistration* Register_AvgPool2D() {
+TfLiteRegistration *Register_AvgPool2D() {
   static TfLiteRegistration r = {pooling::avgpool::Init, nullptr,
                                  pooling::avgpool::Prepare,
                                  pooling::avgpool::Eval};
   return &r;
 }
 
-TfLiteRegistration* Register_AvgPool2D_Global() {
+TfLiteRegistration *Register_AvgPool2D_Global() {
   static TfLiteRegistration r = {pooling::avgpool_global::Init, nullptr,
                                  pooling::avgpool_global::Prepare,
                                  pooling::avgpool_global::Eval};
   return &r;
 }
 
-}  // namespace xcore
-}  // namespace micro
-}  // namespace ops
-}  // namespace tflite
+} // namespace xcore
+} // namespace micro
+} // namespace ops
+} // namespace tflite

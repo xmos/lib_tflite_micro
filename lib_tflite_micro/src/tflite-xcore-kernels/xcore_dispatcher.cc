@@ -1,6 +1,8 @@
 // Copyright (c) 2020, XMOS Ltd, All rights reserved
 #include "xcore_dispatcher.h"
 
+#include <cassert>
+
 namespace tflite {
 namespace ops {
 namespace micro {

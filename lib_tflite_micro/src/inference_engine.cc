@@ -121,10 +121,15 @@ int inference_engine_load_model(inference_engine *ie,
     return 0;
 }
 
+#ifdef __xcore__
+#include "thread_call.h"
+
 int interp_invoke_par_4(inference_engine *ie)
 {
-    return thread_invoke_4(ie, &ie->xtflm->interpreter->thread_info);
+    return thread_invoke_4((void *)ie, (void *)&ie->xtflm->interpreter->thread_info);
+    // TODO: when all debugged we can type it solidly.
 }
+#endif
 
 TfLiteStatus interp_invoke_internal(inference_engine *ie)
 {

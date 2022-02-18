@@ -51,14 +51,16 @@ class XCoreInterpreter : public tflite::MicroInterpreter {
   const Model *model__;
   ErrorReporter* error_reporter__;
   tflite::GreedyMemoryPlanner* memory_planner__;
+#ifdef __xcore__
+  struct {                   // THIS STRUCT MUST BE IN SYNC WITH ASSEMBLY CODE.
+    uint64_t thread_id[2];   // ids of at most 4 threads - live during invoke
+    uint32_t synchroniser;   // synchroniser for threads - live during invoke
+    uint32_t nstackwords;    // nstackwords per stack   - live after load model
+    void *stacks;            // pointer to top of stack - live after load model
+  } thread_info;
+#endif
  private:
   tflite::ops::micro::xcore::Dispatcher dispatcher_;
-  struct {                          // THIS STRUCT MUST BE IN SYNC WITH ASSEMBLY CODE.
-    uint64_t thread_id[2];          // ids of at most 4 threads - live during invoke
-    uint32_t synchroniser;          // synchroniser to start threads - live during invoke
-    uint32_t stack_words_per_thread;// number of words per stack - live after load model
-    void *stacks;                   // pointer to top of stack mem - live after load model
-  } thread_info;
 };
 
 }  // namespace xcore

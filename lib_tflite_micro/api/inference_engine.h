@@ -179,6 +179,8 @@ extern "C" {
  * \param ie           pointer to inference engine.
  */
     void print_profiler_summary(inference_engine_t * UNSAFE ie);
+    int interp_invoke_par_4(inference_engine *ie);
+    TfLiteStatus interp_invoke_internal(inference_engine *ie);
 #ifdef __cplusplus
 };
 #endif

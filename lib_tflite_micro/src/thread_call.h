@@ -26,7 +26,7 @@ typedef void (*function_pointer)();
  *                     ptr[5] [in]  top of stacks
  *                     ptr[6] [in]  number of words per stack
  */
-void thread_invoke_4(void *ie, thread_info_t *ptr);
+int thread_invoke_4(void *ie, void *ptr);
 
 /** Function that sets up parameters for one of the client threads
  * This particular one passes three arguments to the thread.

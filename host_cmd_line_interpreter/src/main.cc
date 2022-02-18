@@ -98,13 +98,13 @@ int main(int argc, char *argv[]) {
     inference_engine_initialize(&ie);
 
     // load model
-    size_t model_size = load_binary_file(model_filename, ie.model_data_tensor_arena, MAX_MODEL_CONTENT_SIZE);
+    size_t model_size = load_binary_file(model_filename, ie.memory_primary, MAX_MODEL_CONTENT_SIZE);
 
     char *params_filename = argv[2];
     (void) load_binary_file(params_filename, params_content, MAX_PARAMS_SIZE);
 
     inference_engine_unload_model(&ie);
-    int error = inference_engine_load_model(&ie, model_size, ie.model_data_tensor_arena, params_content);
+    int error = inference_engine_load_model(&ie, model_size, ie.memory_primary, params_content);
 
     if (strcmp(argv[carg], "-i") == 0) {
         int tensor_num = 0;

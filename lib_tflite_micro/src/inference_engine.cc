@@ -4,36 +4,36 @@
 #include <cstdio>
 #include "inference_engine.h"
 
-#if !defined(TFLM_DISABLED)
+#if !defined(XTFLM_DISABLED)
 
 extern "C" void DebugLog(const char* s) { while (*s) { putchar(*s); s++; }}  // Not sure why we need this
 
-tflite::MicroMutableOpResolver<TFLM_OPERATORS> *
+tflite::MicroMutableOpResolver<XTFLM_OPERATORS> *
      inference_engine_initialize(inference_engine *ie,
-                                 uint32_t data_tensor_arena[], uint32_t n_tensor_arena,
-                                 uint32_t data_ext[], uint32_t n_ext,
-                                 struct tflite_micro_objects *tflmo)
+                                 uint32_t memory_primary[], uint32_t n_primary,
+                                 uint32_t memory_secondary[], uint32_t n_secondary,
+                                 struct tflite_micro_objects *xtflmo)
 {
     // First initialise the structure with the three memory objects
-    // internal memory, external memory, and TFLM objects.
+    // internal memory, external memory, and XTFLM objects.
     memset(ie, 0, sizeof(*ie));
-    ie->tflm = tflmo;
-    ie->model_data_tensor_arena = data_tensor_arena;
-    ie->model_data_ext          = data_ext;
-    ie->model_data_tensor_arena_bytes = n_tensor_arena;
-    ie->model_data_ext_bytes          = n_ext;
-    ie->tflm->error_reporter.Init((char *)ie->debug_log_buffer, MAX_DEBUG_LOG_LENGTH);
+    ie->xtflm = xtflmo;
+    ie->memory_primary         = memory_primary;
+    ie->memory_secondary       = memory_secondary;
+    ie->memory_primary_bytes   = n_primary;
+    ie->memory_secondary_bytes = n_secondary;
+    ie->xtflm->error_reporter.Init((char *)ie->debug_log_buffer, MAX_DEBUG_LOG_LENGTH);
     // Now add all the operators that we need
-    auto *resolver = &ie->tflm->resolver;
+    auto *resolver = &ie->xtflm->resolver;
     return resolver;
 }
 
 void inference_engine_unload_model(inference_engine *ie)
 {
-    if (ie->tflm->interpreter)
+    if (ie->xtflm->interpreter)
     {
-        delete ie->tflm->interpreter;
-        ie->tflm->interpreter = nullptr;
+        delete ie->xtflm->interpreter;
+        ie->xtflm->interpreter = nullptr;
     }
 }
 
@@ -42,27 +42,27 @@ int inference_engine_load_model(inference_engine *ie,
                                 void *flash_data) 
 {
 
-    if (ie->tflm->interpreter)
+    if (ie->xtflm->interpreter)
     {
-        TF_LITE_REPORT_ERROR(&ie->tflm->error_reporter, "Model not unloaded");
+        TF_LITE_REPORT_ERROR(&ie->xtflm->error_reporter, "Model not unloaded");
         return 9;
     }
    
     // Map the model into a usable data structure. This doesn't involve any
     // copying or parsing, it's a very lightweight operation.
-    ie->tflm->model = tflite::GetModel((uint8_t *)model_data);
-    uint model_version = ie->tflm->model->version();
+    ie->xtflm->model = tflite::GetModel((uint8_t *)model_data);
+    uint model_version = ie->xtflm->model->version();
     if (model_version != TFLITE_SCHEMA_VERSION)
     {
-        TF_LITE_REPORT_ERROR(&ie->tflm->error_reporter, "Model provided is schema version %u not equal to supported version %d.", model_version, TFLITE_SCHEMA_VERSION);
+        TF_LITE_REPORT_ERROR(&ie->xtflm->error_reporter, "Model provided is schema version %u not equal to supported version %d.", model_version, TFLITE_SCHEMA_VERSION);
         return 1;
     }
 
     // Now work out where the tensor arena goes
-    uint8_t *kTensorArena = (uint8_t *) ie->model_data_tensor_arena;
-    int kTensorArenaSize = ie->model_data_tensor_arena_bytes;
+    uint8_t *kTensorArena = (uint8_t *) ie->memory_primary;
+    int kTensorArenaSize = ie->memory_primary_bytes;
     
-    if(model_data != ie->model_data_ext)
+    if(model_data != ie->memory_secondary)
     {
         uint32_t model_ints = (model_bytes + 3) & ~0x03; // Align 4
         kTensorArena     += model_ints; 
@@ -73,49 +73,49 @@ int inference_engine_load_model(inference_engine *ie,
     memset(kTensorArena, 0, kTensorArenaSize);
 
     // Build an interpreter to run the model with
-    ie->tflm->interpreter =
-        tflite::micro::xcore::XCoreInterpreter::Create(ie->tflm->interpreter_buffer,
-                                               ie->tflm->model,
-                                               ie->tflm->resolver,
+    ie->xtflm->interpreter =
+        tflite::micro::xcore::XCoreInterpreter::Create(ie->xtflm->interpreter_buffer,
+                                               ie->xtflm->model,
+                                               ie->xtflm->resolver,
                                                kTensorArena, kTensorArenaSize,
-                                               &ie->tflm->error_reporter,
+                                               &ie->xtflm->error_reporter,
                                                true,
-                                               &ie->tflm->xcore_profiler,
+                                               &ie->xtflm->xcore_profiler,
                                                flash_data);
 
     // Allocate memory from the kTensorArena for the model's tensors.
-    TfLiteStatus allocate_tensors_status = ie->tflm->interpreter->AllocateTensors();
+    TfLiteStatus allocate_tensors_status = ie->xtflm->interpreter->AllocateTensors();
     if (allocate_tensors_status != kTfLiteOk)
     {
-        TF_LITE_REPORT_ERROR(&ie->tflm->error_reporter, "AllocateTensors() failed");
+        TF_LITE_REPORT_ERROR(&ie->xtflm->error_reporter, "AllocateTensors() failed");
         return 2;
     }
-    ie->operators_size = ie->tflm->model->subgraphs()->Get(0)->operators()->size();
+    ie->operators_size = ie->xtflm->model->subgraphs()->Get(0)->operators()->size();
 
     // Obtain pointers to the model's input and output tensors.
-    ie->inputs = ie->tflm->interpreter->inputs_size();
+    ie->inputs = ie->xtflm->interpreter->inputs_size();
     ie->input_size = 0;
     if (ie->inputs > NUM_INPUT_TENSORS) {
-        TF_LITE_REPORT_ERROR(&ie->tflm->error_reporter, "Too many input tensors");
+        TF_LITE_REPORT_ERROR(&ie->xtflm->error_reporter, "Too many input tensors");
         return 3;
     }
     for(int i = 0; i < ie->inputs; i++) {
-        ie->input_buffers[i] = (uint32_t *)(ie->tflm->interpreter->input(i)->data.raw);
-        ie->input_sizes[i] = ie->tflm->interpreter->input(i)->bytes;
+        ie->input_buffers[i] = (uint32_t *)(ie->xtflm->interpreter->input(i)->data.raw);
+        ie->input_sizes[i] = ie->xtflm->interpreter->input(i)->bytes;
         ie->input_size += ie->input_sizes[i];
     }
-    ie->outputs = ie->tflm->interpreter->outputs_size();
+    ie->outputs = ie->xtflm->interpreter->outputs_size();
     ie->output_size = 0;
     if (ie->outputs > NUM_OUTPUT_TENSORS) {
-        TF_LITE_REPORT_ERROR(&ie->tflm->error_reporter, "Too many output tensors %d", ie->outputs);
+        TF_LITE_REPORT_ERROR(&ie->xtflm->error_reporter, "Too many output tensors %d", ie->outputs);
         return 4;
     }
     for(int i = 0; i < ie->outputs; i++) {
-        ie->output_buffers[i] = (uint32_t *)(ie->tflm->interpreter->output(i)->data.raw);
-        ie->output_sizes[i] = ie->tflm->interpreter->output(i)->bytes;
+        ie->output_buffers[i] = (uint32_t *)(ie->xtflm->interpreter->output(i)->data.raw);
+        ie->output_sizes[i] = ie->xtflm->interpreter->output(i)->bytes;
         ie->output_size += ie->output_sizes[i];
     }
-    ie->output_times = (uint32_t *)ie->tflm->xcore_profiler.GetEventDurations();
+    ie->output_times = (uint32_t *)ie->xtflm->xcore_profiler.GetEventDurations();
     ie->output_times_size = ie->operators_size;
     
     return 0;
@@ -124,11 +124,11 @@ int inference_engine_load_model(inference_engine *ie,
 int interp_invoke(inference_engine *ie)
 {
     // Run inference, and report any error
-    TfLiteStatus invoke_status = ie->tflm->interpreter->Invoke();
+    TfLiteStatus invoke_status = ie->xtflm->interpreter->Invoke();
 
     if (invoke_status != kTfLiteOk) 
     {
-        TF_LITE_REPORT_ERROR(&ie->tflm->error_reporter, "Invoke failed\n");
+        TF_LITE_REPORT_ERROR(&ie->xtflm->error_reporter, "Invoke failed\n");
         return 1;
     }
 
@@ -137,13 +137,13 @@ int interp_invoke(inference_engine *ie)
 
 void print_profiler_summary(inference_engine *ie)
 {
-    auto* opcodes = ie->tflm->model->operator_codes();
+    auto* opcodes = ie->xtflm->model->operator_codes();
     uint64_t total = 0;
     const char *op_name;
 
-    uint32_t count = ie->tflm->xcore_profiler.GetNumEvents();
-    uint32_t const *times = ie->tflm->xcore_profiler.GetEventDurations();
-    auto* subgraphs = ie->tflm->model->subgraphs();
+    uint32_t count = ie->xtflm->xcore_profiler.GetNumEvents();
+    uint32_t const *times = ie->xtflm->xcore_profiler.GetEventDurations();
+    auto* subgraphs = ie->xtflm->model->subgraphs();
 
     int n_operators = 0;
     uint64_t operator_times[XCORE_PROFILER_DEFAULT_MAX_LEVELS];
@@ -159,7 +159,7 @@ void print_profiler_summary(inference_engine *ie)
             auto builtin_code = std::max(opcode->builtin_code(),
                                          static_cast<tflite::BuiltinOperator>(opcode->deprecated_builtin_code()));
             if (builtin_code == tflite::BuiltinOperator_CUSTOM) {
-                const char *name = ie->tflm->interpreter->node_name(0, i);
+                const char *name = ie->xtflm->interpreter->node_name(0, i);
                 if (name != NULL) {
                     op_name = name;
                 } else {
@@ -197,14 +197,14 @@ void print_profiler_summary(inference_engine *ie)
 
 #else
 
-// STUBS for when TFLM is disabled.
+// STUBS for when XTFLM is disabled.
 
 void inference_engine_unload_model(inference_engine *ie) {}
 
 void print_profiler_summary(inference_engine *ie) {}
 extern "C" void DebugLog(const char* s) {}
 
-void inference_engine_initialize(inference_engine *ie, uint8_t data_tensor_arena[], uint32_t n_int, uint8_t data_ext[], uint32_t n_ext, struct tflite_micro_object *tflmo) {}
+void inference_engine_initialize(inference_engine *ie, uint8_t data_tensor_arena[], uint32_t n_int, uint8_t data_ext[], uint32_t n_ext, struct tflite_micro_object *xtflmo) {}
 
 int inference_engine_load_model(inference_engine *ie, uint32_t model_bytes, uint32_t *model_data) {
     printf("Inference engine disabled, model not loaded\n");

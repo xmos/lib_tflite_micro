@@ -66,6 +66,8 @@ inference_engine* new_interpreter(size_t max_model_size) {
                         tflite::ops::micro::xcore::Register_LoadFromFlash());
     resolver->AddCustom(tflite::ops::micro::xcore::Bsign_8_OpCode,
                         tflite::ops::micro::xcore::Register_BSign_8());
+    resolver->AddCustom(tflite::ops::micro::xcore::Strided_Slice_OpCode,
+                        tflite::ops::micro::xcore::Register_Strided_Slice());
 
     add_lib_vision_ops(resolver);
 

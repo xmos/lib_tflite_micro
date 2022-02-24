@@ -22,6 +22,7 @@ constexpr const char* Conv2D_Depthwise_OpCode = "XC_conv2d_depthwise";
 constexpr const char* Add_8_OpCode = "XC_add_8";
 constexpr const char* Pad_OpCode = "XC_pad";
 constexpr const char* Load_Flash_OpCode = "XC_ld_flash";
+constexpr const char* Strided_Slice_OpCode = "XC_strided_slice";
 
 // Binarized ops
 constexpr const char* Bsign_8_OpCode = "XC_bsign_8";
@@ -76,6 +77,7 @@ TfLiteRegistration* Register_MaxPool2D();
 TfLiteRegistration* Register_AvgPool2D();
 TfLiteRegistration* Register_AvgPool2D_Global();
 TfLiteRegistration* Register_Lookup_8();
+TfLiteRegistration* Register_Strided_Slice();
 
 // Binarized ops
 TfLiteRegistration* Register_BSign_8();

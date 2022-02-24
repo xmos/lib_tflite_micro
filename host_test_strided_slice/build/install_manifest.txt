@@ -1,0 +1,1 @@
+/Users/aranmcconnell/Documents/strided slice/lib_tflite_micro/host_test_strided_slice/bin/tflm_interpreter_cmdline

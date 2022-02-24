@@ -1,0 +1,7 @@
+/Users/aranmcconnell/Documents/strided slice/lib_tflite_micro/host_test_strided_slice/build/CMakeFiles/tflm_interpreter_cmdline.dir
+/Users/aranmcconnell/Documents/strided slice/lib_tflite_micro/host_test_strided_slice/build/CMakeFiles/edit_cache.dir
+/Users/aranmcconnell/Documents/strided slice/lib_tflite_micro/host_test_strided_slice/build/CMakeFiles/rebuild_cache.dir
+/Users/aranmcconnell/Documents/strided slice/lib_tflite_micro/host_test_strided_slice/build/CMakeFiles/list_install_components.dir
+/Users/aranmcconnell/Documents/strided slice/lib_tflite_micro/host_test_strided_slice/build/CMakeFiles/install.dir
+/Users/aranmcconnell/Documents/strided slice/lib_tflite_micro/host_test_strided_slice/build/CMakeFiles/install/local.dir
+/Users/aranmcconnell/Documents/strided slice/lib_tflite_micro/host_test_strided_slice/build/CMakeFiles/install/strip.dir

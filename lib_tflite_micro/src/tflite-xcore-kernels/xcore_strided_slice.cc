@@ -40,8 +40,6 @@ void* Init(TfLiteContext* context, const char* buffer, size_t length) {
   auto op_data = construct_persistent_object<StridedSliceOpData>(context);
   #ifdef CUSTOMPARSER
   TFLITE_DCHECK(buffer != nullptr);
-  
-  
   auto parser = CustomOptionParser(buffer, length);
   op_data->width = parser.parseNamedCustomOption("width").AsInt32();
   op_data->height = parser.parseNamedCustomOption("height").AsInt32();
@@ -60,9 +58,8 @@ void* Init(TfLiteContext* context, const char* buffer, size_t length) {
 
 // Does all the requests for scratches
 TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
-  #ifndef CUSTOMPARSER
   auto* op_data = static_cast<StridedSliceOpData*>(node->user_data);
-
+  #ifndef CUSTOMPARSER
   //Get Inputs and set op data
   const TfLiteTensor* input_ten = GetInput(context, node, 0);
   const TfLiteTensor* begin_ten = GetInput(context, node, 1);
@@ -131,7 +128,6 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
   void* in_data = const_cast<void *>(tflite::micro::GetTensorData<void>(input));
   void* out_data = tflite::micro::GetTensorData<void>(output);
 
-
   #ifdef TEST
     //Force Input Tensor
     int32_t set_channel_count{0};
@@ -158,14 +154,6 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
   }
 
   #ifdef TEST
-    printf("\n\nDimensions: %d %d %d \n", op_data->width, op_data->height, op_data->channels);
-    printf("Begin coords\n");
-    printf("%d %d\n", op_data->begin_x, op_data->begin_y);
-    printf("End coords\n");
-    printf("%d %d\n", op_data->end_x, op_data->end_y);
-    printf("Stride\n");
-    printf("%d %d\n", op_data->stride_x, op_data->stride_y);
-
     printf("\n\nInput Data\n");
     int32_t channel_count{0};
     int8_t* intPtr = ((int8_t*)in_data);

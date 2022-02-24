@@ -12,8 +12,10 @@ extern "C" {
 #include "nn_operator.h"
 }
 #include <cstdio>
+#include <iostream>
 
-#define TEST
+//#define TEST
+//#define DEBUG
 
 namespace tflite {
 namespace ops {
@@ -66,54 +68,56 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
   const TfLiteTensor* begin_ten = GetInput(context, node, 1);
   const TfLiteTensor* end_ten = GetInput(context, node, 2);
   const TfLiteTensor* strides_ten = GetInput(context, node, 3);
+    #ifdef TEST
+      //Force inputs for test case
+      op_data->width = 6;
+      op_data->height = 6;
+      op_data->channels = 3;  
 
-  op_data->width = SizeOfDimension(input_ten, 1);
-  op_data->height = SizeOfDimension(input_ten, 2);
-  op_data->channels = SizeOfDimension(input_ten, 3);  
+      op_data->begin_x = 1;
+      op_data->begin_y = 1;
 
-  const uint32_t *begins = GetTensorData<uint32_t>(begin_ten);
-  op_data->begin_x = begins[1];
-  op_data->begin_y = begins[2];
+      op_data->end_x = 3;
+      op_data->end_y = 3;
 
-  const uint32_t *ends = GetTensorData<uint32_t>(end_ten);
-  op_data->end_x = ends[1];
-  op_data->end_y = ends[2];
+      op_data->stride_x = 1;
+      op_data->stride_y = 2;
+    #else
+      op_data->width = SizeOfDimension(input_ten, 1);
+      
+      op_data->height = SizeOfDimension(input_ten, 2);
+      op_data->channels = SizeOfDimension(input_ten, 3);  
 
-  const uint32_t *strides = GetTensorData<uint32_t>(strides_ten);
-  op_data->stride_x = strides[1];
-  op_data->stride_y = strides[2];
+      const uint32_t *begins = GetTensorData<uint32_t>(begin_ten);
+      op_data->begin_x = begins[1];
+      op_data->begin_y = begins[2];
+
+      const uint32_t *ends = GetTensorData<uint32_t>(end_ten);
+      op_data->end_x = ends[1];
+      op_data->end_y = ends[2];
+
+      const uint32_t *strides = GetTensorData<uint32_t>(strides_ten);
+      op_data->stride_x = strides[1];
+      op_data->stride_y = strides[2];
+    #endif
   #endif
-  #ifdef TEST
-    //Force inputs for test case
-    op_data->width = 6;
-    op_data->height = 6;
-    op_data->channels = 3;  
 
-    op_data->begin_x = 1;
-    op_data->begin_y = 1;
+  #ifdef DEBUG
+  std::cout << std::endl << "DEBUG" << std::endl << "----------------------------" << std::endl;
+  std::cout << "Width: " << op_data->width << std::endl;
+  std::cout << "Height: " << op_data->height << std::endl;
+  std::cout << "Channels: " << op_data->channels << std::endl;
 
-    op_data->end_x = 3;
-    op_data->end_y = 3;
+  std::cout << "begin_X: " << op_data->begin_x << std::endl;
+  std::cout << "begin_Y: " << op_data->begin_y << std::endl;
 
-    op_data->stride_x = 1;
-    op_data->stride_y = 2;
-  #else
-    op_data->width = SizeOfDimension(input_ten, 1);
-    op_data->height = SizeOfDimension(input_ten, 2);
-    op_data->channels = SizeOfDimension(input_ten, 3);  
+  std::cout << "end_X: " << op_data->end_x << std::endl;
+  std::cout << "end_Y: " << op_data->end_y << std::endl;
 
-    const uint32_t *begins = GetTensorData<uint32_t>(begin_ten);
-    op_data->begin_x = begins[1];
-    op_data->begin_y = begins[2];
-
-    const uint32_t *ends = GetTensorData<uint32_t>(end_ten);
-    op_data->end_x = ends[1];
-    op_data->end_y = ends[2];
-
-    const uint32_t *strides = GetTensorData<uint32_t>(strides_ten);
-    op_data->stride_x = strides[1];
-    op_data->stride_y = strides[2];
-  #endif
+  std::cout << "stride_X: " << op_data->stride_x << std::endl;
+  std::cout << "stride_Y: " << op_data->stride_y << std::endl << "----------------------------"<< std::endl << std::endl;
+  #endif 
+  
   return kTfLiteOk;
 }
 
@@ -152,7 +156,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
       input_iter += op_data->stride_x*op_data->channels;
     }
   }
-  
+
   #ifdef TEST
     printf("\n\nDimensions: %d %d %d \n", op_data->width, op_data->height, op_data->channels);
     printf("Begin coords\n");

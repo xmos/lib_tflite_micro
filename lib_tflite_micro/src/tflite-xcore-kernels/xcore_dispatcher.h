@@ -2,18 +2,14 @@
 #ifndef XCORE_DISPATCHER_H_
 #define XCORE_DISPATCHER_H_
 
-#include <ctime>
-
 #include "tensorflow/lite/c/common.h"
 #include "tensorflow/lite/micro/micro_error_reporter.h"
-#include "xcore_planning.h"
 
 #ifdef XCORE
 extern "C" {
 #ifdef _TIME_H_
 #define _clock_defined
 #endif
-#include <xcore/thread.h>
 }
 
 #define ATTRIBUTE_THREAD_FUNCTION __attribute__((fptrgroup("thread_function")))
@@ -31,14 +27,12 @@ extern "C" {
   }
 
 #else // not XCORE
-#include <thread>
 #include <vector>
 
 #define ATTRIBUTE_THREAD_FUNCTION
 #define GET_THREAD_FUNCTION_STACKSIZE(DEST, NAME) DEST = 0
 
 typedef void (*thread_function_t)(void *);
-typedef std::vector<std::thread> threadgroup_t;
 #endif
 
 namespace tflite {
@@ -47,9 +41,6 @@ namespace micro {
 namespace xcore {
 
 constexpr size_t kMaxThreads = 5;
-constexpr size_t kBytesPerStackword = 4;
-constexpr size_t kWordAlignment = 4;
-constexpr size_t kDoubleWordAlignment = 8;
 
 typedef struct TaskArray {
   ATTRIBUTE_THREAD_FUNCTION thread_function_t function;
@@ -75,7 +66,6 @@ public:
 
 private:
   bool use_current_thread_;
-  threadgroup_t group_;
   TaskArray tasks_;
   tflite::ErrorReporter *reporter_;
 };

@@ -2,11 +2,6 @@
 #include "xcore_dispatcher.h"
 
 #include <cassert>
-#include <cstdlib>
-#include <cstring>
-
-#include "tensorflow/lite/c/common.h"
-#include "xcore_planning.h"
 
 namespace tflite {
 namespace ops {
@@ -22,65 +17,6 @@ Dispatcher *GetDispatcher() {
   return kDispatcher;
 }
 
-#ifdef XCORE
-
-// xCORE Dispatcher implementation.
-// Uses a threadgroup_t to dispatch tasks to threads.
-Dispatcher::Dispatcher(tflite::ErrorReporter *reporter, bool use_current_core)
-    : use_current_thread_(use_current_core), reporter_(reporter) {
-  group_ = thread_group_alloc();
-  tasks_.size = 0;
-}
-
-Dispatcher::~Dispatcher() { thread_group_free(group_); }
-
-TfLiteStatus Dispatcher::JoinTasks() {
-  if (tasks_.size == 0)
-    return kTfLiteOk;
-
-  int begin = 0;
-
-  if (use_current_thread_) {
-    // reserves the first task to be spawned later in this thread
-    begin++;
-  }
-
-  int remaining_tasks = tasks_.size - begin;
-
-  if (remaining_tasks > 0) {
-    // add tasks to the thread group
-    size_t stack_offset = 0;
-    size_t stack_words = tasks_.stack_size / kBytesPerStackword;
-    for (int i = begin; i < tasks_.size; i++) {
-      thread_group_add(group_, tasks_.function, tasks_.arguments[i],
-                       stack_base(&tasks_.stack[stack_offset], stack_words));
-      stack_offset += tasks_.stack_size;
-    }
-
-    // spawn the thread group
-    thread_group_start(group_);
-
-    if (use_current_thread_) {
-      // spawn the first task in this thread
-      (tasks_.function)(tasks_.arguments[0]);
-    }
-
-    // wait for the thread group
-    thread_group_wait(group_);
-  } else {
-    // spawn the only task in this thread
-    (tasks_.function)(tasks_.arguments[0]);
-  }
-
-  tasks_.size = 0;
-
-  return kTfLiteOk;
-}
-
-#else
-
-// x86 Dispatcher implementation.
-// Uses a std::vector of std::thread to dispatch tasks to threads.
 Dispatcher::Dispatcher(tflite::ErrorReporter *reporter, bool use_current_core)
     : use_current_thread_(use_current_core), reporter_(reporter) {
   tasks_.size = 0;
@@ -97,29 +33,13 @@ TfLiteStatus Dispatcher::JoinTasks() {
 
   // Start threads
   for (int i = begin; i < tasks_.size; i++) {
-    group_.push_back(std::thread(tasks_.function, tasks_.arguments[i]));
+    tasks_.function(tasks_.arguments[i]);
   }
 
-  // Join threads
-  for (auto &thread : group_) {
-    thread.join();
-  }
-  group_.clear();
   tasks_.size = 0;
 
   return kTfLiteOk;
 }
-
-#endif // XCORE
-
-//**************************************
-//**************************************
-//**************************************
-// Dispatcher methods common to
-//   XCORE & x86
-//**************************************
-//**************************************
-//**************************************
 
 tflite::ErrorReporter *Dispatcher::GetReporter() { return reporter_; }
 

@@ -192,7 +192,6 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
           context, op_data->thread_count * sizeof(Conv2DThreadInfo)));
 
   switch (kt) {
-  // TODO : Cleanup to combine
   case Conv2DValidDirect_t: {
     ConstructFilter2Ds<nn::Conv2dValidDirect, nn::DerefInputFn,
                        nn::MatMulDirectFn, nn::OT_int8, nn::Filter2D>(

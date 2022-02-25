@@ -104,7 +104,7 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
   std::cout << "Width: " << op_data->width << std::endl;
   std::cout << "Height: " << op_data->height << std::endl;
   std::cout << "Channels: " << op_data->channels << std::endl;
-
+ 
   std::cout << "begin_X: " << op_data->begin_x << std::endl;
   std::cout << "begin_Y: " << op_data->begin_y << std::endl;
 
@@ -177,15 +177,15 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
 }
 
 }  // namespace strided_slice
-}  // namespace xcore
 
-TfLiteRegistration Register_STRIDED_SLICE () {
-  static TfLiteRegistration r = {xcore::strided_slice::Init, nullptr, xcore::strided_slice::Prepare,
-                                 xcore::strided_slice::Eval};
-  return r;
+
+TfLiteRegistration *Register_STRIDED_SLICE () {
+  static TfLiteRegistration r = {strided_slice::Init, nullptr, strided_slice::Prepare,
+                                 strided_slice::Eval};
+  return &r;
 }
 
-
+}  // namespace xcore
 }  // namespace micro
 }  // namespace ops
 }  // namespace tflite

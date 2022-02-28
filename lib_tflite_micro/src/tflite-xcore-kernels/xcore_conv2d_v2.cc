@@ -305,9 +305,6 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
                                 op_data->threads[t].stack_size);
   }
 
-  // If the no of threads is more than one, we need to split the weights and
-  // point to the correct offset for each thread
-  assert(n_threads == 1);
   int8_t *weights =
       (int8_t *)tflite::micro::GetTensorData<int8_t>(weights_tensor);
   int16_t *multipliers_and_biases =

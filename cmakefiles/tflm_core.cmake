@@ -173,7 +173,7 @@ list(APPEND ALL_SOURCES  "${TFLM_SRC_DIR}/kernels/space_to_depth.cc")
 list(APPEND ALL_SOURCES  "${TFLM_SRC_DIR}/kernels/split.cc")
 list(APPEND ALL_SOURCES  "${TFLM_SRC_DIR}/kernels/split_v.cc")
 list(APPEND ALL_SOURCES  "${TFLM_SRC_DIR}/kernels/squeeze.cc")
-
+list(APPEND ALL_SOURCES  "${TFLM_SRC_DIR}/kernels/strided_slice.cc")
 list(APPEND ALL_SOURCES  "${TFLM_SRC_DIR}/kernels/sub.cc")
 list(APPEND ALL_SOURCES  "${TFLM_SRC_DIR}/kernels/sub_common.cc")
 list(APPEND ALL_SOURCES  "${TFLM_SRC_DIR}/kernels/svdf.cc")

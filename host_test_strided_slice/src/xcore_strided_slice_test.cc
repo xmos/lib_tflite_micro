@@ -22,6 +22,8 @@ limitations under the License.
 #include "tensorflow/lite/micro/test_helpers.h"
 #include "tensorflow/lite/micro/testing/micro_test.h"
 
+#include "xcore_ops.h"
+
 namespace tflite {
 namespace testing {
 namespace {
@@ -36,9 +38,9 @@ void ValidateStridedSliceGoldens(TfLiteTensor* tensors, int tensors_size,
   TfLiteIntArray* inputs_array = IntArrayFromInts(inputs_array_data);
   int outputs_array_data[] = {1, 4};
   TfLiteIntArray* outputs_array = IntArrayFromInts(outputs_array_data);
-  const TfLiteRegistration registration =
-      tflite::ops::micro::Register_STRIDED_SLICE();
-  micro::KernelRunner runner(registration, tensors, tensors_size, inputs_array,
+  TfLiteRegistration* registration =
+      tflite::ops::micro::xcore::Register_Strided_Slice();
+  micro::KernelRunner runner(*registration, tensors, tensors_size, inputs_array,
                              outputs_array, reinterpret_cast<void*>(params));
   if (expect_prepare_err) {
     TF_LITE_MICRO_EXPECT_EQ(kTfLiteError, runner.InitAndPrepare());
@@ -346,6 +348,48 @@ TF_LITE_MICRO_TEST(BigUnevenStrideXY) {
   int32_t end_data[] = {0, 4, 4};
   int32_t strides_data[] = {0, 3, 2};
   int8_t golden[] = {1, 2, 7, 8, 21, 22, 27, 28, 41, 42, 47, 48};
+  int8_t output_data[12];
+
+  TfLiteStridedSliceParams builtin_data = {};
+
+  tflite::testing::TestStridedSliceQuantized(
+      input_shape, begin_shape, end_shape, strides_shape, &builtin_data,
+      input_data, begin_data, end_data, strides_data, output_shape, output_data,
+      golden, false);
+}
+
+TF_LITE_MICRO_TEST(CornersSlice) {
+  int input_shape[] = {4, 1, 3, 3, 2};
+  int begin_shape[] = {2, 1, 3};
+  int end_shape[] = {2, 1, 3};
+  int strides_shape[] = {2, 1, 3};
+  int output_shape[] = {3, 2, 2, 2};
+  int8_t input_data[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18};
+  int32_t begin_data[] = {0, 0, 0};
+  int32_t end_data[] = {0, 2, 2};
+  int32_t strides_data[] = {0, 2, 2};
+  int8_t golden[] = {1, 2, 5, 6, 13, 14, 17, 18};
+  int8_t output_data[12];
+
+  TfLiteStridedSliceParams builtin_data = {};
+
+  tflite::testing::TestStridedSliceQuantized(
+      input_shape, begin_shape, end_shape, strides_shape, &builtin_data,
+      input_data, begin_data, end_data, strides_data, output_shape, output_data,
+      golden, false);
+}
+
+TF_LITE_MICRO_TEST(FAILCASE) {
+  int input_shape[] = {4, 1, 3, 3, 2};
+  int begin_shape[] = {2, 1, 3};
+  int end_shape[] = {2, 1, 3};
+  int strides_shape[] = {2, 1, 3};
+  int output_shape[] = {3, 2, 2, 2};
+  int8_t input_data[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18};
+  int32_t begin_data[] = {0, 0, 0};
+  int32_t end_data[] = {0, 1, 1};
+  int32_t strides_data[] = {0, 1, 1};
+  int8_t golden[] = {1, 2, 3, 6, 7, 8, 9, 11};
   int8_t output_data[12];
 
   TfLiteStridedSliceParams builtin_data = {};

@@ -31,6 +31,13 @@ void add_lib_vision_ops(
   resolver->AddStridedSlice();
   resolver->AddSub();
   resolver->AddTranspose();
+  resolver->AddGather();
+  resolver->AddFullyConnected();
+  resolver->AddTranspose();
+  resolver->AddSlice();
+  resolver->AddSplit();
+  resolver->AddPack();
+  resolver->AddUnpack();
 }
 
 extern "C" {

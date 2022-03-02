@@ -38,6 +38,9 @@ void add_lib_vision_ops(
   resolver->AddSplit();
   resolver->AddPack();
   resolver->AddUnpack();
+  resolver->AddTanh();
+  resolver->AddSplitV();
+  resolver->AddShape();
 }
 
 extern "C" {

@@ -112,7 +112,7 @@ int main(int argc, char *argv[]) {
             load_input(argv[carg], ie.input_buffers[tensor_num], ie.input_sizes[tensor_num]);
             tensor_num++;
         }
-        interp_invoke(&ie);
+        interp_invoke_par_4(&ie);
         tensor_num = 0;
         while(++carg < argc) {
             save_output(argv[carg], ie.output_buffers[tensor_num], ie.output_sizes[tensor_num]);

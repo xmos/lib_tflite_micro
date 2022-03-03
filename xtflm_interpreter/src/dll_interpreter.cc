@@ -31,6 +31,16 @@ void add_lib_vision_ops(
   resolver->AddStridedSlice();
   resolver->AddSub();
   resolver->AddTranspose();
+  resolver->AddGather();
+  resolver->AddFullyConnected();
+  resolver->AddTranspose();
+  resolver->AddSlice();
+  resolver->AddSplit();
+  resolver->AddPack();
+  resolver->AddUnpack();
+  resolver->AddTanh();
+  resolver->AddSplitV();
+  resolver->AddShape();
 }
 
 extern "C" {
@@ -168,13 +178,13 @@ size_t arena_used_bytes(inference_engine *ie) {
 int set_tensor(inference_engine *ie, size_t tensor_index, const void *value,
                const int size, const int *shape, const int type) {
   return ie->xtflm->interpreter->SetTensor(tensor_index, value, size, shape,
-                                          type);
+                                           type);
 }
 
 int get_tensor(inference_engine *ie, size_t tensor_index, void *value,
                const int size, const int *shape, const int type) {
   return ie->xtflm->interpreter->GetTensor(tensor_index, value, size, shape,
-                                          type);
+                                           type);
 }
 
 int get_operator_details(inference_engine *ie, size_t operator_index,

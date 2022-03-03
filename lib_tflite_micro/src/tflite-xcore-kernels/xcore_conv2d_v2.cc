@@ -37,9 +37,10 @@ extern "C" {
 // TODO
 #pragma stackfunction 1000
 ATTRIBUTE_THREAD_FUNCTION
-void conv2d_v2_thread_worker(void *context) {
+void conv2d_v2_thread_worker(void *context, void *kp) {
+  nn::AbstractKernel::Params *kparams = (nn::AbstractKernel::Params *)kp;
   auto work = static_cast<Conv2DThread *>(context);
-  work->f->execute(work->Y, work->X, work->scratch);
+  execute(work->Y, work->X, work->f, kparams, work->scratch);
 }
 }
 
@@ -70,7 +71,7 @@ struct Conv2DThreadInfo {
                            // single scratch buffer
   // TODO: Clean up
   // Using AbstractKernel to be able to assign Filter2D or Filter2D_DW
-  nn::AbstractKernel *filter2D; // The job to be done by this thread
+  nn::AbstractKernel::Params *kparams;
 };
 
 // This is the struct that contains the data required to fully describe the work
@@ -83,6 +84,7 @@ struct Conv2DOpData
   size_t thread_count;
   Conv2DThreadInfo *threads;
   KernelType kt;
+  nn::AbstractKernel *filter2D; // The job to be done by this thread
 };
 
 // -------------------------------------------------------------------- //
@@ -120,15 +122,16 @@ void ConstructFilter2DsImpl(Conv2DOpData *op_data, TfLiteContext *context,
   // For each thread, we have a different set of abstract kernel params which we
   // extract here
   // We reuse the other params
+  auto conv2d =
+      new (context->AllocatePersistentBuffer(context, sizeof(Conv2DType)))
+      Conv2DType(memcpy, aggregator, ot);
+  op_data->filter2D = conv2d;
   for (int t = 0; t < op_data->thread_count; ++t) {
     op_data->threads[t].scratch_size = scratch_size;
     typename AkType::Params *ak_params =
         getDeserializedParams<typename AkType::Params>(
             context, ak_params_vec[t].AsBlob().data());
-    auto conv2d =
-        new (context->AllocatePersistentBuffer(context, sizeof(Conv2DType)))
-            Conv2DType(ak_params, memcpy, aggregator, ot);
-    op_data->threads[t].filter2D = conv2d;
+    op_data->threads[t].kparams = ak_params;
   }
 }
 
@@ -297,9 +300,12 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
     thread_data[t].scratch = (int8_t *)context->GetScratchBuffer(
         context, op_data->threads[t].stack_scratch_index);
 
+    thread_data[t].f = op_data->filter2D;
+  }
+
     switch (op_data->kt) {
     case Conv2DValidDirect_t: {
-      nn::Filter2D *f = (nn::Filter2D *)op_data->threads[t].filter2D;
+      nn::Filter2D *f = (nn::Filter2D *)op_data->filter2D;
       nn::MatMulDirectFn *aggr = (nn::MatMulDirectFn *)(f->aggregate_handler);
       aggr->setWeights(weights);
       nn::OT_int8 *ot = (nn::OT_int8 *)(f->ot_handler);
@@ -307,7 +313,7 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
     } break;
     case Conv2DValidIndirect_t:
     case Conv2DPaddedIndirect_t: {
-      nn::Filter2D *f = (nn::Filter2D *)op_data->threads[t].filter2D;
+      nn::Filter2D *f = (nn::Filter2D *)op_data->filter2D;
       nn::MatMulInt8 *aggr = (nn::MatMulInt8 *)(f->aggregate_handler);
       aggr->setWeights(weights);
       nn::OT_int8 *ot = (nn::OT_int8 *)(f->ot_handler);
@@ -315,7 +321,7 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
     } break;
     case DepthwiseConv2DPaddedIndirect_t:
     case DepthwiseConv2DValidDirect_t: {
-      nn::Filter2D_DW *f = (nn::Filter2D_DW *)op_data->threads[t].filter2D;
+      nn::Filter2D_DW *f = (nn::Filter2D_DW *)op_data->filter2D;
       nn::MatMulDirectFn_DW *aggr =
           (nn::MatMulDirectFn_DW *)(f->aggregate_handler);
       aggr->setWeights(weights);
@@ -323,7 +329,7 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
       ot->setMultipliersAndBiases(multipliers_and_biases);
     } break;
     case BNNConv2DValidDirectBinary_t: {
-      nn::Filter2D *f = (nn::Filter2D *)op_data->threads[t].filter2D;
+      nn::Filter2D *f = (nn::Filter2D *)op_data->filter2D;
       nn::MatMulBinaryDirectFn *aggr =
           (nn::MatMulBinaryDirectFn *)(f->aggregate_handler);
       aggr->setWeights(weights);
@@ -331,14 +337,14 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
       ot->setThresholds(multipliers_and_biases);
     } break;
     case BNNConv2DValidIndirectBinary_t: {
-      nn::Filter2D *f = (nn::Filter2D *)op_data->threads[t].filter2D;
+      nn::Filter2D *f = (nn::Filter2D *)op_data->filter2D;
       nn::MatMulBinary *aggr = (nn::MatMulBinary *)(f->aggregate_handler);
       aggr->setWeights(weights);
       nn::OT_binary *ot = (nn::OT_binary *)(f->ot_handler);
       ot->setThresholds(multipliers_and_biases);
     } break;
     case BNNConv2DValidDirectInt8_t: {
-      nn::Filter2D *f = (nn::Filter2D *)op_data->threads[t].filter2D;
+      nn::Filter2D *f = (nn::Filter2D *)op_data->filter2D;
       nn::MatMulBinaryDirectFn *aggr =
           (nn::MatMulBinaryDirectFn *)(f->aggregate_handler);
       aggr->setWeights(weights);
@@ -346,21 +352,18 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
       ot->setOffsetsMultipliersAndBiases(multipliers_and_biases);
     } break;
     case BNNConv2DValidIndirectInt8_t: {
-      nn::Filter2D *f = (nn::Filter2D *)op_data->threads[t].filter2D;
+      nn::Filter2D *f = (nn::Filter2D *)op_data->filter2D;
       nn::MatMulBinary *aggr = (nn::MatMulBinary *)(f->aggregate_handler);
       aggr->setWeights(weights);
       nn::OT_int8_clamped *ot = (nn::OT_int8_clamped *)(f->ot_handler);
       ot->setOffsetsMultipliersAndBiases(multipliers_and_biases);
     } break;
     }
-
-    thread_data[t].f = op_data->threads[t].filter2D;
-  }
   // todo - this second for-loop is unpleasant
   for (int t = 0; t < n_threads-1; ++t) {
-    thread_variable_setup((void *)&thread_data[t], NULL, NULL, xint->thread_info.thread_ids.id[t]);
+    thread_variable_setup((void *)&thread_data[t], op_data->threads[t].kparams, NULL, xint->thread_info.thread_ids.id[t]);
   }
-  thread_call(&thread_data[n_threads-1], NULL, NULL,
+  thread_call(&thread_data[n_threads-1], op_data->threads[n_threads-1].kparams, NULL,
               (thread_function_pointer_t)conv2d_v2_thread_worker, &xint->thread_info);
 
   return kTfLiteOk;

@@ -7,11 +7,17 @@
 extern "C" {
 #endif
 
-typedef struct {
-    uint32_t data[7];
+typedef struct {           // THIS STRUCT MUST BE IN SYNC WITH ASSEMBLY CODE.
+  union {
+    uint64_t id_aligned[2];// Guarantee 64-bit alignment.
+    uint32_t id[4];        // Actual IDs
+  } thread_ids;            // ids of at most 4 threads - live during invoke
+  uint32_t synchroniser;   // synchroniser for threads - live during invoke
+  uint32_t nstackwords;    // nstackwords per stack   - live after load model
+  void *stacks;            // pointer to top of stack - live after load model
 } thread_info_t;
 
-typedef void (*function_pointer)();
+typedef void (*thread_function_pointer_t)();
 
 /** Function that creates threads, then calls a interp_invoke_internal,
  * then destroys threads
@@ -58,7 +64,7 @@ void thread_variable_setup(void *arg0, void *arg1, void *arg2, uint32_t thread_i
  * \param ptr       Pointer to the thread info block held in the xcore interpreter.
  */
 void thread_call(void *arg0, void *arg1, void *arg2,
-                          function_pointer fp, thread_info_t *ptr);
+                          thread_function_pointer_t fp, thread_info_t *ptr);
 #ifdef __cplusplus
 };
 #endif

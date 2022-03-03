@@ -21,9 +21,9 @@ namespace add {
 // -------------------------------------------------------------------- //
 
 struct AddArguments {
-  int8_t* Y;
-  const int8_t* X0;
-  const int8_t* X1;
+  int8_t *Y;
+  const int8_t *X0;
+  const int8_t *X1;
   nn_add_params_t params;
 };
 
@@ -33,9 +33,9 @@ struct AddArguments {
 using AddThreadData = ElementwiseThreadData<AddArguments>;
 
 extern "C" {
-ATTRIBUTE_THREAD_FUNCTION void add_thread_worker(void* context) {
-  auto* td = static_cast<AddThreadData*>(context);
-  auto* args = td->args;
+ATTRIBUTE_THREAD_FUNCTION void add_thread_worker(void *context) {
+  auto *td = static_cast<AddThreadData *>(context);
+  auto *args = td->args;
   add_elementwise(args->Y, args->X0, args->X1, &args->params, td->start,
                   td->element_count);
 }
@@ -56,15 +56,15 @@ struct AddOpData : MultiThreadedOpData<AddArguments, AddThreadData> {
 // op function implementations
 // -------------------------------------------------------------------- //
 
-TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
+TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
   TF_LITE_ENSURE_EQ(context, NumInputs(node), 3);
   TF_LITE_ENSURE_EQ(context, NumOutputs(node), 1);
 
-  auto* op_data = reinterpret_cast<AddOpData*>(node->user_data);
+  auto *op_data = reinterpret_cast<AddOpData *>(node->user_data);
 
   // TODO: memory map this instead
-  const auto* bss = GetInput(context, node, 2);
-  auto& params = op_data->args.params;
+  const auto *bss = GetInput(context, node, 2);
+  auto &params = op_data->args.params;
   params.input[0].shr = bss->data.i32[0];
   params.input[0].multiplier = bss->data.i32[1];
   params.input[1].shr = bss->data.i32[2];
@@ -87,8 +87,8 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
   return kTfLiteOk;
 }
 
-TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
-  auto* op_data = reinterpret_cast<AddOpData*>(node->user_data);
+TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
+  auto *op_data = reinterpret_cast<AddOpData *>(node->user_data);
 
   TF_LITE_ENSURE_STATUS(fetch_scratch_if_needed(
       context, op_data->args.X0, tflite::micro::GetEvalInput(context, node, 0),
@@ -100,29 +100,29 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
       tflite::micro::GetEvalOutput(context, node, 0));
 
   // initialize the dispatcher
-  Dispatcher* dispatcher = GetDispatcher();
-  auto* stack = static_cast<char*>(
+  Dispatcher *dispatcher = GetDispatcher();
+  auto *stack = static_cast<char *>(
       context->GetScratchBuffer(context, op_data->stack_scratch_index));
   TF_LITE_ENSURE(context, stack);
   dispatcher->InitializeTasks(add_thread_worker, stack, op_data->stack_size);
 
-  for (auto& thread : op_data->threads) {
-    dispatcher->AddTask(reinterpret_cast<void*>(&thread));
+  for (auto &thread : op_data->threads) {
+    dispatcher->AddTask(reinterpret_cast<void *>(&thread));
   }
   dispatcher->JoinTasks();
 
   return kTfLiteOk;
 }
 
-}  // namespace add
+} // namespace add
 
-TfLiteRegistration* Register_Add_8() {
+TfLiteRegistration *Register_Add_8() {
   static TfLiteRegistration r = {ElementwiseInit<add::AddOpData>, nullptr,
                                  add::Prepare, add::Eval};
   return &r;
 }
 
-}  // namespace xcore
-}  // namespace micro
-}  // namespace ops
-}  // namespace tflite
+} // namespace xcore
+} // namespace micro
+} // namespace ops
+} // namespace tflite

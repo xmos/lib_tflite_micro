@@ -105,7 +105,7 @@ TF_LITE_MICRO_TEST(ShrinkXY) {
   int output_shape[] = {3, 2, 2, 2};
   int8_t input_data[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18};
   int32_t begin_data[] = {0, 0, 0};
-  int32_t end_data[] = {0, 1, 1};
+  int32_t end_data[] = {0, 2, 2};
   int32_t strides_data[] = {0, 1, 1};
   int8_t golden[] = {1, 2, 3, 4, 7, 8, 9, 10};
   int8_t output_data[12];
@@ -126,9 +126,9 @@ TF_LITE_MICRO_TEST(ShrinkX) {
   int output_shape[] = {3, 1, 3, 2};
   int8_t input_data[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18};
   int32_t begin_data[] = {0, 0, 0};
-  int32_t end_data[] = {0, 0, 2};
+  int32_t end_data[] = {0, 1, 3};
   int32_t strides_data[] = {0, 1, 1};
-  int8_t golden[] = {1, 2, 7, 8, 13, 14};
+  int8_t golden[] = {1, 2, 3, 4, 5, 6};
   int8_t output_data[12];
 
   TfLiteStridedSliceParams builtin_data = {};
@@ -147,9 +147,9 @@ TF_LITE_MICRO_TEST(ShrinkY) {
   int output_shape[] = {3, 3, 1, 2};
   int8_t input_data[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18};
   int32_t begin_data[] = {0, 0, 0};
-  int32_t end_data[] = {0, 2, 0};
+  int32_t end_data[] = {0, 3, 1};
   int32_t strides_data[] = {0, 1, 1};
-  int8_t golden[] = {1, 2, 3, 4, 5, 6};
+  int8_t golden[] = {1, 2, 7, 8, 13, 14};
   int8_t output_data[12];
 
   TfLiteStridedSliceParams builtin_data = {};
@@ -168,9 +168,9 @@ TF_LITE_MICRO_TEST(CenterXY) {
   int output_shape[] = {3, 1, 1, 2};
   int8_t input_data[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18};
   int32_t begin_data[] = {0, 1, 2};
-  int32_t end_data[] = {0, 1, 2};
+  int32_t end_data[] = {0, 2, 3};
   int32_t strides_data[] = {0, 1, 1};
-  int8_t golden[] = {15, 16};
+  int8_t golden[] = {11, 12};
   int8_t output_data[12];
 
   TfLiteStridedSliceParams builtin_data = {};
@@ -189,9 +189,9 @@ TF_LITE_MICRO_TEST(CenterX) {
   int output_shape[] = {3, 3, 1, 2};
   int8_t input_data[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18};
   int32_t begin_data[] = {0, 0, 1};
-  int32_t end_data[] = {0, 2, 1};
+  int32_t end_data[] = {0, 3, 2};
   int32_t strides_data[] = {0, 1, 1};
-  int8_t golden[] = {7, 8, 9, 10, 11, 12};
+  int8_t golden[] = {3, 4, 9, 10, 15, 16};
   int8_t output_data[12];
 
   TfLiteStridedSliceParams builtin_data = {};
@@ -210,9 +210,9 @@ TF_LITE_MICRO_TEST(CenterY) {
   int output_shape[] = {3, 1, 3, 2};
   int8_t input_data[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18};
   int32_t begin_data[] = {0, 1, 0};
-  int32_t end_data[] = {0, 1, 2};
+  int32_t end_data[] = {0, 2, 3};
   int32_t strides_data[] = {0, 1, 1};
-  int8_t golden[] = {3, 4, 9, 10, 15, 16};
+  int8_t golden[] = {7, 8, 9, 10, 11, 12};
   int8_t output_data[12];
 
   TfLiteStridedSliceParams builtin_data = {};
@@ -234,7 +234,7 @@ TF_LITE_MICRO_TEST(StridesXY) {
         7, 8,   9, 10,  11, 12,
         13, 14, 15, 16, 17, 18};
   int32_t begin_data[] = {0, 0, 0};
-  int32_t end_data[] = {0, 2, 2};
+  int32_t end_data[] = {0, 3, 3};
   int32_t strides_data[] = {0, 2, 2};
   int8_t golden[] = {1, 2, 5, 6, 13, 14, 17, 18};
   int8_t output_data[12];
@@ -255,9 +255,9 @@ TF_LITE_MICRO_TEST(StridesX) {
   int output_shape[] = {3, 2, 3, 2};
   int8_t input_data[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18};
   int32_t begin_data[] = {0, 0, 0};
-  int32_t end_data[] = {0, 2, 2};
+  int32_t end_data[] = {0, 3, 3};
   int32_t strides_data[] = {0, 2, 1};
-  int8_t golden[] = {1, 2, 5, 6, 7, 8, 11, 12, 13, 14, 17, 18};
+  int8_t golden[] = {1, 2, 3, 4, 5, 6, 13, 14, 15, 16, 17, 18};
   int8_t output_data[12];
 
   TfLiteStridedSliceParams builtin_data = {};
@@ -279,9 +279,9 @@ TF_LITE_MICRO_TEST(StridesY) {
         7, 8,   9, 10,  11, 12,
         13, 14, 15, 16, 17, 18};
   int32_t begin_data[] = {0, 0, 0};
-  int32_t end_data[] = {0, 2, 2};
+  int32_t end_data[] = {0, 3, 3};
   int32_t strides_data[] = {0, 1, 2};
-  int8_t golden[] = {1, 2, 3, 4, 5, 6, 13, 14, 15, 16, 17, 18};
+  int8_t golden[] = {1, 2, 5, 6, 7, 8, 11, 12, 13, 14, 17, 18};
   int8_t output_data[12];
 
   TfLiteStridedSliceParams builtin_data = {};
@@ -301,9 +301,9 @@ TF_LITE_MICRO_TEST(BigShrinkXY_StrideXY) {
   int8_t input_data[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
    26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50};
   int32_t begin_data[] = {0, 1, 2};
-  int32_t end_data[] = {0, 3, 4};
+  int32_t end_data[] = {0, 4, 5};
   int32_t strides_data[] = {0, 2, 2};
-  int8_t golden[] = {23, 24, 27, 28, 43, 44, 47, 48};
+  int8_t golden[] = {15, 16, 19, 20, 35, 36, 39, 40};
   int8_t output_data[12];
 
   TfLiteStridedSliceParams builtin_data = {};
@@ -323,9 +323,9 @@ TF_LITE_MICRO_TEST(BigUnevenShrinkXY) {
   int8_t input_data[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
    26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50};
   int32_t begin_data[] = {0, 2, 1};
-  int32_t end_data[] = {0, 4, 2};
+  int32_t end_data[] = {0, 5, 3};
   int32_t strides_data[] = {0, 1, 1};
-  int8_t golden[] = {15, 16, 17, 18, 19, 20, 25, 26, 27, 28, 29, 30};
+  int8_t golden[] = {23, 24, 25, 26, 33, 34, 35, 36, 43, 44, 45, 46};
   int8_t output_data[12];
 
   TfLiteStridedSliceParams builtin_data = {};
@@ -345,30 +345,9 @@ TF_LITE_MICRO_TEST(BigUnevenStrideXY) {
   int8_t input_data[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
    26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50};
   int32_t begin_data[] = {0, 0, 0};
-  int32_t end_data[] = {0, 4, 4};
+  int32_t end_data[] = {0, 5, 5};
   int32_t strides_data[] = {0, 3, 2};
-  int8_t golden[] = {1, 2, 7, 8, 21, 22, 27, 28, 41, 42, 47, 48};
-  int8_t output_data[12];
-
-  TfLiteStridedSliceParams builtin_data = {};
-
-  tflite::testing::TestStridedSliceQuantized(
-      input_shape, begin_shape, end_shape, strides_shape, &builtin_data,
-      input_data, begin_data, end_data, strides_data, output_shape, output_data,
-      golden, false);
-}
-
-TF_LITE_MICRO_TEST(CornersSlice) {
-  int input_shape[] = {4, 1, 3, 3, 2};
-  int begin_shape[] = {2, 1, 3};
-  int end_shape[] = {2, 1, 3};
-  int strides_shape[] = {2, 1, 3};
-  int output_shape[] = {3, 2, 2, 2};
-  int8_t input_data[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18};
-  int32_t begin_data[] = {0, 0, 0};
-  int32_t end_data[] = {0, 2, 2};
-  int32_t strides_data[] = {0, 2, 2};
-  int8_t golden[] = {1, 2, 5, 6, 13, 14, 17, 18};
+  int8_t golden[] = {1, 2, 5, 6, 9, 10, 31, 32, 35, 36, 39, 40};
   int8_t output_data[12];
 
   TfLiteStridedSliceParams builtin_data = {};

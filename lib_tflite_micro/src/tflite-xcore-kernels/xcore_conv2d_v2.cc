@@ -304,62 +304,62 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
         context, op_data->threads[t].stack_scratch_index);
   }
 
-    switch (op_data->kt) {
-    case Conv2DValidDirect_t: {
-      nn::Filter2D *f = (nn::Filter2D *)op_data->filter2D;
-      nn::MatMulDirectFn *aggr = (nn::MatMulDirectFn *)(f->aggregate_handler);
-      aggr->setWeights(weights);
-      nn::OT_int8 *ot = (nn::OT_int8 *)(f->ot_handler);
-      ot->setMultipliersAndBiases(multipliers_and_biases);
-    } break;
-    case Conv2DValidIndirect_t:
-    case Conv2DPaddedIndirect_t: {
-      nn::Filter2D *f = (nn::Filter2D *)op_data->filter2D;
-      nn::MatMulInt8 *aggr = (nn::MatMulInt8 *)(f->aggregate_handler);
-      aggr->setWeights(weights);
-      nn::OT_int8 *ot = (nn::OT_int8 *)(f->ot_handler);
-      ot->setMultipliersAndBiases(multipliers_and_biases);
-    } break;
-    case DepthwiseConv2DPaddedIndirect_t:
-    case DepthwiseConv2DValidDirect_t: {
-      nn::Filter2D_DW *f = (nn::Filter2D_DW *)op_data->filter2D;
-      nn::MatMulDirectFn_DW *aggr =
-          (nn::MatMulDirectFn_DW *)(f->aggregate_handler);
-      aggr->setWeights(weights);
-      nn::OT_int8 *ot = (nn::OT_int8 *)(f->ot_handler);
-      ot->setMultipliersAndBiases(multipliers_and_biases);
-    } break;
-    case BNNConv2DValidDirectBinary_t: {
-      nn::Filter2D *f = (nn::Filter2D *)op_data->filter2D;
-      nn::MatMulBinaryDirectFn *aggr =
-          (nn::MatMulBinaryDirectFn *)(f->aggregate_handler);
-      aggr->setWeights(weights);
-      nn::OT_binary *ot = (nn::OT_binary *)(f->ot_handler);
-      ot->setThresholds(multipliers_and_biases);
-    } break;
-    case BNNConv2DValidIndirectBinary_t: {
-      nn::Filter2D *f = (nn::Filter2D *)op_data->filter2D;
-      nn::MatMulBinary *aggr = (nn::MatMulBinary *)(f->aggregate_handler);
-      aggr->setWeights(weights);
-      nn::OT_binary *ot = (nn::OT_binary *)(f->ot_handler);
-      ot->setThresholds(multipliers_and_biases);
-    } break;
-    case BNNConv2DValidDirectInt8_t: {
-      nn::Filter2D *f = (nn::Filter2D *)op_data->filter2D;
-      nn::MatMulBinaryDirectFn *aggr =
-          (nn::MatMulBinaryDirectFn *)(f->aggregate_handler);
-      aggr->setWeights(weights);
-      nn::OT_int8_clamped *ot = (nn::OT_int8_clamped *)(f->ot_handler);
-      ot->setOffsetsMultipliersAndBiases(multipliers_and_biases);
-    } break;
-    case BNNConv2DValidIndirectInt8_t: {
-      nn::Filter2D *f = (nn::Filter2D *)op_data->filter2D;
-      nn::MatMulBinary *aggr = (nn::MatMulBinary *)(f->aggregate_handler);
-      aggr->setWeights(weights);
-      nn::OT_int8_clamped *ot = (nn::OT_int8_clamped *)(f->ot_handler);
-      ot->setOffsetsMultipliersAndBiases(multipliers_and_biases);
-    } break;
-    }
+  switch (op_data->kt) {
+  case Conv2DValidDirect_t: {
+    nn::Filter2D *f = (nn::Filter2D *)op_data->filter2D;
+    nn::MatMulDirectFn *aggr = (nn::MatMulDirectFn *)(f->aggregate_handler);
+    aggr->setWeights(weights);
+    nn::OT_int8 *ot = (nn::OT_int8 *)(f->ot_handler);
+    ot->setMultipliersAndBiases(multipliers_and_biases);
+  } break;
+  case Conv2DValidIndirect_t:
+  case Conv2DPaddedIndirect_t: {
+    nn::Filter2D *f = (nn::Filter2D *)op_data->filter2D;
+    nn::MatMulInt8 *aggr = (nn::MatMulInt8 *)(f->aggregate_handler);
+    aggr->setWeights(weights);
+    nn::OT_int8 *ot = (nn::OT_int8 *)(f->ot_handler);
+    ot->setMultipliersAndBiases(multipliers_and_biases);
+  } break;
+  case DepthwiseConv2DPaddedIndirect_t:
+  case DepthwiseConv2DValidDirect_t: {
+    nn::Filter2D_DW *f = (nn::Filter2D_DW *)op_data->filter2D;
+    nn::MatMulDirectFn_DW *aggr =
+        (nn::MatMulDirectFn_DW *)(f->aggregate_handler);
+    aggr->setWeights(weights);
+    nn::OT_int8 *ot = (nn::OT_int8 *)(f->ot_handler);
+    ot->setMultipliersAndBiases(multipliers_and_biases);
+  } break;
+  case BNNConv2DValidDirectBinary_t: {
+    nn::Filter2D *f = (nn::Filter2D *)op_data->filter2D;
+    nn::MatMulBinaryDirectFn *aggr =
+        (nn::MatMulBinaryDirectFn *)(f->aggregate_handler);
+    aggr->setWeights(weights);
+    nn::OT_binary *ot = (nn::OT_binary *)(f->ot_handler);
+    ot->setThresholds(multipliers_and_biases);
+  } break;
+  case BNNConv2DValidIndirectBinary_t: {
+    nn::Filter2D *f = (nn::Filter2D *)op_data->filter2D;
+    nn::MatMulBinary *aggr = (nn::MatMulBinary *)(f->aggregate_handler);
+    aggr->setWeights(weights);
+    nn::OT_binary *ot = (nn::OT_binary *)(f->ot_handler);
+    ot->setThresholds(multipliers_and_biases);
+  } break;
+  case BNNConv2DValidDirectInt8_t: {
+    nn::Filter2D *f = (nn::Filter2D *)op_data->filter2D;
+    nn::MatMulBinaryDirectFn *aggr =
+        (nn::MatMulBinaryDirectFn *)(f->aggregate_handler);
+    aggr->setWeights(weights);
+    nn::OT_int8_clamped *ot = (nn::OT_int8_clamped *)(f->ot_handler);
+    ot->setOffsetsMultipliersAndBiases(multipliers_and_biases);
+  } break;
+  case BNNConv2DValidIndirectInt8_t: {
+    nn::Filter2D *f = (nn::Filter2D *)op_data->filter2D;
+    nn::MatMulBinary *aggr = (nn::MatMulBinary *)(f->aggregate_handler);
+    aggr->setWeights(weights);
+    nn::OT_int8_clamped *ot = (nn::OT_int8_clamped *)(f->ot_handler);
+    ot->setOffsetsMultipliersAndBiases(multipliers_and_biases);
+  } break;
+  }
   // todo - this second for-loop is unpleasant
   for (int t = 0; t < n_threads-1; ++t) {
     thread_variable_setup((void *)&shared_data, (void *)&thread_data[t], op_data->threads[t].kparams, xint->thread_info.thread_ids.id[t]);

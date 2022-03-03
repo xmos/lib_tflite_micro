@@ -15,7 +15,7 @@ extern "C" {
 #include <iostream>
 
 //#define TEST
-#define DEBUG
+//#define DEBUG
 
 namespace tflite {
 namespace ops {
@@ -38,19 +38,21 @@ struct StridedSliceOpData : XCoreOpData {   // Inherits the operator name field 
 
 void* Init(TfLiteContext* context, const char* buffer, size_t length) {
   auto op_data = construct_persistent_object<StridedSliceOpData>(context);
+
   #ifdef CUSTOMPARSER
-  TFLITE_DCHECK(buffer != nullptr);
-  auto parser = CustomOptionParser(buffer, length);
-  op_data->width = parser.parseNamedCustomOption("width").AsInt32();
-  op_data->height = parser.parseNamedCustomOption("height").AsInt32();
-  op_data->channels = parser.parseNamedCustomOption("channels").AsInt32();
-  op_data->begin_x = parser.parseNamedCustomOption("begin_x").AsInt32();
-  op_data->begin_x = parser.parseNamedCustomOption("begin_y").AsInt32();
-  op_data->end_x = parser.parseNamedCustomOption("end_x").AsInt32();
-  op_data->end_x = parser.parseNamedCustomOption("end_y").AsInt32();
-  op_data->stride_x = parser.parseNamedCustomOption("stride_x").AsInt32();
-  op_data->stride_y = parser.parseNamedCustomOption("stride_y").AsInt32();
+    TFLITE_DCHECK(buffer != nullptr);
+    auto parser = CustomOptionParser(buffer, length);
+    op_data->width = parser.parseNamedCustomOption("width").AsInt32();
+    op_data->height = parser.parseNamedCustomOption("height").AsInt32();
+    op_data->channels = parser.parseNamedCustomOption("channels").AsInt32();
+    op_data->begin_x = parser.parseNamedCustomOption("begin_x").AsInt32();
+    op_data->begin_x = parser.parseNamedCustomOption("begin_y").AsInt32();
+    op_data->end_x = parser.parseNamedCustomOption("end_x").AsInt32();
+    op_data->end_x = parser.parseNamedCustomOption("end_y").AsInt32();
+    op_data->stride_x = parser.parseNamedCustomOption("stride_x").AsInt32();
+    op_data->stride_y = parser.parseNamedCustomOption("stride_y").AsInt32();
   #endif
+
   op_data->name = "XC_Strided_Slice";
 
   return op_data;
@@ -88,10 +90,22 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
       const uint32_t *begins = GetTensorData<uint32_t>(begin_ten);
       op_data->begin_x = begins[1];
       op_data->begin_y = begins[2];
+      if(!(op_data->begin_x < op_data->width)){
+        op_data->begin_x = op_data->width;
+      }
+      if(!(op_data->begin_y < op_data->height)){
+        op_data->begin_y = op_data->height;
+      }
 
       const uint32_t *ends = GetTensorData<uint32_t>(end_ten);
       op_data->end_x = ends[1];
       op_data->end_y = ends[2];
+      if(!(op_data->end_x < op_data->width)){
+        op_data->end_x = op_data->width;
+      }
+      if(!(op_data->end_y < op_data->height)){
+        op_data->end_y = op_data->height;
+      }
 
       const uint32_t *strides = GetTensorData<uint32_t>(strides_ten);
       op_data->stride_x = strides[1];
@@ -100,7 +114,7 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
   #endif
 
   #ifdef DEBUG
-  std::cout << std::endl << "DEBUG" << std::endl << "----------------------------" << std::endl;
+  std::cout << std::endl << "DEBUG: Xcore Op" << std::endl << "----------------------------" << std::endl;
   std::cout << "Width: " << op_data->width << std::endl;
   std::cout << "Height: " << op_data->height << std::endl;
   std::cout << "Channels: " << op_data->channels << std::endl;
@@ -129,7 +143,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
   void* out_data = tflite::micro::GetTensorData<void>(output);
 
   #ifdef TEST
-    //Force Input Tensor
+    //Force Input Tensor3
     int32_t set_channel_count{0};
     int8_t setVal{0};
     int8_t* setPtr = ((int8_t*)in_data);
@@ -142,18 +156,18 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
 
   uint8_t* output_iter = (uint8_t*)out_data;
 
-  for(uint32_t row_iter{0}; row_iter <= (op_data->end_y - op_data->begin_y); row_iter += op_data->stride_y)
+  for(uint32_t col_iter{0}; col_iter < (op_data->end_x - op_data->begin_x); col_iter += op_data->stride_x)
   {
-    uint8_t* input_iter = ((uint8_t*)in_data) + (op_data->begin_x + (op_data->begin_y + row_iter)*op_data->width)*op_data->channels;
-    for(uint32_t col_iter{0}; col_iter <= (op_data->end_x - op_data->begin_x); col_iter += op_data->stride_x)
+    uint8_t* input_iter = ((uint8_t*)in_data) + (op_data->begin_y + (op_data->begin_x + col_iter)*op_data->height)*op_data->channels;
+    for(uint32_t row_iter{0}; row_iter < (op_data->end_y - op_data->begin_y); row_iter += op_data->stride_y)
     {
       memcpy(output_iter, input_iter, op_data->channels);
       output_iter += op_data->channels;
-      input_iter += op_data->stride_x*op_data->channels;
+      input_iter += op_data->stride_y*op_data->channels;
     }
   }
 
-  #ifdef TEST
+  #ifdef DEBUG
     printf("\n\nInput Data\n");
     int32_t channel_count{0};
     int8_t* intPtr = ((int8_t*)in_data);
@@ -166,12 +180,13 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
     channel_count = 0;
     printf("\n\nOutput Data\n");
     int8_t* outPtr = ((int8_t*)out_data);
-    for(int i{0}; i< ((op_data->end_x-op_data->begin_x+2-op_data->stride_x)*(op_data->end_y-op_data->begin_y+2-op_data->stride_y)*op_data->channels);i++){
+    for(int i{0}; i< ((op_data->end_x-op_data->begin_x+1-op_data->stride_x)*(op_data->end_y-op_data->begin_y+1-op_data->stride_y)*op_data->channels);i++){
       if(channel_count%op_data->channels == 0) printf("\n");
       channel_count++;
       printf("%d, ", outPtr[i]);
     }
   #endif
+  
 
   return kTfLiteOk;
 }

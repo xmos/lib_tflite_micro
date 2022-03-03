@@ -2,7 +2,7 @@
 #ifndef INFERENCE_ENGINE_H_
 #define INFERENCE_ENGINE_H_
 
-#ifdef __cplusplus
+#ifndef __XC__
 #define UNSAFE /**/
 #else
 #define UNSAFE unsafe
@@ -19,6 +19,8 @@
 #endif
 
 #endif
+
+#include "tensorflow/lite/c/c_api_types.h"
 
 #ifdef __cplusplus
 
@@ -172,15 +174,15 @@ extern "C" {
  * \param ie           pointer to inference engine.
  */
     int interp_invoke(inference_engine_t * UNSAFE ie);
-
+    
 /** Function that prints a summary of the time each operator took. This function
  * uses printf - you may want to avoid calling it.
  *  
  * \param ie           pointer to inference engine.
  */
     void print_profiler_summary(inference_engine_t * UNSAFE ie);
-    int interp_invoke_par_4(inference_engine *ie);
-    TfLiteStatus interp_invoke_internal(inference_engine *ie);
+    int interp_invoke_par_4(inference_engine_t *ie);
+    TfLiteStatus interp_invoke_internal(inference_engine_t *ie);
 #ifdef __cplusplus
 };
 #endif

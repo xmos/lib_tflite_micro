@@ -3,6 +3,10 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
     uint32_t data[7];
 } thread_info_t;
@@ -55,5 +59,8 @@ void thread_variable_setup(void *arg0, void *arg1, void *arg2, uint32_t thread_i
  */
 void thread_call(void *arg0, void *arg1, void *arg2,
                           function_pointer fp, thread_info_t *ptr);
+#ifdef __cplusplus
+};
+#endif
 
 #endif

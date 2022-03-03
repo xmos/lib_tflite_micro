@@ -23,24 +23,25 @@ namespace conv_v2 {
 // thread data type and worker functions
 // -------------------------------------------------------------------- //
 
-struct Conv2DThread {
+struct Conv2DShared {
   int8_t *X;
   int8_t *Y;
-  int8_t *scratch;
-
-  // TODO: Clean up
-  // Using AbstractKernel to be able to assign Filter2D or Filter2D_DW
   nn::AbstractKernel *f;
+};
+
+struct Conv2DThread {
+  int8_t *scratch;
 };
 
 extern "C" {
 // TODO
 #pragma stackfunction 1000
 ATTRIBUTE_THREAD_FUNCTION
-void conv2d_v2_thread_worker(void *context, void *kp) {
+void conv2d_v2_thread_worker(void *shard, void *wrk, void *kp) {
   nn::AbstractKernel::Params *kparams = (nn::AbstractKernel::Params *)kp;
-  auto work = static_cast<Conv2DThread *>(context);
-  execute(work->Y, work->X, work->f, kparams, work->scratch);
+  auto work = static_cast<Conv2DThread *>(wrk);
+  auto shared = static_cast<Conv2DShared *>(shard);
+  execute(shared->Y, shared->X, shared->f, kparams, work->scratch);
 }
 }
 
@@ -294,13 +295,13 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
           multipliers_and_biases_tensor);
 
   Conv2DThread thread_data[n_threads];
+  Conv2DShared shared_data;
+  shared_data.X = (int8_t *)tflite::micro::GetTensorData<int8_t>(input);
+  shared_data.Y = (int8_t *)tflite::micro::GetTensorData<int8_t>(output);
+  shared_data.f = op_data->filter2D;
   for (int t = 0; t < n_threads; ++t) {
-    thread_data[t].X = (int8_t *)tflite::micro::GetTensorData<int8_t>(input);
-    thread_data[t].Y = (int8_t *)tflite::micro::GetTensorData<int8_t>(output);
     thread_data[t].scratch = (int8_t *)context->GetScratchBuffer(
         context, op_data->threads[t].stack_scratch_index);
-
-    thread_data[t].f = op_data->filter2D;
   }
 
     switch (op_data->kt) {
@@ -361,9 +362,9 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
     }
   // todo - this second for-loop is unpleasant
   for (int t = 0; t < n_threads-1; ++t) {
-    thread_variable_setup((void *)&thread_data[t], op_data->threads[t].kparams, NULL, xint->thread_info.thread_ids.id[t]);
+    thread_variable_setup((void *)&shared_data, (void *)&thread_data[t], op_data->threads[t].kparams, xint->thread_info.thread_ids.id[t]);
   }
-  thread_call(&thread_data[n_threads-1], op_data->threads[n_threads-1].kparams, NULL,
+  thread_call((void *)&shared_data, &thread_data[n_threads-1], op_data->threads[n_threads-1].kparams,
               (thread_function_pointer_t)conv2d_v2_thread_worker, &xint->thread_info);
 
   return kTfLiteOk;

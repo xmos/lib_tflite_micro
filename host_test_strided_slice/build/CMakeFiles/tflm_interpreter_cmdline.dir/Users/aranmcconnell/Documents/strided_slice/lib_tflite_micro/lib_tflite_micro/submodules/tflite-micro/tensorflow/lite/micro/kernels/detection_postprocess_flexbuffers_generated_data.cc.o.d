@@ -1,3 +1,0 @@
-CMakeFiles/tflm_interpreter_cmdline.dir/Users/aranmcconnell/Documents/strided_slice/lib_tflite_micro/lib_tflite_micro/submodules/tflite-micro/tensorflow/lite/micro/kernels/detection_postprocess_flexbuffers_generated_data.cc.o: \
-  /Users/aranmcconnell/Documents/strided\ slice/lib_tflite_micro/lib_tflite_micro/submodules/tflite-micro/tensorflow/lite/micro/kernels/detection_postprocess_flexbuffers_generated_data.cc \
-  /Users/aranmcconnell/Documents/strided\ slice/lib_tflite_micro/host_test_strided_slice/../lib_tflite_micro/submodules/tflite-micro/tensorflow/lite/micro/kernels/detection_postprocess_flexbuffers_generated_data.h

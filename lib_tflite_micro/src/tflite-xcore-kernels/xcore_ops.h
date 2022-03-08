@@ -1,8 +1,8 @@
 #ifndef XCORE_OPS_H_
 #define XCORE_OPS_H_
 
-#include "xcore_utils.h"
 #include "tensorflow/lite/micro/micro_mutable_op_resolver.h"
+#include "xcore_utils.h"
 
 namespace tflite {
 namespace ops {
@@ -26,16 +26,16 @@ constexpr const char* Strided_Slice_OpCode = "XC_strided_slice";
 constexpr const char* Strided_Slice_V2_OpCode = "XC_strided_slice_v2";
 
 // Binarized ops
-constexpr const char* Bsign_8_OpCode = "XC_bsign_8";
-constexpr const char* BConv2d_Bitpacked_OpCode = "XC_bconv2d_bin";
-constexpr const char* BConv2d_Bitpacked_DeepIn_OpCode = "XC_bconv2d_bin_DI";
-constexpr const char* BConv2d_Int8_OpCode = "XC_bconv2d_int8";
-constexpr const char* BConv2d_Int8_DeepIn_DeepOut_OpCode =
+constexpr const char *Bsign_8_OpCode = "XC_bsign_8";
+constexpr const char *BConv2d_Bitpacked_OpCode = "XC_bconv2d_bin";
+constexpr const char *BConv2d_Bitpacked_DeepIn_OpCode = "XC_bconv2d_bin_DI";
+constexpr const char *BConv2d_Int8_OpCode = "XC_bconv2d_int8";
+constexpr const char *BConv2d_Int8_DeepIn_DeepOut_OpCode =
     "XC_bconv2d_int8_DIDO";
 
 // Currently unused, may be deprecated
-constexpr const char* Requantize_16_to_8_OpCode = "XC_requantize_16_to_8";
-constexpr const char* ArgMax2D_OpCode = "XC_argmax_16";
+constexpr const char *Requantize_16_to_8_OpCode = "XC_requantize_16_to_8";
+constexpr const char *ArgMax2D_OpCode = "XC_argmax_16";
 
 struct PoolingParams {
   int32_t pool_h;
@@ -59,8 +59,7 @@ struct Conv2DParams {
   Conv2DPadding pad;
 };
 
-template <typename TArgs, typename TThreadData>
-struct MultiThreadedOpData {
+template <typename TArgs, typename TThreadData> struct MultiThreadedOpData {
   TArgs args;
   PersistentArray<TThreadData> threads;
   int stack_scratch_index = -1;
@@ -82,23 +81,23 @@ TfLiteRegistration* Register_Strided_Slice();
 TfLiteRegistration* Register_Strided_Slice_V2();
 
 // Binarized ops
-TfLiteRegistration* Register_BSign_8();
-TfLiteRegistration* Register_BConv2D_Bitpacked_Deepin();
-TfLiteRegistration* Register_BConv2D_Bitpacked();
-TfLiteRegistration* Register_BConv2D_Int8_Deepin_Deepout();
-TfLiteRegistration* Register_BConv2D_Int8();
+TfLiteRegistration *Register_BSign_8();
+TfLiteRegistration *Register_BConv2D_Bitpacked_Deepin();
+TfLiteRegistration *Register_BConv2D_Bitpacked();
+TfLiteRegistration *Register_BConv2D_Int8_Deepin_Deepout();
+TfLiteRegistration *Register_BConv2D_Int8();
 
 // Under development
-TfLiteRegistration* Register_Pad();
-TfLiteRegistration* Register_Add_8();
+TfLiteRegistration *Register_Pad();
+TfLiteRegistration *Register_Add_8();
 
 // operators not currently inserted by the XCORE converter
-TfLiteRegistration* Register_Requantize_16_to_8();
-TfLiteRegistration* Register_ArgMax_16();
+TfLiteRegistration *Register_Requantize_16_to_8();
+TfLiteRegistration *Register_ArgMax_16();
 
-}  // namespace xcore
-}  // namespace micro
-}  // namespace ops
-}  // namespace tflite
+} // namespace xcore
+} // namespace micro
+} // namespace ops
+} // namespace tflite
 
-#endif  // XCORE_OPS_H_
+#endif // XCORE_OPS_H_

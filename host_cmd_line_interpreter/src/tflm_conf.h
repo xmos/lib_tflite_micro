@@ -1,6 +1,0 @@
-#define TFLM_OPERATORS      (250)
-#define NUM_OUTPUT_TENSORS  (4)
-#define NUM_INPUT_TENSORS   (4)
-#define MAX_DEBUG_LOG_LENGTH (1024)
-#define AISRV_GPIO_LENGTH    (4)
-

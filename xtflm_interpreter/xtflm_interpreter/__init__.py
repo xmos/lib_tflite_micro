@@ -11,9 +11,9 @@ from pathlib import Path
 
 __PARENT_DIR = Path(__file__).parent.absolute()
 if sys.platform.startswith("linux"):
-    lib_path = str(__PARENT_DIR / "libs" / "linux" / "tflm_python.so")
+    lib_path = str(__PARENT_DIR / "libs" / "linux" / "xtflm_python.so")
 elif sys.platform == "darwin":
-    lib_path = str(__PARENT_DIR / "libs" / "macos" / "tflm_python.dylib")
+    lib_path = str(__PARENT_DIR / "libs" / "macos" / "xtflm_python.dylib")
 else:
     raise RuntimeError("libxcore_interpreters is not supported on Windows!")
 
@@ -67,11 +67,11 @@ __TfLiteType_to_numpy_dtype = {
 }
 TfLiteType.to_numpy_dtype = lambda self: __TfLiteType_to_numpy_dtype[self]
 
-class TFLMInterpreterStatus(Enum):
+class XTFLMInterpreterStatus(Enum):
     OK = 0
     ERROR = 1
 
-class TFLMInterpreter:
+class XTFLMInterpreter:
     def __init__(
         self,
         model_path=None,
@@ -201,19 +201,19 @@ class TFLMInterpreter:
             self._max_tensor_arena_size,
             self._params_content,
         )
-        if TFLMInterpreterStatus(status) is TFLMInterpreterStatus.ERROR:
+        if XTFLMInterpreterStatus(status) is XTFLMInterpreterStatus.ERROR:
             raise RuntimeError("Unable to initialize interpreter")
         if print_memory_plan:
             lib.print_memory_plan(self.obj)
 
-    def __enter__(self) -> "TFLMInterpreter":
+    def __enter__(self) -> "XTFLMInterpreter":
         return self
 
     def __exit__(self, exc_type, exc_value, exc_traceback) -> None:
         self.close()
 
     def _check_status(self, status) -> None:
-        if TFLMInterpreterStatus(status) is TFLMInterpreterStatus.ERROR:
+        if XTFLMInterpreterStatus(status) is XTFLMInterpreterStatus.ERROR:
             lib.get_error(self.obj, self._error_msg)
             raise RuntimeError(self._error_msg.value.decode("utf-8"))
 

@@ -23,6 +23,7 @@ inference_engine_initialize(inference_engine *ie, uint32_t memory_primary[],
   // First initialise the structure with the three memory objects
   // internal memory, external memory, and XTFLM objects.
   memset(ie, 0, sizeof(*ie));
+  xtflmo->interpreter = nullptr;
   ie->xtflm = xtflmo;
   ie->memory_primary = memory_primary;
   ie->memory_secondary = memory_secondary;

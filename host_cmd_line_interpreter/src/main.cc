@@ -15,6 +15,7 @@ uint32_t params_content[MAX_MODEL_CONTENT_SIZE / sizeof(uint32_t)];
 struct tflite_micro_objects s0;
 
 void inference_engine_initialize(inference_engine_t *ie) {
+  s0.interpreter = nullptr;
   auto *resolver = inference_engine_initialize(
       ie, model_content, MAX_MODEL_CONTENT_SIZE, nullptr, 0, &s0);
   resolver->AddDequantize();
@@ -129,6 +130,8 @@ int main(int argc, char *argv[]) {
     inference_engine_unload_model(&ie);
     int error = inference_engine_load_model(&ie, model_size, ie.memory_primary, params_content);
 
+    // reset carg
+    carg = 3;
     if (strcmp(argv[carg], "-i") == 0) {
         int tensor_num = 0;
         while(strcmp(argv[++carg], "-o") != 0 && carg < argc) {

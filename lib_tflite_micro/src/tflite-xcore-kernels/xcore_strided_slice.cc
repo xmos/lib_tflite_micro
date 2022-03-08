@@ -16,8 +16,6 @@ extern "C" {
 #include <cstdio>
 #include <iostream>
 
-//#define TEST
-//#define DEBUG
 
 namespace tflite {
 namespace ops {
@@ -40,7 +38,6 @@ struct StridedSliceOpData : XCoreOpData {   // Inherits the operator name field 
 
 void* Init(TfLiteContext* context, const char* buffer, size_t length) {
   auto op_data = construct_persistent_object<StridedSliceOpData>(context);
-
   op_data->name = "XC_Strided_Slice";
 
   return op_data;
@@ -49,14 +46,15 @@ void* Init(TfLiteContext* context, const char* buffer, size_t length) {
 // Does all the requests for scratches
 TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
   auto* op_data = static_cast<StridedSliceOpData*>(node->user_data);
- 
+
+  //Get Inputs and set op data
   const TfLiteTensor* input_ten = GetInput(context, node, 0);
   const TfLiteTensor* begin_ten = GetInput(context, node, 1);
   const TfLiteTensor* end_ten = GetInput(context, node, 2);
   const TfLiteTensor* strides_ten = GetInput(context, node, 3);
   
   op_data->width = SizeOfDimension(input_ten, 2);
-      
+  
   op_data->height = SizeOfDimension(input_ten, 1);
   op_data->channels = SizeOfDimension(input_ten, 3);  
 
@@ -83,7 +81,7 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
   const uint32_t *strides = GetTensorData<uint32_t>(strides_ten);
   op_data->stride_x = strides[2];
   op_data->stride_y = strides[1];
-  
+
   return kTfLiteOk;
 }
 
@@ -93,6 +91,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
   //Get Input/Output Tensors
   const TfLiteEvalTensor *input = tflite::micro::GetEvalInput(context, node, 0);
   TfLiteEvalTensor *output = tflite::micro::GetEvalOutput(context, node, 0);
+
   //Pointers to data in In/Out Tensors
   void* in_data = const_cast<void *>(tflite::micro::GetTensorData<void>(input));
   void* out_data = tflite::micro::GetTensorData<void>(output);

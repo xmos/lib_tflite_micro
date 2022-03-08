@@ -30,7 +30,7 @@ void ExecutionPlan::SetBiasScratchSize(size_t size) {
 }
 size_t ExecutionPlan::GetBiasScratchSize() { return bias_scratch_size_; }
 
-}  // namespace xcore
-}  // namespace micro
-}  // namespace ops
-}  // namespace tflite
+} // namespace xcore
+} // namespace micro
+} // namespace ops
+} // namespace tflite

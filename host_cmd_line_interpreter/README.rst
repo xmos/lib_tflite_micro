@@ -1,4 +1,4 @@
-Command line interface for TFLM
+Command line interface for XTFLM
 ===============================
 
 Build
@@ -14,8 +14,8 @@ Usage
 
 Use it in either of the two following ways::
 
-  bin/tflm_interpreter_cmdline  model.tflite input-file output-file
-  bin/tflm_interpreter_cmdline  model.tflite -i files ... -o files 
+  bin/xtflm_interpreter_cmdline  model.tflite input-file output-file
+  bin/xtflm_interpreter_cmdline  model.tflite -i files ... -o files 
 
 input and output are raw data. The first form only works when the network
 expects a single input and has a single output. The second form works with

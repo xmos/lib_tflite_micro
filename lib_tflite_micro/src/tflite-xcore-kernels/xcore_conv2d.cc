@@ -25,9 +25,9 @@ struct Conv2DArguments {
   nn_image_params_t x_image;
   nn_image_params_t y_image;
 
-  nn_window_params_t window;                    // not used by 1x1
-  int8_t zero_point;                            // not used by 1x1
-  nn_conv2d_depthwise_flags_e depthwise_flags;  // only for depthwise
+  nn_window_params_t window;                   // not used by 1x1
+  int8_t zero_point;                           // not used by 1x1
+  nn_conv2d_depthwise_flags_e depthwise_flags; // only for depthwise
 };
 
 struct Conv2DOpData {
@@ -100,8 +100,7 @@ enum class Conv2DKernelType {
   kDepthwise,
 };
 
-template <Conv2DKernelType kernel_type>
-struct Conv2DKernel {
+template <Conv2DKernelType kernel_type> struct Conv2DKernel {
   static inline const thread_function_t get_worker() {
     if (kernel_type == Conv2DKernelType::kDeep) {
       return conv2d_deep_thread_worker;
@@ -128,8 +127,8 @@ struct Conv2DKernel {
       UNSUPPORTED_KERNEL_TYPE(Conv2DKernelType);
     }
   };
-  static inline size_t calculate_output_channel_size(
-      const tflite::RuntimeShape &weights_shape) {
+  static inline size_t
+  calculate_output_channel_size(const tflite::RuntimeShape &weights_shape) {
     if (kernel_type == Conv2DKernelType::kDeep ||
         kernel_type == Conv2DKernelType::kShallow) {
       return weights_shape.Dims(1) * weights_shape.Dims(2) *
@@ -252,7 +251,7 @@ static void fetch_depthwise_subtensor(int8_t *dest, const nn_tensor_t *weights,
   assert(channel_count % 4 == 0);
 
   weights =
-      &(weights[start_channel]);  // Address of weights[0][0][start_channel]
+      &(weights[start_channel]); // Address of weights[0][0][start_channel]
 
   // Total of K_h * K_w blocks, for a total of K_h*K_w*channel_count bytes
   for (int k = 0; k < K_h * K_w; k++) {
@@ -346,7 +345,7 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   return kTfLiteOk;
 }
 
-}  // namespace conv
+} // namespace conv
 
 TfLiteRegistration *Register_Conv2D_Deep() {
   static TfLiteRegistration r = {conv::Init, nullptr,
@@ -376,7 +375,7 @@ TfLiteRegistration *Register_Conv2D_Depthwise() {
   return &r;
 }
 
-}  // namespace xcore
-}  // namespace micro
-}  // namespace ops
-}  // namespace tflite
+} // namespace xcore
+} // namespace micro
+} // namespace ops
+} // namespace tflite

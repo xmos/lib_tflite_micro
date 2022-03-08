@@ -4,9 +4,9 @@
 import sys
 import numpy as np
 import cv2
-from tflm_interpreter import TFLMInterpreter
+from xtflm_interpreter import XTFLMInterpreter
 
-ie = TFLMInterpreter(model_path = sys.argv[1], params_path = sys.argv[2])
+ie = XTFLMInterpreter(model_path = sys.argv[1], params_path = sys.argv[2])
 
 with open(sys.argv[3], 'rb') as fd:
     img = fd.read()

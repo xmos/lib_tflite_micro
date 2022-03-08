@@ -30,6 +30,7 @@ set(CMAKE_CXX_FLAGS "-std=c++11" CACHE STRING "C++ Compiler Base Flags" FORCE)
 set(BUILD_FLAGS
   "-O3"
   "-DNN_USE_REF"
+  "-D__xtflm_conf_h_exists__"
 )
 
 #**********************
@@ -40,11 +41,10 @@ target_compile_options(tflm_interpreter_cmdline PRIVATE ${BUILD_FLAGS})
 target_link_options(tflm_interpreter_cmdline PRIVATE ${BUILD_FLAGS})
 target_link_libraries(tflm_interpreter_cmdline PRIVATE "-lpthread")
 
-include(../cmakefiles/tflm_core.cmake)
+include(../cmakefiles/xtflm.cmake)
 
 target_sources(tflm_interpreter_cmdline
   PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/xcore_strided_slice_test.cc"
-  PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/debug_log.cc"
   PRIVATE ${ALL_SOURCES}
 )
 

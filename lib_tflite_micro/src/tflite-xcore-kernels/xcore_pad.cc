@@ -3,8 +3,8 @@
 #include "tensorflow/lite/kernels/internal/tensor_ctypes.h"
 #include "tensorflow/lite/kernels/kernel_util.h"
 #include "tensorflow/lite/micro/kernels/kernel_util.h"
-#include "xcore_custom_options.h"
 #include "tensorflow/lite/micro/memory_helpers.h"
+#include "xcore_custom_options.h"
 
 extern "C" {
 #include "lib_nn/api/nn_operator.h"
@@ -83,14 +83,14 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
 
   return kTfLiteOk;
 }
-}  // namespace pad
+} // namespace pad
 
 TfLiteRegistration *Register_Pad() {
   static TfLiteRegistration r = {pad::Init, nullptr, pad::Prepare, pad::Eval};
   return &r;
 }
 
-}  // namespace xcore
-}  // namespace micro
-}  // namespace ops
-}  // namespace tflite
+} // namespace xcore
+} // namespace micro
+} // namespace ops
+} // namespace tflite

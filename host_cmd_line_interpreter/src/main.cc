@@ -8,15 +8,18 @@
 
 #define MAX_MODEL_CONTENT_SIZE 5000000
 #define MAX_PARAMS_SIZE 5000000
+#define MAX_ARENA_SIZE 50000000
 
 uint32_t model_content[MAX_MODEL_CONTENT_SIZE / sizeof(uint32_t)];
 uint32_t params_content[MAX_MODEL_CONTENT_SIZE / sizeof(uint32_t)];
+uint32_t arena[MAX_ARENA_SIZE / sizeof(uint32_t)];
 
 struct tflite_micro_objects s0;
 
 void inference_engine_initialize(inference_engine_t *ie) {
+  s0.interpreter = nullptr;
   auto *resolver = inference_engine_initialize(
-      ie, model_content, MAX_MODEL_CONTENT_SIZE, nullptr, 0, &s0);
+      ie, arena, MAX_ARENA_SIZE, nullptr, 0, &s0);
   resolver->AddDequantize();
   resolver->AddSoftmax();
   resolver->AddMean();
@@ -98,35 +101,34 @@ int main(int argc, char *argv[]) {
   inference_engine_initialize(&ie);
 
   // load model
-  size_t model_size = load_binary_file(model_filename, ie.memory_primary,
+  size_t model_size = load_binary_file(model_filename, model_content,
                                        MAX_MODEL_CONTENT_SIZE);
 
   char *params_filename = argv[2];
   (void)load_binary_file(params_filename, params_content, MAX_PARAMS_SIZE);
 
   inference_engine_unload_model(&ie);
-  int error = inference_engine_load_model(&ie, model_size, ie.memory_primary,
+  int error = inference_engine_load_model(&ie, model_size, model_content,
                                           params_content);
 
   if (strcmp(argv[carg], "-i") == 0) {
+
     int tensor_num = 0;
-    while (strcmp(argv[++carg], "-o") != 0 && carg < argc) {
-      load_input(argv[carg], ie.input_buffers[tensor_num],
-                 ie.input_sizes[tensor_num]);
-      tensor_num++;
+    while(strcmp(argv[++carg], "-o") != 0 && carg < argc) {
+        load_input(argv[carg], ie.input_buffers[tensor_num], ie.input_sizes[tensor_num]);
+        tensor_num++;
     }
-    interp_invoke(&ie);
+    interp_invoke_par_4(&ie);
     tensor_num = 0;
-    while (++carg < argc) {
-      save_output(argv[carg], ie.output_buffers[tensor_num],
-                  ie.output_sizes[tensor_num]);
-      tensor_num++;
+    while(++carg < argc) {
+        save_output(argv[carg], ie.output_buffers[tensor_num], ie.output_sizes[tensor_num]);
+        tensor_num++;
     }
   } else {
     char *input_filename = argv[carg];
     char *output_filename = argv[carg + 1];
     load_input(input_filename, ie.input_buffers[0], ie.input_sizes[0]);
-    interp_invoke(&ie);
+    interp_invoke_par_4(&ie);
     save_output(output_filename, ie.output_buffers[0], ie.output_sizes[0]);
   }
 

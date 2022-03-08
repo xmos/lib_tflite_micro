@@ -8,6 +8,7 @@
 #include "tensorflow/lite/micro/micro_interpreter.h"
 #include "xcore_dispatcher.h"
 #include "xcore_profiler.h"
+#include "../thread_call.h"
 
 namespace tflite {
 namespace micro {
@@ -45,10 +46,10 @@ public:
   size_t input_tensor_index(size_t input_index);
   size_t output_tensor_index(size_t output_index);
   const Model *model__;
-  ErrorReporter *error_reporter__;
-  tflite::GreedyMemoryPlanner *memory_planner__;
-
-private:
+  ErrorReporter* error_reporter__;
+  tflite::GreedyMemoryPlanner* memory_planner__;
+  thread_info_t thread_info;
+ private:
   tflite::ops::micro::xcore::Dispatcher dispatcher_;
 };
 

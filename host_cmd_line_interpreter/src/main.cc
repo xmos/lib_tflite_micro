@@ -17,6 +17,7 @@ uint32_t arena[MAX_ARENA_SIZE / sizeof(uint32_t)];
 struct tflite_micro_objects s0;
 
 void inference_engine_initialize(inference_engine_t *ie) {
+  s0.interpreter = nullptr;
   auto *resolver = inference_engine_initialize(
       ie, arena, MAX_ARENA_SIZE, nullptr, 0, &s0);
   resolver->AddDequantize();

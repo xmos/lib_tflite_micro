@@ -59,6 +59,7 @@ list(APPEND ALL_SOURCES  "${TFLIB_SRC_DIR}/xcore_pooling.cc")
 list(APPEND ALL_SOURCES  "${TFLIB_SRC_DIR}/xcore_profiler.cc")
 list(APPEND ALL_SOURCES  "${TFLIB_SRC_DIR}/xcore_strided_slice.cc")
 list(APPEND ALL_SOURCES  "${TFLIB_SRC_DIR}/xcore_strided_slice_v2.cc")
+list(APPEND ALL_SOURCES  "${TFLIB_SRC_DIR}/xcore_strided_slice_v3.cc")
 list(APPEND ALL_SOURCES  "${TFLIB_SRC_DIR}/xcore_type_conversions.cc")
 list(APPEND ALL_SOURCES  "${TFLIB_SRC_DIR}/xcore_utils.cc")
 

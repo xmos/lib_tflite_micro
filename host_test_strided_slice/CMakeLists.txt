@@ -31,6 +31,12 @@ set(BUILD_FLAGS
   "-O3"
   "-DNN_USE_REF"
   "-D__xtflm_conf_h_exists__"
+  "-fsanitize=undefined" 
+  "-fsanitize=integer"
+  "-fsanitize=implicit-conversion"
+  "-fsanitize=address"
+  "-fsanitize-recover=address" 
+
 )
 
 #**********************

@@ -16,12 +16,11 @@ extern "C" {
 #include <cstdio>
 #include <iostream>
 
-
 namespace tflite {
 namespace ops {
 namespace micro {
 namespace xcore {
-namespace strided_slice {
+namespace strided_slice_v3 {
 
 // This is the struct that contains the data required by the operator
 struct StridedSliceOpData : XCoreOpData {   // Inherits the operator name field from XCoreOpData
@@ -39,7 +38,6 @@ struct StridedSliceOpData : XCoreOpData {   // Inherits the operator name field 
 void* Init(TfLiteContext* context, const char* buffer, size_t length) {
   auto op_data = construct_persistent_object<StridedSliceOpData>(context);
   op_data->name = "XC_Strided_Slice";
-
   return op_data;
 }
 
@@ -52,80 +50,54 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
   const TfLiteTensor* begin_ten = GetInput(context, node, 1);
   const TfLiteTensor* end_ten = GetInput(context, node, 2);
   const TfLiteTensor* strides_ten = GetInput(context, node, 3);
-  #ifdef TEST
-    //Force inputs for test case
-    op_data->width = 6;
-    op_data->height = 6;
-    op_data->channels = 3;  
 
-    op_data->begin_x = 1;
-    op_data->begin_y = 1;
+  op_data->width = SizeOfDimension(input_ten, 2);   
+  op_data->height = SizeOfDimension(input_ten, 1);
+  op_data->channels = SizeOfDimension(input_ten, 3);  
 
-    op_data->end_x = 3;
-    op_data->end_y = 3;
+  const uint32_t *begins = GetTensorData<uint32_t>(begin_ten);
+  op_data->begin_x = begins[2];
+  op_data->begin_y = begins[1];
+  if(!(op_data->begin_x < op_data->width)){
+    op_data->begin_x = op_data->width;
+  }
+  if(!(op_data->begin_y < op_data->height)){
+    op_data->begin_y = op_data->height;
+  }
 
-    op_data->stride_x = 1;
-    op_data->stride_y = 2;
-  #else
-    op_data->width = SizeOfDimension(input_ten, 2);
-    
-    op_data->height = SizeOfDimension(input_ten, 1);
-    op_data->channels = SizeOfDimension(input_ten, 3);  
+  const uint32_t *ends = GetTensorData<uint32_t>(end_ten);
+  op_data->end_x = ends[2];
+  op_data->end_y = ends[1];
+  if(!(op_data->end_x < op_data->width)){
+    op_data->end_x = op_data->width;
+  }
+  if(!(op_data->end_y < op_data->height)){
+    op_data->end_y = op_data->height;
+  }
 
-    const uint32_t *begins = GetTensorData<uint32_t>(begin_ten);
-    op_data->begin_x = begins[2];
-    op_data->begin_y = begins[1];
-    if(!(op_data->begin_x < op_data->width)){
-      op_data->begin_x = op_data->width;
-    }
-    if(!(op_data->begin_y < op_data->height)){
-      op_data->begin_y = op_data->height;
-    }
-
-    const uint32_t *ends = GetTensorData<uint32_t>(end_ten);
-    op_data->end_x = ends[2];
-    op_data->end_y = ends[1];
-    if(!(op_data->end_x < op_data->width)){
-      op_data->end_x = op_data->width;
-    }
-    if(!(op_data->end_y < op_data->height)){
-      op_data->end_y = op_data->height;
-    }
-
-    const uint32_t *strides = GetTensorData<uint32_t>(strides_ten);
-    op_data->stride_x = strides[2];
-    op_data->stride_y = strides[1];
-  #endif
-
-  #ifdef DEBUG
-  std::cout << std::endl << "DEBUG: Xcore Op" << std::endl << "----------------------------" << std::endl;
-  std::cout << "Width: " << op_data->width << std::endl;
-  std::cout << "Height: " << op_data->height << std::endl;
-  std::cout << "Channels: " << op_data->channels << std::endl;
- 
-  std::cout << "begin_X: " << op_data->begin_x << std::endl;
-  std::cout << "begin_Y: " << op_data->begin_y << std::endl;
-
-  std::cout << "end_X: " << op_data->end_x << std::endl;
-  std::cout << "end_Y: " << op_data->end_y << std::endl;
-
-  std::cout << "stride_X: " << op_data->stride_x << std::endl;
-  std::cout << "stride_Y: " << op_data->stride_y << std::endl << "----------------------------"<< std::endl << std::endl;
-  #endif 
+  const uint32_t *strides = GetTensorData<uint32_t>(strides_ten);
+  op_data->stride_x = strides[2];
+  op_data->stride_y = strides[1];
   
   return kTfLiteOk;
 }
 
 TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
-  // auto image_geom
-  // auto window_geom
-  // auto test = nn::ImToColValid::Params(const ImageGeometry &X, const WindowGeometry &K, 1);
-
-  // auto memcpy = new (context->AllocatePersistentBuffer(
-  //         context, sizeof(nn::ImToColValid))) nn::ImToColValid(&test);
-
   auto* op_data = static_cast<StridedSliceOpData*>(node->user_data);
+  
+  auto image_geom = nn::ImageGeometry(op_data->height, op_data->width, op_data->channels);
+  int x_diff = (int)op_data->end_x-(int)op_data->begin_x;
+  int y_diff = (int)op_data->end_y-(int)op_data->begin_y;
 
+  auto window_geom = nn::WindowGeometry({(y_diff/(int)op_data->stride_y)+(y_diff%(int)op_data->stride_y), (x_diff/(int)op_data->stride_x)+(x_diff%(int)op_data->stride_x), (int)op_data->channels},
+                                       {(int)op_data->begin_y, (int)op_data->begin_x},
+                                       {1, 1, 1},
+                                       {(int)op_data->stride_y, (int)op_data->stride_x});
+
+  auto params = nn::ImToColValid::Params(image_geom, window_geom, op_data->channels);
+
+  auto memcpy = new (context->AllocatePersistentBuffer(context, sizeof(nn::ImToColValid))) nn::ImToColValid(&params);
+  
   //Get Input/Output Tensors
   const TfLiteEvalTensor *input = tflite::micro::GetEvalInput(context, node, 0);
   TfLiteEvalTensor *output = tflite::micro::GetEvalOutput(context, node, 0);
@@ -134,60 +106,17 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
   void* in_data = const_cast<void *>(tflite::micro::GetTensorData<void>(input));
   void* out_data = tflite::micro::GetTensorData<void>(output);
 
-  #ifdef TEST
-    //Force Input Tensor3
-    int32_t set_channel_count{0};
-    int8_t setVal{0};
-    int8_t* setPtr = ((int8_t*)in_data);
-    for(int i{0}; i<(op_data->width*op_data->height*op_data->channels);i++){
-      if(set_channel_count%op_data->channels == 0) setVal++;
-      set_channel_count++;
-      setPtr[i] = setVal;
-    }
-  #endif
-
-  uint8_t* output_iter = (uint8_t*)out_data;
-
-  for(uint32_t row_iter{0}; row_iter < (op_data->end_y - op_data->begin_y); row_iter += op_data->stride_y)
-  {
-    uint8_t* input_iter = ((uint8_t*)in_data) + (op_data->begin_x + (op_data->begin_y + row_iter)*op_data->width)*op_data->channels;
-    for(uint32_t col_iter{0}; col_iter < (op_data->end_x - op_data->begin_x); col_iter += op_data->stride_x)
-    {
-      memcpy(output_iter, input_iter, op_data->channels);
-      output_iter += op_data->channels;
-      input_iter += op_data->stride_x*op_data->channels;
-    }
-  }
-
-  #ifdef DEBUG
-    printf("\n\nInput Data\n");
-    int32_t channel_count{0};
-    int8_t* intPtr = ((int8_t*)in_data);
-    for(int i{0}; i<(op_data->width*op_data->height*op_data->channels);i++){
-      if(channel_count%op_data->channels == 0) printf("\n");
-      channel_count++;
-      printf("%d, ", intPtr[i]);
-    }
-    
-    channel_count = 0;
-    printf("\n\nOutput Data\n");
-    int8_t* outPtr = ((int8_t*)out_data);
-    for(int i{0}; i< ((op_data->end_x-op_data->begin_x+1-op_data->stride_x)*(op_data->end_y-op_data->begin_y+1-op_data->stride_y)*op_data->channels);i++){
-      if(channel_count%op_data->channels == 0) printf("\n");
-      channel_count++;
-      printf("%d, ", outPtr[i]);
-    }
-  #endif
+  memcpy->memcopy_fn((int8_t*)out_data, (int8_t*)in_data, op_data->begin_y, op_data->begin_x, 0);
   
   return kTfLiteOk;
 }
 
-}  // namespace strided_slice
+}  // namespace strided_slice_v3
 
 
-TfLiteRegistration *Register_Strided_Slice_V3 () {
-  static TfLiteRegistration r = {strided_slice::Init, nullptr, strided_slice::Prepare,
-                                 strided_slice::Eval};
+TfLiteRegistration *Register_Strided_Slice_V3() {
+  static TfLiteRegistration r = {strided_slice_v3::Init, nullptr, strided_slice_v3::Prepare,
+                                 strided_slice_v3::Eval};
   return &r;
 }
 

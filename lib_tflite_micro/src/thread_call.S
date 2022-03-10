@@ -85,8 +85,11 @@ thread_client:
     ldap    r11, _dp                // It shouldn't need this...
     set     dp, r11
 thread_client_loop:
+    ldc     r10, 0
     ssync
+    bf      r10, do_not_run
     bla r11
+do_not_run:
     ssync
     bu thread_client_loop
     
@@ -120,6 +123,8 @@ thread_variable_setup:
     set     t[r3]:r0, r0
     set     t[r3]:r1, r1
     set     t[r3]:r2, r2
+    ldc     r0, 1
+    set     t[r3]:r10, r0
     retsp   NSTACKWORDS
     
     // RETURN_REG_HOLDER
@@ -162,12 +167,13 @@ thread_call:
     set     t[r6]:r11, r3           // set function pointer of thread 2
     bf      r7, .thread_call_start_threads
     set     t[r7]:r11, r3           // set function pointer of thread 3
-.thread_call_start_threads:   
+.thread_call_start_threads:
     ldw     r6, r4[4]               // fetch synchroniser
     ldaw    r7, sp[0]
     ldw     r11, r4[6]
     set     sp, r11
     msync   res[r6]                 // start all clients
+    nop                             // align with bf of other threads.
     bla     r3                      // start myself
     msync   res[r6]                 // Wait for all clients to finish
 

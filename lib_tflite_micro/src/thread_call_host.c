@@ -1,3 +1,5 @@
+#ifndef __xcore__
+
 #include "thread_call.h"
 #include "inference_engine.h"
 
@@ -35,3 +37,4 @@ void thread_call(void *arg0, void *arg1, void *arg2,
     }
     max_thread_id = -1;
 }
+#endif

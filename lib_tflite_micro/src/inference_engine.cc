@@ -78,8 +78,11 @@ int inference_engine_load_model(inference_engine *ie, uint32_t model_bytes,
   int bytesForStack = nThreads * stackWordsPerThread * 4 + 4;
   kTensorArena += bytesForStack;
   kTensorArenaSize -= bytesForStack;
-  uint8_t *sp = (uint8_t *)(((int)kTensorArena) & ~7) - 8;
-
+  uint8_t *sp = kTensorArena - 8;
+#ifdef __xcore__
+  sp = (uint8_t *)(((int)sp) & ~7);
+#endif
+  
   // Need to memset the arena to 0 otherwise assertion in xcore_planning.cc
   memset(kTensorArena, 0, kTensorArenaSize);
 
@@ -134,28 +137,34 @@ int inference_engine_load_model(inference_engine *ie, uint32_t model_bytes,
   return 0;
 }
 
+int interp_invoke_par_5(inference_engine *ie)
+{
+    return thread_invoke_5(ie, &ie->xtflm->interpreter->thread_info);
+}
+
 int interp_invoke_par_4(inference_engine *ie)
 {
-    return thread_invoke_4((void *)ie, (void *)&ie->xtflm->interpreter->thread_info);
-    // TODO: when all debugged we can type it solidly.
+    return thread_invoke_4(ie, &ie->xtflm->interpreter->thread_info);
+}
+
+int interp_invoke_par_3(inference_engine *ie)
+{
+    return thread_invoke_3(ie, &ie->xtflm->interpreter->thread_info);
+}
+
+int interp_invoke_par_2(inference_engine *ie)
+{
+    return thread_invoke_2(ie, &ie->xtflm->interpreter->thread_info);
+}
+
+int interp_invoke(inference_engine *ie)
+{
+    return thread_invoke_1(ie, &ie->xtflm->interpreter->thread_info);
 }
 
 TfLiteStatus interp_invoke_internal(inference_engine *ie)
 {
     return ie->xtflm->interpreter->Invoke();
-}
-
-int interp_invoke(inference_engine *ie)
-{
-    // Run inference, and report any error
-    TfLiteStatus invoke_status = interp_invoke_internal(ie);
-
-  if (invoke_status != kTfLiteOk) {
-    TF_LITE_REPORT_ERROR(&ie->xtflm->error_reporter, "Invoke failed\n");
-    return 1;
-  }
-
-  return 0;
 }
 
 void print_profiler_summary(inference_engine *ie) {

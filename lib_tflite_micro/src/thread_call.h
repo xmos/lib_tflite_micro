@@ -18,7 +18,8 @@ typedef struct {           // THIS STRUCT MUST BE IN SYNC WITH ASSEMBLY CODE.
 } thread_info_t;
 
 typedef void (*thread_function_pointer_t)();
-
+struct inference_engine;
+    
 /** Function that creates threads, then calls a interp_invoke_internal,
  * then destroys threads
  * This function creates four threads for a total of five threads.

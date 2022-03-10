@@ -2,7 +2,7 @@
 #include <xs1.h>
 
 #define NSTACKWORDS 4
-    
+
     .globl  thread_invoke_4
     .type   thread_invoke_4,@function
     .cc_top thread_invoke_4.function,thread_invoke_4
@@ -12,7 +12,7 @@
 thread_invoke_4:
     ENTSP_lu6 NSTACKWORDS
     std r4, r5, sp[1]
-    
+
     getr r4, XS1_RES_TYPE_SYNC     // start with a synchroniser
     stw  r4, r1[4]                 // save synchroniser in xcore_interpreter
     ldw  r3, r1[5]                 // retrieve wordcount for each stack from xc_int
@@ -51,13 +51,13 @@ thread_invoke_4:
     freer res[r4]                 // get rid of the evidence
     ldd r4, r5, sp[1]             // and restore r4.
     retsp NSTACKWORDS
-    
-    
+
+
     // RETURN_REG_HOLDER
     .cc_bottom thread_invoke_4.function
     .set    thread_invoke_4.nstackwords,(NSTACKWORDS + interp_invoke_internal.nstackwords)
     .globl  thread_invoke_4.nstackwords
-    .set    thread_invoke_4.maxcores,4
+    .set    thread_invoke_4.maxcores,5
     .globl  thread_invoke_4.maxcores
     .set    thread_invoke_4.maxtimers,0
     .globl  thread_invoke_4.maxtimers
@@ -68,9 +68,232 @@ thread_invoke_4:
 
 #undef NSTACKWORDS
 
+#define NSTACKWORDS 4
+
+    .globl  thread_invoke_3
+    .type   thread_invoke_3,@function
+    .cc_top thread_invoke_3.function,thread_invoke_3
+    .align 4
+    //    void thread_invoke_3(inference_engine_t *ie, thread_info *ptr)
+
+thread_invoke_3:
+    ENTSP_lu6 NSTACKWORDS
+    std r4, r5, sp[1]
+
+    getr r4, XS1_RES_TYPE_SYNC     // start with a synchroniser
+    stw  r4, r1[4]                 // save synchroniser in xcore_interpreter
+    ldw  r3, r1[5]                 // retrieve wordcount for each stack from xc_int
+    ldw  r5, r1[6]                 // retrieve base stack pointer from xc_interpreter
+    ldap r11, thread_client
+
+    ldaw r5, r5[-r3]
+    getst r2, res[r4]             // Obtain first thread
+    stw r2, r1[0]
+    init     t[r2]:pc, r11
+    init     t[r2]:sp, r5
+
+    ldaw r5, r5[-r3]
+    getst r2, res[r4]             // Obtain second thread
+    stw r2, r1[1]
+    init     t[r2]:pc, r11
+    init     t[r2]:sp, r5
+
+    ldaw r5, r5[-r3]
+    getst r2, res[r4]             // Obtain third thread
+    stw r2, r1[2]
+    init     t[r2]:pc, r11
+    init     t[r2]:sp, r5
+
+    ldc      r2, 0               // No fourth thread - clear
+    stw r2, r1[3]
+
+    msync res[r4]                 // let all threads initialise
+
+    bl    interp_invoke_internal  // call invoke
+
+    mjoin res[r4]                 // destroy all threads
+    freer res[r4]                 // get rid of the evidence
+    ldd r4, r5, sp[1]             // and restore r4.
+    retsp NSTACKWORDS
+
+
+    // RETURN_REG_HOLDER
+    .cc_bottom thread_invoke_3.function
+    .set    thread_invoke_3.nstackwords,(NSTACKWORDS + interp_invoke_internal.nstackwords)
+    .globl  thread_invoke_3.nstackwords
+    .set    thread_invoke_3.maxcores,4
+    .globl  thread_invoke_3.maxcores
+    .set    thread_invoke_3.maxtimers,0
+    .globl  thread_invoke_3.maxtimers
+    .set    thread_invoke_3.maxchanends,0
+    .globl  thread_invoke_3.maxchanends
+.Ltmp_thread_invoke_3:
+    .size   thread_invoke_3, .Ltmp_thread_invoke_3-thread_invoke_3
+
+#undef NSTACKWORDS
+
+#define NSTACKWORDS 4
+
+    .globl  thread_invoke_2
+    .type   thread_invoke_2,@function
+    .cc_top thread_invoke_2.function,thread_invoke_2
+    .align 4
+    //    void thread_invoke_2(inference_engine_t *ie, thread_info *ptr)
+
+thread_invoke_2:
+    ENTSP_lu6 NSTACKWORDS
+    std r4, r5, sp[1]
+
+    getr r4, XS1_RES_TYPE_SYNC     // start with a synchroniser
+    stw  r4, r1[4]                 // save synchroniser in xcore_interpreter
+    ldw  r3, r1[5]                 // retrieve wordcount for each stack from xc_int
+    ldw  r5, r1[6]                 // retrieve base stack pointer from xc_interpreter
+    ldap r11, thread_client
+
+    ldaw r5, r5[-r3]
+    getst r2, res[r4]             // Obtain first thread
+    stw r2, r1[0]
+    init     t[r2]:pc, r11
+    init     t[r2]:sp, r5
+
+    ldaw r5, r5[-r3]
+    getst r2, res[r4]             // Obtain second thread
+    stw r2, r1[1]
+    init     t[r2]:pc, r11
+    init     t[r2]:sp, r5
+
+    ldc      r2, 0               // No third or fourth thread - clear
+    stw r2, r1[2]
+    stw r2, r1[3]
+
+    msync res[r4]                 // let all threads initialise
+
+    bl    interp_invoke_internal  // call invoke
+
+    mjoin res[r4]                 // destroy all threads
+    freer res[r4]                 // get rid of the evidence
+    ldd r4, r5, sp[1]             // and restore r4.
+    retsp NSTACKWORDS
+
+
+    // RETURN_REG_HOLDER
+    .cc_bottom thread_invoke_2.function
+    .set    thread_invoke_2.nstackwords,(NSTACKWORDS + interp_invoke_internal.nstackwords)
+    .globl  thread_invoke_2.nstackwords
+    .set    thread_invoke_2.maxcores,3
+    .globl  thread_invoke_2.maxcores
+    .set    thread_invoke_2.maxtimers,0
+    .globl  thread_invoke_2.maxtimers
+    .set    thread_invoke_2.maxchanends,0
+    .globl  thread_invoke_2.maxchanends
+.Ltmp_thread_invoke_2:
+    .size   thread_invoke_2, .Ltmp_thread_invoke_2-thread_invoke_2
+
+#undef NSTACKWORDS
+
+#define NSTACKWORDS 4
+
+    .globl  thread_invoke_1
+    .type   thread_invoke_1,@function
+    .cc_top thread_invoke_1.function,thread_invoke_1
+    .align 4
+    //    void thread_invoke_1(inference_engine_t *ie, thread_info *ptr)
+
+thread_invoke_1:
+    ENTSP_lu6 NSTACKWORDS
+    std r4, r5, sp[1]
+
+    getr r4, XS1_RES_TYPE_SYNC     // start with a synchroniser
+    stw  r4, r1[4]                 // save synchroniser in xcore_interpreter
+    ldw  r3, r1[5]                 // retrieve wordcount for each stack from xc_int
+    ldw  r5, r1[6]                 // retrieve base stack pointer from xc_interpreter
+    ldap r11, thread_client
+
+    ldaw r5, r5[-r3]
+    getst r2, res[r4]             // Obtain first thread
+    stw r2, r1[0]
+    init     t[r2]:pc, r11
+    init     t[r2]:sp, r5
+
+    ldc      r2, 0               // No second, third or fourth thread - clear
+    stw r2, r1[1]
+    stw r2, r1[2]
+    stw r2, r1[3]
+
+    msync res[r4]                 // let all threads initialise
+
+    bl    interp_invoke_internal  // call invoke
+
+    mjoin res[r4]                 // destroy all threads
+    freer res[r4]                 // get rid of the evidence
+    ldd r4, r5, sp[1]             // and restore r4.
+    retsp NSTACKWORDS
+
+
+    // RETURN_REG_HOLDER
+    .cc_bottom thread_invoke_1.function
+    .set    thread_invoke_1.nstackwords,(NSTACKWORDS + interp_invoke_internal.nstackwords)
+    .globl  thread_invoke_1.nstackwords
+    .set    thread_invoke_1.maxcores,2
+    .globl  thread_invoke_1.maxcores
+    .set    thread_invoke_1.maxtimers,0
+    .globl  thread_invoke_1.maxtimers
+    .set    thread_invoke_1.maxchanends,0
+    .globl  thread_invoke_1.maxchanends
+.Ltmp_thread_invoke_1:
+    .size   thread_invoke_1, .Ltmp_thread_invoke_1-thread_invoke_1
+
+#undef NSTACKWORDS
+
+#define NSTACKWORDS 4
+
+    .globl  thread_invoke_0
+    .type   thread_invoke_0,@function
+    .cc_top thread_invoke_0.function,thread_invoke_0
+    .align 4
+    //    void thread_invoke_0(inference_engine_t *ie, thread_info *ptr)
+
+thread_invoke_0:
+    ENTSP_lu6 NSTACKWORDS
+    std r4, r5, sp[1]
+
+    getr r4, XS1_RES_TYPE_SYNC     // start with a synchroniser
+    stw  r4, r1[4]                 // save synchroniser in xcore_interpreter
+    ldw  r3, r1[5]                 // retrieve wordcount for each stack from xc_int
+    ldw  r5, r1[6]                 // retrieve base stack pointer from xc_interpreter
+    ldap r11, thread_client
+
+    ldc      r2, 0               // No other threads - clear
+    stw r2, r1[0]
+    stw r2, r1[1]
+    stw r2, r1[2]
+    stw r2, r1[3]
+
+    bl    interp_invoke_internal  // call invoke
+
+    freer res[r4]                 // get rid of the evidence
+    ldd r4, r5, sp[1]             // and restore r4.
+    retsp NSTACKWORDS
+
+
+    // RETURN_REG_HOLDER
+    .cc_bottom thread_invoke_0.function
+    .set    thread_invoke_0.nstackwords,(NSTACKWORDS + interp_invoke_internal.nstackwords)
+    .globl  thread_invoke_0.nstackwords
+    .set    thread_invoke_0.maxcores,1
+    .globl  thread_invoke_0.maxcores
+    .set    thread_invoke_0.maxtimers,0
+    .globl  thread_invoke_0.maxtimers
+    .set    thread_invoke_0.maxchanends,0
+    .globl  thread_invoke_0.maxchanends
+.Ltmp_thread_invoke_0:
+    .size   thread_invoke_0, .Ltmp_thread_invoke_0-thread_invoke_0
+
+#undef NSTACKWORDS
+
 
 #define NSTACKWORDS 0
-    
+
     .globl  thread_client
     .type   thread_client,@function
     .cc_top thread_client.function,thread_client
@@ -92,7 +315,7 @@ thread_client_loop:
 do_not_run:
     ssync
     bu thread_client_loop
-    
+
     // RETURN_REG_HOLDER
     .cc_bottom thread_client.function
     .set    thread_client.nstackwords,NSTACKWORDS
@@ -109,7 +332,7 @@ do_not_run:
 #undef NSTACKWORDS
 
 #define NSTACKWORDS 0
-    
+
     .globl  thread_variable_setup
     .type   thread_variable_setup,@function
     .cc_top thread_variable_setup.function,thread_variable_setup
@@ -126,7 +349,7 @@ thread_variable_setup:
     ldc     r0, 1
     set     t[r3]:r10, r0
     retsp   NSTACKWORDS
-    
+
     // RETURN_REG_HOLDER
     .cc_bottom thread_variable_setup.function
     .set    thread_variable_setup.nstackwords,NSTACKWORDS
@@ -143,7 +366,7 @@ thread_variable_setup:
 #undef NSTACKWORDS
 
 #define NSTACKWORDS 6
-    
+
     .globl  thread_call
     .type   thread_call,@function
     .cc_top thread_call.function,thread_call
@@ -182,7 +405,7 @@ thread_call:
     ldd     r4, r5, sp[1]           // and restore r4, r5, r6, r7.
     ldd     r6, r7, sp[2]
     retsp   NSTACKWORDS
-    
+
     // RETURN_REG_HOLDER
     .cc_bottom thread_call.function
     .set    thread_call.nstackwords,NSTACKWORDS
@@ -197,5 +420,5 @@ thread_call:
     .size   thread_call, .Ltmp_thread_call-thread_call
 
 #undef NSTACKWORDS
-    
+
 #endif

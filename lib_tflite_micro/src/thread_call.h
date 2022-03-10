@@ -21,7 +21,8 @@ typedef void (*thread_function_pointer_t)();
 
 /** Function that creates threads, then calls a interp_invoke_internal,
  * then destroys threads
- * This function creates four threads.
+ * This function creates four threads for a total of five threads.
+ * other versions of the functions create 3, 2, 1, or 0 threads.
  *
  * \param   ie     Pointer to the inference object to be passed to
  *                 interp_invoke_internal
@@ -37,6 +38,10 @@ typedef void (*thread_function_pointer_t)();
  *                     ptr[6] [in]  number of words per stack
  */
 int thread_invoke_4(void *ie, void *ptr);
+int thread_invoke_3(void *ie, void *ptr);
+int thread_invoke_2(void *ie, void *ptr);
+int thread_invoke_1(void *ie, void *ptr);
+int thread_invoke_0(void *ie, void *ptr);
 
 /** Function that sets up parameters for one of the client threads
  * This particular one passes three arguments to the thread.

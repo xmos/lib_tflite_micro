@@ -29,19 +29,15 @@ struct Conv2DShared {
   nn::AbstractKernel *f;
 };
 
-struct Conv2DThread {
-  int8_t *scratch;
-};
-
 extern "C" {
 // TODO
 #pragma stackfunction 1000
 ATTRIBUTE_THREAD_FUNCTION
-void conv2d_v2_thread_worker(void *shard, void *wrk, void *kp) {
+void conv2d_v2_thread_worker(void *shard, void *scrtch, void *kp) {
   nn::AbstractKernel::Params *kparams = (nn::AbstractKernel::Params *)kp;
-  auto work = static_cast<Conv2DThread *>(wrk);
+  auto scratch = static_cast<int8_t *>(scrtch);
   auto shared = static_cast<Conv2DShared *>(shard);
-  execute(shared->Y, shared->X, shared->f, kparams, work->scratch);
+  execute(shared->Y, shared->X, shared->f, kparams, scratch);
 }
 }
 
@@ -294,13 +290,13 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
       (int16_t *)tflite::micro::GetTensorData<int16_t>(
           multipliers_and_biases_tensor);
 
-  Conv2DThread thread_data[n_threads];
+  int8_t *thread_scratch[n_threads];
   Conv2DShared shared_data;
   shared_data.X = (int8_t *)tflite::micro::GetTensorData<int8_t>(input);
   shared_data.Y = (int8_t *)tflite::micro::GetTensorData<int8_t>(output);
   shared_data.f = op_data->filter2D;
   for (int t = 0; t < n_threads; ++t) {
-    thread_data[t].scratch = (int8_t *)context->GetScratchBuffer(
+    thread_scratch[t] = (int8_t *)context->GetScratchBuffer(
         context, op_data->threads[t].stack_scratch_index);
   }
 
@@ -362,9 +358,9 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   }
   // todo - this second for-loop is unpleasant
   for (int t = 0; t < n_threads-1; ++t) {
-    thread_variable_setup((void *)&shared_data, (void *)&thread_data[t], op_data->threads[t].kparams, xint->thread_info.thread_ids.id[t]);
+    thread_variable_setup((void *)&shared_data, thread_scratch[t], op_data->threads[t].kparams, xint->thread_info.thread_ids.id[t]);
   }
-  thread_call((void *)&shared_data, &thread_data[n_threads-1], op_data->threads[n_threads-1].kparams,
+  thread_call((void *)&shared_data, thread_scratch[n_threads-1], op_data->threads[n_threads-1].kparams,
               (thread_function_pointer_t)conv2d_v2_thread_worker, &xint->thread_info);
 
   return kTfLiteOk;

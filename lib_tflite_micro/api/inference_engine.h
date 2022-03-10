@@ -39,7 +39,7 @@
 struct tflite_micro_objects {
   tflite::micro::xcore::XCoreErrorReporter error_reporter;
   tflite::micro::xcore::XCoreProfiler xcore_profiler;
-  uint8_t interpreter_buffer[sizeof(tflite::micro::xcore::XCoreInterpreter)];
+  uint64_t interpreter_buffer[(sizeof(tflite::micro::xcore::XCoreInterpreter) + sizeof(uint64_t)-1)/sizeof(uint64_t)]; // This needs to be aligned on a double word boundary
   tflite::MicroMutableOpResolver<XTFLM_OPERATORS> resolver;
 
   tflite::micro::xcore::XCoreInterpreter *interpreter;

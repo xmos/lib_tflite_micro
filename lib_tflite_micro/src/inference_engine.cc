@@ -73,14 +73,23 @@ int inference_engine_load_model(inference_engine *ie, uint32_t model_bytes,
     kTensorArenaSize -= model_ints;
   }
 
+  int stackWordsPerThread = 256;            // TODO: calculate
+  int nThreads = 5;                         // TODO: get from model
+  int bytesForStack = nThreads * stackWordsPerThread * 4 + 4;
+  kTensorArena += bytesForStack;
+  kTensorArenaSize -= bytesForStack;
+  uint8_t *sp = (uint8_t *)(((int)kTensorArena) & ~7) - 8;
+
   // Need to memset the arena to 0 otherwise assertion in xcore_planning.cc
   memset(kTensorArena, 0, kTensorArenaSize);
 
   // Build an interpreter to run the model with
   ie->xtflm->interpreter = tflite::micro::xcore::XCoreInterpreter::Create(
-      ie->xtflm->interpreter_buffer, ie->xtflm->model, ie->xtflm->resolver,
+      (uint8_t *)ie->xtflm->interpreter_buffer, ie->xtflm->model, ie->xtflm->resolver,
       kTensorArena, kTensorArenaSize, &ie->xtflm->error_reporter, true,
       &ie->xtflm->xcore_profiler, flash_data);
+  ie->xtflm->interpreter->thread_info.nstackwords = stackWordsPerThread;
+  ie->xtflm->interpreter->thread_info.stacks = (void *)sp;
 
   // Allocate memory from the kTensorArena for the model's tensors.
   TfLiteStatus allocate_tensors_status =

@@ -358,8 +358,9 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   }
   // todo - this second for-loop is unpleasant
   for (int t = 0; t < n_threads-1; ++t) {
-    thread_variable_setup((void *)&shared_data, thread_scratch[t], op_data->threads[t].kparams, xint->thread_info.thread_ids.id[t]);
+    thread_variable_setup(thread_scratch[t], op_data->threads[t].kparams, xint->thread_info.thread_ids.id[t]);
   }
+  // Now set up shared data, shared function pointer, and data for final thread.
   thread_call((void *)&shared_data, thread_scratch[n_threads-1], op_data->threads[n_threads-1].kparams,
               (thread_function_pointer_t)conv2d_v2_thread_worker, &xint->thread_info);
 

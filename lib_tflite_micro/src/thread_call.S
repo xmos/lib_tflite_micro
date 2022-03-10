@@ -3,13 +3,13 @@
 
 #define NSTACKWORDS 4
 
-    .globl  thread_invoke_4
-    .type   thread_invoke_4,@function
-    .cc_top thread_invoke_4.function,thread_invoke_4
+    .globl  thread_invoke_5
+    .type   thread_invoke_5,@function
+    .cc_top thread_invoke_5.function,thread_invoke_5
     .align 4
-    //    void thread_invoke_4(inference_engine_t *ie, thread_info *ptr)
+    //    void thread_invoke_5(inference_engine_t *ie, thread_info *ptr)
 
-thread_invoke_4:
+thread_invoke_5:
     ENTSP_lu6 NSTACKWORDS
     std r4, r5, sp[1]
 
@@ -54,29 +54,29 @@ thread_invoke_4:
 
 
     // RETURN_REG_HOLDER
-    .cc_bottom thread_invoke_4.function
-    .set    thread_invoke_4.nstackwords,(NSTACKWORDS + interp_invoke_internal.nstackwords)
-    .globl  thread_invoke_4.nstackwords
-    .set    thread_invoke_4.maxcores,5
-    .globl  thread_invoke_4.maxcores
-    .set    thread_invoke_4.maxtimers,0
-    .globl  thread_invoke_4.maxtimers
-    .set    thread_invoke_4.maxchanends,0
-    .globl  thread_invoke_4.maxchanends
-.Ltmp_thread_invoke_4:
-    .size   thread_invoke_4, .Ltmp_thread_invoke_4-thread_invoke_4
+    .cc_bottom thread_invoke_5.function
+    .set    thread_invoke_5.nstackwords,(NSTACKWORDS + interp_invoke_internal.nstackwords)
+    .globl  thread_invoke_5.nstackwords
+    .set    thread_invoke_5.maxcores,5
+    .globl  thread_invoke_5.maxcores
+    .set    thread_invoke_5.maxtimers,0
+    .globl  thread_invoke_5.maxtimers
+    .set    thread_invoke_5.maxchanends,0
+    .globl  thread_invoke_5.maxchanends
+.Ltmp_thread_invoke_5:
+    .size   thread_invoke_5, .Ltmp_thread_invoke_5-thread_invoke_5
 
 #undef NSTACKWORDS
 
 #define NSTACKWORDS 4
 
-    .globl  thread_invoke_3
-    .type   thread_invoke_3,@function
-    .cc_top thread_invoke_3.function,thread_invoke_3
+    .globl  thread_invoke_4
+    .type   thread_invoke_4,@function
+    .cc_top thread_invoke_4.function,thread_invoke_4
     .align 4
-    //    void thread_invoke_3(inference_engine_t *ie, thread_info *ptr)
+    //    void thread_invoke_4(inference_engine_t *ie, thread_info *ptr)
 
-thread_invoke_3:
+thread_invoke_4:
     ENTSP_lu6 NSTACKWORDS
     std r4, r5, sp[1]
 
@@ -118,29 +118,29 @@ thread_invoke_3:
 
 
     // RETURN_REG_HOLDER
-    .cc_bottom thread_invoke_3.function
-    .set    thread_invoke_3.nstackwords,(NSTACKWORDS + interp_invoke_internal.nstackwords)
-    .globl  thread_invoke_3.nstackwords
-    .set    thread_invoke_3.maxcores,4
-    .globl  thread_invoke_3.maxcores
-    .set    thread_invoke_3.maxtimers,0
-    .globl  thread_invoke_3.maxtimers
-    .set    thread_invoke_3.maxchanends,0
-    .globl  thread_invoke_3.maxchanends
-.Ltmp_thread_invoke_3:
-    .size   thread_invoke_3, .Ltmp_thread_invoke_3-thread_invoke_3
+    .cc_bottom thread_invoke_4.function
+    .set    thread_invoke_4.nstackwords,(NSTACKWORDS + interp_invoke_internal.nstackwords)
+    .globl  thread_invoke_4.nstackwords
+    .set    thread_invoke_4.maxcores,4
+    .globl  thread_invoke_4.maxcores
+    .set    thread_invoke_4.maxtimers,0
+    .globl  thread_invoke_4.maxtimers
+    .set    thread_invoke_4.maxchanends,0
+    .globl  thread_invoke_4.maxchanends
+.Ltmp_thread_invoke_4:
+    .size   thread_invoke_4, .Ltmp_thread_invoke_4-thread_invoke_4
 
 #undef NSTACKWORDS
 
 #define NSTACKWORDS 4
 
-    .globl  thread_invoke_2
-    .type   thread_invoke_2,@function
-    .cc_top thread_invoke_2.function,thread_invoke_2
+    .globl  thread_invoke_3
+    .type   thread_invoke_3,@function
+    .cc_top thread_invoke_3.function,thread_invoke_3
     .align 4
-    //    void thread_invoke_2(inference_engine_t *ie, thread_info *ptr)
+    //    void thread_invoke_3(inference_engine_t *ie, thread_info *ptr)
 
-thread_invoke_2:
+thread_invoke_3:
     ENTSP_lu6 NSTACKWORDS
     std r4, r5, sp[1]
 
@@ -177,29 +177,29 @@ thread_invoke_2:
 
 
     // RETURN_REG_HOLDER
-    .cc_bottom thread_invoke_2.function
-    .set    thread_invoke_2.nstackwords,(NSTACKWORDS + interp_invoke_internal.nstackwords)
-    .globl  thread_invoke_2.nstackwords
-    .set    thread_invoke_2.maxcores,3
-    .globl  thread_invoke_2.maxcores
-    .set    thread_invoke_2.maxtimers,0
-    .globl  thread_invoke_2.maxtimers
-    .set    thread_invoke_2.maxchanends,0
-    .globl  thread_invoke_2.maxchanends
-.Ltmp_thread_invoke_2:
-    .size   thread_invoke_2, .Ltmp_thread_invoke_2-thread_invoke_2
+    .cc_bottom thread_invoke_3.function
+    .set    thread_invoke_3.nstackwords,(NSTACKWORDS + interp_invoke_internal.nstackwords)
+    .globl  thread_invoke_3.nstackwords
+    .set    thread_invoke_3.maxcores,3
+    .globl  thread_invoke_3.maxcores
+    .set    thread_invoke_3.maxtimers,0
+    .globl  thread_invoke_3.maxtimers
+    .set    thread_invoke_3.maxchanends,0
+    .globl  thread_invoke_3.maxchanends
+.Ltmp_thread_invoke_3:
+    .size   thread_invoke_3, .Ltmp_thread_invoke_3-thread_invoke_3
 
 #undef NSTACKWORDS
 
 #define NSTACKWORDS 4
 
-    .globl  thread_invoke_1
-    .type   thread_invoke_1,@function
-    .cc_top thread_invoke_1.function,thread_invoke_1
+    .globl  thread_invoke_2
+    .type   thread_invoke_2,@function
+    .cc_top thread_invoke_2.function,thread_invoke_2
     .align 4
-    //    void thread_invoke_1(inference_engine_t *ie, thread_info *ptr)
+    //    void thread_invoke_2(inference_engine_t *ie, thread_info *ptr)
 
-thread_invoke_1:
+thread_invoke_2:
     ENTSP_lu6 NSTACKWORDS
     std r4, r5, sp[1]
 
@@ -231,29 +231,29 @@ thread_invoke_1:
 
 
     // RETURN_REG_HOLDER
-    .cc_bottom thread_invoke_1.function
-    .set    thread_invoke_1.nstackwords,(NSTACKWORDS + interp_invoke_internal.nstackwords)
-    .globl  thread_invoke_1.nstackwords
-    .set    thread_invoke_1.maxcores,2
-    .globl  thread_invoke_1.maxcores
-    .set    thread_invoke_1.maxtimers,0
-    .globl  thread_invoke_1.maxtimers
-    .set    thread_invoke_1.maxchanends,0
-    .globl  thread_invoke_1.maxchanends
-.Ltmp_thread_invoke_1:
-    .size   thread_invoke_1, .Ltmp_thread_invoke_1-thread_invoke_1
+    .cc_bottom thread_invoke_2.function
+    .set    thread_invoke_2.nstackwords,(NSTACKWORDS + interp_invoke_internal.nstackwords)
+    .globl  thread_invoke_2.nstackwords
+    .set    thread_invoke_2.maxcores,2
+    .globl  thread_invoke_2.maxcores
+    .set    thread_invoke_2.maxtimers,0
+    .globl  thread_invoke_2.maxtimers
+    .set    thread_invoke_2.maxchanends,0
+    .globl  thread_invoke_2.maxchanends
+.Ltmp_thread_invoke_2:
+    .size   thread_invoke_2, .Ltmp_thread_invoke_2-thread_invoke_2
 
 #undef NSTACKWORDS
 
 #define NSTACKWORDS 4
 
-    .globl  thread_invoke_0
-    .type   thread_invoke_0,@function
-    .cc_top thread_invoke_0.function,thread_invoke_0
+    .globl  thread_invoke_1
+    .type   thread_invoke_1,@function
+    .cc_top thread_invoke_1.function,thread_invoke_1
     .align 4
-    //    void thread_invoke_0(inference_engine_t *ie, thread_info *ptr)
+    //    void thread_invoke_1(inference_engine_t *ie, thread_info *ptr)
 
-thread_invoke_0:
+thread_invoke_1:
     ENTSP_lu6 NSTACKWORDS
     std r4, r5, sp[1]
 
@@ -277,17 +277,17 @@ thread_invoke_0:
 
 
     // RETURN_REG_HOLDER
-    .cc_bottom thread_invoke_0.function
-    .set    thread_invoke_0.nstackwords,(NSTACKWORDS + interp_invoke_internal.nstackwords)
-    .globl  thread_invoke_0.nstackwords
-    .set    thread_invoke_0.maxcores,1
-    .globl  thread_invoke_0.maxcores
-    .set    thread_invoke_0.maxtimers,0
-    .globl  thread_invoke_0.maxtimers
-    .set    thread_invoke_0.maxchanends,0
-    .globl  thread_invoke_0.maxchanends
-.Ltmp_thread_invoke_0:
-    .size   thread_invoke_0, .Ltmp_thread_invoke_0-thread_invoke_0
+    .cc_bottom thread_invoke_1.function
+    .set    thread_invoke_1.nstackwords,(NSTACKWORDS + interp_invoke_internal.nstackwords)
+    .globl  thread_invoke_1.nstackwords
+    .set    thread_invoke_1.maxcores,1
+    .globl  thread_invoke_1.maxcores
+    .set    thread_invoke_1.maxtimers,0
+    .globl  thread_invoke_1.maxtimers
+    .set    thread_invoke_1.maxchanends,0
+    .globl  thread_invoke_1.maxchanends
+.Ltmp_thread_invoke_1:
+    .size   thread_invoke_1, .Ltmp_thread_invoke_1-thread_invoke_1
 
 #undef NSTACKWORDS
 
@@ -343,11 +343,10 @@ do_not_run:
 
 thread_variable_setup:
     ENTSP_lu6   NSTACKWORDS
-    set     t[r3]:r0, r0
-    set     t[r3]:r1, r1
-    set     t[r3]:r2, r2
+    set     t[r2]:r1, r0
+    set     t[r2]:r2, r1
     ldc     r0, 1
-    set     t[r3]:r10, r0
+    set     t[r2]:r10, r0
     retsp   NSTACKWORDS
 
     // RETURN_REG_HOLDER
@@ -381,27 +380,32 @@ thread_call:
     std     r4, r5, sp[1]           // save r4, r5, r6, r7
     std     r6, r7, sp[2]
     ldw     r4, sp[NSTACKWORDS+1]   // Pick up ptr
-    ldd     r6, r7, r4[0]
+    ldd     r6, r7, r4[0]           // Pick up two thread-ids, they may be zero...
+    bf      r6, .thread_call_start_threads
     set     t[r6]:r11, r3           // set function pointer of thread 0
+    set     t[r6]:r0, r0            // set shared data
     bf      r7, .thread_call_start_threads
     set     t[r7]:r11, r3           // set function pointer of thread 1
+    set     t[r7]:r0, r0            // set shared data
     ldd     r6, r7, r4[1]
     bf      r6, .thread_call_start_threads
     set     t[r6]:r11, r3           // set function pointer of thread 2
+    set     t[r6]:r0, r0            // set shared data
     bf      r7, .thread_call_start_threads
     set     t[r7]:r11, r3           // set function pointer of thread 3
+    set     t[r7]:r0, r0            // set shared data
 .thread_call_start_threads:
     ldw     r6, r4[4]               // fetch synchroniser
     ldaw    r7, sp[0]
     ldw     r11, r4[6]
-    set     sp, r11
+    set     sp, r11                 // Here we swap stacks - continue on the lib_nn stack
     msync   res[r6]                 // start all clients
     nop                             // align with bf of other threads.
     bla     r3                      // start myself
     msync   res[r6]                 // Wait for all clients to finish
 
     mov     r11, r7
-    set     sp, r11
+    set     sp, r11                 // and restore the old stack.
     ldd     r4, r5, sp[1]           // and restore r4, r5, r6, r7.
     ldd     r6, r7, sp[2]
     retsp   NSTACKWORDS

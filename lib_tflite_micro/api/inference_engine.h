@@ -182,13 +182,17 @@ int inference_engine_load_model(inference_engine_t *UNSAFE ie,
                                 uint32_t *UNSAFE model_data, void *flash_data);
 #endif
 
-/** Function that invokes the inference engine.
- * before overwriting the model, you must always unload the model in the inference engine
- * It is safe to call unload model if there is no model loaded.
+/** Function that invokes the inference engine. This function will create an extra four
+ * threads enabling a model to run in 5 threads.
  * 
  * \param ie           pointer to inference engine.
  */
-    int interp_invoke(inference_engine_t * UNSAFE ie);
+    int interp_invoke_par_5(inference_engine_t *ie);
+    int interp_invoke_par_4(inference_engine_t *ie);
+    int interp_invoke_par_3(inference_engine_t *ie);
+    int interp_invoke_par_2(inference_engine_t *ie);
+    int interp_invoke(inference_engine_t *ie);
+    TfLiteStatus interp_invoke_internal(inference_engine_t *ie);
     
 /** Function that prints a summary of the time each operator took. This function
  * uses printf - you may want to avoid calling it.
@@ -196,8 +200,6 @@ int inference_engine_load_model(inference_engine_t *UNSAFE ie,
  * \param ie           pointer to inference engine.
  */
     void print_profiler_summary(inference_engine_t * UNSAFE ie);
-    int interp_invoke_par_4(inference_engine_t *ie);
-    TfLiteStatus interp_invoke_internal(inference_engine_t *ie);
 #ifdef __cplusplus
     };
 #endif

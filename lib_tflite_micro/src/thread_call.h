@@ -37,11 +37,11 @@ typedef void (*thread_function_pointer_t)();
  *                     ptr[5] [in]  top of stacks
  *                     ptr[6] [in]  number of words per stack
  */
-int thread_invoke_4(void *ie, void *ptr);
-int thread_invoke_3(void *ie, void *ptr);
-int thread_invoke_2(void *ie, void *ptr);
-int thread_invoke_1(void *ie, void *ptr);
-int thread_invoke_0(void *ie, void *ptr);
+int thread_invoke_5(struct inference_engine *ie, thread_info_t *ptr);
+int thread_invoke_4(struct inference_engine *ie, thread_info_t *ptr);
+int thread_invoke_3(struct inference_engine *ie, thread_info_t *ptr);
+int thread_invoke_2(struct inference_engine *ie, thread_info_t *ptr);
+int thread_invoke_1(struct inference_engine *ie, thread_info_t *ptr);
 
 /** Function that sets up parameters for one of the client threads
  * This particular one passes three arguments to the thread.
@@ -50,12 +50,11 @@ int thread_invoke_0(void *ie, void *ptr);
  * Note - we can make versions with more or fewer parameters.
  * Note - we could pass this function the thread-function itself
  *
- * \param arg0      First argument for the thread function
  * \param arg1      Second argument for the thread function
  * \param arg2      Third argument for the thread function
  * \param thread_id The thread_id to initialise; one of ptr[0]..ptr[3] above
  */
-void thread_variable_setup(void *arg0, void *arg1, void *arg2, uint32_t thread_id);
+void thread_variable_setup(void *arg1, void *arg2, uint32_t thread_id);
 
 /** Function that starts all thread functions and runs them until completion.
  * It is assumed that the variable parts have been set up per thread.

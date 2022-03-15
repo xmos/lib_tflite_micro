@@ -32,7 +32,6 @@ struct Conv2DShared {
 extern "C" {
 // TODO
 #pragma stackfunction 1000
-ATTRIBUTE_THREAD_FUNCTION
 void conv2d_v2_thread_worker(void *shard, void *scrtch, void *kp) {
   nn::AbstractKernel::Params *kparams = (nn::AbstractKernel::Params *)kp;
   auto scratch = static_cast<int8_t *>(scrtch);

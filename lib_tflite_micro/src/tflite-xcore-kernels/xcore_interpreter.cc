@@ -19,13 +19,11 @@ XCoreInterpreter::XCoreInterpreter(const tflite::Model *model,
                                    bool use_current_thread,
                                    XCoreProfiler *profiler, void *flash_data)
     : tflite::MicroInterpreter(model, resolver, allocator, reporter, nullptr,
-                               profiler),
-      dispatcher_(reporter, use_current_thread) {
+                               profiler) {
   this->flash_data = flash_data;
   this->model__ = model;
   this->error_reporter__ = reporter;
   this->memory_planner__ = memory_planner;
-  SetDispatcher(&dispatcher_);
   if (profiler) {
     profiler->Init(allocator, model->subgraphs()->Get(0)->operators()->size());
   }

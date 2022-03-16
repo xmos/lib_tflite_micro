@@ -130,7 +130,7 @@ int get_output_tensor(inference_engine *ie, size_t tensor_index, void *value,
   return 0;
 }
 
-int invoke(inference_engine *ie) { return interp_invoke_par_4(ie); }
+int invoke(inference_engine *ie) { return interp_invoke_par_5(ie); }
 
 size_t get_tensor_details_buffer_sizes(inference_engine *ie,
                                        size_t tensor_index, size_t *dims,

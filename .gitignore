@@ -1,4 +1,6 @@
 .venv
+app_ie/.build
+app_ie/bin
 host_cmd_line_interpreter/build
 host_cmd_line_interpreter/bin
 .DS_Store

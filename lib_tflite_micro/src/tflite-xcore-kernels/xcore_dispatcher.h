@@ -10,6 +10,7 @@ extern "C" {
 #ifdef _TIME_H_
 #define _clock_defined
 #endif
+#include "xcore/thread.h"
 }
 
 #define ATTRIBUTE_THREAD_FUNCTION __attribute__((fptrgroup("thread_function")))

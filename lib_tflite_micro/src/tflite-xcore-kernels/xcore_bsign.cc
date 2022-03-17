@@ -6,7 +6,6 @@
 #include "tensorflow/lite/kernels/kernel_util.h"
 #include "tensorflow/lite/micro/kernels/kernel_util.h"
 #include "xcore_custom_options.h"
-#include "xcore_dispatcher.h"
 #include "xcore_utils.h"
 
 extern "C" {
@@ -39,7 +38,7 @@ struct BSign8ThreadData {
 };
 
 extern "C" {
-ATTRIBUTE_THREAD_FUNCTION void bsign_8_thread_worker(void *context) {
+void bsign_8_thread_worker(void *context) {
   auto *td = (BSign8ThreadData *)context;
   auto *args = td->args;
   bsign_8(args->Y, args->X, args->zero_point_vec, td->job);
@@ -54,8 +53,6 @@ struct BSign8OpData {
   BSign8Args args;
   PersistentArray<nn_bsign_8_job_t> jobs;
   PersistentArray<BSign8ThreadData> threads;
-  size_t stack_size; // The amount of stack required to run all thread workers
-  int stack_scratch_index = -1;
 };
 
 // -------------------------------------------------------------------- //
@@ -68,8 +65,8 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   // TODO parse data for parallelism
   // in this op we have one job per thread
   int n_threads = 1;
-  op_data->jobs.allocate(context, n_threads).initialize();
-  op_data->threads.allocate(context, n_threads);
+  op_data->jobs.allocate(context, n_threads).initialize();     // TODO: REMOVE ALL OF THIS
+  op_data->threads.allocate(context, n_threads);               // SHOULD BE NOTHING LEFT.
   for (auto &job : op_data->jobs) {
     op_data->threads.append({&op_data->args, &job});
   }
@@ -88,12 +85,6 @@ TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
   bsign_8_prepare(op_data->jobs.begin(), op_data->args.zero_point_vec,
                   input_size, input->params.zero_point, op_data->jobs.size());
 
-  /* Allocate the stack for thread workers */
-  GET_THREAD_FUNCTION_STACKSIZE(op_data->stack_size, bsign_8_thread_worker);
-  TF_LITE_ENSURE_STATUS(context->RequestScratchBufferInArena(
-      context, op_data->stack_size * op_data->threads.size(),
-      &op_data->stack_scratch_index));
-
   return kTfLiteOk;
 }
 
@@ -104,20 +95,10 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
       tflite::micro::GetEvalInput(context, node, 0));
   op_data->args.Y = tflite::micro::GetTensorData<int32_t>(
       tflite::micro::GetEvalOutput(context, node, 0));
-
-  Dispatcher *dispatcher = GetDispatcher();
-
-  // initialize the dispatcher
-  auto *stack = static_cast<char *>(
-      context->GetScratchBuffer(context, op_data->stack_scratch_index));
-  TF_LITE_ENSURE(context, stack);
-  dispatcher->InitializeTasks(bsign_8_thread_worker, stack,
-                              op_data->stack_size);
-
-  for (auto &thread : op_data->threads) {
-    dispatcher->AddTask(reinterpret_cast<void *>(&thread));
+ 
+  for (auto &thread : op_data->threads) {                     // TODO: remove - only 1 task!
+    bsign_8_thread_worker(reinterpret_cast<void *>(&thread));
   }
-  dispatcher->JoinTasks();
 
   return kTfLiteOk;
 }

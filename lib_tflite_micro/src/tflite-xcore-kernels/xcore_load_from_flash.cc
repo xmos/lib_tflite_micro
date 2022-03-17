@@ -6,7 +6,6 @@
 #include "tensorflow/lite/kernels/kernel_util.h"
 #include "tensorflow/lite/micro/kernels/kernel_util.h"
 #include "xcore_custom_options.h"
-#include "xcore_dispatcher.h"
 #include "xcore_interpreter.h"
 #include "xcore_utils.h"
 extern "C" {

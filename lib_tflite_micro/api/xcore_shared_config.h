@@ -9,7 +9,7 @@ namespace shared_config {
 constexpr char xcoreMetadataName[] = "xcoreSharedConfig";
 
 struct xcore_metadata {
-  int max_threads_used;
+  int required_thread_count;
 };
 
 } // namespace shared_config

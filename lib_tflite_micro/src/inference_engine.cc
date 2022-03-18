@@ -66,7 +66,7 @@ int inference_engine_load_model(inference_engine *ie, uint32_t model_bytes,
       auto* array = buffer->data();
 
       auto* ptr = (shared_config::xcore_metadata*) array->data();
-      printf("\n\nmax thread count %d\n\n", ptr->max_threads_used);
+      printf("\n\nrequired thread count %d\n\n", ptr->required_thread_count);
     }
   }
 

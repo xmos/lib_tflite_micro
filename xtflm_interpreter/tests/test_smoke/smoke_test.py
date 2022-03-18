@@ -13,9 +13,9 @@ with open(sys.argv[3], 'rb') as fd:
 
 ie.set_input_tensor(0, img)
 ie.invoke()
-answer1 = ie.get_output_tensor(0)
-answer2 = ie.get_output_tensor(1)
-with open(sys.argv[4], 'wb') as fd:
-    fd.write(answer1)
-with open(sys.argv[5], 'wb') as fd:
-    fd.write(answer2)
+output_num = 0
+for arg in sys.argv[4:]:
+    answer = ie.get_output_tensor(output_num)
+    with open(arg, 'wb') as fd:
+        fd.write(answer)
+    output_num += 1

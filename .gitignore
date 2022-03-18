@@ -13,4 +13,5 @@ flash_builder/flash_builder/__pycache__/
 flash_builder/.eggs/
 flash_builder/flash_builder.egg-info/
 *.pyc
-
+model/*_xcore*.tflite
+model/*_xcore*.flash

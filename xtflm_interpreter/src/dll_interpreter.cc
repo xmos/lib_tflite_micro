@@ -87,7 +87,7 @@ void delete_interpreter(inference_engine *ie) {
 }
 
 int initialize(inference_engine *ie, const char *model_content,
-               size_t model_content_size, size_t tensor_arena_size,
+               size_t model_content_size,
                const char *param_content) {
   // We need to keep a copy of the model content
   inference_engine_unload_model(ie);
@@ -127,6 +127,12 @@ int set_input_tensor(inference_engine *ie, size_t tensor_index,
 int get_output_tensor(inference_engine *ie, size_t tensor_index, void *value,
                       const int size) {
   memcpy(value, ie->output_buffers[tensor_index], size);
+  return 0;
+}
+
+int get_input_tensor(inference_engine *ie, size_t tensor_index, void *value,
+                      const int size) {
+  memcpy(value, ie->input_buffers[tensor_index], size);
   return 0;
 }
 

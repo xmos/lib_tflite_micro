@@ -176,21 +176,21 @@ class XTFLMInterpreter(base_interpreter):
         if XTFLMInterpreterStatus(status) is XTFLMInterpreterStatus.ERROR:
             raise RuntimeError("Unable to initialize interpreter")
 
-    # def set_input_tensor(self, tensor_index, data, engine_num=0):
-    #     if isinstance(data, np.ndarray):
-    #         data = data.tobytes()
-    #     l = len(data)
-    #     l2 = self.get_input_tensor_size(tensor_index, engine_num)
-    #     if l != l2:
-    #         print('ERROR: mismatching size in set_input_tensor %d vs %d' % (l, l2))
+    def set_input_tensor(self, tensor_index, data, engine_num=0):
+        if isinstance(data, np.ndarray):
+            data = data.tobytes()
+        l = len(data)
+        l2 = self.get_input_tensor_size(tensor_index, engine_num)
+        if l != l2:
+            print('ERROR: mismatching size in set_input_tensor %d vs %d' % (l, l2))
 
-    #     self._check_status(
-    #         lib.set_input_tensor(self.obj, tensor_index, data, l)
-    #     )
+        self._check_status(
+            lib.set_input_tensor(self.obj, tensor_index, data, l)
+        )
 
-    def get_output_tensor(self, output_index=0, tensor=None, engne_num=0):
+    def get_output_tensor(self, output_index=0, tensor=None):
         tensor_index = lib.output_tensor_index(self.obj, output_index)
-        l = self.get_output_tensor_size(output_index, engine_num)
+        l = self.get_output_tensor_size(output_index)
         if tensor is None:
             tensor_details = self.get_output_details()
             tensor = np.zeros(tensor_details["shape"], dtype=tensor_details["dtype"])

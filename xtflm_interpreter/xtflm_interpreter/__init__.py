@@ -161,7 +161,7 @@ class XTFLMInterpreter(base_interpreter):
     def __exit__(self, exc_type, exc_value, exc_traceback) -> None:
         self.close()
 
-    def initialise_interpreter(self, engine_num=0):
+    def initialise_interpreter(self, engine_num=0) -> None:
         currentModel = None
         for model in self.models:
             if model.tile == engine_num:
@@ -176,7 +176,7 @@ class XTFLMInterpreter(base_interpreter):
         if XTFLMInterpreterStatus(status) is XTFLMInterpreterStatus.ERROR:
             raise RuntimeError("Unable to initialize interpreter")
 
-    def set_input_tensor(self, tensor_index, data, engine_num=0):
+    def set_input_tensor(self, tensor_index, data, engine_num=0) -> None:
         if isinstance(data, np.ndarray):
             data = data.tobytes()
         l = len(data)
@@ -188,7 +188,7 @@ class XTFLMInterpreter(base_interpreter):
             lib.set_input_tensor(self.obj, tensor_index, data, l)
         )
 
-    def get_output_tensor(self, output_index=0, tensor=None):
+    def get_output_tensor(self, output_index=0, tensor=None) -> "Output tensor data":
         tensor_index = lib.output_tensor_index(self.obj, output_index)
         l = self.get_output_tensor_size(output_index)
         if tensor is None:
@@ -206,7 +206,7 @@ class XTFLMInterpreter(base_interpreter):
 
         return tensor
 
-    def get_input_tensor(self, input_index=0):
+    def get_input_tensor(self, input_index=0) -> "Input tensor data":
         tensor_details = self.get_input_details()
         tensor = np.zeros(tensor_details["shape"], dtype=tensor_details["dtype"])
         data_ptr = tensor.ctypes.data_as(ctypes.c_void_p)
@@ -217,7 +217,7 @@ class XTFLMInterpreter(base_interpreter):
         )
         return tensor
 
-    def invoke(self):
+    def invoke(self) -> None:
         INVOKE_CALLBACK_FUNC = ctypes.CFUNCTYPE(ctypes.c_void_p, ctypes.c_int)
 
         self._check_status(lib.invoke(self.obj))
@@ -227,7 +227,7 @@ class XTFLMInterpreter(base_interpreter):
             lib.delete_interpreter(self.obj)
             self.obj = None
 
-    def tensor_arena_size(self):
+    def tensor_arena_size(self) -> "Size of tensor arena":
         return lib.arena_used_bytes(self.obj)
 
     def _check_status(self, status) -> None:
@@ -235,5 +235,5 @@ class XTFLMInterpreter(base_interpreter):
             lib.get_error(self.obj, self._error_msg)
             raise RuntimeError(self._error_msg.value.decode("utf-8"))
 
-    def print_memory_plan(self):
+    def print_memory_plan(self) -> None:
         lib.print_memory_plan(self.obj)

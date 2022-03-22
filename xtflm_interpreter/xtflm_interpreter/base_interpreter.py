@@ -105,11 +105,14 @@ class base_interpreter(ABC):
         running concurrently. Defaults to 0 for use with a single model.
         @return The size of the input tensor as an integer.
         """
+
+        #Select correct model from model list
         modelBuf = None
         for model in self.models:
             if model.tile == engine_num:
                 modelBuf = Model.GetRootAs(model.content)
 
+        #Calculate tensor size by multiplying shape elements
         tensorSize = 1
         for i in range(0, modelBuf.Subgraphs(0).Tensors(0).ShapeLength()):
             tensorSize = tensorSize * modelBuf.Subgraphs(0).Tensors(0).Shape(i)
@@ -122,17 +125,21 @@ class base_interpreter(ABC):
         running concurrently. Defaults to 0 for use with a single model.
         @return The size of the output tensor as an integer.
         """
+
+        #Select correct model from model list
         modelBuf = None
         for model in self.models:
             if model.tile == engine_num:
                 modelBuf = Model.GetRootAs(model.content)
+
+        #Output tensor index is last index
         tensorsLength = modelBuf.Subgraphs(0).TensorsLength()
 
+        #Calculate tensor size by multiplying shape elements
         tensorSize = 1
         for i in range(0, modelBuf.Subgraphs(0).Tensors(tensorsLength-1).ShapeLength()):
             tensorSize = tensorSize * modelBuf.Subgraphs(0).Tensors(tensorsLength-1).Shape(i)
         return tensorSize
-        return
 
     def get_input_details(self, engine_num=0) -> "Details of input tensor":
         """! Reads the input tensor details from the model
@@ -141,11 +148,14 @@ class base_interpreter(ABC):
         @return Tensor details, including the index, name, shape, data type, and quantization
         parameters.
         """
+
+        #Select correct model from model list
         modelBuf = None
         for model in self.models:
             if model.tile == engine_num:
                 modelBuf = Model.GetRootAs(model.content)
 
+        #Generate dictioary of tensor details
         details = {
 
           "index": 0,
@@ -164,12 +174,17 @@ class base_interpreter(ABC):
         @return Tensor details, including the index, name, shape, data type, and quantization
         parameters.
         """
+
+        #Select correct model from models list
         modelBuf = None
         for model in self.models:
             if model.tile == engine_num:
                 modelBuf = Model.GetRootAs(model.content)
+
+        #Output tensor is last tensor
         tensorIndex = modelBuf.Subgraphs(0).TensorsLength()-1
 
+        #Generate dictioary of tensor details
         details = {
           "index": tensorIndex,
           "name": str(modelBuf.Subgraphs(0).Tensors(tensorIndex).Name())[1:].strip("'"),
@@ -191,13 +206,17 @@ class base_interpreter(ABC):
         @param engine_num The engine to target, for interpreters that support multiple models
         running concurrently. Defaults to 0 for use with a single model.
         """
+
+        #Check path or content is valid
         if type(path) == str or content is not None:
             tile_found = False
+            #Find correct model and replace
             for model in self.models:
                 if model.tile == engine_num:
                     model = self.modelData(path, content, params_path, params_content, engine_num)
                     tile_found = True
                     break
+            #If model wasn't previously set, add it to list
             if not tile_found:
                 self.models.append(self.modelData(path, content, params_path, params_content, engine_num))
 
@@ -222,29 +241,29 @@ class base_interpreter(ABC):
             self.params_content = params_content
             self.tile = engine_num
             self.opList = []
-            self.modelToOpList()
             self.pathToContent()
+            self.modelToOpList()
 
         def modelToOpList(self):
             """! Generates operator list from model.
             """
-            # Update the path to your model
-            if self.path is not None:
-                with open(self.path, "rb") as model_file:
-                    buffer = model_file.read()
-            elif self.content is not None:
-                buffer = self.content
 
-            # Get Model
+            #Load model
+            buffer = self.content
             model = Model.GetRootAs(buffer)
             self.opList = []
+
+            #Iterate through operators in model and add operators to opList
             for y in range(0, model.Subgraphs(0).OperatorsLength()):
                 opcode = model.OperatorCodes(model.Subgraphs(0).Operators(y).OpcodeIndex())
+                #If custom opcode parse string
                 if opcode.BuiltinCode() == 32:
                     self.opList.append(str(opcode.CustomCode()).strip("b'"))
+                #If built in opcode, decode
                 else:
                     self.opList.append(opcode.BuiltinCode())
 
+            #Using schema.fbs, decode custom opcodes
             f = open('./xtflm_interpreter/schema.fbs', "r")
             lines = f.readlines()[108:238]
             for line in lines:
@@ -262,12 +281,16 @@ class base_interpreter(ABC):
         def pathToContent(self):
             """! Reads model and params paths to content (byte arrays)
             """
+
+            #Check if path exists but not content
             if self.content == None and self.path != None:
                 with open(self.path, "rb") as input_fd:
                     self.content = input_fd.read()
 
+            #Check if params_path exits but not params_content
             if self.params_content == None and self.params_path != None:
                 with open(self.params_path, "rb") as input_fd2:
                     self.params_content = input_fd2.read()
+            #If no params, set to empty byte array
             else:
                 self.params_content = bytes([])

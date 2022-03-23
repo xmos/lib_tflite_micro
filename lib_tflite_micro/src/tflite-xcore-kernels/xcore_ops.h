@@ -78,8 +78,8 @@ TfLiteRegistration* Register_MaxPool2D();
 TfLiteRegistration* Register_AvgPool2D();
 TfLiteRegistration* Register_AvgPool2D_Global();
 TfLiteRegistration* Register_Lookup_8();
-TfLiteRegistration* Register_Strided_Slice();
-TfLiteRegistration* Register_Strided_Slice_V2();
+// TfLiteRegistration* Register_Strided_Slice();
+// TfLiteRegistration* Register_Strided_Slice_V2();
 TfLiteRegistration* Register_Strided_Slice_V3();
 
 // Binarized ops

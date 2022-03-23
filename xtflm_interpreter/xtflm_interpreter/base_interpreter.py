@@ -5,8 +5,8 @@ import struct
 import array
 import numpy as np
 
-from tflite.Model import  Model
-from tflite.TensorType import TensorType
+from .tflite.Model import  Model
+from .tflite.TensorType import TensorType
 
 dtypes = {
    0 : 'float32',
@@ -65,6 +65,14 @@ class base_interpreter(ABC):
         return
 
     @abstractmethod
+    def initialise_interpreter(self, engine_num=0) -> None:
+        """! Abstract initialising interpreter with model associated with engine_num.
+        @param engine_num The engine to target, for interpreters that support multiple models
+        running concurrently. Defaults to 0 for use with a single model.
+        """
+        return
+
+    @abstractmethod
     def invoke(self) -> None:
         """! Abstract for invoking the model and starting inference of the current
         state of the tensors
@@ -97,6 +105,7 @@ class base_interpreter(ABC):
         """! Abstract to print a plan of memory allocation
         """
         return
+
 
     def get_input_tensor_size(self, input_index=0, engine_num=0) -> "Size of input tensor":
         """! Read the size of the input tensor from the model
@@ -219,7 +228,8 @@ class base_interpreter(ABC):
             #If model wasn't previously set, add it to list
             if not tile_found:
                 self.models.append(self.modelData(path, content, params_path, params_content, engine_num))
-
+            self.initialise_interpreter(engine_num)
+            
     class modelData():
         """! The model data class
         A class that holds a model and data associated with a single model.

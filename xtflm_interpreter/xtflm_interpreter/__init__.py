@@ -45,7 +45,7 @@ class XTFLMInterpreter(base_interpreter):
     def __init__(
         self,
         max_tensor_arena_size=MAX_TENSOR_ARENA_SIZE,
-        max_model_size=50000000,
+        max_model_size=50000000
     ) -> None:
         self._error_msg = ctypes.create_string_buffer(4096)
 
@@ -174,7 +174,7 @@ class XTFLMInterpreter(base_interpreter):
             currentModel.params_content,
         )
         if XTFLMInterpreterStatus(status) is XTFLMInterpreterStatus.ERROR:
-            raise RuntimeError("Unable to initialize interpreter")
+            raise RuntimeError("Unable to initialize interpreter") #TODO
 
     def set_input_tensor(self, tensor_index, data, engine_num=0) -> None:
         if isinstance(data, np.ndarray):

@@ -223,7 +223,7 @@ class XTFLMInterpreter(base_interpreter):
         self._check_status(lib.invoke(self.obj))
 
     def close(self) -> None:
-        if False and self.obj:
+        if self.obj:
             lib.delete_interpreter(self.obj)
             self.obj = None
 

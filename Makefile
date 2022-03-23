@@ -8,8 +8,8 @@ init:
 	python3 fetch_dependencies.py
 	python3 -m venv .venv && \
 	. .venv/bin/activate && \
-	python -m pip install pip==22.0.4 && \
-	pip3 install -r requirements.txt
+	pip3 install --upgrade pip && \
+	pip3 install -r requirements.txt -v -v -v
 
 test:
 	(. .venv/bin/activate && cd host_cmd_line_interpreter && make test)

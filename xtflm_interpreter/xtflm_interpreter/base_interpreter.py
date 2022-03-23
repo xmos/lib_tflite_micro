@@ -4,6 +4,7 @@ import sys
 import struct
 import array
 import numpy as np
+import pathlib
 
 from .tflite.Model import  Model
 from .tflite.TensorType import TensorType
@@ -121,10 +122,12 @@ class base_interpreter(ABC):
             if model.tile == engine_num:
                 modelBuf = Model.GetRootAs(model.content)
 
+        tensorIndex = modelBuf.Subgraphs(0).Inputs(input_index)
+
         #Calculate tensor size by multiplying shape elements
         tensorSize = 1
-        for i in range(0, modelBuf.Subgraphs(0).Tensors(0).ShapeLength()):
-            tensorSize = tensorSize * modelBuf.Subgraphs(0).Tensors(0).Shape(i)
+        for i in range(0, modelBuf.Subgraphs(0).Tensors(tensorIndex).ShapeLength()):
+            tensorSize = tensorSize * modelBuf.Subgraphs(0).Tensors(tensorIndex).Shape(i)
         return tensorSize
         
     def get_output_tensor_size(self, output_index=0, engine_num=0) -> "Size of output tensor":
@@ -142,16 +145,16 @@ class base_interpreter(ABC):
                 modelBuf = Model.GetRootAs(model.content)
 
         #Output tensor index is last index
-        tensorsLength = modelBuf.Subgraphs(0).TensorsLength()
-
+        tensorIndex = modelBuf.Subgraphs(0).Outputs(output_index)
         #Calculate tensor size by multiplying shape elements
         tensorSize = 1
-        for i in range(0, modelBuf.Subgraphs(0).Tensors(tensorsLength-1).ShapeLength()):
-            tensorSize = tensorSize * modelBuf.Subgraphs(0).Tensors(tensorsLength-1).Shape(i)
+        for i in range(0, modelBuf.Subgraphs(0).Tensors(tensorIndex).ShapeLength()):
+            tensorSize = tensorSize * modelBuf.Subgraphs(0).Tensors(tensorIndex).Shape(i)
         return tensorSize
 
-    def get_input_details(self, engine_num=0) -> "Details of input tensor":
+    def get_input_details(self, input_index=0,  engine_num=0) -> "Details of input tensor":
         """! Reads the input tensor details from the model
+        @param input_index  The index of input tensor to target.
         @param engine_num The engine to target, for interpreters that support multiple models
         running concurrently. Defaults to 0 for use with a single model.
         @return Tensor details, including the index, name, shape, data type, and quantization
@@ -164,20 +167,23 @@ class base_interpreter(ABC):
             if model.tile == engine_num:
                 modelBuf = Model.GetRootAs(model.content)
 
+        tensorIndex = modelBuf.Subgraphs(0).Inputs(input_index)
+
         #Generate dictioary of tensor details
         details = {
 
-          "index": 0,
-          "name": str(modelBuf.Subgraphs(0).Tensors(0).Name())[1:].strip("'"),
-          "shape": modelBuf.Subgraphs(0).Tensors(0).ShapeAsNumpy(),
-          "dtype": dtypes[modelBuf.Subgraphs(0).Tensors(0).Type()],
-          "quantization": (modelBuf.Subgraphs(0).Tensors(0).Quantization().Scale(0), modelBuf.Subgraphs(0).Tensors(0).Quantization().ZeroPoint(0))
+          "index": tensorIndex,
+          "name": str(modelBuf.Subgraphs(0).Tensors(tensorIndex).Name())[1:].strip("'"),
+          "shape": modelBuf.Subgraphs(0).Tensors(tensorIndex).ShapeAsNumpy(),
+          "dtype": dtypes[modelBuf.Subgraphs(0).Tensors(tensorIndex).Type()],
+          "quantization": (modelBuf.Subgraphs(0).Tensors(tensorIndex).Quantization().Scale(0), modelBuf.Subgraphs(0).Tensors(0).Quantization().ZeroPoint(0))
         }
 
         return details
 
-    def get_output_details(self, engine_num=0) -> "Details of output tensor":
+    def get_output_details(self, output_index=0, engine_num=0) -> "Details of output tensor":
         """! Reads the output tensor details from the model
+        @param output_index  The index of output tensor to target.
         @param engine_num The engine to target, for interpreters that support multiple models
         running concurrently. Defaults to 0 for use with a single model.
         @return Tensor details, including the index, name, shape, data type, and quantization
@@ -191,7 +197,7 @@ class base_interpreter(ABC):
                 modelBuf = Model.GetRootAs(model.content)
 
         #Output tensor is last tensor
-        tensorIndex = modelBuf.Subgraphs(0).TensorsLength()-1
+        tensorIndex = modelBuf.Subgraphs(0).Outputs(output_index)
 
         #Generate dictioary of tensor details
         details = {
@@ -229,7 +235,7 @@ class base_interpreter(ABC):
             if not tile_found:
                 self.models.append(self.modelData(path, content, params_path, params_content, engine_num))
             self.initialise_interpreter(engine_num)
-            
+
     class modelData():
         """! The model data class
         A class that holds a model and data associated with a single model.
@@ -274,7 +280,8 @@ class base_interpreter(ABC):
                     self.opList.append(opcode.BuiltinCode())
 
             #Using schema.fbs, decode custom opcodes
-            f = open('./xtflm_interpreter/schema.fbs', "r")
+            schemaPath = pathlib.Path(__file__).parent.resolve().joinpath('schema.fbs')
+            f = open(schemaPath, "r")
             lines = f.readlines()[108:238]
             for line in lines:
               if '/' in line:

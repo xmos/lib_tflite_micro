@@ -192,7 +192,7 @@ class XTFLMInterpreter(base_interpreter):
         tensor_index = lib.output_tensor_index(self.obj, output_index)
         l = self.get_output_tensor_size(output_index)
         if tensor is None:
-            tensor_details = self.get_output_details()
+            tensor_details = self.get_output_details(output_index)
             tensor = np.zeros(tensor_details["shape"], dtype=tensor_details["dtype"])
         else:
             l2 = len(tensor.tobytes())
@@ -207,7 +207,7 @@ class XTFLMInterpreter(base_interpreter):
         return tensor
 
     def get_input_tensor(self, input_index=0) -> "Input tensor data":
-        tensor_details = self.get_input_details()
+        tensor_details = self.get_input_details(input_index)
         tensor = np.zeros(tensor_details["shape"], dtype=tensor_details["dtype"])
         data_ptr = tensor.ctypes.data_as(ctypes.c_void_p)
 

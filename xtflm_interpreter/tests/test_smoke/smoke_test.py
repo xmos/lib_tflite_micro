@@ -6,13 +6,14 @@ import numpy as np
 import cv2
 from xtflm_interpreter import XTFLMInterpreter
 
-ie = XTFLMInterpreter(model_path = sys.argv[1], params_path = sys.argv[2])
-
+ie = XTFLMInterpreter()
+ie.set_model(path = sys.argv[1], params_path = sys.argv[2])
 with open(sys.argv[3], 'rb') as fd:
     img = fd.read()
 
 ie.set_input_tensor(0, img)
 ie.invoke()
+
 answer1 = ie.get_output_tensor(0)
 answer2 = ie.get_output_tensor(1)
 with open(sys.argv[4], 'wb') as fd:

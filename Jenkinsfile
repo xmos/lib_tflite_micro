@@ -40,6 +40,15 @@ pipeline {
 //                sh("rm -rf *")
             }
         }*/
+        stage("Checkout") {
+            steps {
+                dir("sb") {
+                    unstash 'lib_tflite_micro'
+                    sh 'git submodule update --depth=1 --init --recursive --jobs 8'
+                    sh 'make init'
+                }
+            }
+        }
         stage("Build") {
             steps {
                 dir("sb") {

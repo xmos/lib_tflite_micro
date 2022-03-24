@@ -12,27 +12,37 @@ pipeline {
         timestamps()
     }
     stages {
-        stage("Checkout repo") {
+        stage("Setup") {
             steps {
-                dir('lib_tflite_micro') {
-                    checkout scm
-                    stash includes: '**/*', name: 'lib_tflite_micro', useDefaultExcludes: false
-                    script {
-                        def short_hash = sh(returnStdout: true, script: "git log -n 1 --pretty=format:'%h'").trim()
-                        currentBuild.displayName = '#' + BUILD_NUMBER + '-' + short_hash
-                    }
-                }
+                sh "rm -rf *"
+
+                checkout([
+                    $class: 'GitSCM',
+                    branches: scm.branches,
+                    doGenerateSubmoduleConfigurations: false,
+                    extensions: [[$class: 'SubmoduleOption',
+                                threads: 8,
+                                timeout: 20,
+                                shallow: false,
+                                parentCredentials: true,
+                                recursiveSubmodules: true],
+                                [$class: 'CleanCheckout']],
+                    userRemoteConfigs: [[credentialsId: 'xmos-bot',
+                                        url: 'git@github.com:xmos/lib_tflite_micro']]
+                ])
+                // create .venv folder
                 sh "conda -V"
-                sh "conda env create -q -p lib_tflite_micro_venv -f ./environment.yml"
-                sh """. activate ./lib_tflite_micro_venv &&
-                pip3 install -r ./requirements.txt
-                """                     
-            }
-            post {
-                cleanup {
-                    deleteDir()
+                sh "conda env create -q -p .venv -f environment.yml"
+
                 }
             }
+        stage("Update environment") {
+            steps {
+                sh "conda update --all -y -q -p .venv"
+                sh ". activate ./.venv"
+                sh "make init"                     
+            }
+        }
         }
 /*        stage("Cleanup2") {
             steps {
@@ -40,15 +50,6 @@ pipeline {
 //                sh("rm -rf *")
             }
         }*/
-        stage("Checkout") {
-            steps {
-                dir("sb") {
-                    unstash 'lib_tflite_micro'
-                    
-                    sh 'make init'
-                }
-            }
-        }
         stage("Build") {
             steps {
                 dir("sb") {
@@ -59,6 +60,7 @@ pipeline {
         stage("Test") {
             steps {
                 dir("sb") {
+                    sh ". activate ./.venv"
                     sh 'make test'
                 }
             }

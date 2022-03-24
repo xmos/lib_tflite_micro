@@ -31,7 +31,7 @@ RUN ln -s /usr/bin/clang-$clang_version /usr/bin/clang \
     && ln -s /usr/bin/clang++-$clang_version /usr/bin/clang++ \
     && ln -s /usr/bin/clang /usr/bin/cc \
     && ln -s /usr/bin/clang++ /usr/bin/c++
-
+RUN sudo apt-get install build-essential
 # install get_tools.py script
 #   requires connection to XMOS network at build and run time
 #   if not possible, find another way to install the tools

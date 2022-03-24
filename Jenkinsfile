@@ -4,9 +4,7 @@ def date_str_bld = new Date().format("yyyy-mm-dd")
 getApproval()
 pipeline {
     agent {
-        dockerfile {
-            args "-v /etc/passwd:/etc/passwd:ro -v /etc/group:/etc/group:ro -v /home/jenkins/.ssh:/home/jenkins/.ssh:ro"
-        }
+        dockerfile true 
     }
     options {
         disableConcurrentBuilds()

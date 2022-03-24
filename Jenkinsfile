@@ -44,7 +44,7 @@ pipeline {
             steps {
                 dir("sb") {
                     unstash 'lib_tflite_micro'
-                    sh 'git submodule update --recursive'
+                    
                     sh 'make init'
                 }
             }

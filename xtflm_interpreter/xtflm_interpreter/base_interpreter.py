@@ -120,7 +120,7 @@ class base_interpreter(ABC):
         modelBuf = None
         for model in self.models:
             if model.tile == engine_num:
-                modelBuf = Model.GetRootAs(model.content)
+                modelBuf = Model.GetRootAs(model.model_content)
 
         tensorIndex = modelBuf.Subgraphs(0).Inputs(input_index)
 
@@ -142,7 +142,7 @@ class base_interpreter(ABC):
         modelBuf = None
         for model in self.models:
             if model.tile == engine_num:
-                modelBuf = Model.GetRootAs(model.content)
+                modelBuf = Model.GetRootAs(model.model_content)
 
         #Output tensor index is last index
         tensorIndex = modelBuf.Subgraphs(0).Outputs(output_index)
@@ -165,7 +165,7 @@ class base_interpreter(ABC):
         modelBuf = None
         for model in self.models:
             if model.tile == engine_num:
-                modelBuf = Model.GetRootAs(model.content)
+                modelBuf = Model.GetRootAs(model.model_content)
 
         tensorIndex = modelBuf.Subgraphs(0).Inputs(input_index)
 
@@ -194,7 +194,7 @@ class base_interpreter(ABC):
         modelBuf = None
         for model in self.models:
             if model.tile == engine_num:
-                modelBuf = Model.GetRootAs(model.content)
+                modelBuf = Model.GetRootAs(model.model_content)
 
         #Output tensor is last tensor
         tensorIndex = modelBuf.Subgraphs(0).Outputs(output_index)
@@ -210,10 +210,10 @@ class base_interpreter(ABC):
 
         return details 
 
-    def set_model(self, path=None, content=None, params_path=None, params_content=None, engine_num=0) -> None:
+    def set_model(self, model_path=None, model_content=None, params_path=None, params_content=None, engine_num=0) -> None:
         """! Adds a model to the interpreters list of models.
-        @param path The path to the model file (.tflite), alternative to content.
-        @param content The byte array representing a model, alternative to path.
+        @param model_path The path to the model file (.tflite), alternative to model_content.
+        @param model_content The byte array representing a model, alternative to model_path.
         @param params_path The path to the params file for the model,
         alternaitve to params_content (optional).
         @param params_content The byte array representing the model parameters,
@@ -222,37 +222,37 @@ class base_interpreter(ABC):
         running concurrently. Defaults to 0 for use with a single model.
         """
 
-        #Check path or content is valid
-        if type(path) == str or content is not None:
+        #Check model_path or model_content is valid
+        if type(model_path) == str or model_content is not None:
             tile_found = False
             #Find correct model and replace
             for model in self.models:
                 if model.tile == engine_num:
-                    model = self.modelData(path, content, params_path, params_content, engine_num)
+                    model = self.modelData(model_path, model_content, params_path, params_content, engine_num)
                     tile_found = True
                     break
             #If model wasn't previously set, add it to list
             if not tile_found:
-                self.models.append(self.modelData(path, content, params_path, params_content, engine_num))
+                self.models.append(self.modelData(model_path, model_content, params_path, params_content, engine_num))
             self.initialise_interpreter(engine_num)
 
     class modelData():
         """! The model data class
         A class that holds a model and data associated with a single model.
         """
-        def __init__(self, path, content, params_path, params_content, engine_num):
+        def __init__(self, model_path, model_content, params_path, params_content, engine_num):
             """! Model data initializer.
             Sets up variables, generates a list of operators used in the model,
             and reads model and params paths into byte arrays (content).
-            @param path Path to the model file (.tflite).
-            @param content Model content (byte array).
+            @param model_path Path to the model file (.tflite).
+            @param model_content Model model_content (byte array).
             @param params_path Path to model parameters file.
             @param params_content Model parameters content (byte array)
             @param engine_num The engine to target, for interpreters that support multiple models
             running concurrently. Defaults to 0 for use with a single model.
             """
-            self.path = path 
-            self.content = content
+            self.model_path = model_path 
+            self.model_content = model_content
             self.params_path = params_path
             self.params_content = params_content
             self.tile = engine_num
@@ -265,7 +265,7 @@ class base_interpreter(ABC):
             """
 
             #Load model
-            buffer = self.content
+            buffer = self.model_content
             model = Model.GetRootAs(buffer)
             self.opList = []
 
@@ -275,7 +275,7 @@ class base_interpreter(ABC):
                 #If custom opcode parse string
                 if opcode.BuiltinCode() == 32:
                     self.opList.append(str(opcode.CustomCode()).strip("b'"))
-                #If built in opcode, decode
+                #If built in op code, decode
                 else:
                     self.opList.append(opcode.BuiltinCode())
 
@@ -300,9 +300,9 @@ class base_interpreter(ABC):
             """
 
             #Check if path exists but not content
-            if self.content == None and self.path != None:
-                with open(self.path, "rb") as input_fd:
-                    self.content = input_fd.read()
+            if self.model_content == None and self.model_path != None:
+                with open(self.model_path, "rb") as input_fd:
+                    self.model_content = input_fd.read()
 
             #Check if params_path exits but not params_content
             if self.params_content == None and self.params_path != None:

@@ -7,7 +7,7 @@ import cv2
 from xtflm_interpreter import XTFLMInterpreter
 
 ie = XTFLMInterpreter()
-ie.set_model(path = sys.argv[1], params_path = sys.argv[2])
+ie.set_model(model_path = sys.argv[1], params_path = sys.argv[2])
 with open(sys.argv[3], 'rb') as fd:
     img = fd.read()
 

@@ -169,8 +169,8 @@ class XTFLMInterpreter(base_interpreter):
 
         status = lib.initialize(
             self.obj,
-            currentModel.content,
-            len(currentModel.content),
+            currentModel.model_content,
+            len(currentModel.model_content),
             currentModel.params_content,
         )
         if XTFLMInterpreterStatus(status) is XTFLMInterpreterStatus.ERROR:

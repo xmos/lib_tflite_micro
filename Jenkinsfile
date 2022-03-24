@@ -20,7 +20,11 @@ pipeline {
                         def short_hash = sh(returnStdout: true, script: "git log -n 1 --pretty=format:'%h'").trim()
                         currentBuild.displayName = '#' + BUILD_NUMBER + '-' + short_hash
                     }
-                }                        
+                }
+                sh "conda env create -q -p lib_tflite_micro_venv -f ./environment.yml"
+                sh """. activate ./lib_tflite_micro_venv &&
+                pip3 install -r ./requirements.txt
+                """                     
             }
             post {
                 cleanup {

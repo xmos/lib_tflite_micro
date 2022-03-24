@@ -2,7 +2,6 @@ def date_str_bld = new Date().format("yyyy-mm-dd")
 
 pipeline {
     agent {
-        label "xcore.ai"
         dockerfile {
             args "-v /home/jenkins/.keras:/root/.keras -v /etc/passwd:/etc/passwd:ro"
         }

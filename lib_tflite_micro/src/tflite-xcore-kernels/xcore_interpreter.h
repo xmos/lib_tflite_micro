@@ -6,7 +6,6 @@
 #include "tensorflow/lite/micro/memory_planner/micro_memory_planner.h"
 #include "tensorflow/lite/micro/micro_allocator.h"
 #include "tensorflow/lite/micro/micro_interpreter.h"
-#include "xcore_dispatcher.h"
 #include "xcore_profiler.h"
 #include "../thread_call.h"
 
@@ -49,8 +48,6 @@ public:
   ErrorReporter* error_reporter__;
   tflite::GreedyMemoryPlanner* memory_planner__;
   thread_info_t thread_info;
- private:
-  tflite::ops::micro::xcore::Dispatcher dispatcher_;
 };
 
 } // namespace xcore

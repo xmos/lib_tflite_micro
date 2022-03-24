@@ -1,9 +1,11 @@
 def date_str_bld = new Date().format("yyyy-mm-dd")
 
+@Library('xmos_jenkins_shared_library@v0.16.3') _
+getApproval()
 pipeline {
     agent {
         dockerfile {
-            args "-v /home/jenkins/.keras:/root/.keras -v /etc/passwd:/etc/passwd:ro"
+            args "-v /etc/passwd:/etc/passwd:ro -v /etc/group:/etc/group:ro -v /home/jenkins/.ssh:/home/jenkins/.ssh:ro"
         }
     }
     options {

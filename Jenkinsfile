@@ -40,7 +40,9 @@ pipeline {
             steps {
                 sh "conda update --all -y -q -p .venv"
                 sh ". activate ./.venv"
-                sh "make init"                     
+                dir("sb") {
+                    sh 'make init'
+                }                     
             }
         }
 /*        stage("Cleanup2") {

@@ -11,11 +11,13 @@ namespace xcore {
 
 constexpr const char *Conv2D_V2_OpCode = "XC_conv2d_v2";
 constexpr const char *Load_Flash_OpCode = "XC_ld_flash";
+constexpr const char *Strided_Slice_V3_OpCode = "XC_strided_slice_v3";
 // Binarized ops
 constexpr const char *Bsign_8_OpCode = "XC_bsign_8";
 
 TfLiteRegistration *Register_Conv2D_V2();
 TfLiteRegistration *Register_LoadFromFlash();
+TfLiteRegistration *Register_Strided_Slice_V3();
 // Binarized ops
 TfLiteRegistration *Register_BSign_8();
 

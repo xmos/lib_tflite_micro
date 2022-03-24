@@ -1,9 +1,46 @@
+set(TFLIB_SRC_DIR
+  "${CMAKE_CURRENT_SOURCE_DIR}/../lib_tflite_micro/src/tflite-xcore-kernels")
 
-include(../cmakefiles/xtflm_core.cmake)
+set(TFLITE_SRC_DIR
+  "${CMAKE_CURRENT_SOURCE_DIR}/../lib_tflite_micro/submodules/tflite-micro/tensorflow/lite")
+
+set(XTFLM_SRC_DIR
+  "${TFLITE_SRC_DIR}/micro")
+
+set(NN_SRC_DIR
+  "${CMAKE_CURRENT_SOURCE_DIR}/../../lib_nn/lib_nn/src")
+
+file(GLOB_RECURSE ALL_SOURCES "${NN_SRC_DIR}/c/*.c")
+
+list(APPEND ALL_SOURCES  "${TFLITE_SRC_DIR}/c/common.c")
+
+list(APPEND ALL_SOURCES  "${NN_SRC_DIR}/cpp/AggregateFn.cpp")
+list(APPEND ALL_SOURCES  "${NN_SRC_DIR}/cpp/AggregateFn_DW.cpp")
+list(APPEND ALL_SOURCES  "${NN_SRC_DIR}/cpp/Filter2D.cpp")
+list(APPEND ALL_SOURCES  "${NN_SRC_DIR}/cpp/MaxPool2d.cpp")
+list(APPEND ALL_SOURCES  "${NN_SRC_DIR}/cpp/MaxPoolAgg.cpp")
+list(APPEND ALL_SOURCES  "${NN_SRC_DIR}/cpp/MemCpyFn.cpp")
+list(APPEND ALL_SOURCES  "${NN_SRC_DIR}/cpp/OutputTransformFn.cpp")
+list(APPEND ALL_SOURCES  "${NN_SRC_DIR}/cpp/filt2d/conv2d_utils.cpp")
+list(APPEND ALL_SOURCES  "${NN_SRC_DIR}/cpp/filt2d/util.cpp")
+list(APPEND ALL_SOURCES  "${NN_SRC_DIR}/cpp/filt2d/geom/Filter2dGeometry.cpp")
+list(APPEND ALL_SOURCES  "${NN_SRC_DIR}/cpp/filt2d/geom/ImageGeometry.cpp")
+list(APPEND ALL_SOURCES  "${NN_SRC_DIR}/cpp/filt2d/geom/WindowGeometry.cpp")
+list(APPEND ALL_SOURCES  "${NN_SRC_DIR}/cpp/filt2d/geom/WindowLocation.cpp")
+list(APPEND ALL_SOURCES  "${NN_SRC_DIR}/asm/asm_constants.c")
+
+list(APPEND ALL_SOURCES  "${TFLITE_SRC_DIR}/core/api/error_reporter.cc")
+list(APPEND ALL_SOURCES  "${TFLITE_SRC_DIR}/core/api/tensor_utils.cc")
+list(APPEND ALL_SOURCES  "${TFLITE_SRC_DIR}/core/api/flatbuffer_conversions.cc")
+list(APPEND ALL_SOURCES  "${TFLITE_SRC_DIR}/core/api/op_resolver.cc")
+list(APPEND ALL_SOURCES  "${TFLITE_SRC_DIR}/kernels/kernel_util.cc")
+list(APPEND ALL_SOURCES  "${TFLITE_SRC_DIR}/kernels/internal/quantization_util.cc")
+list(APPEND ALL_SOURCES  "${TFLITE_SRC_DIR}/schema/schema_utils.cc")
 
 list(APPEND ALL_SOURCES  "${CMAKE_CURRENT_SOURCE_DIR}/../lib_tflite_micro/src/inference_engine.cc")
 list(APPEND ALL_SOURCES  "${TFLIB_SRC_DIR}/xcore_bsign.cc")
 list(APPEND ALL_SOURCES  "${TFLIB_SRC_DIR}/xcore_conv2d_v2.cc")
+list(APPEND ALL_SOURCES  "${TFLIB_SRC_DIR}/xcore_strided_slice_v3.cc")
 list(APPEND ALL_SOURCES  "${TFLIB_SRC_DIR}/../thread_call_host.c")
 list(APPEND ALL_SOURCES  "${TFLIB_SRC_DIR}/xcore_custom_options.cc")
 list(APPEND ALL_SOURCES  "${TFLIB_SRC_DIR}/xcore_detection_post.cc")

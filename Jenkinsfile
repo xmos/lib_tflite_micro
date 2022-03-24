@@ -6,12 +6,6 @@ pipeline {
     agent {
         dockerfile true 
     }
-    options {
-        disableConcurrentBuilds()
-        skipDefaultCheckout()
-        buildDiscarder(logRotator(numToKeepStr: '10'))
-        timestamps()
-    }
     stages {
         stage("Checkout repo") {
             steps {

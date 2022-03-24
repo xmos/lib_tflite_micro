@@ -21,6 +21,7 @@ pipeline {
                         currentBuild.displayName = '#' + BUILD_NUMBER + '-' + short_hash
                     }
                 }
+                sh "conda -V"
                 sh "conda env create -q -p lib_tflite_micro_venv -f ./environment.yml"
                 sh """. activate ./lib_tflite_micro_venv &&
                 pip3 install -r ./requirements.txt

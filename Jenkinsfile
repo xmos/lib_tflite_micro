@@ -17,14 +17,23 @@ pipeline {
     stages {
         stage("Checkout repo") {
             steps {
-                dir('lib_tflite_micro') {
-                    checkout scm
-                    stash includes: '**/*', name: 'lib_tflite_micro', useDefaultExcludes: false
-                    script {
-                        def short_hash = sh(returnStdout: true, script: "git log -n 1 --pretty=format:'%h'").trim()
-                        currentBuild.displayName = '#' + BUILD_NUMBER + '-' + short_hash
-                    }
-                }
+                // clean auto default checkout
+                sh "rm -rf *"
+                // clone
+                checkout([
+                    $class: 'GitSCM',
+                    branches: scm.branches,
+                    doGenerateSubmoduleConfigurations: false,
+                    extensions: [[$class: 'SubmoduleOption',
+                                  threads: 8,
+                                  timeout: 20,
+                                  shallow: true,
+                                  parentCredentials: true,
+                                  recursiveSubmodules: true],
+                                 [$class: 'CleanCheckout']],
+                    userRemoteConfigs: [[credentialsId: 'xmos-bot',
+                                         url: 'git@github.com:xmos/lib_tflite_micro']]
+                ])
                 sh "conda -V"
                 sh "conda env create -q -p lib_tflite_micro_venv -f ./environment.yml"
                 sh """. activate ./lib_tflite_micro_venv &&

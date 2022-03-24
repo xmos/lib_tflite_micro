@@ -52,7 +52,6 @@ pipeline {
         stage("Build") {
             steps {
                 dir("sb") {
-                    sh 'make init'
                     sh 'make build'
                 }
             }

@@ -43,7 +43,6 @@ pipeline {
                 sh "make init"                     
             }
         }
-        }
 /*        stage("Cleanup2") {
             steps {
                 // The Jenkins command deleteDir() doesn't seem very reliable, so we're using the basic form

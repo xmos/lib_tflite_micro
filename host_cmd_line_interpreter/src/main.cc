@@ -121,7 +121,7 @@ int main(int argc, char *argv[]) {
         load_input(argv[carg], ie.input_buffers[tensor_num], ie.input_sizes[tensor_num]);
         tensor_num++;
     }
-    interp_invoke_par_4(&ie);
+    interp_invoke_par_5(&ie);
     tensor_num = 0;
     while(++carg < argc) {
         save_output(argv[carg], ie.output_buffers[tensor_num], ie.output_sizes[tensor_num]);
@@ -131,7 +131,7 @@ int main(int argc, char *argv[]) {
     char *input_filename = argv[carg];
     char *output_filename = argv[carg + 1];
     load_input(input_filename, ie.input_buffers[0], ie.input_sizes[0]);
-    interp_invoke_par_4(&ie);
+    interp_invoke_par_5(&ie);
     save_output(output_filename, ie.output_buffers[0], ie.output_sizes[0]);
   }
 

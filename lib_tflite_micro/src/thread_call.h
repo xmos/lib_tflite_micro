@@ -18,10 +18,12 @@ typedef struct {           // THIS STRUCT MUST BE IN SYNC WITH ASSEMBLY CODE.
 } thread_info_t;
 
 typedef void (*thread_function_pointer_t)();
-
+struct inference_engine;
+    
 /** Function that creates threads, then calls a interp_invoke_internal,
  * then destroys threads
- * This function creates four threads.
+ * This function creates four threads for a total of five threads.
+ * other versions of the functions create 3, 2, 1, or 0 threads.
  *
  * \param   ie     Pointer to the inference object to be passed to
  *                 interp_invoke_internal
@@ -36,7 +38,11 @@ typedef void (*thread_function_pointer_t)();
  *                     ptr[5] [in]  top of stacks
  *                     ptr[6] [in]  number of words per stack
  */
-int thread_invoke_4(void *ie, void *ptr);
+int thread_invoke_5(struct inference_engine *ie, thread_info_t *ptr);
+int thread_invoke_4(struct inference_engine *ie, thread_info_t *ptr);
+int thread_invoke_3(struct inference_engine *ie, thread_info_t *ptr);
+int thread_invoke_2(struct inference_engine *ie, thread_info_t *ptr);
+int thread_invoke_1(struct inference_engine *ie, thread_info_t *ptr);
 
 /** Function that sets up parameters for one of the client threads
  * This particular one passes three arguments to the thread.
@@ -45,12 +51,11 @@ int thread_invoke_4(void *ie, void *ptr);
  * Note - we can make versions with more or fewer parameters.
  * Note - we could pass this function the thread-function itself
  *
- * \param arg0      First argument for the thread function
  * \param arg1      Second argument for the thread function
  * \param arg2      Third argument for the thread function
  * \param thread_id The thread_id to initialise; one of ptr[0]..ptr[3] above
  */
-void thread_variable_setup(void *arg0, void *arg1, void *arg2, uint32_t thread_id);
+void thread_variable_setup(void *arg1, void *arg2, uint32_t thread_id);
 
 /** Function that starts all thread functions and runs them until completion.
  * It is assumed that the variable parts have been set up per thread.

@@ -41,9 +41,7 @@ pipeline {
                 sh "conda update --all -y -q -p .venv"
                 sh ". activate ./.venv"
                 sh "ls"
-                dir("sb") {
-                    sh 'make init'
-                }                     
+                sh 'make init'               
             }
         }
 /*        stage("Cleanup2") {

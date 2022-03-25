@@ -5,6 +5,9 @@ clean:
 	(cd xtflm_interpreter && make clean)
 
 init:
+	which python3
+	python3 --version
+	PYENV_DEBUG=1 python3 --version
 	python3 fetch_dependencies.py
 	python3 -m venv .venv && \
 	. .venv/bin/activate && \

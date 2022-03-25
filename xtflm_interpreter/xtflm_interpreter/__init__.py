@@ -161,10 +161,10 @@ class XTFLMInterpreter(base_interpreter):
     def __exit__(self, exc_type, exc_value, exc_traceback) -> None:
         self.close()
 
-    def initialise_interpreter(self, engine_num=0) -> None:
+    def initialise_interpreter(self, model_index=0) -> None:
         currentModel = None
         for model in self.models:
-            if model.tile == engine_num:
+            if model.tile == model_index:
                 currentModel = model
 
         status = lib.initialize(
@@ -176,11 +176,11 @@ class XTFLMInterpreter(base_interpreter):
         if XTFLMInterpreterStatus(status) is XTFLMInterpreterStatus.ERROR:
             raise RuntimeError("Unable to initialize interpreter") #TODO
 
-    def set_input_tensor(self, tensor_index, data, engine_num=0) -> None:
+    def set_input_tensor(self, tensor_index, data, model_index=0) -> None:
         if isinstance(data, np.ndarray):
             data = data.tobytes()
         l = len(data)
-        l2 = self.get_input_tensor_size(tensor_index, engine_num)
+        l2 = self.get_input_tensor_size(tensor_index, model_index)
         if l != l2:
             print('ERROR: mismatching size in set_input_tensor %d vs %d' % (l, l2))
 

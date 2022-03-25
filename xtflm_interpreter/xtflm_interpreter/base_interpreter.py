@@ -34,41 +34,41 @@ class base_interpreter(ABC):
         return
 
     @abstractmethod
-    def set_input_tensor(self, input_index, data, engine_num=0) -> None:
+    def set_input_tensor(self, input_index, data, model_index=0) -> None:
         """! Abstract for writing the input tensor of a model.
         @param input_index  The index of input tensor to target.
         @param data  The blob of data to set the tensor to.
-        @param engine_num The engine to target, for interpreters that support multiple models
+        @param model_index The engine to target, for interpreters that support multiple models
         running concurrently. Defaults to 0 for use with a single model.
         """
         return
 
     @abstractmethod
-    def get_output_tensor(self, output_index=0, tensor=None, engine_num=0) -> "Output tensor data":
+    def get_output_tensor(self, output_index=0, tensor=None, model_index=0) -> "Output tensor data":
         """! Abstract for reading the data in the output tensor of a model.
         @param output_index  The index of output tensor to target.
         @param tensor Tensor of correct shape to write into (optional)
-        @param engine_num The engine to target, for interpreters that support multiple models
+        @param model_index The engine to target, for interpreters that support multiple models
         running concurrently. Defaults to 0 for use with a single model.
         @return The data that was stored in the output tensor.
         """
         return
 
     @abstractmethod
-    def get_input_tensor(self, input_index=0, engine_num=0) -> "Input tensor data":
+    def get_input_tensor(self, input_index=0, model_index=0) -> "Input tensor data":
         """! Abstract for reading the data in the input tensor of a model.
         @param output_index  The index of output tensor to target.
         @param tensor Tensor of correct shape to write into (optional)
-        @param engine_num The engine to target, for interpreters that support multiple models
+        @param model_index The engine to target, for interpreters that support multiple models
         running concurrently. Defaults to 0 for use with a single model.
         @return The data that was stored in the output tensor.
         """
         return
 
     @abstractmethod
-    def initialise_interpreter(self, engine_num=0) -> None:
-        """! Abstract initialising interpreter with model associated with engine_num.
-        @param engine_num The engine to target, for interpreters that support multiple models
+    def initialise_interpreter(self, model_index=0) -> None:
+        """! Abstract initialising interpreter with model associated with model_index.
+        @param model_index The engine to target, for interpreters that support multiple models
         running concurrently. Defaults to 0 for use with a single model.
         """
         return
@@ -81,9 +81,9 @@ class base_interpreter(ABC):
         return
 
     @abstractmethod
-    def close(self, engine_num=0) -> None:
+    def close(self, model_index=0) -> None:
         """! Abstract deleting the interpreter
-        @params engine_num Defines which interpreter to target in systems with multiple
+        @params model_index Defines which interpreter to target in systems with multiple
         """
         return  
 
@@ -108,10 +108,10 @@ class base_interpreter(ABC):
         return
 
 
-    def get_input_tensor_size(self, input_index=0, engine_num=0) -> "Size of input tensor":
+    def get_input_tensor_size(self, input_index=0, model_index=0) -> "Size of input tensor":
         """! Read the size of the input tensor from the model
         @param input_index  The index of input tensor to target.
-        @param engine_num The engine to target, for interpreters that support multiple models
+        @param model_index The engine to target, for interpreters that support multiple models
         running concurrently. Defaults to 0 for use with a single model.
         @return The size of the input tensor as an integer.
         """
@@ -119,7 +119,7 @@ class base_interpreter(ABC):
         #Select correct model from model list
         modelBuf = None
         for model in self.models:
-            if model.tile == engine_num:
+            if model.tile == model_index:
                 modelBuf = Model.GetRootAs(model.model_content)
 
         tensorIndex = modelBuf.Subgraphs(0).Inputs(input_index)
@@ -130,10 +130,10 @@ class base_interpreter(ABC):
             tensorSize = tensorSize * modelBuf.Subgraphs(0).Tensors(tensorIndex).Shape(i)
         return tensorSize
         
-    def get_output_tensor_size(self, output_index=0, engine_num=0) -> "Size of output tensor":
+    def get_output_tensor_size(self, output_index=0, model_index=0) -> "Size of output tensor":
         """! Read the size of the output tensor from the model
         @param output_index  The index of output tensor to target.
-        @param engine_num The engine to target, for interpreters that support multiple models
+        @param model_index The engine to target, for interpreters that support multiple models
         running concurrently. Defaults to 0 for use with a single model.
         @return The size of the output tensor as an integer.
         """
@@ -141,7 +141,7 @@ class base_interpreter(ABC):
         #Select correct model from model list
         modelBuf = None
         for model in self.models:
-            if model.tile == engine_num:
+            if model.tile == model_index:
                 modelBuf = Model.GetRootAs(model.model_content)
 
         #Output tensor index is last index
@@ -152,10 +152,10 @@ class base_interpreter(ABC):
             tensorSize = tensorSize * modelBuf.Subgraphs(0).Tensors(tensorIndex).Shape(i)
         return tensorSize
 
-    def get_input_details(self, input_index=0,  engine_num=0) -> "Details of input tensor":
+    def get_input_details(self, input_index=0,  model_index=0) -> "Details of input tensor":
         """! Reads the input tensor details from the model
         @param input_index  The index of input tensor to target.
-        @param engine_num The engine to target, for interpreters that support multiple models
+        @param model_index The engine to target, for interpreters that support multiple models
         running concurrently. Defaults to 0 for use with a single model.
         @return Tensor details, including the index, name, shape, data type, and quantization
         parameters.
@@ -164,7 +164,7 @@ class base_interpreter(ABC):
         #Select correct model from model list
         modelBuf = None
         for model in self.models:
-            if model.tile == engine_num:
+            if model.tile == model_index:
                 modelBuf = Model.GetRootAs(model.model_content)
 
         tensorIndex = modelBuf.Subgraphs(0).Inputs(input_index)
@@ -181,10 +181,10 @@ class base_interpreter(ABC):
 
         return details
 
-    def get_output_details(self, output_index=0, engine_num=0) -> "Details of output tensor":
+    def get_output_details(self, output_index=0, model_index=0) -> "Details of output tensor":
         """! Reads the output tensor details from the model
         @param output_index  The index of output tensor to target.
-        @param engine_num The engine to target, for interpreters that support multiple models
+        @param model_index The engine to target, for interpreters that support multiple models
         running concurrently. Defaults to 0 for use with a single model.
         @return Tensor details, including the index, name, shape, data type, and quantization
         parameters.
@@ -193,7 +193,7 @@ class base_interpreter(ABC):
         #Select correct model from models list
         modelBuf = None
         for model in self.models:
-            if model.tile == engine_num:
+            if model.tile == model_index:
                 modelBuf = Model.GetRootAs(model.model_content)
 
         #Output tensor is last tensor
@@ -210,7 +210,7 @@ class base_interpreter(ABC):
 
         return details 
 
-    def set_model(self, model_path=None, model_content=None, params_path=None, params_content=None, engine_num=0) -> None:
+    def set_model(self, model_path=None, model_content=None, params_path=None, params_content=None, model_index=0) -> None:
         """! Adds a model to the interpreters list of models.
         @param model_path The path to the model file (.tflite), alternative to model_content.
         @param model_content The byte array representing a model, alternative to model_path.
@@ -218,7 +218,7 @@ class base_interpreter(ABC):
         alternaitve to params_content (optional).
         @param params_content The byte array representing the model parameters,
         alternative to params_path (optional).
-        @param engine_num The engine to target, for interpreters that support multiple models
+        @param model_index The engine to target, for interpreters that support multiple models
         running concurrently. Defaults to 0 for use with a single model.
         """
 
@@ -227,20 +227,20 @@ class base_interpreter(ABC):
             tile_found = False
             #Find correct model and replace
             for model in self.models:
-                if model.tile == engine_num:
-                    model = self.modelData(model_path, model_content, params_path, params_content, engine_num)
+                if model.tile == model_index:
+                    model = self.modelData(model_path, model_content, params_path, params_content, model_index)
                     tile_found = True
                     break
             #If model wasn't previously set, add it to list
             if not tile_found:
-                self.models.append(self.modelData(model_path, model_content, params_path, params_content, engine_num))
-            self.initialise_interpreter(engine_num)
+                self.models.append(self.modelData(model_path, model_content, params_path, params_content, model_index))
+            self.initialise_interpreter(model_index)
 
     class modelData():
         """! The model data class
         A class that holds a model and data associated with a single model.
         """
-        def __init__(self, model_path, model_content, params_path, params_content, engine_num):
+        def __init__(self, model_path, model_content, params_path, params_content, model_index):
             """! Model data initializer.
             Sets up variables, generates a list of operators used in the model,
             and reads model and params paths into byte arrays (content).
@@ -248,14 +248,14 @@ class base_interpreter(ABC):
             @param model_content Model model_content (byte array).
             @param params_path Path to model parameters file.
             @param params_content Model parameters content (byte array)
-            @param engine_num The engine to target, for interpreters that support multiple models
+            @param model_index The engine to target, for interpreters that support multiple models
             running concurrently. Defaults to 0 for use with a single model.
             """
             self.model_path = model_path 
             self.model_content = model_content
             self.params_path = params_path
             self.params_content = params_content
-            self.tile = engine_num
+            self.tile = model_index
             self.opList = []
             self.pathToContent()
             self.modelToOpList()

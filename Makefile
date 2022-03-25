@@ -19,6 +19,7 @@ init:
 	pip install -r requirements.txt
 
 test:
+	. .venv/bin/activate && \
 	(cd host_cmd_line_interpreter && make test)
 	(cd xtflm_interpreter && make test)
 	@echo ""

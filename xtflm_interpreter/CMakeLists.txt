@@ -15,7 +15,7 @@ set(CMAKE_CXX_FLAGS "-std=c++11" CACHE STRING "C++ Compiler Base Flags" FORCE)
 # Build flags
 #**********************
 set(BUILD_FLAGS "-g -DTF_LITE_DISABLE_X86_NEON -D__xtflm_conf_h_exists__ -O3 -DNN_USE_REF")
-if(CMAKE_SYSTEM_NAME STREQUAL "Darwin" AND CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
+if(CMAKE_SYSTEM_NAME STREQUAL "Darwin" AND CMAKE_HOST_SYSTEM_VERSION VERSION_GREATER_EQUAL 20)
   set(BUILD_FLAGS "${BUILD_FLAGS} -target arm64-apple-macos11")
 endif()
 

@@ -19,6 +19,8 @@ init:
 	pip install -r requirements.txt
 
 test:
+	pyenv local 3.7.12 && \
+	. .venv/bin/activate && \
 	(cd host_cmd_line_interpreter && make test)
 	(cd xtflm_interpreter && make test)
 	@echo ""

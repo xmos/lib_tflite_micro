@@ -7,7 +7,7 @@ from xtflm_interpreter import XTFLMInterpreter
 
 from xmos_ai_tools import xformer as xf
 
-xf.convert("./mobilenet_v1_0.25_128.tflite", "./xcore.tflite", params=None)
+xf.convert("./mobilenet_v1_0.5_224.tflite", "./xcore.tflite", params=None)
 ie = XTFLMInterpreter()
 ie.set_model("./xcore.tflite")
 

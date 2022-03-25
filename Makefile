@@ -13,14 +13,14 @@ init:
 	python -m venv .venv && \
 	. .venv/bin/activate && \
 	python fetch_dependencies.py && \
-	which python3 && \
+	which python && \
 	python --version && \
 	pip install --upgrade pip && \
 	pip install -r requirements.txt
 
 test:
-	(. .venv/bin/activate && cd host_cmd_line_interpreter && make test)
-	(. .venv/bin/activate && cd xtflm_interpreter && make test)
+	(cd host_cmd_line_interpreter && make test)
+	(cd xtflm_interpreter && make test)
 	@echo ""
 	@echo "All tests PASS"
 	@echo ""

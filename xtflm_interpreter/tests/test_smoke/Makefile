@@ -3,7 +3,7 @@
 # TODO: derive smoke_model.params and smoke_model.tflite from tflite
 test:
 	@rm -f out0 out1
-	(export PYTHONPATH=../.. && python3 smoke_test.py smoke_model.tflite smoke_model.flash detection_0.raw out0 out1)
+	(export PYTHONPATH=../.. && python smoke_test.py smoke_model.tflite smoke_model.flash detection_0.raw out0 out1)
 	@diff out0 classes_gt.raw
 	@diff out1 boxes_gt.raw
 	@rm -f out0 out1

@@ -9,7 +9,7 @@ init:
 	python3 --version
 	PYENV_DEBUG=1 python3 --version
 	
-	pyenv local 3.7.12 && \
+	pyenv local 3.7.5 && \
 	python -m venv .venv && \
 	. .venv/bin/activate && \
 	python fetch_dependencies.py && \

@@ -18,12 +18,19 @@ pipeline {
     }
     stages {
             stage('Setup') {
-                steps {
-                    dir("${REPO}") {
-                        viewEnv {
-                            withVenv {
-                                sh 'git submodule update --depth=1 --init --recursive --jobs 8'
-                                sh 'make init'
+                stage('Get view') {
+                    steps {
+                        xcorePrepareSandbox("${VIEW}", "${REPO}")
+                    }
+                }
+                stage('Clone Repo') {
+                    steps {
+                        dir("${REPO}") {
+                            viewEnv {
+                                withVenv {
+                                    sh 'git submodule update --depth=1 --init --recursive --jobs 8'
+                                    sh 'make init'
+                                    }
                                 }
                             }
                         }

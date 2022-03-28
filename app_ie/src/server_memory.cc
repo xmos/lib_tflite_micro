@@ -39,5 +39,7 @@ void inference_engine_initialize_with_memory(inference_engine_t *ie) {
   resolver->AddDequantize();
   resolver->AddCustom(tflite::ops::micro::xcore::Conv2D_V2_OpCode,
                       tflite::ops::micro::xcore::Register_Conv2D_V2());
+  resolver->AddCustom(tflite::ops::micro::xcore::Strided_Slice_V3_OpCode,
+                      tflite::ops::micro::xcore::Register_Strided_Slice_V3());
 #endif
 }

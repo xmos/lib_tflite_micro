@@ -19,29 +19,26 @@ pipeline {
     stages {
             stage('Setup') {
                 steps {
-                            withVenv {
-                                sh 'pyenv versions'
-                                sh 'pyenv local 3.7.9'
-                                sh 'git submodule update --depth=1 --init --recursive --jobs 8'
-                                sh 'make init'
-                                }
+                    withVenv {
+                        sh 'pyenv versions'
+                        sh 'pyenv local 3.7.9'
+                        sh 'git submodule update --depth=1 --init --recursive --jobs 8'
+                        sh 'make init'
+                        }
                     }
                 }
             stage("Build") {
                 steps {
-                    dir("${REPO}") {
-                            withVenv {
-                                sh 'make build'
-                                }
+
+                    withVenv {
+                        sh 'make build'
                         }
                     }
                 }
             stage("Test") {
                 steps {
-                    dir("${REPO}") {
-                            withVenv {
-                                sh 'make test'
-                            }
+                    withVenv {
+                        sh 'make test'
                         }
                     }
                 }

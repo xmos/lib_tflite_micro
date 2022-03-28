@@ -19,6 +19,7 @@ pipeline {
     stages {
             stage('Clone Repo') {
                 steps {
+                    sh "ls"
                     dir("${REPO}") {
                         viewEnv {
                             withVenv {

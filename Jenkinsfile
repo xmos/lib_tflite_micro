@@ -19,10 +19,9 @@ pipeline {
     stages {
             stage('Clone Repo') {
                 steps {
-                        sh "ls"
                             withVenv {
+                                sh 'pyenv local 3.7.12'
                                 sh 'git submodule update --depth=1 --init --recursive --jobs 8'
-                                sh 'ls ..'
                                 sh 'make init'
                                 }
                     }

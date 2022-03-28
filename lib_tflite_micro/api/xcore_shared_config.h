@@ -21,7 +21,7 @@ struct xcore_metadata {
   int xformer_patch_version;
   // Number of threads required from the runtime to execute the model
   int required_thread_count;
-};
+} __attribute__((aligned (16)));
 
 } // namespace shared_config
 

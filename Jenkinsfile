@@ -17,10 +17,10 @@ pipeline {
         VIEW = getViewName(REPO)
     }
     stages {
-            stage('Clone Repo') {
+            stage('Setup') {
                 steps {
                             withVenv {
-                                sh 'pyenv local 3.7.12'
+                                sh 'pyenv local 3.0.0'
                                 sh 'git submodule update --depth=1 --init --recursive --jobs 8'
                                 sh 'make init'
                                 }

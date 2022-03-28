@@ -26,33 +26,33 @@ pipeline {
                             withVenv {
                                 sh 'git submodule update --depth=1 --init --recursive --jobs 8'
                                 sh 'make init'
+                                }
                             }
                         }
                     }
                 }
-            }
             stage("Build") {
              steps {
                 dir("${REPO}") {
                         viewEnv {
                             withVenv {
                                 sh 'make build'
+                                }
                             }
                         }
                     }
                 }
-            }
             stage("Test") {
              steps {
                 dir("${REPO}") {
                         viewEnv {
                             withVenv {
                                 sh 'make test'
+                                }
                             }
                         }
                     }
                 }
-            }
         }
     }
         // stage("Checkout repo") {

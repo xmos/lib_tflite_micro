@@ -8,7 +8,7 @@ pipeline {
     }
     options {
 
-
+        skipDefaultCheckout()
         buildDiscarder(logRotator(numToKeepStr: '10'))
         timestamps()
     }
@@ -30,8 +30,8 @@ pipeline {
                     }
                 }
             stage("Build") {
-             steps {
-                dir("${REPO}") {
+                steps {
+                    dir("${REPO}") {
                         viewEnv {
                             withVenv {
                                 sh 'make build'
@@ -41,8 +41,8 @@ pipeline {
                     }
                 }
             stage("Test") {
-             steps {
-                dir("${REPO}") {
+                steps {
+                    dir("${REPO}") {
                         viewEnv {
                             withVenv {
                                 sh 'make test'

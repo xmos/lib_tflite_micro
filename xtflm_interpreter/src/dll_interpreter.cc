@@ -102,18 +102,6 @@ void print_memory_plan(inference_engine *ie) {
   ie->xtflm->interpreter->PrintMemoryPlan();
 }
 
-size_t inputs_size(inference_engine *ie) { return ie->inputs; }
-
-size_t outputs_size(inference_engine *ie) { return ie->outputs; }
-
-size_t get_input_tensor_size(inference_engine *ie, int tensor_index) {
-  return ie->input_sizes[tensor_index];
-}
-
-size_t get_output_tensor_size(inference_engine *ie, int tensor_index) {
-  return ie->output_sizes[tensor_index];
-}
-
 size_t arena_used_bytes(inference_engine *ie) {
   return ie->xtflm->interpreter->arena_used_bytes();
 }
@@ -137,20 +125,6 @@ int get_input_tensor(inference_engine *ie, size_t tensor_index, void *value,
 }
 
 int invoke(inference_engine *ie) { return interp_invoke_par_5(ie); }
-
-size_t get_tensor_details_buffer_sizes(inference_engine *ie,
-                                       size_t tensor_index, size_t *dims,
-                                       size_t *scales, size_t *zero_points) {
-  return ie->xtflm->interpreter->GetTensorDetailsBufferSizes(
-      tensor_index, dims, scales, zero_points);
-}
-
-int get_tensor_details(inference_engine *ie, size_t tensor_index, char *name,
-                       int name_len, int *shape, int *type, float *scale,
-                       int *zero_point) {
-  return ie->xtflm->interpreter->GetTensorDetails(
-      tensor_index, name, name_len, shape, type, scale, zero_point);
-}
 
 size_t get_error(inference_engine *ie, char *msg) {
   std::strcpy(msg, (const char *)ie->debug_log_buffer);

@@ -7,11 +7,11 @@ from xtflm_interpreter import XTFLMInterpreter
 
 from xmos_ai_tools import xformer as xf
 
-xf.convert("./mobilenet_v1_0.5_224.tflite", "./xcore.tflite", params=None)
+xf.convert(sys.argv[1], "./xcore.tflite", params=None)
 ie = XTFLMInterpreter()
 ie.set_model("./xcore.tflite")
 
-img = cv2.imread(sys.argv[1])
+img = cv2.imread(sys.argv[2])
 img = cv2.resize(img, (224,224))
 # Channel swapping due to mismatch between open CV and XMOS
 img = img[:, :, ::-1]  
@@ -25,4 +25,4 @@ ie.invoke()
 answer = ie.get_output_tensor(0, tensor = np.zeros((10), dtype=np.float32))
 print("\n", answer)
 
-ie.close()
+# ie.close()

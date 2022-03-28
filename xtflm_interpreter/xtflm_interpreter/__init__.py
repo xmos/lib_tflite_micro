@@ -68,12 +68,6 @@ class XTFLMInterpreter(base_interpreter):
             ctypes.c_char_p,
         ]
 
-        lib.inputs_size.restype = ctypes.c_size_t
-        lib.inputs_size.argtypes = [ctypes.c_void_p]
-
-        lib.outputs_size.restype = ctypes.c_size_t
-        lib.outputs_size.argtypes = [ctypes.c_void_p]
-
         lib.set_input_tensor.restype = ctypes.c_int
         lib.set_input_tensor.argtypes = [
             ctypes.c_void_p,
@@ -96,39 +90,6 @@ class XTFLMInterpreter(base_interpreter):
             ctypes.c_size_t,
             ctypes.c_void_p,
             ctypes.c_int,
-        ]
-
-        lib.get_input_tensor_size.restype = ctypes.c_int
-        lib.get_input_tensor_size.argtypes = [
-            ctypes.c_void_p,
-            ctypes.c_size_t,
-        ]
-
-        lib.get_output_tensor_size.restype = ctypes.c_int
-        lib.get_output_tensor_size.argtypes = [
-            ctypes.c_void_p,
-            ctypes.c_size_t,
-        ]
-
-        lib.get_tensor_details_buffer_sizes.restype = ctypes.c_int
-        lib.get_tensor_details_buffer_sizes.argtypes = [
-            ctypes.c_void_p,
-            ctypes.c_size_t,
-            ctypes.POINTER(ctypes.c_size_t),
-            ctypes.POINTER(ctypes.c_size_t),
-            ctypes.POINTER(ctypes.c_size_t),
-        ]
-        
-        lib.get_tensor_details.restype = ctypes.c_int
-        lib.get_tensor_details.argtypes = [
-            ctypes.c_void_p,
-            ctypes.c_size_t,
-            ctypes.c_char_p,
-            ctypes.c_int,
-            ctypes.POINTER(ctypes.c_int),
-            ctypes.POINTER(ctypes.c_int),
-            ctypes.POINTER(ctypes.c_float),
-            ctypes.POINTER(ctypes.c_int32),
         ]
 
         lib.input_tensor_index.restype = ctypes.c_size_t
@@ -226,6 +187,7 @@ class XTFLMInterpreter(base_interpreter):
         if self.obj:
             lib.delete_interpreter(self.obj)
             self.obj = None
+            print(self.obj)
 
     def tensor_arena_size(self) -> "Size of tensor arena":
         return lib.arena_used_bytes(self.obj)

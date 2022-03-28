@@ -19,36 +19,29 @@ pipeline {
     stages {
             stage('Clone Repo') {
                 steps {
-                    
                     dir("${REPO}/sb") {
                         sh "ls"
-                        viewEnv {
                             withVenv {
                                 sh 'git submodule update --depth=1 --init --recursive --jobs 8'
                                 sh 'make init'
                                 }
-                            }
                         }
                     }
                 }
             stage("Build") {
                 steps {
                     dir("${REPO}") {
-                        viewEnv {
                             withVenv {
                                 sh 'make build'
                                 }
-                            }
                         }
                     }
                 }
             stage("Test") {
                 steps {
                     dir("${REPO}") {
-                        viewEnv {
                             withVenv {
                                 sh 'make test'
-                                }
                             }
                         }
                     }

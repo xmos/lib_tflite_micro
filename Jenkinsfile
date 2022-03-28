@@ -1,6 +1,6 @@
 def date_str_bld = new Date().format("yyyy-mm-dd")
 
-@Library('xmos_jenkins_shared_library@v0.18.0')
+@Library('xmos_jenkins_shared_library@v0.18.0') _
 
 // getApproval()
 

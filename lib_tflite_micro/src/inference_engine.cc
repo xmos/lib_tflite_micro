@@ -68,31 +68,45 @@ int inference_engine_load_model(inference_engine *ie, uint32_t model_bytes,
 
       auto* ptr = (shared_config::xcore_metadata*) array->data();
       // Check version with metadata version
-      // major == major
-      // minor == minor // api matches
-      // patch version // we don't care
+      // major == major and minor == minor means API matches
+      // patch version shouldn't matter
       // Check if lib_tflite_micro version matches with metadata version
-      if(ptr->lib_tflite_micro_major_version != lib_tflite_micro::major_version || 
-      ptr->lib_tflite_micro_minor_version != lib_tflite_micro::minor_version){
-            TF_LITE_REPORT_ERROR(&ie->xtflm->error_reporter,
-                         "Model provided has lib_tflite_micro version %u.%u not equal to "
-                         "supported version %d.%d .",
-                         ptr->lib_tflite_micro_major_version, ptr->lib_tflite_micro_minor_version, lib_tflite_micro::major_version, lib_tflite_micro::minor_version);
-    return 1;
-
+      if (ptr->lib_tflite_micro_major_version !=
+              lib_tflite_micro::major_version ||
+          ptr->lib_tflite_micro_minor_version !=
+              lib_tflite_micro::minor_version) {
+        TF_LITE_REPORT_ERROR(
+            &ie->xtflm->error_reporter,
+            "Model provided has lib_tflite_micro version %d.%d not equal to "
+            "supported version %u.%u .",
+            ptr->lib_tflite_micro_major_version,
+            ptr->lib_tflite_micro_minor_version,
+            lib_tflite_micro::major_version, lib_tflite_micro::minor_version);
+        return 1;
       }
 
-
       // Check if lib_nn version matches with metadata version
-
+      if (ptr->lib_nn_major_version !=
+              lib_nn::major_version ||
+          ptr->lib_nn_minor_version !=
+              lib_nn::minor_version) {
+        TF_LITE_REPORT_ERROR(
+            &ie->xtflm->error_reporter,
+            "Model provided has lib_nn version %d.%d not equal to "
+            "supported version %u.%u .",
+            ptr->lib_nn_major_version,
+            ptr->lib_nn_minor_version,
+            lib_nn::major_version, lib_nn::minor_version);
+        return 1;
+      }
 
       // xformer version is saved for debugging purposes
-      // If lib_nn and lib_tflite_micro versions are as expected, 
-      // then the xformer version doesn't matter as the model should execute 
-
+      // If lib_nn and lib_tflite_micro versions are as expected,
+      // then the xformer version doesn't matter as the model should execute
+      printf("Model provided has been built with xformer version %d.%d.%d .",
+        ptr->xformer_major_version, ptr->xformer_minor_version, ptr->xformer_patch_version);
 
       printf("\n\nrequired thread count %d\n\n", ptr->required_thread_count);
-
 
 
 

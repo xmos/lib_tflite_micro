@@ -17,11 +17,6 @@ pipeline {
         VIEW = getViewName(REPO)
     }
     stages {
-            stage('Get view') {
-                steps {
-                    xcorePrepareSandbox("${VIEW}", "${REPO}")
-                }
-            }
             stage('Clone Repo') {
                 steps {
                     dir("${REPO}") {

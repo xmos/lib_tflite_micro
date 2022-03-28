@@ -19,14 +19,12 @@ pipeline {
     stages {
             stage('Clone Repo') {
                 steps {
-                    dir("${REPO}") {
                         sh "ls"
                             withVenv {
                                 sh 'git submodule update --depth=1 --init --recursive --jobs 8'
                                 sh 'ls ..'
                                 sh 'make init'
                                 }
-                        }
                     }
                 }
             stage("Build") {

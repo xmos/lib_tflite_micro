@@ -9,7 +9,7 @@ pipeline {
         label "xcore.ai"
     }
     options {
-        skipDefaultCheckout()
+
 
         buildDiscarder(logRotator(numToKeepStr: '10'))
         timestamps()

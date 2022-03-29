@@ -70,7 +70,7 @@ int inference_engine_load_model(inference_engine *ie, uint32_t model_bytes,
       // Check version with metadata version
       // If major version is zero, then minor versions must match
       // Otherwise, major versions must match and binary minor version
-      // must be less than runtime minor version
+      // must be less or equal to runtime minor version
       // Check if lib_tflite_micro version matches with metadata version
       if ((ptr->lib_tflite_micro_major_version == 0 &&
            lib_tflite_micro::major_version == 0 &&

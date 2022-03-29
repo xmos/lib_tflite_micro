@@ -5,6 +5,7 @@
 #include <cstdio>
 #include "inference_engine.h"
 #include "thread_call.h"
+#include "xcore_shared_config.h"
 
 #if !defined(XTFLM_DISABLED)
 
@@ -55,6 +56,20 @@ int inference_engine_load_model(inference_engine *ie, uint32_t model_bytes,
   // copying or parsing, it's a very lightweight operation.
   ie->xtflm->model = tflite::GetModel((uint8_t *)model_data);
   uint model_version = ie->xtflm->model->version();
+
+  // Retrieve shared metadata
+  for (int i = 0; i < ie->xtflm->model->metadata()->size(); ++i) {
+    auto metadata = ie->xtflm->model->metadata()->Get(i);
+    if (metadata->name()->str() == shared_config::xcoreMetadataName) {
+      auto buf = metadata->buffer();
+      auto* buffer = (*ie->xtflm->model->buffers())[buf];
+      auto* array = buffer->data();
+
+      auto* ptr = (shared_config::xcore_metadata*) array->data();
+      printf("\n\nrequired thread count %d\n\n", ptr->required_thread_count);
+    }
+  }
+
   if (model_version != TFLITE_SCHEMA_VERSION) {
     TF_LITE_REPORT_ERROR(&ie->xtflm->error_reporter,
                          "Model provided is schema version %u not equal to "

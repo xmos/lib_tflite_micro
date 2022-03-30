@@ -1,14 +1,14 @@
 set(TFLIB_SRC_DIR
-  "${CMAKE_CURRENT_SOURCE_DIR}/../lib_tflite_micro/src/tflite-xcore-kernels")
+  "${TOP_DIR}/lib_tflite_micro/src/tflite-xcore-kernels")
 
 set(TFLITE_SRC_DIR
-  "${CMAKE_CURRENT_SOURCE_DIR}/../lib_tflite_micro/submodules/tflite-micro/tensorflow/lite")
+  "${TOP_DIR}/lib_tflite_micro/submodules/tflite-micro/tensorflow/lite")
 
 set(XTFLM_SRC_DIR
   "${TFLITE_SRC_DIR}/micro")
 
 set(NN_SRC_DIR
-  "${CMAKE_CURRENT_SOURCE_DIR}/../../lib_nn/lib_nn/src")
+  "${TOP_DIR}/../lib_nn/lib_nn/src")
 
 file(GLOB_RECURSE ALL_SOURCES "${NN_SRC_DIR}/c/*.c")
 
@@ -37,7 +37,7 @@ list(APPEND ALL_SOURCES  "${TFLITE_SRC_DIR}/kernels/kernel_util.cc")
 list(APPEND ALL_SOURCES  "${TFLITE_SRC_DIR}/kernels/internal/quantization_util.cc")
 list(APPEND ALL_SOURCES  "${TFLITE_SRC_DIR}/schema/schema_utils.cc")
 
-list(APPEND ALL_SOURCES  "${CMAKE_CURRENT_SOURCE_DIR}/../lib_tflite_micro/src/inference_engine.cc")
+list(APPEND ALL_SOURCES  "${TFLIB_SRC_DIR}/../inference_engine.cc")
 list(APPEND ALL_SOURCES  "${TFLIB_SRC_DIR}/xcore_bsign.cc")
 list(APPEND ALL_SOURCES  "${TFLIB_SRC_DIR}/xcore_conv2d_v2.cc")
 list(APPEND ALL_SOURCES  "${TFLIB_SRC_DIR}/../thread_call_host.c")
@@ -176,18 +176,18 @@ list(APPEND ALL_SOURCES  "${XTFLM_SRC_DIR}/kernels/unpack.cc")
 list(APPEND ALL_SOURCES  "${XTFLM_SRC_DIR}/kernels/var_handle.cc")
 list(APPEND ALL_SOURCES  "${XTFLM_SRC_DIR}/kernels/zeros_like.cc")
 
-list(APPEND ALL_SOURCES  "${CMAKE_CURRENT_SOURCE_DIR}/../lib_tflite_micro/submodules/flatbuffers/src/util.cpp")
+list(APPEND ALL_SOURCES  "${TOP_DIR}/lib_tflite_micro/submodules/flatbuffers/src/util.cpp")
 
 set(ALL_INCLUDES "")
 
 list(APPEND ALL_INCLUDES  ${XCORE_INTERPRETER_INCLUDES})
 list(APPEND ALL_INCLUDES  "${CMAKE_CURRENT_SOURCE_DIR}/src")
-list(APPEND ALL_INCLUDES  "${CMAKE_CURRENT_SOURCE_DIR}/../lib_tflite_micro/api")
-list(APPEND ALL_INCLUDES  "${CMAKE_CURRENT_SOURCE_DIR}/../lib_tflite_micro/src/tflite-xcore-kernels")
-list(APPEND ALL_INCLUDES  "${CMAKE_CURRENT_SOURCE_DIR}/../lib_tflite_micro/submodules/tflite-micro")
-list(APPEND ALL_INCLUDES  "${CMAKE_CURRENT_SOURCE_DIR}/../lib_tflite_micro/submodules/gemmlowp")
-list(APPEND ALL_INCLUDES  "${CMAKE_CURRENT_SOURCE_DIR}/../lib_tflite_micro/submodules/ruy")
-list(APPEND ALL_INCLUDES  "${CMAKE_CURRENT_SOURCE_DIR}/../lib_tflite_micro/submodules/flatbuffers/include")
-list(APPEND ALL_INCLUDES  "${CMAKE_CURRENT_SOURCE_DIR}/../../lib_nn/")
-list(APPEND ALL_INCLUDES  "${CMAKE_CURRENT_SOURCE_DIR}/../../lib_nn/lib_nn/api")
+list(APPEND ALL_INCLUDES  "${TOP_DIR}/lib_tflite_micro/api")
+list(APPEND ALL_INCLUDES  "${TOP_DIR}/lib_tflite_micro/src/tflite-xcore-kernels")
+list(APPEND ALL_INCLUDES  "${TOP_DIR}/lib_tflite_micro/submodules/tflite-micro")
+list(APPEND ALL_INCLUDES  "${TOP_DIR}/lib_tflite_micro/submodules/gemmlowp")
+list(APPEND ALL_INCLUDES  "${TOP_DIR}/lib_tflite_micro/submodules/ruy")
+list(APPEND ALL_INCLUDES  "${TOP_DIR}/lib_tflite_micro/submodules/flatbuffers/include")
+list(APPEND ALL_INCLUDES  "${TOP_DIR}/../lib_nn/")
+list(APPEND ALL_INCLUDES  "${TOP_DIR}/../lib_nn/lib_nn/api")
 list(APPEND ALL_INCLUDES  "${XMOS_TOOL_PATH}/target/include/")

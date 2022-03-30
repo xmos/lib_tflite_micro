@@ -41,6 +41,9 @@ target_compile_options(xtflm_interpreter_cmdline PRIVATE ${BUILD_FLAGS})
 target_link_options(xtflm_interpreter_cmdline PRIVATE ${BUILD_FLAGS})
 target_link_libraries(xtflm_interpreter_cmdline PRIVATE "-lpthread")
 
+set(TOP_DIR
+  "${CMAKE_CURRENT_SOURCE_DIR}/..")
+
 include(../cmakefiles/xtflm.cmake)
 
 target_sources(xtflm_interpreter_cmdline

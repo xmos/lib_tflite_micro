@@ -1,8 +1,8 @@
 build:
-	(cd xtflm_interpreter && make install)
+	(cd xinterpreters/host && make install)
 
 clean:
-	(cd xtflm_interpreter && make clean)
+	(cd xinterpreters/host&& make clean)
 
 init:
 	python fetch_dependencies.py && \
@@ -11,7 +11,8 @@ init:
 
 test:
 	(cd host_cmd_line_interpreter && make test)
-	(cd xtflm_interpreter && make test)
+	python xinterpreters_test.py
+	(cd xinterpreters/host && make test)
 	@echo ""
 	@echo "All tests PASS"
 	@echo ""

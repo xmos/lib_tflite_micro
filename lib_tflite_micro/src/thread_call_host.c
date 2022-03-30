@@ -1,6 +1,6 @@
 #ifndef __xcore__
 
-#include "inference_engine.h"
+#include "lib_tflite_micro/api/inference_engine.h"
 #include "thread_call.h"
 
 #include <stdint.h>

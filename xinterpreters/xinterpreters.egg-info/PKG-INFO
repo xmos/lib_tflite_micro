@@ -1,0 +1,15 @@
+Metadata-Version: 2.1
+Name: xinterpreters
+Version: 0.0.post272+g0cf3ea9.d20220401
+Summary: XMOS Host and Device Interpreters.
+Home-page: UNKNOWN
+Author: XMOS
+Author-email: support@xmos.com
+License: LICENSE.txt
+Keywords: xmos xcore
+Platform: UNKNOWN
+Requires-Python: >=3.8.0
+Provides-Extra: test
+
+UNKNOWN
+

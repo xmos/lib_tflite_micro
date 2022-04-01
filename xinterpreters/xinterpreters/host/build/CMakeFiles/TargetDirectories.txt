@@ -1,0 +1,7 @@
+/Users/aranmcconnell/Documents/fix_ai_tools/ai_tools/third_party/lib_tflite_micro/xinterpreters/xinterpreters/host/build/CMakeFiles/xtflm_python.dir
+/Users/aranmcconnell/Documents/fix_ai_tools/ai_tools/third_party/lib_tflite_micro/xinterpreters/xinterpreters/host/build/CMakeFiles/edit_cache.dir
+/Users/aranmcconnell/Documents/fix_ai_tools/ai_tools/third_party/lib_tflite_micro/xinterpreters/xinterpreters/host/build/CMakeFiles/rebuild_cache.dir
+/Users/aranmcconnell/Documents/fix_ai_tools/ai_tools/third_party/lib_tflite_micro/xinterpreters/xinterpreters/host/build/CMakeFiles/list_install_components.dir
+/Users/aranmcconnell/Documents/fix_ai_tools/ai_tools/third_party/lib_tflite_micro/xinterpreters/xinterpreters/host/build/CMakeFiles/install.dir
+/Users/aranmcconnell/Documents/fix_ai_tools/ai_tools/third_party/lib_tflite_micro/xinterpreters/xinterpreters/host/build/CMakeFiles/install/local.dir
+/Users/aranmcconnell/Documents/fix_ai_tools/ai_tools/third_party/lib_tflite_micro/xinterpreters/xinterpreters/host/build/CMakeFiles/install/strip.dir

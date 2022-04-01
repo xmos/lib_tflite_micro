@@ -29,7 +29,6 @@ pipeline {
                 }
             stage("Build") {
                 steps {
-
                     withVenv {
                         sh 'make build'
                         }

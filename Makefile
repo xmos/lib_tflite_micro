@@ -5,9 +5,7 @@ clean:
 	(cd xinterpreters/xinterpreters/host&& make clean)
 
 init:
-	python fetch_dependencies.py && \
-	pip install --upgrade pip && \
-	pip install -r requirements.txt
+	python fetch_dependencies.py
 
 test:
 	(cd host_cmd_line_interpreter && make test)

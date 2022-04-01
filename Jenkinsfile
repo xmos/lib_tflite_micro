@@ -4,7 +4,7 @@ getApproval()
 
 pipeline {
     agent {
-        label "macos || linux"
+        label "xcore.ai"
     }
     options {
 

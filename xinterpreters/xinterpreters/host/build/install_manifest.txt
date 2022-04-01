@@ -1,2 +1,0 @@
-/Users/aranmcconnell/Documents/fix_ai_tools/ai_tools/third_party/lib_tflite_micro/xinterpreters/xinterpreters/host/libs/macos/xtflm_python.1.0.1.dylib
-/Users/aranmcconnell/Documents/fix_ai_tools/ai_tools/third_party/lib_tflite_micro/xinterpreters/xinterpreters/host/libs/macos/xtflm_python.dylib

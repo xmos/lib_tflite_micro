@@ -19,7 +19,7 @@ pipeline {
     stages {
             stage('Setup') {
                 steps {
-                    installPipfile()
+                    installPipfile(false)
                     withVenv {
                         sh 'git submodule update --depth=1 --init --recursive --jobs 8'
                         sh 'make init'

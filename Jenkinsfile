@@ -19,9 +19,8 @@ pipeline {
     stages {
             stage('Setup') {
                 steps {
+                    installPipfile()
                     withVenv {
-                        sh 'pyenv versions'
-                        sh 'pyenv local 3.7.9'
                         sh 'git submodule update --depth=1 --init --recursive --jobs 8'
                         sh 'make init'
                         }

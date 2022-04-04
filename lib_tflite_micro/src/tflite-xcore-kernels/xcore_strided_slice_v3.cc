@@ -24,6 +24,8 @@ namespace strided_slice_v3 {
 
 // This is the struct that contains the data required by the operator
 struct StridedSliceOpData : XCoreOpData {   // Inherits the operator name field from XCoreOpData
+    int32_t *begin_x;
+    int32_t *begin_y;
     nn::ImToColValid::Params *mf_params;
 };
 

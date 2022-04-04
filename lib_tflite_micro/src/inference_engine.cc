@@ -56,7 +56,7 @@ int inference_engine_load_model(inference_engine *ie, uint32_t model_bytes,
   // Map the model into a usable data structure. This doesn't involve any
   // copying or parsing, it's a very lightweight operation.
   ie->xtflm->model = tflite::GetModel((uint8_t *)model_data);
-  uint model_version = ie->xtflm->model->version();
+  unsigned model_version = ie->xtflm->model->version();
 
   // Retrieve shared metadata
   for (int i = 0; i < ie->xtflm->model->metadata()->size(); ++i) {

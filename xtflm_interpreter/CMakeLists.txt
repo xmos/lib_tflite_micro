@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 
+set(CMAKE_BUILD_TYPE "Release")
 project(xtflm_python VERSION 1.0.1)
 
 # set host build
@@ -14,12 +15,18 @@ set(CMAKE_CXX_FLAGS "-std=c++11" CACHE STRING "C++ Compiler Base Flags" FORCE)
 #**********************
 # Build flags
 #**********************
-set(BUILD_FLAGS "-g -DTF_LITE_DISABLE_X86_NEON -D__xtflm_conf_h_exists__ -O3 -DNN_USE_REF")
+if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+  set(BUILD_FLAGS "/DTF_LITE_DISABLE_X86_NEON /D__xtflm_conf_h_exists__ /O2 /DNN_USE_REF")
+else()
+  set(BUILD_FLAGS "-g -DTF_LITE_DISABLE_X86_NEON -D__xtflm_conf_h_exists__ -O3 -DNN_USE_REF")
+endif()
+
+
 if(DEFINED ENV{CMAKE_ENABLE_DARWIN_TARGET_ARM64})
   set(BUILD_FLAGS "${BUILD_FLAGS} -target arm64-apple-macos11")
 endif()
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS ${BUILD_FLAGS})
 set(CMAKE_C_FLAGS "${BUILD_FLAGS} -std=c99")

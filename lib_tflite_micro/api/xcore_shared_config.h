@@ -8,7 +8,7 @@ namespace shared_config {
 // between xformer and lib_tflite_micro in the flatbuffer
 constexpr char xcoreMetadataName[] = "xcoreSharedConfig";
 
-struct xcore_metadata {
+struct alignas(16) xcore_metadata {
   // Versions of libraries used to build the model
   int lib_nn_major_version;
   int lib_nn_minor_version;
@@ -21,7 +21,7 @@ struct xcore_metadata {
   int xformer_patch_version;
   // Number of threads required from the runtime to execute the model
   int required_thread_count;
-} __attribute__((aligned (16)));
+};
 
 } // namespace shared_config
 

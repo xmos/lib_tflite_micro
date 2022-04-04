@@ -183,7 +183,7 @@ set(ALL_INCLUDES "")
 
 list(APPEND ALL_INCLUDES  ${XCORE_INTERPRETER_INCLUDES})
 list(APPEND ALL_INCLUDES  "${CMAKE_CURRENT_SOURCE_DIR}/src")
-list(APPEND ALL_INCLUDES  "${CMAKE_CURRENT_SOURCE_DIR}/../lib_tflite_micro/api")
+list(APPEND ALL_INCLUDES  "${CMAKE_CURRENT_SOURCE_DIR}/../")
 list(APPEND ALL_INCLUDES  "${CMAKE_CURRENT_SOURCE_DIR}/../lib_tflite_micro/src/tflite-xcore-kernels")
 list(APPEND ALL_INCLUDES  "${CMAKE_CURRENT_SOURCE_DIR}/../lib_tflite_micro/submodules/tflite-micro")
 list(APPEND ALL_INCLUDES  "${CMAKE_CURRENT_SOURCE_DIR}/../lib_tflite_micro/submodules/gemmlowp")

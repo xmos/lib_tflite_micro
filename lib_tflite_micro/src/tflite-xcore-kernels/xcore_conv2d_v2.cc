@@ -1,6 +1,6 @@
 // Copyright (c) 2022, XMOS Ltd, All rights reserved
 
-#include "Conv2d.hpp"
+#include "lib_nn/api/Conv2d.hpp"
 #include "tensorflow/lite/c/common.h"
 #include "tensorflow/lite/kernels/internal/tensor_ctypes.h"
 #include "tensorflow/lite/kernels/kernel_util.h"
@@ -10,7 +10,7 @@
 #include "xcore_utils.h"
 #include "../thread_call.h"
 extern "C" {
-#include "nn_operator.h"
+#include "lib_nn/api/nn_operator.h"
 }
 
 namespace tflite {

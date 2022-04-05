@@ -2,7 +2,7 @@
 // XMOS Public License: Version 1
 //#include "tensorflow/lite/micro/all_ops_resolver.h"
 
-#include "inference_engine.h"
+#include "lib_tflite_micro/api/inference_engine.h"
 #include <cstdio>
 //#include "tensorflow/lite/micro/kernels/xcore/xcore_ops.h"
 //#include "tensorflow/lite/micro/recording_micro_allocator.
@@ -70,6 +70,8 @@ inference_engine *new_interpreter(size_t max_model_size) {
   resolver->AddDepthwiseConv2D();
   resolver->AddCustom(tflite::ops::micro::xcore::Conv2D_V2_OpCode,
                       tflite::ops::micro::xcore::Register_Conv2D_V2());
+  resolver->AddCustom(tflite::ops::micro::xcore::Strided_Slice_V3_OpCode,
+                      tflite::ops::micro::xcore::Register_Strided_Slice_V3());
   resolver->AddCustom(tflite::ops::micro::xcore::Load_Flash_OpCode,
                       tflite::ops::micro::xcore::Register_LoadFromFlash());
   resolver->AddCustom(tflite::ops::micro::xcore::Bsign_8_OpCode,
@@ -130,7 +132,7 @@ int get_output_tensor(inference_engine *ie, size_t tensor_index, void *value,
   return 0;
 }
 
-int invoke(inference_engine *ie) { return interp_invoke_par_4(ie); }
+int invoke(inference_engine *ie) { return interp_invoke_par_5(ie); }
 
 size_t get_tensor_details_buffer_sizes(inference_engine *ie,
                                        size_t tensor_index, size_t *dims,

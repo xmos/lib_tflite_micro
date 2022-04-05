@@ -24,6 +24,8 @@ namespace strided_slice_v3 {
 
 // This is the struct that contains the data required by the operator
 struct StridedSliceOpData : XCoreOpData {   // Inherits the operator name field from XCoreOpData
+    int32_t begin_x;
+    int32_t begin_y;
     nn::ImToColValid::Params *mf_params;
 };
 
@@ -40,9 +42,14 @@ T* getDeserializedParams(TfLiteContext* context, const uint8_t* data) {
 void* Init(TfLiteContext* context, const char* buffer, size_t length) {
   auto op_data = construct_persistent_object<StridedSliceOpData>(context);
   op_data->name = "XC_Strided_Slice";
+
   auto parser = CustomOptionParser(buffer, length);
   const uint8_t *memcpy_fn_data = parser.parseNamedCustomOption("mp").AsBlob().data();
   op_data->mf_params = getDeserializedParams<nn::ImToColValid::Params>(context, memcpy_fn_data);
+
+  op_data->begin_x = parser.parseNamedCustomOption("begin_x").AsInt32();
+  op_data->begin_y = parser.parseNamedCustomOption("begin_y").AsInt32();
+
   return op_data;
 }
 
@@ -53,9 +60,6 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
 
 TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
   auto* op_data = static_cast<StridedSliceOpData*>(node->user_data);
-
-  auto memcpy = new (context->AllocatePersistentBuffer(context, sizeof(nn::ImToColValid::Params))) nn::ImToColValid(op_data->mf_params);
-
   //Get Input/Output Tensors
   const TfLiteEvalTensor *input = tflite::micro::GetEvalInput(context, node, 0);
   TfLiteEvalTensor *output = tflite::micro::GetEvalOutput(context, node, 0);
@@ -63,8 +67,9 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
   //Pointers to data in In/Out Tensors
   void* in_data = const_cast<void *>(tflite::micro::GetTensorData<void>(input));
   void* out_data = tflite::micro::GetTensorData<void>(output);
-  
-  //memcpy->memcopy_fn((int8_t*)out_data, (int8_t*)in_data, op_data->mf_params->, op_data->begin_x, 0);
+
+  auto memcpy = new nn::ImToColValid(op_data->mf_params);
+  memcpy->memcopy_fn((int8_t*)out_data, (int8_t*)in_data, op_data->begin_y, op_data->begin_x, 0);
   
   return kTfLiteOk;
 }

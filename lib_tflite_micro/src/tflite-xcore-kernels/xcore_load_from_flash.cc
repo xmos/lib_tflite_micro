@@ -1,17 +1,13 @@
 // Copyright (c) 2022, XMOS Ltd, All rights reserved
 
-#include "Conv2d.hpp"
 #include "tensorflow/lite/c/common.h"
 #include "tensorflow/lite/kernels/internal/tensor_ctypes.h"
 #include "tensorflow/lite/kernels/kernel_util.h"
 #include "tensorflow/lite/micro/kernels/kernel_util.h"
 #include "xcore_custom_options.h"
-#include "xcore_dispatcher.h"
 #include "xcore_interpreter.h"
 #include "xcore_utils.h"
-extern "C" {
-#include "nn_operator.h"
-}
+
 #ifdef __xcore__
 #include <xcore/channel.h>
 #include <xcore/channel_transaction.h>

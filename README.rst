@@ -32,6 +32,17 @@ C interface
 
 It exposes a C interface comprising a datastructure (inference_engine_t)
 with a few functions that can be used to initialise the structure and/or
+
+
+Getting the XCORE.AI optimiser
+------------------------------
+
+You can get the XCORE.AI optimiser through pypi:
+
+* https://pypi.org/project/xmos-ai-tools/
+
+This gets you both a command line interface and python interface to the xcore-opt tool that optimises
+a ``.tflite`` file for xcore
 perform an inference. The data structure itself can be used to directly
 read/write data into tensors, this enables sensors to directly operate
 in the tensor space.

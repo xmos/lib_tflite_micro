@@ -41,9 +41,10 @@ void ValidateStridedSliceGoldens(TfLiteTensor* tensors, int tensors_size,
   int outputs_array_data[] = {1, 4};
   TfLiteIntArray* outputs_array = IntArrayFromInts(outputs_array_data);
   TfLiteRegistration* registration =
-      tflite::ops::micro::xcore::Register_Strided_Slice_V3();
+      tflite::ops::micro::xcore::Register_Strided_Slice();
   micro::KernelRunner runner(*registration, tensors, tensors_size, inputs_array,
                              outputs_array, reinterpret_cast<void*>(params));
+
   if (expect_prepare_err) {
     TF_LITE_MICRO_EXPECT_EQ(kTfLiteError, runner.InitAndPrepare());
     return;

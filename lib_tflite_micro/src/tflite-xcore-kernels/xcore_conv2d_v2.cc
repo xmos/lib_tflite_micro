@@ -289,7 +289,7 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
       (int16_t *)tflite::micro::GetTensorData<int16_t>(
           multipliers_and_biases_tensor);
 
-  int8_t *thread_scratch[n_threads];
+  int8_t *thread_scratch[XCORE_MAX_NUM_THREADS];
   Conv2DShared shared_data;
   shared_data.X = (int8_t *)tflite::micro::GetTensorData<int8_t>(input);
   shared_data.Y = (int8_t *)tflite::micro::GetTensorData<int8_t>(output);

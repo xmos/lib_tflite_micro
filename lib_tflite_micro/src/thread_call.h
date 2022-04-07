@@ -7,6 +7,8 @@
 extern "C" {
 #endif
 
+#define XCORE_MAX_NUM_THREADS 8
+
 typedef struct {           // THIS STRUCT MUST BE IN SYNC WITH ASSEMBLY CODE.
   union {
     uint64_t id_aligned[2];// Guarantee 64-bit alignment.

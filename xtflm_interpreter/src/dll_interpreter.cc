@@ -65,6 +65,9 @@ DLLEXPORT inference_engine *new_interpreter(size_t max_model_size) {
   resolver->AddSoftmax();
   resolver->AddMean();
   resolver->AddPad();
+  resolver->AddPrelu();
+  resolver->AddMaxPool2D();
+  resolver->AddRelu6();
   resolver->AddReshape();
   resolver->AddConcatenation();
   resolver->AddAdd();

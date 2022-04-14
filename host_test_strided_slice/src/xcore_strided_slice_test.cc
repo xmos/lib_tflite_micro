@@ -24,7 +24,7 @@ limitations under the License.
 
 #include "xcore_ops.h"
 
-#define MEM_OVERREAD 32
+#define MEM_OVERREAD 64
 
 namespace tflite {
 namespace testing {
@@ -41,7 +41,7 @@ void ValidateStridedSliceGoldens(TfLiteTensor* tensors, int tensors_size,
   int outputs_array_data[] = {1, 4};
   TfLiteIntArray* outputs_array = IntArrayFromInts(outputs_array_data);
   TfLiteRegistration* registration =
-      tflite::ops::micro::xcore::Register_Strided_Slice();
+      tflite::ops::micro::xcore::Register_Strided_Slice_V2();
   micro::KernelRunner runner(*registration, tensors, tensors_size, inputs_array,
                              outputs_array, reinterpret_cast<void*>(params));
 

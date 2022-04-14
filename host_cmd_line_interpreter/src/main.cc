@@ -37,7 +37,7 @@ void inference_engine_initialize(inference_engine_t *ie) {
   resolver->AddCustom(tflite::ops::micro::xcore::Load_Flash_OpCode,
                       tflite::ops::micro::xcore::Register_LoadFromFlash());
   resolver->AddCustom(tflite::ops::micro::xcore::Strided_Slice_OpCode,
-                      tflite::ops::micro::xcore::Register_Strided_Slice());
+                      tflite::ops::micro::xcore::Register_Strided_Slice_V3());
 }
 
 static int load_binary_file(const char *filename, uint32_t *content,

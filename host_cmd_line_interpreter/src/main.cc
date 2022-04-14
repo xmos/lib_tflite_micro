@@ -36,7 +36,7 @@ void inference_engine_initialize(inference_engine_t *ie) {
                       tflite::ops::micro::xcore::Register_Conv2D_V2());
   resolver->AddCustom(tflite::ops::micro::xcore::Load_Flash_OpCode,
                       tflite::ops::micro::xcore::Register_LoadFromFlash());
-  resolver->AddCustom(tflite::ops::micro::xcore::Strided_Slice_OpCode,
+  resolver->AddCustom(tflite::ops::micro::xcore::Strided_Slice_v3_OpCode,
                       tflite::ops::micro::xcore::Register_Strided_Slice_V3());
 }
 

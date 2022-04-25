@@ -41,17 +41,20 @@ T* getDeserializedParams(TfLiteContext* context, const uint8_t* data) {
 
 void* Init(TfLiteContext* context, const char* buffer, size_t length) {
   auto op_data = construct_persistent_object<StridedSliceOpData>(context);
-  op_data->name = "XC_Strided_Slice_v3";
+  op_data->name = "XC_Strided_Slice";
 
   auto parser = CustomOptionParser(buffer, length);
   const uint8_t *memcpy_fn_data = parser.parseNamedCustomOption("mp").AsBlob().data();
   op_data->mf_params = getDeserializedParams<nn::ImToColValid::Params>(context, memcpy_fn_data);
-  printf("begin x %d\n", op_data->begin_x);
-  printf("begin y %d\n", op_data->begin_y);
   op_data->begin_x = parser.parseNamedCustomOption("begin_x").AsInt32();
   op_data->begin_y = parser.parseNamedCustomOption("begin_y").AsInt32();
   printf("begin x %d\n", op_data->begin_x);
   printf("begin y %d\n", op_data->begin_y);
+  printf("input height %d\n", op_data->mf_params->input_height);
+  printf("input width %d\n", op_data->mf_params->input_width);
+  printf("bytes per h line %d\n", op_data->mf_params->bytes_per_h_line);
+  printf("bytes per pixel %d\n", op_data->mf_params->bytes_per_pixel);
+  printf("-----\n");
 
   return op_data;
 }
@@ -79,7 +82,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
 }  // namespace strided_slice
 
 
-TfLiteRegistration *Register_Strided_Slice_V3() {
+TfLiteRegistration *Register_Strided_Slice() {
   static TfLiteRegistration r = {strided_slice::Init, nullptr, strided_slice::Prepare,
                                  strided_slice::Eval};
   return &r;

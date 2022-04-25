@@ -96,6 +96,13 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
 
   auto params = nn::ImToColValid::Params(image_geom, window_geom, op_data->channels);
 
+  printf("input height %d\n", params.input_height);
+  printf("input width %d\n", params.input_width);
+  printf("bytes per h line %d\n", params.bytes_per_h_line);
+  printf("bytes per pixel %d\n", params.bytes_per_pixel);
+  printf("-----\n");
+
+
   auto memcpy = new (context->AllocatePersistentBuffer(context, sizeof(nn::ImToColValid))) nn::ImToColValid(&params);
   
   //Get Input/Output Tensors
@@ -111,7 +118,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
   return kTfLiteOk;
 }
 
-}  // namespace strided_slice_v3
+}  // namespace strided_slice_v2
 
 
 TfLiteRegistration *Register_Strided_Slice_V2() {

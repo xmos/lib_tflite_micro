@@ -48,13 +48,6 @@ void* Init(TfLiteContext* context, const char* buffer, size_t length) {
   op_data->mf_params = getDeserializedParams<nn::ImToColValid::Params>(context, memcpy_fn_data);
   op_data->begin_x = parser.parseNamedCustomOption("begin_x").AsInt32();
   op_data->begin_y = parser.parseNamedCustomOption("begin_y").AsInt32();
-  printf("begin x %d\n", op_data->begin_x);
-  printf("begin y %d\n", op_data->begin_y);
-  printf("input height %d\n", op_data->mf_params->input_height);
-  printf("input width %d\n", op_data->mf_params->input_width);
-  printf("bytes per h line %d\n", op_data->mf_params->bytes_per_h_line);
-  printf("bytes per pixel %d\n", op_data->mf_params->bytes_per_pixel);
-  printf("-----\n");
 
   return op_data;
 }

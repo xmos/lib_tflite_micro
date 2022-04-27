@@ -27,6 +27,7 @@ struct StridedSliceOpData : XCoreOpData {   // Inherits the operator name field 
     int32_t begin_x;
     int32_t begin_y;
     nn::ImToColValid::Params *mf_params;
+    nn::ImToColValid* memcpy;
 };
 
 template <typename T>
@@ -48,6 +49,7 @@ void* Init(TfLiteContext* context, const char* buffer, size_t length) {
   op_data->mf_params = getDeserializedParams<nn::ImToColValid::Params>(context, memcpy_fn_data);
   op_data->begin_x = parser.parseNamedCustomOption("begin_x").AsInt32();
   op_data->begin_y = parser.parseNamedCustomOption("begin_y").AsInt32();
+  op_data->memcpy = new (context->AllocatePersistentBuffer(context, sizeof(nn::ImToColValid::Params))) nn::ImToColValid(op_data->mf_params);
 
   return op_data;
 }
@@ -66,9 +68,8 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
   //Pointers to data in In/Out Tensors
   void* in_data = const_cast<void *>(tflite::micro::GetTensorData<void>(input));
   void* out_data = tflite::micro::GetTensorData<void>(output);
-  
-  auto memcpy = new (context->AllocatePersistentBuffer(context, sizeof(nn::ImToColValid::Params))) nn::ImToColValid(op_data->mf_params);
-  memcpy->memcopy_fn((int8_t*)out_data, (int8_t*)in_data, op_data->begin_y, op_data->begin_x, 0);
+
+  op_data->memcpy->memcopy_fn((int8_t*)out_data, (int8_t*)in_data, op_data->begin_y, op_data->begin_x, 0);
   return kTfLiteOk;
 }
 

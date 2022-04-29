@@ -50,7 +50,6 @@ void* Init(TfLiteContext* context, const char* buffer, size_t length) {
   op_data->begin_x = parser.parseNamedCustomOption("begin_x").AsInt32();
   op_data->begin_y = parser.parseNamedCustomOption("begin_y").AsInt32();
   op_data->memcpy = new (context->AllocatePersistentBuffer(context, sizeof(nn::ImToColValid::Params))) nn::ImToColValid(op_data->mf_params);
-
   return op_data;
 }
 

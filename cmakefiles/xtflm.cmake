@@ -41,7 +41,6 @@ list(APPEND ALL_SOURCES  "${CMAKE_CURRENT_SOURCE_DIR}/../lib_tflite_micro/src/in
 list(APPEND ALL_SOURCES  "${TFLIB_SRC_DIR}/xcore_bsign.cc")
 list(APPEND ALL_SOURCES  "${TFLIB_SRC_DIR}/xcore_conv2d_v2.cc")
 list(APPEND ALL_SOURCES  "${TFLIB_SRC_DIR}/xcore_strided_slice.cc")
-list(APPEND ALL_SOURCES  "${TFLIB_SRC_DIR}/xcore_strided_slice_v2.cc")
 list(APPEND ALL_SOURCES  "${TFLIB_SRC_DIR}/../thread_call_host.c")
 list(APPEND ALL_SOURCES  "${TFLIB_SRC_DIR}/xcore_custom_options.cc")
 list(APPEND ALL_SOURCES  "${TFLIB_SRC_DIR}/xcore_detection_post.cc")

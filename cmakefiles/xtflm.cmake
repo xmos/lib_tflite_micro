@@ -193,4 +193,3 @@ list(APPEND ALL_INCLUDES  "${CMAKE_CURRENT_SOURCE_DIR}/../../lib_nn/")
 list(APPEND ALL_INCLUDES  "${CMAKE_CURRENT_SOURCE_DIR}/../../lib_nn/lib_nn/api")
 list(APPEND ALL_INCLUDES  "${XMOS_TOOL_PATH}/target/include/")
 
-list(APPEND ALL_SOURCES  "${CMAKE_CURRENT_SOURCE_DIR}/../lib_tflite_micro/src/inference_engine.cc")

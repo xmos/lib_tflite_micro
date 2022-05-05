@@ -165,7 +165,6 @@ int inference_engine_load_model(inference_engine *ie, uint32_t model_bytes,
                          "AllocateTensors() failed");
     return 2;
   }
-
   ie->operators_size =
       ie->xtflm->model->subgraphs()->Get(0)->operators()->size();
 

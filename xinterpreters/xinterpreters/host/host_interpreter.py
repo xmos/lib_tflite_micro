@@ -119,10 +119,6 @@ class xcore_tflm_host_interpreter(xcore_tflm_base_interpreter):
         for model in self.models:
             if model.tile == model_index:
                 currentModel = model
-        print(type(self.obj))
-        print(type(currentModel.model_content))
-        print(type(len(currentModel.model_content)))
-        print(type(currentModel.params_content))
         status = lib.initialize(
             self.obj,
             currentModel.model_content,

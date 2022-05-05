@@ -7,6 +7,8 @@ import cv2
 from xtflm_interpreter import XTFLMInterpreter
 
 ie = XTFLMInterpreter(model_path = sys.argv[1], params_path = sys.argv[2])
+# check that arena usage calcuation is correct
+assert ie.tensor_arena_size == 901376
 
 with open(sys.argv[3], 'rb') as fd:
     img = fd.read()

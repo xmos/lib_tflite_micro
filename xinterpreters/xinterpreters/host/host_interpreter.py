@@ -10,12 +10,12 @@ from xinterpreters.base.base_interpreter import xcore_tflm_base_interpreter
 
 __PARENT_DIR = Path(__file__).parent.absolute()
 if sys.platform.startswith("linux"):
-    lib_path = str(__PARENT_DIR / "libs" / "linux" / "xtflm_python.so")
+    lib_path = str(Path.joinpath(__PARENT_DIR, "libs", "linux", "xtflm_python.so"))
 elif sys.platform == "darwin":
-    lib_path = str(__PARENT_DIR / "libs" / "macos" / "xtflm_python.dylib")
+    lib_path = str(Path.joinpath(__PARENT_DIR, "libs", "macos", "xtflm_python.dylib"))
 else:
-    raise RuntimeError("libxcore_interpreters is not supported on Windows!")
-
+    lib_path = str(Path.joinpath(__PARENT_DIR, "libs", "windows", "xtflm_python.dll"))
+    
 lib = ctypes.cdll.LoadLibrary(lib_path)
 
 from xinterpreters.host.exceptions import (

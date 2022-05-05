@@ -17,7 +17,7 @@ INSTALL_REQUIRES = [
 setuptools.setup(
     name="xinterpreters",
     packages=setuptools.find_packages(exclude=EXCLUDES),
-    python_requires=">=3.7.0",
+    python_requires=">=3.6.9",
     install_requires=INSTALL_REQUIRES,
     extras_require={
         "test": [

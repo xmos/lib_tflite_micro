@@ -1,8 +1,8 @@
 build:
-	(cd xtflm_interpreter && make install)
+	(cd xinterpreters/xinterpreters/host && make install)
 
 clean:
-	(cd xtflm_interpreter && make clean)
+	(cd xinterpreters/xinterpreters/host && make clean)
 
 init:
 	python3 fetch_dependencies.py
@@ -13,7 +13,7 @@ init:
 
 test:
 	(. .venv/bin/activate && cd host_cmd_line_interpreter && make test)
-	(. .venv/bin/activate && cd xtflm_interpreter && make test)
+	(. .venv/bin/activate && cd xinterpreters/xinterpreters/host && make test)
 	@echo ""
 	@echo "All tests PASS"
 	@echo ""

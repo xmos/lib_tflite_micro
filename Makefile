@@ -1,4 +1,9 @@
-build:
+# patch the library if flag not present
+.tflite_micro_patched.flag:
+	cd lib_tflite_micro/submodules/tflite-micro && patch -p0 -i ../../../patches/tflite-micro.patch
+	touch .tflite_micro_patched.flag
+
+build: .tflite_micro_patched.flag
 	(cd xtflm_interpreter && make install)
 
 clean:

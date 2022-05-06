@@ -40,7 +40,7 @@ index 51a1254..3cc3079 100644
    // Make sure we have enough arena size.
    if (memory_planner_->GetMaximumMemorySize() > actual_available_arena_size) {
 diff --git tensorflow/lite/micro/simple_memory_allocator.cc tensorflow/lite/micro/simple_memory_allocator.cc
-index 08b6789..8c01b17 100644
+index 08b6789..b9d8d00 100644
 --- tensorflow/lite/micro/simple_memory_allocator.cc
 +++ tensorflow/lite/micro/simple_memory_allocator.cc
 @@ -34,7 +34,8 @@ SimpleMemoryAllocator::SimpleMemoryAllocator(ErrorReporter* error_reporter,
@@ -95,7 +95,7 @@ index 08b6789..8c01b17 100644
  }
  
  size_t SimpleMemoryAllocator::GetBufferSize() const {
-@@ -146,4 +153,13 @@ uint8_t* SimpleMemoryAllocator::head() const { return head_; }
+@@ -146,4 +153,11 @@ uint8_t* SimpleMemoryAllocator::head() const { return head_; }
  
  uint8_t* SimpleMemoryAllocator::tail() const { return tail_; }
  
@@ -103,9 +103,7 @@ index 08b6789..8c01b17 100644
 +  size_t tail_used = buffer_tail_ - tail_;
 +  size_t head_used = std::max(head_ - buffer_head_, temp_ - buffer_head_);
 +  size_t m = tail_used + head_used + extraToBeAdded;
-+  if (max_used_ < m){
-+    max_used_ = m;
-+  }
++  max_used_ = std::max(max_used_, m);
 +}
 +
  }  // namespace tflite

@@ -127,7 +127,7 @@ DLLEXPORT size_t get_output_tensor_size(inference_engine *ie, int tensor_index) 
 }
 
 DLLEXPORT size_t arena_used_bytes(inference_engine *ie) {
-  return ie->xtflm->interpreter->arena_used_bytes();
+  return ie->arena_needed_bytes;
 }
 
 DLLEXPORT int set_input_tensor(inference_engine *ie, size_t tensor_index,

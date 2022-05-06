@@ -2,147 +2,9 @@
 # XMOS Public License: Version 1
 from abc import ABC, abstractmethod
 
-from xinterpreters.base.tflite.Model import  Model
-from xinterpreters.base.tflite.TensorType import TensorType
-
-dtypes = {
-   0 : 'float32',
-   1 : 'float16',
-   2 : 'int32',
-   3 : 'uint8',
-   4 : 'int64',
-   5 : 'string',
-   6 : 'bool',
-   7 : 'int16',
-   8 : 'complex64',
-   9 : 'int8'
-   }
-
-optypes = [
-    "ADD",
-    "AVERAGE_POOL_2D",
-    "CONCATENATION",
-    "CONV_2D",
-    "DEPTHWISE_CONV_2D",
-    "DEPTH_TO_SPACE",
-    "DEQUANTIZE",
-    "EMBEDDING_LOOKUP",
-    "FLOOR",
-    "FULLY_CONNECTED",
-    "HASHTABLE_LOOKUP",
-    "L2_NORMALIZATION",
-    "L2_POOL_2D",
-    "LOCAL_RESPONSE_NORMALIZATION",
-    "LOGISTIC",
-    "LSH_PROJECTION",
-    "LSTM",
-    "MAX_POOL_2D",
-    "MUL",
-    "RELU",
-    "RELU_N1_TO_1",
-    "RELU6",
-    "RESHAPE",
-    "RESIZE_BILINEAR",
-    "RNN",
-    "SOFTMAX",
-    "SPACE_TO_DEPTH",
-    "SVDF",
-    "TANH",
-    "CONCAT_EMBEDDINGS",
-    "SKIP_GRAM",
-    "CALL",
-    "CUSTOM",
-    "EMBEDDING_LOOKUP_SPARSE",
-    "PAD",
-    "UNIDIRECTIONAL_SEQUENCE_RNN",
-    "GATHER",
-    "BATCH_TO_SPACE_ND",
-    "SPACE_TO_BATCH_ND",
-    "TRANSPOSE",
-    "MEAN",
-    "SUB",
-    "DIV",
-    "SQUEEZE",
-    "UNIDIRECTIONAL_SEQUENCE_LSTM",
-    "STRIDED_SLICE",
-    "BIDIRECTIONAL_SEQUENCE_RNN",
-    "EXP",
-    "TOPK_V2",
-    "SPLIT",
-    "LOG_SOFTMAX",
-    "DELEGATE",
-    "BIDIRECTIONAL_SEQUENCE_LSTM",
-    "CAST",
-    "PRELU",
-    "MAXIMUM",
-    "ARG_MAX",
-    "MINIMUM",
-    "LESS",
-    "NEG",
-    "PADV2",
-    "GREATER",
-    "GREATER_EQUAL",
-    "LESS_EQUAL",
-    "SELECT",
-    "SLICE",
-    "SIN",
-    "TRANSPOSE_CONV",
-    "SPARSE_TO_DENSE",
-    "TILE",
-    "EXPAND_DIMS",
-    "EQUAL",
-    "NOT_EQUAL",
-    "LOG",
-    "SUM",
-    "SQRT",
-    "RSQRT",
-    "SHAPE",
-    "POW",
-    "ARG_MIN",
-    "FAKE_QUANT",
-    "REDUCE_PROD",
-    "REDUCE_MAX",
-    "PACK",
-    "LOGICAL_OR",
-    "ONE_HOT",
-    "LOGICAL_AND",
-    "LOGICAL_NOT",
-    "UNPACK",
-    "REDUCE_MIN",
-    "FLOOR_DIV",
-    "REDUCE_ANY",
-    "SQUARE",
-    "ZEROS_LIKE",
-    "FILL",
-    "FLOOR_MOD",
-    "RANGE",
-    "RESIZE_NEAREST_NEIGHBOR",
-    "LEAKY_RELU",
-    "SQUARED_DIFFERENCE",
-    "MIRROR_PAD",
-    "ABS",
-    "SPLIT_V",
-    "UNIQUE",
-    "CEIL",
-    "REVERSE_V2",
-    "ADD_N",
-    "GATHER_ND",
-    "COS",
-    "WHERE",
-    "RANK",
-    "ELU",
-    "REVERSE_SEQUENCE",
-    "MATRIX_DIAG",
-    "QUANTIZE",
-    "MATRIX_SET_DIAG",
-    "ROUND",
-    "HARD_SWISH",
-    "IF",
-    "WHILE",
-    "NON_MAX_SUPPRESSION_V4",
-    "NON_MAX_SUPPRESSION_V5",
-    "SCATTER_ND"
-    ]
+from tflite import opcode2name
+from tflite.Model import  Model
+from tflite.TensorType import TensorType
 
 class xcore_tflm_base_interpreter(ABC):
     """! The interpreter base class.
@@ -242,7 +104,7 @@ class xcore_tflm_base_interpreter(ABC):
         modelBuf = None
         for model in self.models:
             if model.tile == model_index:
-                modelBuf = Model.GetRootAs(model.model_content)
+                modelBuf = Model.GetRootAsModel(model.model_content, 0)
 
         tensorIndex = modelBuf.Subgraphs(0).Inputs(input_index)
 
@@ -272,7 +134,7 @@ class xcore_tflm_base_interpreter(ABC):
         modelBuf = None
         for model in self.models:
             if model.tile == model_index:
-                modelBuf = Model.GetRootAs(model.model_content)
+                modelBuf = Model.GetRootAsModel(model.model_content, 0)
 
         #Output tensor index is last index
         tensorIndex = modelBuf.Subgraphs(0).Outputs(output_index)
@@ -303,17 +165,22 @@ class xcore_tflm_base_interpreter(ABC):
         modelBuf = None
         for model in self.models:
             if model.tile == model_index:
-                modelBuf = Model.GetRootAs(model.model_content)
+                modelBuf = Model.GetRootAsModel(model.model_content, 0)
 
         tensorIndex = modelBuf.Subgraphs(0).Inputs(input_index)
 
         #Generate dictioary of tensor details
+        if modelBuf.Subgraphs(0).Tensors(tensorIndex).Type() == TensorType.INT8:
+            dtype = "int8"
+        elif modelBuf.Subgraphs(0).Tensors(tensorIndex).Type() == TensorType.INT32:
+            dtype = "int32"
+
         details = {
 
           "index": tensorIndex,
           "name": str(modelBuf.Subgraphs(0).Tensors(tensorIndex).Name())[1:].strip("'"),
           "shape": modelBuf.Subgraphs(0).Tensors(tensorIndex).ShapeAsNumpy(),
-          "dtype": dtypes[modelBuf.Subgraphs(0).Tensors(tensorIndex).Type()],
+          "dtype": dtype,
           "quantization": (modelBuf.Subgraphs(0).Tensors(tensorIndex).Quantization().Scale(0), modelBuf.Subgraphs(0).Tensors(0).Quantization().ZeroPoint(0))
         }
 
@@ -332,17 +199,22 @@ class xcore_tflm_base_interpreter(ABC):
         modelBuf = None
         for model in self.models:
             if model.tile == model_index:
-                modelBuf = Model.GetRootAs(model.model_content)
+                modelBuf = Model.GetRootAsModel(model.model_content, 0)
 
         #Output tensor is last tensor
         tensorIndex = modelBuf.Subgraphs(0).Outputs(output_index)
 
         #Generate dictioary of tensor details
+        if modelBuf.Subgraphs(0).Tensors(tensorIndex).Type() == TensorType.INT8:
+            dtype = "int8"
+        elif modelBuf.Subgraphs(0).Tensors(tensorIndex).Type() == TensorType.INT32:
+            dtype = "int32"
+
         details = {
           "index": tensorIndex,
           "name": str(modelBuf.Subgraphs(0).Tensors(tensorIndex).Name())[1:].strip("'"),
           "shape": modelBuf.Subgraphs(0).Tensors(tensorIndex).ShapeAsNumpy(),
-          "dtype": dtypes[modelBuf.Subgraphs(0).Tensors(tensorIndex).Type()],
+          "dtype": dtype,
           "quantization": (modelBuf.Subgraphs(0).Tensors(tensorIndex).Quantization().Scale(0), modelBuf.Subgraphs(0).Tensors(tensorIndex).Quantization().ZeroPoint(0))
         }
 
@@ -404,7 +276,7 @@ class xcore_tflm_base_interpreter(ABC):
 
             #Load model
             buffer = self.model_content
-            model = Model.GetRootAs(buffer)
+            model = Model.GetRootAsModel(buffer, 0)
             self.opList = []
 
             #Iterate through operators in model and add operators to opList
@@ -415,11 +287,7 @@ class xcore_tflm_base_interpreter(ABC):
                     self.opList.append(str(opcode.CustomCode()).strip("b'"))
                 #If built in op code, decode
                 else:
-                    self.opList.append(opcode.BuiltinCode())
-
-            for j in range(len(self.opList)):
-                if type(self.opList[j]) == int:
-                    self.opList[j] = optypes[self.opList[j]]
+                    self.opList.append(opcode2name(opcode.BuiltinCode()))
 
 
         def pathToContent(self):

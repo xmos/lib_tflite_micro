@@ -47,7 +47,7 @@ endif()
 set(TOP_DIR
   "${CMAKE_CURRENT_SOURCE_DIR}/../../..")
 
-include(../../../cmakefiles/xtflm.cmake)
+include(${TOP_DIR}/cmakefiles/xtflm.cmake)
 
 target_sources(xtflm_python
   PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/dll_interpreter.cc"

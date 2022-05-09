@@ -8,7 +8,14 @@ namespace shared_config {
 // between xformer and lib_tflite_micro in the flatbuffer
 constexpr char xcoreMetadataName[] = "xcoreSharedConfig";
 
-struct alignas(16) xcore_metadata {
+#ifdef XCORE
+//C++ compiler on xcore only allows allignment of 8 or less
+#define STRUCT_ALLIGNMENT alignas(8)
+#else 
+#define STRUCT_ALLIGNMENT alignas(16)
+#endif
+
+struct STRUCT_ALLIGNMENT xcore_metadata {
   // Versions of libraries used to build the model
   int32_t lib_nn_major_version;
   int32_t lib_nn_minor_version;

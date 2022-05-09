@@ -21,6 +21,7 @@ void add_lib_vision_ops(
     tflite::MicroMutableOpResolver<XTFLM_OPERATORS> *resolver) {
   resolver->AddAddN();
   resolver->AddCast();
+  resolver->AddSqueeze();
   resolver->AddFloor();
   resolver->AddGreater();
   resolver->AddGreaterEqual();

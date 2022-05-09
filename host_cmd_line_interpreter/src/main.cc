@@ -24,7 +24,14 @@ void inference_engine_initialize(inference_engine_t *ie) {
   resolver->AddSoftmax();
   resolver->AddMean();
   resolver->AddPad();
+  resolver->AddMul();
+  resolver->AddSub();
+  resolver->AddSqueeze();
   resolver->AddReshape();
+  resolver->AddShape();
+  resolver->AddPack();
+  resolver->AddAveragePool2D();
+  resolver->AddStridedSlice();
   resolver->AddConcatenation();
   resolver->AddAdd();
   resolver->AddLogistic();

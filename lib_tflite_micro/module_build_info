@@ -19,6 +19,7 @@ TLFLITE_MICRO_SHARED_FLAGS = -Wno-xcore-fptrgroup -DXCORE -Os \
 -DTF_LITE_STATIC_MEMORY \
 -DXCORE \
 -DUSE_EXTMEM -g \
+-I ../../../lib_tflite_micro/ \
 -I ../../../lib_nn/ # Required due to full include paths in xmos/tensorflow
 
 MODULE_XCC_C_FLAGS = $(TLFLITE_MICRO_SHARED_FLAGS)

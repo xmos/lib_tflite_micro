@@ -10,7 +10,7 @@ constexpr char xcoreMetadataName[] = "xcoreSharedConfig";
 
 #ifdef XCORE
 //C++ compiler on xcore only allows allignment of 8 or less
-#define STRUCT_ALLIGNMENT alignas(8)
+#define STRUCT_ALLIGNMENT __attribute__((aligned (8)))
 #else 
 #define STRUCT_ALLIGNMENT alignas(16)
 #endif

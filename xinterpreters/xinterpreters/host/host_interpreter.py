@@ -15,7 +15,7 @@ elif sys.platform == "darwin":
     lib_path = str(Path.joinpath(__PARENT_DIR, "libs", "macos", "xtflm_python.dylib"))
 else:
     lib_path = str(Path.joinpath(__PARENT_DIR, "libs", "windows", "xtflm_python.dll"))
-    
+
 lib = ctypes.cdll.LoadLibrary(lib_path)
 
 from xinterpreters.host.exceptions import (
@@ -34,15 +34,15 @@ from xinterpreters.host.exceptions import (
 
 MAX_TENSOR_ARENA_SIZE = 10000000
 
+
 class XTFLMInterpreterStatus(Enum):
     OK = 0
     ERROR = 1
 
+
 class xcore_tflm_host_interpreter(xcore_tflm_base_interpreter):
     def __init__(
-        self,
-        max_tensor_arena_size=MAX_TENSOR_ARENA_SIZE,
-        max_model_size=50000000
+        self, max_tensor_arena_size=MAX_TENSOR_ARENA_SIZE, max_model_size=50000000
     ) -> None:
         self._error_msg = ctypes.create_string_buffer(4096)
 
@@ -89,7 +89,7 @@ class xcore_tflm_host_interpreter(xcore_tflm_base_interpreter):
             ctypes.c_void_p,
             ctypes.c_int,
         ]
-        
+
         lib.invoke.restype = ctypes.c_int
         lib.invoke.argtypes = [ctypes.c_void_p]
 
@@ -124,10 +124,10 @@ class xcore_tflm_host_interpreter(xcore_tflm_base_interpreter):
             currentModel.model_content,
             len(currentModel.model_content),
             10000000,
-            currentModel.params_content
+            currentModel.params_content,
         )
         if XTFLMInterpreterStatus(status) is XTFLMInterpreterStatus.ERROR:
-            raise RuntimeError("Unable to initialize interpreter") #TODO
+            raise RuntimeError("Unable to initialize interpreter")  # TODO
 
     def set_input_tensor(self, tensor_index, data, model_index=0) -> None:
         if isinstance(data, np.ndarray):
@@ -135,11 +135,9 @@ class xcore_tflm_host_interpreter(xcore_tflm_base_interpreter):
         l = len(data)
         l2 = self.get_input_tensor_size(tensor_index)
         if l != l2:
-            print('ERROR: mismatching size in set_input_tensor %d vs %d' % (l, l2))
+            print("ERROR: mismatching size in set_input_tensor %d vs %d" % (l, l2))
 
-        self._check_status(
-            lib.set_input_tensor(self.obj, tensor_index, data, l)
-        )
+        self._check_status(lib.set_input_tensor(self.obj, tensor_index, data, l))
 
     def get_output_tensor(self, output_index=0, tensor=None) -> "Output tensor data":
         l = self.get_output_tensor_size(output_index)
@@ -149,12 +147,10 @@ class xcore_tflm_host_interpreter(xcore_tflm_base_interpreter):
         else:
             l2 = len(tensor.tobytes())
             if l2 != l:
-                print('ERROR: mismatching size in get_output_tensor %d vs %d' % (l, l2))
-        
+                print("ERROR: mismatching size in get_output_tensor %d vs %d" % (l, l2))
+
         data_ptr = tensor.ctypes.data_as(ctypes.c_void_p)
-        self._check_status(
-            lib.get_output_tensor(self.obj, output_index, data_ptr, l)
-        )
+        self._check_status(lib.get_output_tensor(self.obj, output_index, data_ptr, l))
         return tensor
 
     def get_input_tensor(self, input_index=0) -> "Input tensor data":
@@ -164,7 +160,9 @@ class xcore_tflm_host_interpreter(xcore_tflm_base_interpreter):
 
         l = len(tensor.tobytes())
         self._check_status(
-            lib.get_input_tensor(self.obj, input_index, data_ptr, l)  # TODO: this 0 assumes single output
+            lib.get_input_tensor(
+                self.obj, input_index, data_ptr, l
+            )  # TODO: this 0 assumes single output
         )
         return tensor
 

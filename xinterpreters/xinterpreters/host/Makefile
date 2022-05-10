@@ -5,5 +5,5 @@ install:
 clean:
 	rm -rf build
 
-test: install
+test:
 	(cd tests && make test)

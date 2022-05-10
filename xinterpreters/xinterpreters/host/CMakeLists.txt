@@ -44,7 +44,10 @@ elseif (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   target_link_libraries(xtflm_python stdc++ m pthread)
 endif()
 
-include(../cmakefiles/xtflm.cmake)
+set(TOP_DIR
+  "${CMAKE_CURRENT_SOURCE_DIR}/../../..")
+
+include(${TOP_DIR}/cmakefiles/xtflm.cmake)
 
 target_sources(xtflm_python
   PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/dll_interpreter.cc"
@@ -56,11 +59,11 @@ target_include_directories(xtflm_python
 )
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-  set(INSTALL_DIR "${PROJECT_SOURCE_DIR}/xtflm_interpreter/libs/linux")
+  set(INSTALL_DIR "${PROJECT_SOURCE_DIR}/libs/linux")
 elseif (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-  set(INSTALL_DIR "${PROJECT_SOURCE_DIR}/xtflm_interpreter/libs/macos")
+  set(INSTALL_DIR "${PROJECT_SOURCE_DIR}/libs/macos")
 else() # must be Windows
-  set(INSTALL_DIR "${PROJECT_SOURCE_DIR}/xtflm_interpreter/libs/windows")
+  set(INSTALL_DIR "${PROJECT_SOURCE_DIR}/libs/windows")
 endif()
 
 install(TARGETS xtflm_python DESTINATION ${INSTALL_DIR})

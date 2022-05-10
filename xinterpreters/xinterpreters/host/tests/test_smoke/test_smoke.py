@@ -12,11 +12,14 @@ ie.set_model(model_path="./smoke_model.tflite", params_path="./smoke_model.flash
 with open("./detection_0.raw", "rb") as fd:
     img = fd.read()
 
-ie.set_input_tensor(0, img)
+# check that arena usage calcuation is correct
+assert ie.tensor_arena_size() == 901376
+
+ie.set_input_tensor(data=img, input_index=0, model_index=0)
 ie.invoke()
 
-answer1 = ie.get_output_tensor(0)
-answer2 = ie.get_output_tensor(1)
+answer1 = ie.get_output_tensor(output_index=0, model_index=0, tensor=None)
+answer2 = ie.get_output_tensor(output_index=1, model_index=0, tensor=None)
 with open("./out0", "wb") as fd:
     fd.write(answer1)
 with open("./out1", "wb") as fd:

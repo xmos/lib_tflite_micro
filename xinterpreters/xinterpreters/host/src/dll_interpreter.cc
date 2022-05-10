@@ -131,7 +131,7 @@ DLLEXPORT void print_memory_plan(inference_engine *ie) {
 // }
 
 DLLEXPORT size_t arena_used_bytes(inference_engine *ie) {
-  return ie->xtflm->interpreter->arena_used_bytes();
+  return ie->arena_needed_bytes;
 }
 
 DLLEXPORT int set_input_tensor(inference_engine *ie, size_t tensor_index,

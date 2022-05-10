@@ -94,6 +94,7 @@ typedef struct inference_engine {
   uint8_t outputGpioMode;
   uint32_t debug_log_buffer[MAX_DEBUG_LOG_LENGTH /
                             sizeof(uint32_t)]; ///< buffer for error messages
+  uint32_t arena_needed_bytes; ///< Total arena needed in bytes.
 } inference_engine_t;
 
 #ifdef __cplusplus

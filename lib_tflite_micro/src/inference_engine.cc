@@ -128,10 +128,12 @@ int inference_engine_load_model(inference_engine *ie, uint32_t model_bytes,
   uint8_t *kTensorArena = (uint8_t *)ie->memory_primary;
   int kTensorArenaSize = ie->memory_primary_bytes;
 
+  bool isModelInPrimaryMemory = false;
   if (model_data != ie->memory_secondary) {
     uint32_t model_ints = (model_bytes + 3) & ~0x03; // Align 4
     kTensorArena += model_ints;
     kTensorArenaSize -= model_ints;
+    isModelInPrimaryMemory = true;
   }
 
   int stackWordsPerThread = 256;            // TODO: calculate
@@ -194,6 +196,14 @@ int inference_engine_load_model(inference_engine *ie, uint32_t model_bytes,
   }
   ie->output_times = (uint32_t *)ie->xtflm->xcore_profiler.GetEventDurations();
   ie->output_times_size = ie->operators_size;
+
+  // We calculate and save the total bytes needed for the arena
+  // If the model is in primary memory, we add model bytes as that would also be in the arena
+  ie->arena_needed_bytes = ie->xtflm->interpreter->arena_used_bytes() + bytesForStack;
+  ie->arena_needed_bytes += 16; // buffers are aligned to 16 bytes so we add this to be safe
+  if(isModelInPrimaryMemory) {
+    ie->arena_needed_bytes += model_bytes;
+  }
 
   return 0;
 }

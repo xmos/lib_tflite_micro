@@ -15,6 +15,13 @@ class xcore_tflm_base_interpreter(ABC):
         Initialises the list of models attached to the interpreter.
         """
         self.models = []
+
+    @abstractmethod
+    def initialise_interpreter(self, model_index=0) -> None:
+        """! Abstract initialising interpreter with model associated with model_index.
+        @param model_index The engine to target, for interpreters that support multiple models
+        running concurrently. Defaults to 0 for use with a single model.
+        """
         return
 
     @abstractmethod
@@ -46,14 +53,6 @@ class xcore_tflm_base_interpreter(ABC):
         @param model_index The engine to target, for interpreters that support multiple models
         running concurrently. Defaults to 0 for use with a single model.
         @return The data that was stored in the output tensor.
-        """
-        return
-
-    @abstractmethod
-    def initialise_interpreter(self, model_index=0) -> None:
-        """! Abstract initialising interpreter with model associated with model_index.
-        @param model_index The engine to target, for interpreters that support multiple models
-        running concurrently. Defaults to 0 for use with a single model.
         """
         return
 
@@ -220,7 +219,7 @@ class xcore_tflm_base_interpreter(ABC):
 
         return details 
 
-    def set_model(self, model_path=None, model_content=None, params_path=None, params_content=None, model_index=0) -> None:
+    def set_model(self, model_path=None, model_content=None, params_path=None, params_content=None, model_index=0, secondary_memory=False, flash=False) -> None:
         """! Adds a model to the interpreters list of models.
         @param model_path The path to the model file (.tflite), alternative to model_content.
         @param model_content The byte array representing a model, alternative to model_path.
@@ -238,19 +237,19 @@ class xcore_tflm_base_interpreter(ABC):
             #Find correct model and replace
             for model in self.models:
                 if model.tile == model_index:
-                    model = self.modelData(model_path, model_content, params_path, params_content, model_index)
+                    model = self.modelData(model_path, model_content, params_path, params_content, model_index, secondary_memory, flash)
                     tile_found = True
                     break
             #If model wasn't previously set, add it to list
             if not tile_found:
-                self.models.append(self.modelData(model_path, model_content, params_path, params_content, model_index))
+                self.models.append(self.modelData(model_path, model_content, params_path, params_content, model_index, secondary_memory, flash))
             self.initialise_interpreter(model_index)
 
     class modelData():
         """! The model data class
         A class that holds a model and data associated with a single model.
         """
-        def __init__(self, model_path, model_content, params_path, params_content, model_index):
+        def __init__(self, model_path, model_content, params_path, params_content, model_index, secondary_memory, flash):
             """! Model data initializer.
             Sets up variables, generates a list of operators used in the model,
             and reads model and params paths into byte arrays (content).
@@ -266,6 +265,8 @@ class xcore_tflm_base_interpreter(ABC):
             self.params_path = params_path
             self.params_content = params_content
             self.tile = model_index
+            self.secondary_memory = secondary_memory
+            self.flash = flash
             self.opList = []
             self.pathToContent()
             self.modelToOpList()

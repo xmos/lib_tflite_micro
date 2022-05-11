@@ -125,16 +125,14 @@ class xcore_tflm_host_interpreter(xcore_tflm_base_interpreter):
         @param model_index  The model to target, for interpreters that support multiple models
         running concurrently. Defaults to 0 for use with a single model.
         """
-        currentModel = None
-        for model in self.models:
-            if model.tile == model_index:
-                currentModel = model
+        model = self.get_model(model_index)
+
         status = lib.initialize(
             self.obj,
-            currentModel.model_content,
-            len(currentModel.model_content),
+            model.model_content,
+            len(model.model_content),
             10000000,
-            currentModel.params_content,
+            model.params_content,
         )
         if XTFLMInterpreterStatus(status) is XTFLMInterpreterStatus.ERROR:
             raise RuntimeError("Unable to initialize interpreter")

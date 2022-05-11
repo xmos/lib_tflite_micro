@@ -60,21 +60,18 @@ class xcore_tflm_device_interpreter(xcore_tflm_base_interpreter):
         @param model_index The engine to target, for interpreters that support multiple models
         running concurrently. Defaults to 0 for use with a single model.
         """
-        currentModel = None
-        for model in self.models:
-            if model.tile == model_index:
-                currentModel = model
+        model = self.get_model(model_index)
 
         self.connect()
         self.download_model(
-            bytearray(currentModel.model_content),
-            currentModel.secondary_memory,
-            currentModel.flash,
-            currentModel.tile,
+            bytearray(model.model_content),
+            model.secondary_memory,
+            model.flash,
+            model.tile,
         )
         return
 
-    def set_input_tensor(self, input_index, data, model_index=0) -> None:
+    def set_input_tensor(self, data, input_index=0, model_index=0) -> None:
         """! Abstract for writing the input tensor of a model.
         @param input_index  The index of input tensor to target.
         @param data  The blob of data to set the tensor to.
@@ -223,9 +220,9 @@ class xcore_tflm_device_interpreter(xcore_tflm_base_interpreter):
         return r
 
     def read_times(self, model_index=0):
-        for model in self.models:
-            if model.tile == model_index:
-                ops_length = len(model.opList)
+        model = self.get_model(model_index)
+        ops_length = len(model.opList)
+
         times_bytes = self._upload_data(
             aisrv_cmd.CMD_GET_TIMINGS, ops_length * 4, engine_num=model_index
         )

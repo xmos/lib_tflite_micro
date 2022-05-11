@@ -113,9 +113,9 @@ class xcore_tflm_base_interpreter(ABC):
 
         # Select correct model from model list
         modelBuf = None
-        for model in self.models:
-            if model.tile == model_index:
-                modelBuf = Model.GetRootAsModel(model.model_content, 0)
+        model = self.get_model(model_index)
+        modelBuf = Model.GetRootAsModel(model.model_content, 0)
+        
         # Get index of specific input tensor
         tensorIndex = modelBuf.Subgraphs(0).Inputs(input_index)
 
@@ -147,9 +147,8 @@ class xcore_tflm_base_interpreter(ABC):
 
         # Select correct model from model list
         modelBuf = None
-        for model in self.models:
-            if model.tile == model_index:
-                modelBuf = Model.GetRootAsModel(model.model_content, 0)
+        model = self.get_model(model_index)
+        modelBuf = Model.GetRootAsModel(model.model_content, 0)
 
         # Get index of specific output tensor
         tensorIndex = modelBuf.Subgraphs(0).Outputs(output_index)
@@ -182,9 +181,8 @@ class xcore_tflm_base_interpreter(ABC):
 
         # Select correct model from model list
         modelBuf = None
-        for model in self.models:
-            if model.tile == model_index:
-                modelBuf = Model.GetRootAsModel(model.model_content, 0)
+        model = self.get_model(model_index)
+        modelBuf = Model.GetRootAsModel(model.model_content, 0)
 
         tensorIndex = modelBuf.Subgraphs(0).Inputs(input_index)
 
@@ -222,9 +220,8 @@ class xcore_tflm_base_interpreter(ABC):
 
         # Select correct model from models list
         modelBuf = None
-        for model in self.models:
-            if model.tile == model_index:
-                modelBuf = Model.GetRootAsModel(model.model_content, 0)
+        model = self.get_model(model_index)
+        modelBuf = Model.GetRootAsModel(model.model_content, 0)
 
         # Output tensor is last tensor
         tensorIndex = modelBuf.Subgraphs(0).Outputs(output_index)
@@ -257,6 +254,8 @@ class xcore_tflm_base_interpreter(ABC):
         params_path=None,
         params_content=None,
         model_index=0,
+        secondary_memory=False,
+        flash=False
     ) -> None:
         """! Adds a model to the interpreter's list of models.
         @param model_path The path to the model file (.tflite), alternative to model_content.
@@ -300,6 +299,11 @@ class xcore_tflm_base_interpreter(ABC):
                     )
                 )
             self.initialise_interpreter(model_index)
+
+    def get_model(self, model_index=0):
+        for model in self.models:
+            if model.tile == model_index:
+                return model
 
     class modelData:
         """! The model data class

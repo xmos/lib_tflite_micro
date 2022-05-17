@@ -2,7 +2,6 @@
 # XMOS Public License: Version 1
 import struct
 import array
-import numpy as np
 from abc import abstractmethod
 
 from xinterpreters.base.base_interpreter import xcore_tflm_base_interpreter
@@ -51,8 +50,7 @@ class xcore_tflm_device_interpreter(xcore_tflm_base_interpreter):
     def __init__(self):
         self._timings_length = None
         self._max_block_size = XCORE_IE_MAX_BLOCK_SIZE  # TODO read from (usb) device?
-        self._spec_length = 20  # TODO fix magic number
-
+        self.connect()
         super().__init__()
 
     def initialise_interpreter(self, model_index=0) -> None:
@@ -61,8 +59,6 @@ class xcore_tflm_device_interpreter(xcore_tflm_base_interpreter):
         running concurrently. Defaults to 0 for use with a single model.
         """
         model = self.get_model(model_index)
-
-        self.connect()
         self.download_model(
             bytearray(model.model_content),
             model.secondary_memory,
@@ -84,6 +80,7 @@ class xcore_tflm_device_interpreter(xcore_tflm_base_interpreter):
             tensor_num=input_index,
             engine_num=model_index,
         )
+        print("Setting Input Tensor")
         return
 
     def get_output_tensor(
@@ -132,7 +129,7 @@ class xcore_tflm_device_interpreter(xcore_tflm_base_interpreter):
         return self.bytes_to_ints(data_read)
 
     @abstractmethod
-    def invoke(self) -> None:
+    def invoke(self, model_index=0) -> None:
         pass
 
     def close(self, model_index=0) -> None:
@@ -195,8 +192,7 @@ class xcore_tflm_device_interpreter(xcore_tflm_base_interpreter):
             # Download model to device
             self._download_data(cmd, model_bytes, engine_num=engine_num)
         except IOError:
-            self._clear_error()
-            raise IOError
+            print("IO Error\n")
 
     def bytes_to_ints(self, data_bytes, bpi=1):
 
@@ -213,7 +209,7 @@ class xcore_tflm_device_interpreter(xcore_tflm_base_interpreter):
     def read_debug_log(self):
 
         debug_string = self._upload_data(
-            aisrv_cmd.CMD_GET_DEBUG_LOG, 300
+            aisrv_cmd.CMD_GET_DEBUG_LOG, 256
         )  # TODO rm magic number
 
         r = bytearray(debug_string).decode("utf8", errors="replace")
@@ -290,8 +286,7 @@ class xcore_tflm_spi_interpreter(xcore_tflm_device_interpreter):
         self._dev.open(self._bus, self._device)
         self._dev.max_speed_hz = self._speed
 
-    # TODO move to super()
-    def start_inference(self):
+    def invoke(self, model_index=0):
 
         to_send = self._construct_packet(aisrv_cmd.CMD_START_INFER, 0)
         r = self._dev.xfer(to_send)
@@ -351,7 +346,9 @@ class xcore_tflm_usb_interpreter(xcore_tflm_device_interpreter):
 
         except usb.core.USBError as e:
             if e.backend_error_code == usb.backend.libusb1.LIBUSB_ERROR_PIPE:
-                # print("USB error, IN/OUT pipe halted")
+                print("USB error, DOWNLOAD IN/OUT pipe halted")
+                self._clear_error()
+                print("DEBUG LOG: ", self.read_debug_log())
                 raise IOError()
 
     def _upload_data(self, cmd, length, sign=False, tensor_num=0, engine_num=0):
@@ -376,7 +373,9 @@ class xcore_tflm_usb_interpreter(xcore_tflm_device_interpreter):
 
         except usb.core.USBError as e:
             if e.backend_error_code == usb.backend.libusb1.LIBUSB_ERROR_PIPE:
-                # print("USB error, IN/OUT pipe halted")
+                print("USB error, UPLOAD IN/OUT pipe halted")
+                self._clear_error()
+                print("DEBUG LOG: ", self.read_debug_log())
                 raise IOError()
 
     def _clear_error(self):
@@ -422,16 +421,14 @@ class xcore_tflm_usb_interpreter(xcore_tflm_device_interpreter):
 
             print("Connected to AISRV via USB")
 
-    def invoke(self):
+    def invoke(self, model_index=0):
         # Send cmd
         print("Inferencing...")
-        engine_num = 0
-        self._out_ep.write(bytes([aisrv_cmd.CMD_START_INFER, engine_num, 0]), 1000)
+        self._out_ep.write(bytes([aisrv_cmd.CMD_START_INFER, model_index, 0]), 1000)
 
         # Send out a 0 length packet
         self._out_ep.write(bytes([]), 1000)
 
-    # TODO move to super()
     def start_acquire_single(self, sx, ex, sy, ey, rw, rh, engine_num=0):
 
         # Send cmd
@@ -465,7 +462,6 @@ class xcore_tflm_usb_interpreter(xcore_tflm_device_interpreter):
         # Send out packet with coordinates
         self._out_ep.write(tobytes([i2c_address, reg_address, reg_value]), 1000)
 
-    # TODO move to super()
     def start_acquire_stream(self, engine_num=0):
 
         # Send cmd
@@ -476,7 +472,6 @@ class xcore_tflm_usb_interpreter(xcore_tflm_device_interpreter):
         # Send out a 0 length packet
         self._out_ep.write(bytes([]), 1000)
 
-    # TODO move to super()
     def enable_output_gpio(self, engine_num=0):
 
         self._out_ep.write(
@@ -484,7 +479,6 @@ class xcore_tflm_usb_interpreter(xcore_tflm_device_interpreter):
         )
         self._out_ep.write(bytes([1]), 1000)
 
-    # TODO move to super()
     def disable_output_gpio(self, engine_num=0):
 
         self._out_ep.write(

@@ -192,7 +192,7 @@ class xcore_tflm_host_interpreter(xcore_tflm_base_interpreter):
         self._check_status(lib.get_input_tensor(self.obj, input_index, data_ptr, l))
         return tensor
 
-    def invoke(self) -> None:
+    def invoke(self, model_index=0) -> None:
         """! Invoke the model and starting inference of the current
         state of the tensors.
         """

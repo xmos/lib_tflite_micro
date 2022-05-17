@@ -27,14 +27,6 @@ class xcore_tflm_base_interpreter(ABC):
         return
 
     @abstractmethod
-    def initialise_interpreter(self, model_index=0) -> None:
-        """! Abstract meothd initialising an interpreter with the model  that has model_index.
-        @param model_index  The model to target, for interpreters that support multiple models
-        running concurrently. Defaults to 0 for use with a single model.
-        """
-        return
-
-    @abstractmethod
     def set_input_tensor(self, data, input_index=0, model_index=0) -> None:
         """! Abstract method for writing the input tensor of a model.
         @param data  The blob of data to set the tensor to.
@@ -69,7 +61,7 @@ class xcore_tflm_base_interpreter(ABC):
         return
 
     @abstractmethod
-    def invoke(self) -> None:
+    def invoke(self, model_index=0) -> None:
         """! Abstract method for invoking the model and starting inference of the current
         state of the tensors.
         """
@@ -115,7 +107,7 @@ class xcore_tflm_base_interpreter(ABC):
         modelBuf = None
         model = self.get_model(model_index)
         modelBuf = Model.GetRootAsModel(model.model_content, 0)
-        
+
         # Get index of specific input tensor
         tensorIndex = modelBuf.Subgraphs(0).Inputs(input_index)
 
@@ -255,7 +247,7 @@ class xcore_tflm_base_interpreter(ABC):
         params_content=None,
         model_index=0,
         secondary_memory=False,
-        flash=False
+        flash=False,
     ) -> None:
         """! Adds a model to the interpreter's list of models.
         @param model_path The path to the model file (.tflite), alternative to model_content.
@@ -281,7 +273,7 @@ class xcore_tflm_base_interpreter(ABC):
                         params_content,
                         model_index,
                         secondary_memory,
-                        flash
+                        flash,
                     )
                     tile_found = True
                     break
@@ -295,7 +287,7 @@ class xcore_tflm_base_interpreter(ABC):
                         params_content,
                         model_index,
                         secondary_memory,
-                        flash
+                        flash,
                     )
                 )
             self.initialise_interpreter(model_index)

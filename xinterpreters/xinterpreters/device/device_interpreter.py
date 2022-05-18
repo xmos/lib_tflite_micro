@@ -193,6 +193,7 @@ class xcore_tflm_device_interpreter(xcore_tflm_base_interpreter):
             self._download_data(cmd, model_bytes, engine_num=engine_num)
         except IOError:
             print("IO Error\n")
+            raise IOError
 
     def bytes_to_ints(self, data_bytes, bpi=1):
 

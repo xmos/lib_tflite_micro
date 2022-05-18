@@ -1,7 +1,5 @@
 # Copyright 2022 XMOS LIMITED. This Software is subject to the terms of the
 # XMOS Public License: Version 1
-import struct
-import array
 from abc import abstractmethod
 
 from xinterpreters.base.base_interpreter import xcore_tflm_base_interpreter
@@ -47,7 +45,14 @@ class CommandError(AISRVError):
 
 
 class xcore_tflm_device_interpreter(xcore_tflm_base_interpreter):
+    """! The xcore interpreters device class.
+    To be inherited by usb/spi interpreters, inherits from base interpreter.
+    """
+
     def __init__(self):
+        """! Device interpreter initializer.
+        Calls the connect function to connect to a device over the current interface.
+        """
         self._timings_length = None
         self._max_block_size = XCORE_IE_MAX_BLOCK_SIZE  # TODO read from (usb) device?
         self.connect()
@@ -158,15 +163,24 @@ class xcore_tflm_device_interpreter(xcore_tflm_base_interpreter):
 
     @abstractmethod
     def connect(self):
+        """! Abstract to connect to a connected device"""
         pass
 
     @abstractmethod
     def _clear_error(self):
+        """! Abstract to clear errors on the device"""
         pass
 
     def download_model(
-        self, model_bytes, secondary_memory=False, flash=False, engine_num=0
+        self, model_bytes, secondary_memory=False, flash=False, model_index=0
     ):
+        """! Download a model on to the device.
+        @param model_bytes  The byte array containing the model.
+        @param secondary_memory  Download the model to primary and secondary memory.
+        @param flash  Store the model in flash memory.
+        @param model_index  The model to target, for interpreters that support multiple models
+        running concurrently. Defaults to 0 for use with a single model.
+        """
 
         if not flash:
             assert type(model_bytes) == bytearray
@@ -196,7 +210,10 @@ class xcore_tflm_device_interpreter(xcore_tflm_base_interpreter):
             raise IOError
 
     def bytes_to_ints(self, data_bytes, bpi=1):
-
+        """! Convert variable byte array to integers.
+        @param data_bytes Byte Array.
+        @param bpi Bytes per integer (eg 1 for int8, 4 for int32).
+        """
         output_data_int = []
 
         # TODO better way of doing this?
@@ -208,7 +225,7 @@ class xcore_tflm_device_interpreter(xcore_tflm_base_interpreter):
         return output_data_int
 
     def read_debug_log(self):
-
+        """! Read the debug log on device (TFLM Error Reporter)."""
         debug_string = self._upload_data(
             aisrv_cmd.CMD_GET_DEBUG_LOG, 256
         )  # TODO rm magic number
@@ -217,6 +234,10 @@ class xcore_tflm_device_interpreter(xcore_tflm_base_interpreter):
         return r
 
     def read_times(self, model_index=0):
+        """! Read the operator timings from a completed inference.
+        @param model_index  The model to target, for interpreters that support multiple models
+        running concurrently. Defaults to 0 for use with a single model.
+        """
         model = self.get_model(model_index)
         ops_length = len(model.opList)
 

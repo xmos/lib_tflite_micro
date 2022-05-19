@@ -245,6 +245,7 @@ class xcore_tflm_device_interpreter(xcore_tflm_base_interpreter):
             aisrv_cmd.CMD_GET_TIMINGS, ops_length * 4, engine_num=model_index
         )
         times_ints = self.bytes_to_ints(times_bytes, bpi=4)
+
         return times_ints
 
 
@@ -259,17 +260,12 @@ class xcore_tflm_spi_interpreter(xcore_tflm_device_interpreter):
         super().__init__()
 
     def _download_data(self, cmd, data_bytes):
-
         data_len = len(data_bytes)
-
         data_index = 0
-
         data_ints = self.bytes_to_ints(data_bytes)
 
         while data_len >= self._max_block_size:
-
             self._wait_for_device()
-
             to_send = [cmd]
             to_send.extend(data_ints[data_index : data_index + self._max_block_size])
 
@@ -285,14 +281,10 @@ class xcore_tflm_spi_interpreter(xcore_tflm_device_interpreter):
         self._dev.xfer(to_send)
 
     def _upload_data(self, cmd, length):
-
         self._wait_for_device()
-
         to_send = self._construct_packet(cmd, length + 1)
-
         r = self._dev.xfer(to_send)
 
-        # r = [x-256 if x > 127 else x for x in r]
         r = r[self._dummy_byte_count :]
         return r[:length]
 
@@ -309,7 +301,6 @@ class xcore_tflm_spi_interpreter(xcore_tflm_device_interpreter):
         self._dev.max_speed_hz = self._speed
 
     def invoke(self, model_index=0):
-
         to_send = self._construct_packet(aisrv_cmd.CMD_START_INFER, 0)
         r = self._dev.xfer(to_send)
 
@@ -320,7 +311,6 @@ class xcore_tflm_spi_interpreter(xcore_tflm_device_interpreter):
         return [cmd] + self._dummy_bytes + (round_to_word(length) * [0])
 
     def _read_status(self):
-
         to_send = [aisrv_cmd.CMD_GET_STATUS] + self._dummy_bytes + (4 * [0])
         r = self._dev.xfer(to_send)
 
@@ -328,13 +318,10 @@ class xcore_tflm_spi_interpreter(xcore_tflm_device_interpreter):
 
     def _wait_for_device(self):
         """Wait for device to report not busy. Raise exception on any error Status"""
-
         while True:
-
             status = self._read_status()
 
             if status != 1:  # TODO STATUS_BUSY
-
                 if status == 0x04:  # TODO STATUS_ERROR_NO_MODEL
                     raise NoModel()
                 elif status == 0x08:  # TODO STATUS_ERROR_MODEL_ERR
@@ -343,7 +330,6 @@ class xcore_tflm_spi_interpreter(xcore_tflm_device_interpreter):
                     raise InferenceError()
                 elif status == 0x20:  # TODO STATUS_BAD_CMD
                     raise CommandError()
-
                 break
 
 
@@ -360,7 +346,6 @@ class xcore_tflm_usb_interpreter(xcore_tflm_device_interpreter):
 
         try:
             self._out_ep.write(bytes([cmd, engine_num, tensor_num]))
-
             self._out_ep.write(data_bytes, 1000)
 
             if (len(data_bytes) % self._max_block_size) == 0:
@@ -383,11 +368,8 @@ class xcore_tflm_usb_interpreter(xcore_tflm_device_interpreter):
             buff = usb.util.create_buffer(self._max_block_size)
 
             while True:
-
                 read_len = self._dev.read(self._in_ep, buff, 10000)
-
                 read_data.extend(buff[:read_len])
-
                 if read_len != self._max_block_size:
                     break
 
@@ -405,7 +387,6 @@ class xcore_tflm_usb_interpreter(xcore_tflm_device_interpreter):
         self._dev.clear_halt(self._in_ep)
 
     def connect(self):
-
         import usb
 
         self._dev = None
@@ -447,12 +428,10 @@ class xcore_tflm_usb_interpreter(xcore_tflm_device_interpreter):
         # Send cmd
         print("Inferencing...")
         self._out_ep.write(bytes([aisrv_cmd.CMD_START_INFER, model_index, 0]), 1000)
-
         # Send out a 0 length packet
         self._out_ep.write(bytes([]), 1000)
 
     def start_acquire_single(self, sx, ex, sy, ey, rw, rh, engine_num=0):
-
         # Send cmd
         self._out_ep.write(
             bytes([aisrv_cmd.CMD_START_ACQUIRE_SINGLE, engine_num, 0]), 1000
@@ -469,7 +448,6 @@ class xcore_tflm_usb_interpreter(xcore_tflm_device_interpreter):
         self._out_ep.write(tobytes([sx, ex, sy, ey, rw, rh]), 1000)
 
     def acquire_set_i2c(self, i2c_address, reg_address, reg_value, engine_num=0):
-
         # Send cmd
         self._out_ep.write(
             bytes([aisrv_cmd.CMD_START_ACQUIRE_SET_I2C, engine_num, 0]), 1000
@@ -485,7 +463,6 @@ class xcore_tflm_usb_interpreter(xcore_tflm_device_interpreter):
         self._out_ep.write(tobytes([i2c_address, reg_address, reg_value]), 1000)
 
     def start_acquire_stream(self, engine_num=0):
-
         # Send cmd
         self._out_ep.write(
             bytes([aisrv_cmd.CMD_START_ACQUIRE_STREAM, engine_num, 0]), 1000
@@ -495,35 +472,30 @@ class xcore_tflm_usb_interpreter(xcore_tflm_device_interpreter):
         self._out_ep.write(bytes([]), 1000)
 
     def enable_output_gpio(self, engine_num=0):
-
         self._out_ep.write(
             bytes([aisrv_cmd.CMD_SET_OUTPUT_GPIO_EN, engine_num, 0]), 1000
         )
         self._out_ep.write(bytes([1]), 1000)
 
     def disable_output_gpio(self, engine_num=0):
-
         self._out_ep.write(
             bytes([aisrv_cmd.CMD_SET_OUTPUT_GPIO_EN, engine_num, 0]), 1000
         )
         self._out_ep.write(bytes([0]), 1000)
 
     def set_output_gpio_threshold(self, index, threshold):
-
         self._out_ep.write(
             bytes([aisrv_cmd.CMD_SET_OUTPUT_GPIO_THRESH, engine_num, 0]), 1000
         )
         self._out_ep.write(bytes([index, threshold]), 1000)
 
     def set_output_gpio_mode_max(self, engine_num=0):
-
         self._out_ep.write(
             bytes([aisrv_cmd.CMD_SET_OUTPUT_GPIO_MODE, engine_num, 0]), 1000
         )
         self._out_ep.write(bytes([1]), 1000)
 
     def set_output_gpio_mode_none(self, engine_num=0):
-
         self._out_ep.write(
             bytes([aisrv_cmd.CMD_SET_OUTPUT_GPIO_MODE, engine_num, 0]), 1000
         )

@@ -9,7 +9,6 @@ init:
 	. .venv/bin/activate && \
 	pip3 install --upgrade pip && \
 	pip3 install -r requirements.txt &&\
-	pip3 install xmos_ai_tools
 
 test:
 	(. .venv/bin/activate && cd host_cmd_line_interpreter && make test)

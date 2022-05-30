@@ -122,6 +122,7 @@ int main(int argc, char *argv[]) {
         tensor_num++;
     }
     interp_invoke_par_5(&ie);
+    printf("%d\n", ie.arena_needed_bytes);
     if(ie.arena_needed_bytes != 901376) return 1;
     tensor_num = 0;
     while(++carg < argc) {

@@ -26,6 +26,13 @@ pipeline {
                         }
                     }
                 }
+            stage("Build") {
+                     steps {
+                         withVenv {
+                             sh 'make build'
+                             }
+                         }
+                     }
             stage("Test") {
                 steps {
                     withVenv {

@@ -3,6 +3,9 @@
 	cd lib_tflite_micro/submodules/tflite-micro && patch -p0 -i ../../../patches/tflite-micro.patch
 	touch .tflite_micro_patched.flag
 
+build: 
+	.tflite_micro_patched.flag
+
 init:
 	python3 fetch_dependencies.py
 	python3 -m venv .venv && \

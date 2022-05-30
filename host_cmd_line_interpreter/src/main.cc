@@ -122,6 +122,7 @@ int main(int argc, char *argv[]) {
         tensor_num++;
     }
     interp_invoke_par_5(&ie);
+    if(ie.arena_needed_bytes != 901376) return 1;
     tensor_num = 0;
     while(++carg < argc) {
         save_output(argv[carg], ie.output_buffers[tensor_num], ie.output_sizes[tensor_num]);

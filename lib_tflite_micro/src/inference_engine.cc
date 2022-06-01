@@ -61,7 +61,7 @@ int inference_engine_load_model(inference_engine *ie, uint32_t model_bytes,
   // Retrieve shared metadata
   for (int i = 0; i < ie->xtflm->model->metadata()->size(); ++i) {
     auto metadata = ie->xtflm->model->metadata()->Get(i);
-    if (metadata->name()->str() == shared_config::xcoreMetadataName) {
+    if (strncmp(metadata->name()->c_str(), shared_config::xcoreMetadataName, strlen(shared_config::xcoreMetadataName)) == 0) {
       auto buf = metadata->buffer();
       auto *buffer = (*ie->xtflm->model->buffers())[buf];
       auto *array = buffer->data();

@@ -27,12 +27,12 @@ pipeline {
                     }
                 }
             stage("Build") {
-                steps {
-                    withVenv {
-                        sh 'make build'
-                        }
-                    }
-                }
+                     steps {
+                         withVenv {
+                             sh 'make build'
+                             }
+                         }
+                     }
             stage("Test") {
                 steps {
                     withVenv {

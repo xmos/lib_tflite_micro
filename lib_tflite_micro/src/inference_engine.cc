@@ -210,11 +210,11 @@ int inference_engine_load_model(inference_engine *ie, uint32_t model_bytes,
 
 int interp_invoke_par_5(inference_engine *ie)
 {
-    // if(ie->num_threads != 5) 
-    // {
-    //   printf("Thread count (5) does not match model thread count\n");
-    //   return 1;
-    // }
+    if(ie->num_threads != 5) 
+    {
+      printf("Thread count (5) does not match model thread count\n");
+      return 1;
+    }
     return thread_invoke_5(ie, &ie->xtflm->interpreter->thread_info);
 }
 

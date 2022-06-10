@@ -210,7 +210,7 @@ int inference_engine_load_model(inference_engine *ie, uint32_t model_bytes,
 
 int interp_invoke_par_5(inference_engine *ie)
 {
-    if(ie->num_threads != 5) 
+    if(ie->num_threads > 5) 
     {
       printf("Thread count (5) does not match model thread count\n");
       return 1;
@@ -220,7 +220,7 @@ int interp_invoke_par_5(inference_engine *ie)
 
 int interp_invoke_par_4(inference_engine *ie)
 {
-    if(ie->num_threads != 4) 
+    if(ie->num_threads > 4) 
     {
       printf("Thread count (4) does not match model thread count\n");
       TF_LITE_REPORT_ERROR(&ie->xtflm->error_reporter,
@@ -232,7 +232,7 @@ int interp_invoke_par_4(inference_engine *ie)
 
 int interp_invoke_par_3(inference_engine *ie)
 {
-    if(ie->num_threads != 3) 
+    if(ie->num_threads > 3) 
     {
       printf("Thread count (3) does not match model thread count\n");
       TF_LITE_REPORT_ERROR(&ie->xtflm->error_reporter,
@@ -244,7 +244,7 @@ int interp_invoke_par_3(inference_engine *ie)
 
 int interp_invoke_par_2(inference_engine *ie)
 {
-    if(ie->num_threads != 2) 
+    if(ie->num_threads > 2) 
     {
       printf("Thread count (2) does not match model thread count\n");
       TF_LITE_REPORT_ERROR(&ie->xtflm->error_reporter,
@@ -256,7 +256,7 @@ int interp_invoke_par_2(inference_engine *ie)
 
 int interp_invoke(inference_engine *ie)
 {
-    if(ie->num_threads != 1) 
+    if(ie->num_threads > 1) 
     {
       printf("Thread count (1) does not match model thread count\n");
       TF_LITE_REPORT_ERROR(&ie->xtflm->error_reporter,

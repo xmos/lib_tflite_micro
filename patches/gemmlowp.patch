@@ -1,0 +1,11 @@
+--- fixedpoint/fixedpoint.h	2022-06-13 10:38:39.000000000 +0100
++++ fixedpoint/fixedpoint.h	2022-06-13 10:38:50.000000000 +0100
+@@ -367,7 +367,7 @@
+ template <typename IntegerType, typename ExponentType>
+ inline IntegerType RoundingDivideByPOT(IntegerType x, ExponentType exponent) {
+   assert(exponent >= 0);
+-  assert(exponent <= 31);
++  assert(exponent <= 32);
+   const IntegerType mask = Dup<IntegerType>((1ll << exponent) - 1);
+   const IntegerType zero = Dup<IntegerType>(0);
+   const IntegerType one = Dup<IntegerType>(1);

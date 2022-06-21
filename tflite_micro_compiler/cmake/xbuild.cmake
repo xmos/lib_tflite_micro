@@ -1,11 +1,4 @@
 #**********************
-# Setup XMOS toolchain
-#**********************
-#include("${CMAKE_CURRENT_SOURCE_DIR}/../cmake/xmos_toolchain.cmake")
-
-enable_language(CXX C)
-
-#**********************
 # Disable in-source build.
 #**********************
 if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")

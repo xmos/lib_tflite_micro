@@ -17,7 +17,9 @@ static ptrdiff_t g_arena_size = 0;
 
 static void* LoggingAllocatePersistentBuffer(struct TfLiteContext *ctx,
                                                     size_t bytes) {
-  void* ptr = g_allocator->AllocatePersistentBuffer(bytes);
+  tflite::MicroInterpreter* con = ((tflite::MicroInterpreter*)ctx->impl_);
+  tflite::MicroAllocator &a = con->allocator_;
+  void* ptr = a.AllocatePersistentBuffer(bytes);
   assert(ptr!=nullptr && "Alloc failure");
   g_loggedAllocations.push_back(
       {-(g_arenaPtr - (uint8_t *)ptr + g_arena_size), bytes,
@@ -28,8 +30,11 @@ static TfLiteStatus LoggingRequestScratchBufferInArena(TfLiteContext *ctx,
                                                        size_t bytes,
                                                        int *buffer_idx) {
   assert(false && "Not handling scratch buffers currently");
-  return g_allocator->RequestScratchBufferInArena(bytes,
-                                                  buffer_idx);
+  tflite::MicroInterpreter* con = ((tflite::MicroInterpreter*)ctx->impl_);
+  tflite::MicroAllocator &a = con->allocator_;
+  //return a.RequestScratchBufferInArena(bytes,
+  //                                                 buffer_idx);
+  return kTfLiteOk;
 }
 
 std::vector<tflmc::Allocation> tflmc::RecordAllocations(
@@ -40,46 +45,40 @@ std::vector<tflmc::Allocation> tflmc::RecordAllocations(
 
   tflite::MicroErrorReporter error_reporter;
   tflite::AllOpsResolver resolver;
-  tflmc::custom_operator_handle custom = tflmc::LoadCustom(&resolver);
+  TfLiteStatus custom_status = tflmc::register_custom(&resolver);
   tflite::MicroInterpreter interpreter(model, resolver, arena_buf.data(),
                                        g_arena_size, &error_reporter);
 
   auto ctx = &interpreter.context_;
   auto allocator = &interpreter.allocator_;
+  auto graph = &interpreter.graph_;
 
-  tflite::NodeAndRegistration *nodeAndRegs;
-  TfLiteEvalTensor *eval_tensors=nullptr;
+  tflite::SubgraphAllocations *subgraphAllocations;
   tflite::ScratchBufferHandle* scratchhandle=nullptr;
 
-  allocator->StartModelAllocation(model, resolver, &nodeAndRegs, &eval_tensors);
-  allocator->FinishModelAllocation(model, eval_tensors, &scratchhandle);
+  subgraphAllocations = allocator->StartModelAllocation(model);
 
+  graph->SetSubgraphAllocations(subgraphAllocations);
+  interpreter.PrepareNodeAndRegistrationDataFromFlatbuffer();
   g_allocator = allocator;
+
+  // Only allow AllocatePersistentBuffer in Init stage.
   ctx->AllocatePersistentBuffer = &LoggingAllocatePersistentBuffer;
   ctx->RequestScratchBufferInArena = nullptr;
   ctx->GetScratchBuffer = nullptr;
+  ctx->GetExternalContext = nullptr;
+  graph->InitSubgraphs();
 
-  auto subgraph = model->subgraphs()->Get(0);
-  for (size_t i = 0; i < subgraph->operators()->size(); i++) {
-    auto node = &nodeAndRegs[i].node;
-    auto reg = nodeAndRegs[i].registration;
-    if (reg->init) {
-      g_currentNodeIndex = i;
-      node->user_data = reg->init(ctx, (const char *)node->builtin_data, 0);
-    }
-  }
+  // Both AllocatePersistentBuffer and RequestScratchBufferInArena is
+  // available in Prepare stage.
+  ctx->RequestScratchBufferInArena =
+      &LoggingRequestScratchBufferInArena;
 
-  ctx->RequestScratchBufferInArena = &LoggingRequestScratchBufferInArena;
+  graph->PrepareSubgraphs();
 
-  for (size_t i = 0; i < subgraph->operators()->size(); i++) {
-    auto node = &nodeAndRegs[i].node;
-    auto reg = nodeAndRegs[i].registration;
-    if (reg->prepare) {
-      g_currentNodeIndex = i;
-      reg->prepare(ctx, node);
-    }
-  }
-  tflmc::UnloadCustom(custom);
+  allocator->FinishModelAllocation(model, graph->GetAllocations(),
+                                   &scratchhandle);
+
   return g_loggedAllocations;
 }
 

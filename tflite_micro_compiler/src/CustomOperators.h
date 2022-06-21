@@ -19,10 +19,7 @@ limitations under the License.
 #include "tensorflow/lite/micro/all_ops_resolver.h"
 
 namespace tflmc {
-typedef void* custom_operator_handle;
-
-custom_operator_handle LoadCustom(tflite::AllOpsResolver* res);
-void UnloadCustom(custom_operator_handle);
+TfLiteStatus register_custom(tflite::AllOpsResolver *res);
 }  // namespace tflmc
 
 #endif

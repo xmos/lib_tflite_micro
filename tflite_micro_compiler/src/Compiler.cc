@@ -10,7 +10,6 @@
 #include "CustomOperators.h"
 #include "RecordAllocations.h"
 #include "TypeToString.h"
-#include "tensorflow/lite/version.h"
 
 #ifndef SUFFICIENT_ARENA_SIZE
 #define SUFFICIENT_ARENA_SIZE (128*1024*1024)
@@ -104,7 +103,11 @@ bool tflmc::Compiler::init(const void *modelData) {
   for (auto outIndex : *subgraph_->outputs()) {
     outputTensorIndices_.push_back(outIndex);
   }
-  tflmc::custom_operator_handle custom = tflmc::LoadCustom(&resolver_);
+  TfLiteStatus custom_status = tflmc::register_custom(&resolver_);
+  if (custom_status != kTfLiteOk) {
+    errReporter().Report("Register custom() failed");
+    return false;
+  }
 
   // Build an interpreter to run the model with.
   arena_buf_.resize(SUFFICIENT_ARENA_SIZE);
@@ -211,7 +214,6 @@ bool tflmc::Compiler::init(const void *modelData) {
                     sizeof(TfLiteContext), "TfLiteContext");
 
   memMap_.report();
-  tflmc::UnloadCustom(custom);
 
   return true;
 }

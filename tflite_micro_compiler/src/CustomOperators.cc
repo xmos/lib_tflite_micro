@@ -15,49 +15,20 @@ limitations under the License.
 
 #include "CustomOperators.h"
 
-#include <unistd.h>
-
-#include <iostream>
-
-// dynamic loading for custom operators
-#ifndef _WIN32
-#include <dlfcn.h>
-
-tflmc::custom_operator_handle tflmc::LoadCustom(
-    tflite::AllOpsResolver *resolver) {
-  const char *filename = "./libtflite_micro_custom.so";
-  void *custom_lib = dlopen(filename, RTLD_NOW);
-  if (custom_lib) {
-    TfLiteStatus (*reg_fun)(tflite::AllOpsResolver * res);
-    // see "man dlopen" for an explanation of this nasty construct
-    *(void **)(&reg_fun) = dlsym(custom_lib, "register_custom");
-    char *error = dlerror();
-    if (error) {
-      std::cerr << filename << ": " << error << "\n";
-    } else if (reg_fun) {
-      (*reg_fun)(resolver);
-    }
-  } else if (!access(filename, 0)) {  // only output error if the plugin exists
-    char *error = dlerror();
-    if (error) {
-      std::cerr << filename << ": " << error << "\n";
+namespace tflite{
+  namespace ops {
+    namespace micro {
+      namespace xcore {
+         extern TfLiteRegistration *Register_Conv2D_V2(void);
+      }
     }
   }
-  return custom_lib;
 }
 
-void tflmc::UnloadCustom(tflmc::custom_operator_handle custom_lib) {
-  if (custom_lib) {
-    dlclose(custom_lib);
-  }
+TfLiteStatus tflmc::register_custom(tflite::AllOpsResolver *res) {
+    res->AddCustom( "XC_conv2d_v2",
+                      tflite::ops::micro::xcore::Register_Conv2D_V2());
+    //register_addons(res);
+    //register_addons2(res);
+    return kTfLiteOk;
 }
-
-#else
-// anyone interested in implementing this for Windows (LoadLibrary+GetProcAddr)
-tflmc::custom_operator_handle tflmc::LoadCustom(
-    tflite::AllOpsResolver *resolver) {
-  return nullptr;
-}
-
-void tflmc::UnloadCustom(tflmc::custom_operator_handle) {}
-#endif

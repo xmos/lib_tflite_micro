@@ -1,3 +1,25 @@
+diff --git tensorflow/lite/micro/memory_planner/greedy_memory_planner.h tensorflow/lite/micro/memory_planner/greedy_memory_planner.h
+index 4c39e7c..b389476 100644
+--- tensorflow/lite/micro/memory_planner/greedy_memory_planner.h
++++ tensorflow/lite/micro/memory_planner/greedy_memory_planner.h
+@@ -108,6 +108,8 @@ class GreedyMemoryPlanner : public MicroMemoryPlanner {
+         sizeof(int);                  // buffer_offsets_;
+     return per_buffer_size;
+   }
++  
++  TF_LITE_REMOVE_VIRTUAL_DELETE
+ 
+  private:
+   // Whether a buffer is active in a given time range.
+@@ -158,8 +160,6 @@ class GreedyMemoryPlanner : public MicroMemoryPlanner {
+ 
+   // Whether buffers have been added since the last plan was calculated.
+   bool need_to_calculate_offsets_;
+-
+-  TF_LITE_REMOVE_VIRTUAL_DELETE
+ };
+ 
+ }  // namespace tflite
 diff --git tensorflow/lite/micro/micro_allocator.cc tensorflow/lite/micro/micro_allocator.cc
 index 51a1254..3cc3079 100644
 --- tensorflow/lite/micro/micro_allocator.cc
@@ -39,6 +61,18 @@ index 51a1254..3cc3079 100644
  
    // Make sure we have enough arena size.
    if (memory_planner_->GetMaximumMemorySize() > actual_available_arena_size) {
+diff --git tensorflow/lite/micro/micro_error_reporter.h tensorflow/lite/micro/micro_error_reporter.h
+index ac45224..d156b8a 100644
+--- tensorflow/lite/micro/micro_error_reporter.h
++++ tensorflow/lite/micro/micro_error_reporter.h
+@@ -40,7 +40,6 @@ class MicroErrorReporter : public ErrorReporter {
+   ~MicroErrorReporter() override {}
+   int Report(const char* format, va_list args) override;
+ 
+- private:
+   TF_LITE_REMOVE_VIRTUAL_DELETE
+ };
+ 
 diff --git tensorflow/lite/micro/micro_interpreter.h tensorflow/lite/micro/micro_interpreter.h
 index 6650be8..8dfe808 100644
 --- tensorflow/lite/micro/micro_interpreter.h

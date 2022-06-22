@@ -226,6 +226,9 @@ void tflmc::Compiler::writeSource(std::ostream &out) {
 #include "tensorflow/lite/c/common.h"
 #include "tensorflow/lite/micro/kernels/micro_ops.h"
 
+#include "tensorflow/lite/micro/kernels/conv.h"
+#include "tensorflow/lite/micro/kernels/fully_connected.h"
+
 #if defined __GNUC__
 #define ALIGN(X) __attribute__((aligned(X)))
 #elif defined _MSC_VER
@@ -478,6 +481,17 @@ TfLiteStatus )"
       opName = registrations_[i].custom_name;
       wr << "  registrations[OP_" << opName << "] = *(tflite::ops::micro::Register_"
          << opName << "());\n";
+    } else if (
+              (registrations_[i].code == tflite::BuiltinOperator_ADD) ||
+              (registrations_[i].code == tflite::BuiltinOperator_AVERAGE_POOL_2D) ||
+              (registrations_[i].code == tflite::BuiltinOperator_CONV_2D) ||
+              (registrations_[i].code == tflite::BuiltinOperator_DEPTHWISE_CONV_2D) ||
+              (registrations_[i].code == tflite::BuiltinOperator_FULLY_CONNECTED) ||
+              (registrations_[i].code == tflite::BuiltinOperator_LOGISTIC) ||
+              (registrations_[i].code == tflite::BuiltinOperator_MAX_POOL_2D)) {
+      opName = tflite::EnumNameBuiltinOperator(registrations_[i].code);
+      wr << "  registrations[OP_" << opName << "] = tflite::Register_"
+         << opName << "();\n";
     } else {
       opName = tflite::EnumNameBuiltinOperator(registrations_[i].code);
       wr << "  registrations[OP_" << opName << "] = tflite::ops::micro::Register_"

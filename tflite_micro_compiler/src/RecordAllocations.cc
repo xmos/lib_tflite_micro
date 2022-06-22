@@ -29,7 +29,7 @@ static void* LoggingAllocatePersistentBuffer(struct TfLiteContext *ctx,
 static TfLiteStatus LoggingRequestScratchBufferInArena(TfLiteContext *ctx,
                                                        size_t bytes,
                                                        int *buffer_idx) {
-  assert(false && "Not handling scratch buffers currently");
+  //assert(false && "Not handling scratch buffers currently");
   tflite::MicroInterpreter* con = ((tflite::MicroInterpreter*)ctx->impl_);
   tflite::MicroAllocator &a = con->allocator_;
   //return a.RequestScratchBufferInArena(bytes,

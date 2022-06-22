@@ -95,6 +95,7 @@ typedef struct inference_engine {
   uint32_t debug_log_buffer[MAX_DEBUG_LOG_LENGTH /
                             sizeof(uint32_t)]; ///< buffer for error messages
   uint32_t arena_needed_bytes; ///< Total arena needed in bytes.
+  uint32_t num_threads;
 } inference_engine_t;
 
 #ifdef __cplusplus

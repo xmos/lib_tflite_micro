@@ -7,8 +7,6 @@ It wraps this third-party C++ software up in a library that exposes three interf
 
 #. A C interface for use on embedded systems (``lib_tflite_micro``).
 
-#. A Python interface for use on a host (``xtflm_interpreter``)
-
 #. A command line interface for use on a host (``host_command_line_interface``)
 
 The ``lib_tflite_micro`` library depends on ``lib_nn``.
@@ -21,8 +19,6 @@ It provides the following services:
   kernels that we add to tflite-micro with XCORE specific operators
   
 * lib_tflite_micro/api: .h files for the above
-
-* xtflm_interpreter: a wrapper of the full interpreter for Python, enabling XTFLM to be instantiated from, for example pytest.
 
 * host_cmd_line_interpeter: a command line wrapper for XTFLM, enabling it to be used over the command line.
 
@@ -49,19 +45,6 @@ in the tensor space.
 
 The C interface can be used with the standard XMOS build system, and is
 built from the appropriate application directory
-
-Python interface
-----------------
-
-The Python interface uses the C interface above and makes it accessible
-in Python, enabling a python program to create a XTFLM interpreter and execute
-models on it. The XTFLM intepreter will have XCORE specific operators
-(such as 2D convolutions, loading from flash) that are emulated on the host.
-
-The python interface is built by invoking ``make install`` at top level or
-inside ``xtflm_interpreter``.
-
-The python interface cane be tested by invoking ``make test`` at either level. 
 
 Command line interface
 ----------------------

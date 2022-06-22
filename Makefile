@@ -1,13 +1,7 @@
-# patch the library if flag not present
-.tflite_micro_patched.flag:
-	cd lib_tflite_micro/submodules/tflite-micro && patch -p0 -i ../../../patches/tflite-micro.patch
-	touch .tflite_micro_patched.flag
-
-build: .tflite_micro_patched.flag
-	(cd xinterpreters/xinterpreters/host && make install)
-
-clean:
-	(cd xinterpreters/xinterpreters/host && make clean)
+build:
+	(cd lib_tflite_micro/submodules/tflite-micro && git reset --hard && patch -p0 -i ../../../patches/tflite-micro.patch)
+	mkdir -p tflite_micro_compiler/build
+	(cd tflite_micro_compiler/build && cmake .. -DXBUILD=1 && make -j8)
 
 init:
 	python3 fetch_dependencies.py
@@ -17,9 +11,7 @@ init:
 	pip3 install -r requirements.txt
 
 test:
-	(. .venv/bin/activate && pip3 install ./xinterpreters)
 	(. .venv/bin/activate && cd host_cmd_line_interpreter && make test)
-	(. .venv/bin/activate && cd xinterpreters/xinterpreters/host && make test)
 	@echo ""
 	@echo "All tests PASS"
 	@echo ""

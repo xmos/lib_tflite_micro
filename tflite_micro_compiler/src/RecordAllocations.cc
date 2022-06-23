@@ -12,7 +12,6 @@
 #undef private
 
 #include "RecordAllocations.h"
-//#include "tensorflow/lite/micro/micro_mutable_op_resolver.h"
 #include "tensorflow/lite/micro/all_ops_resolver.h"
 #include "tensorflow/lite/micro/micro_error_reporter.h"
 #include "xcore_ops.h"

@@ -1,4 +1,12 @@
 
+#if defined(__xtflm_conf_h_exists__)
+#include "xtflm_conf.h"
+#else
+#ifndef XTFLM_OPERATORS
+#define XTFLM_OPERATORS 10
+#endif
+#endif
+
 #include "Compiler.h"
 
 #include <memory>
@@ -7,7 +15,6 @@
 #include <vector>
 
 #include "CodeWriter.h"
-#include "CustomOperators.h"
 #include "RecordAllocations.h"
 #include "TypeToString.h"
 
@@ -103,11 +110,12 @@ bool tflmc::Compiler::init(const void *modelData) {
   for (auto outIndex : *subgraph_->outputs()) {
     outputTensorIndices_.push_back(outIndex);
   }
-  TfLiteStatus custom_status = tflmc::register_custom(&resolver_);
-  if (custom_status != kTfLiteOk) {
-    errReporter().Report("Register custom() failed");
-    return false;
+
+  if(XTFLM_OPERATORS != 128) {
+     std::cerr << "XTFLM_OPERATORS must match the magic number in the template parameter for AllOpsResolver!\n";
+     return false;
   }
+  tflite::ops::micro::xcore::RegisterXCOps(&resolver_);
 
   // Build an interpreter to run the model with.
   arena_buf_.resize(SUFFICIENT_ARENA_SIZE);

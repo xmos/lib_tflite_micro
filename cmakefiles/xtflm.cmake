@@ -55,6 +55,7 @@ list(APPEND ALL_SOURCES  "${TFLIB_SRC_DIR}/xcore_error_reporter.cc")
 list(APPEND ALL_SOURCES  "${TFLIB_SRC_DIR}/xcore_interpreter.cc")
 list(APPEND ALL_SOURCES  "${TFLIB_SRC_DIR}/xcore_load_from_flash.cc")
 list(APPEND ALL_SOURCES  "${TFLIB_SRC_DIR}/xcore_profiler.cc")
+list(APPEND ALL_SOURCES  "${TFLIB_SRC_DIR}/xcore_ops.cc")
 list(APPEND ALL_SOURCES  "${TFLIB_SRC_DIR}/xcore_utils.cc")
 
 list(APPEND ALL_SOURCES  "${XTFLM_SRC_DIR}/all_ops_resolver.cc")

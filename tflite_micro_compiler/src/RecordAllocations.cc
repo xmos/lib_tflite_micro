@@ -1,12 +1,21 @@
+#if defined(__xtflm_conf_h_exists__)
+#include "xtflm_conf.h"
+#else
+#ifndef XTFLM_OPERATORS
+#define XTFLM_OPERATORS 10
+#endif
+#endif
+
 #include <sstream>
 #define private public
 #include "tensorflow/lite/micro/micro_interpreter.h"
 #undef private
 
-#include "CustomOperators.h"
 #include "RecordAllocations.h"
+//#include "tensorflow/lite/micro/micro_mutable_op_resolver.h"
 #include "tensorflow/lite/micro/all_ops_resolver.h"
 #include "tensorflow/lite/micro/micro_error_reporter.h"
+#include "xcore_ops.h"
 
 static std::vector<tflmc::Allocation> g_loggedAllocations;
 static tflite::MicroAllocator *g_allocator;
@@ -45,7 +54,7 @@ std::vector<tflmc::Allocation> tflmc::RecordAllocations(
 
   tflite::MicroErrorReporter error_reporter;
   tflite::AllOpsResolver resolver;
-  TfLiteStatus custom_status = tflmc::register_custom(&resolver);
+  tflite::ops::micro::xcore::RegisterXCOps(&resolver);
   tflite::MicroInterpreter interpreter(model, resolver, arena_buf.data(),
                                        g_arena_size, &error_reporter);
 

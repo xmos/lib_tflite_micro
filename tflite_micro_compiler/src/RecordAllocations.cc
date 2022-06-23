@@ -3,10 +3,11 @@
 #include "tensorflow/lite/micro/micro_interpreter.h"
 #undef private
 
-#include "CustomOperators.h"
 #include "RecordAllocations.h"
 #include "tensorflow/lite/micro/all_ops_resolver.h"
 #include "tensorflow/lite/micro/micro_error_reporter.h"
+#include "xcore_ops.h"
+#include "xtflm_conf.h"
 
 static std::vector<tflmc::Allocation> g_loggedAllocations;
 static tflite::MicroAllocator *g_allocator;
@@ -29,7 +30,7 @@ static void* LoggingAllocatePersistentBuffer(struct TfLiteContext *ctx,
 static TfLiteStatus LoggingRequestScratchBufferInArena(TfLiteContext *ctx,
                                                        size_t bytes,
                                                        int *buffer_idx) {
-  assert(false && "Not handling scratch buffers currently");
+  //assert(false && "Not handling scratch buffers currently");
   tflite::MicroInterpreter* con = ((tflite::MicroInterpreter*)ctx->impl_);
   tflite::MicroAllocator &a = con->allocator_;
   //return a.RequestScratchBufferInArena(bytes,
@@ -45,7 +46,7 @@ std::vector<tflmc::Allocation> tflmc::RecordAllocations(
 
   tflite::MicroErrorReporter error_reporter;
   tflite::AllOpsResolver resolver;
-  TfLiteStatus custom_status = tflmc::register_custom(&resolver);
+  tflite::ops::micro::xcore::RegisterXCOps(&resolver);
   tflite::MicroInterpreter interpreter(model, resolver, arena_buf.data(),
                                        g_arena_size, &error_reporter);
 

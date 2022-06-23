@@ -2,6 +2,7 @@
 
 #include "MemCpyFn.hpp"
 #include "xcore_custom_options.h"
+#include "xcore_utils.h"
 
 namespace tflite {
 namespace ops {
@@ -67,7 +68,7 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
 
 } // namespace strided_slice
 
-TfLiteRegistration *Register_Strided_Slice() {
+TfLiteRegistration *Register_XC_strided_slice() {
   static TfLiteRegistration r = {strided_slice::Init, nullptr,
                                  strided_slice::Prepare, strided_slice::Eval};
   return &r;

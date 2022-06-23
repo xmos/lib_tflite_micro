@@ -1,12 +1,3 @@
-
-#if defined(__xtflm_conf_h_exists__)
-#include "xtflm_conf.h"
-#else
-#ifndef XTFLM_OPERATORS
-#define XTFLM_OPERATORS 10
-#endif
-#endif
-
 #include "Compiler.h"
 
 #include <memory>
@@ -17,6 +8,7 @@
 #include "CodeWriter.h"
 #include "RecordAllocations.h"
 #include "TypeToString.h"
+#include "xtflm_conf.h"
 
 #ifndef SUFFICIENT_ARENA_SIZE
 #define SUFFICIENT_ARENA_SIZE (128*1024*1024)

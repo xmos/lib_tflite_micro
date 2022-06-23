@@ -1,11 +1,3 @@
-#if defined(__xtflm_conf_h_exists__)
-#include "xtflm_conf.h"
-#else
-#ifndef XTFLM_OPERATORS
-#define XTFLM_OPERATORS 10
-#endif
-#endif
-
 #include <sstream>
 #define private public
 #include "tensorflow/lite/micro/micro_interpreter.h"
@@ -15,6 +7,7 @@
 #include "tensorflow/lite/micro/all_ops_resolver.h"
 #include "tensorflow/lite/micro/micro_error_reporter.h"
 #include "xcore_ops.h"
+#include "xtflm_conf.h"
 
 static std::vector<tflmc::Allocation> g_loggedAllocations;
 static tflite::MicroAllocator *g_allocator;

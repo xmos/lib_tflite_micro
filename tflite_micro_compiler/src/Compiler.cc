@@ -1,4 +1,3 @@
-
 #include "Compiler.h"
 
 #include <memory>
@@ -7,9 +6,9 @@
 #include <vector>
 
 #include "CodeWriter.h"
-#include "CustomOperators.h"
 #include "RecordAllocations.h"
 #include "TypeToString.h"
+#include "xtflm_conf.h"
 
 #ifndef SUFFICIENT_ARENA_SIZE
 #define SUFFICIENT_ARENA_SIZE (128*1024*1024)
@@ -103,11 +102,12 @@ bool tflmc::Compiler::init(const void *modelData) {
   for (auto outIndex : *subgraph_->outputs()) {
     outputTensorIndices_.push_back(outIndex);
   }
-  TfLiteStatus custom_status = tflmc::register_custom(&resolver_);
-  if (custom_status != kTfLiteOk) {
-    errReporter().Report("Register custom() failed");
-    return false;
+
+  if(XTFLM_OPERATORS != 128) {
+     std::cerr << "XTFLM_OPERATORS must match the magic number in the template parameter for AllOpsResolver!\n";
+     return false;
   }
+  tflite::ops::micro::xcore::RegisterXCOps(&resolver_);
 
   // Build an interpreter to run the model with.
   arena_buf_.resize(SUFFICIENT_ARENA_SIZE);
@@ -225,6 +225,9 @@ void tflmc::Compiler::writeSource(std::ostream &out) {
 #include "tensorflow/lite/c/builtin_op_data.h"
 #include "tensorflow/lite/c/common.h"
 #include "tensorflow/lite/micro/kernels/micro_ops.h"
+
+#include "tensorflow/lite/micro/kernels/conv.h"
+#include "tensorflow/lite/micro/kernels/fully_connected.h"
 
 #if defined __GNUC__
 #define ALIGN(X) __attribute__((aligned(X)))
@@ -478,6 +481,17 @@ TfLiteStatus )"
       opName = registrations_[i].custom_name;
       wr << "  registrations[OP_" << opName << "] = *(tflite::ops::micro::Register_"
          << opName << "());\n";
+    } else if (
+              (registrations_[i].code == tflite::BuiltinOperator_ADD) ||
+              (registrations_[i].code == tflite::BuiltinOperator_AVERAGE_POOL_2D) ||
+              (registrations_[i].code == tflite::BuiltinOperator_CONV_2D) ||
+              (registrations_[i].code == tflite::BuiltinOperator_DEPTHWISE_CONV_2D) ||
+              (registrations_[i].code == tflite::BuiltinOperator_FULLY_CONNECTED) ||
+              (registrations_[i].code == tflite::BuiltinOperator_LOGISTIC) ||
+              (registrations_[i].code == tflite::BuiltinOperator_MAX_POOL_2D)) {
+      opName = tflite::EnumNameBuiltinOperator(registrations_[i].code);
+      wr << "  registrations[OP_" << opName << "] = tflite::Register_"
+         << opName << "();\n";
     } else {
       opName = tflite::EnumNameBuiltinOperator(registrations_[i].code);
       wr << "  registrations[OP_" << opName << "] = tflite::ops::micro::Register_"

@@ -80,7 +80,7 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
 
 } // namespace flash
 
-TfLiteRegistration *Register_LoadFromFlash() {
+TfLiteRegistration *Register_XC_ld_flash() {
   static TfLiteRegistration r = {flash::Init, nullptr, flash::Prepare,
                                  flash::Eval};
   return &r;

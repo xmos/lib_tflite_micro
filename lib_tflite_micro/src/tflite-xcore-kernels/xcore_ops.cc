@@ -1,5 +1,13 @@
 #include "xcore_ops.h"
 
+#if defined(__xtflm_conf_h_exists__)
+#include "xtflm_conf.h"
+#else
+#ifndef XTFLM_OPERATORS
+#define XTFLM_OPERATORS 10
+#endif
+#endif
+
 namespace tflite {
 namespace ops {
 namespace micro {

@@ -38,10 +38,17 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   auto parser = CustomOptionParser(buffer, length);
   op_data->addr = parser.parseNamedCustomOption("addr").AsInt32();
   op_data->size = parser.parseNamedCustomOption("size").AsInt32();
+#ifdef NO_INTERPRETER
+  tflite::micro::xcore::xc_context_config_t *xc_config =
+      reinterpret_cast<tflite::micro::xcore::xc_context_config_t *>(
+          context->impl_);
+#else
   tflite::micro::xcore::XCoreInterpreter *xint =
       reinterpret_cast<tflite::micro::xcore::XCoreInterpreter *>(
           context->impl_);
-  op_data->flash_data = xint->flash_data;
+  tflite::micro::xcore::xc_context_config_t *xc_config = &xint->xc_config;
+#endif
+  op_data->flash_data = xc_config->flash_data;
   op_data->name = "XC_Load_Flash";
   return op_data;
 }

@@ -1,14 +1,6 @@
 #ifndef XCORE_OPS_H_
 #define XCORE_OPS_H_
 
-#if defined(__xtflm_conf_h_exists__)
-#include "xtflm_conf.h"
-#else
-#ifndef XTFLM_OPERATORS
-#define XTFLM_OPERATORS 10
-#endif
-#endif
-
 #include "tensorflow/lite/micro/micro_mutable_op_resolver.h"
 
 namespace tflite {

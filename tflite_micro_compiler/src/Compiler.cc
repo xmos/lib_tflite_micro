@@ -171,6 +171,9 @@ bool tflmc::Compiler::init(const void *modelData) {
     regInfo.code = code;
     if (code == tflite::BuiltinOperator_CUSTOM) {
       regInfo.custom_name = reg->custom_name;
+      if(regInfo.custom_name == "TFLite_Detection_PostProcess") {
+        has_tflite_custom_ops = true;
+      }
       has_custom_ops = true;
     }
     auto itOp =
@@ -183,7 +186,7 @@ bool tflmc::Compiler::init(const void *modelData) {
     nodes_.push_back(NodeInfo{*node, itOp - registrations_.begin()});
   }
 
-  auto runtimeAllocations = tflmc::RecordAllocations(model_, SUFFICIENT_ARENA_SIZE);
+  auto runtimeAllocations = tflmc::RecordAllocations(model_, SUFFICIENT_ARENA_SIZE, maxScratchBufferSize_);
   ptrdiff_t minRuntimeOffset = 0;  // These are negative so zero start is fine.
   for (const auto &alloc : runtimeAllocations) {
     minRuntimeOffset = std::min(minRuntimeOffset, alloc.offset);
@@ -225,6 +228,7 @@ void tflmc::Compiler::writeSource(std::ostream &out) {
 #include "tensorflow/lite/c/builtin_op_data.h"
 #include "tensorflow/lite/c/common.h"
 #include "tensorflow/lite/micro/kernels/micro_ops.h"
+#include "../../src/tflite-xcore-kernels/xcore_config.h"
 
 #include "tensorflow/lite/micro/kernels/conv.h"
 #include "tensorflow/lite/micro/kernels/fully_connected.h"
@@ -243,16 +247,30 @@ void tflmc::Compiler::writeSource(std::ostream &out) {
     wr << R"(namespace tflite {
 namespace ops {
 namespace micro {
+namespace xcore {
 )";
     for (size_t i = 0; i < registrations_.size(); i++) {
-      if (registrations_[i].code == tflite::BuiltinOperator_CUSTOM) {
+      if (registrations_[i].code == tflite::BuiltinOperator_CUSTOM && registrations_[i].custom_name != "TFLite_Detection_PostProcess") {
         wr << "extern TfLiteRegistration *Register_"
            << registrations_[i].custom_name << "(void);\n";
       }
     }
-    wr << R"(}  // namespace micro
+    wr << R"(} // namespace xcore
+}  // namespace micro
 }  // namespace ops
 }  // namespace tflite
+
+)";
+  }
+  if (has_tflite_custom_ops) {
+    wr << R"(namespace tflite {
+)";
+    for (size_t i = 0; i < registrations_.size(); i++) {
+      if (registrations_[i].code == tflite::BuiltinOperator_CUSTOM && registrations_[i].custom_name == "TFLite_Detection_PostProcess") {
+        wr << "extern TfLiteRegistration *Register_DETECTION_POSTPROCESS(void);\n";
+      }
+    }
+    wr << R"(} // namespace tflite
 
 )";
   }
@@ -261,6 +279,7 @@ namespace micro {
 constexpr int kTensorArenaSize = )"
      << arenaBufferSize_ << R"(;
 uint8_t tensor_arena[kTensorArenaSize] ALIGN(16);
+uint8_t scratch_buffer[)"<< maxScratchBufferSize_ << R"(] ALIGN(16);
 template <int SZ, class T> struct TfArray {
   int sz; T elem[SZ];
 };
@@ -426,12 +445,27 @@ static TfLiteEvalTensor *GetEvalTensor(const struct TfLiteContext *context,
                                        int tensor_idx) {
   return &evalTensors[tensor_idx];
 }
+
+static TfLiteStatus RequestScratchBufferInArena(struct TfLiteContext *context, size_t bytes,
+                                       int *buffer_idx) {
+  return kTfLiteOk;
+}
+static void *GetScratchBuffer(struct TfLiteContext *context,
+                                       int buffer_idx) {
+  return &scratch_buffer[0];
+}
+
+tflite::micro::xcore::xc_context_config_t xc_config;
 } // namespace
 
 TfLiteStatus )"
-     << prefix_ << R"(init() {
+     << prefix_ << R"(init(void *flash_data) {
   ctx.AllocatePersistentBuffer = &AllocatePersistentBuffer;
   ctx.GetEvalTensor = &GetEvalTensor;
+  ctx.RequestScratchBufferInArena = &RequestScratchBufferInArena;
+  ctx.GetScratchBuffer = &GetScratchBuffer;
+  xc_config.flash_data = flash_data;
+  ctx.impl_ = (void*)&xc_config;
   ctx.tensors = tflTensors;
 )";
   wr << "  ctx.tensors_size = " << tensors_.size() << ";\n";
@@ -479,8 +513,12 @@ TfLiteStatus )"
     std::string opName;
     if (registrations_[i].code == tflite::BuiltinOperator_CUSTOM) {
       opName = registrations_[i].custom_name;
-      wr << "  registrations[OP_" << opName << "] = *(tflite::ops::micro::Register_"
+      if (opName == "TFLite_Detection_PostProcess") {
+        wr << "  registrations[OP_" << opName << "] = *(tflite::Register_DETECTION_POSTPROCESS());\n";
+      } else {
+        wr << "  registrations[OP_" << opName << "] = *(tflite::ops::micro::xcore::Register_"
          << opName << "());\n";
+      }
     } else if (
               (registrations_[i].code == tflite::BuiltinOperator_ADD) ||
               (registrations_[i].code == tflite::BuiltinOperator_AVERAGE_POOL_2D) ||
@@ -488,7 +526,9 @@ TfLiteStatus )"
               (registrations_[i].code == tflite::BuiltinOperator_DEPTHWISE_CONV_2D) ||
               (registrations_[i].code == tflite::BuiltinOperator_FULLY_CONNECTED) ||
               (registrations_[i].code == tflite::BuiltinOperator_LOGISTIC) ||
-              (registrations_[i].code == tflite::BuiltinOperator_MAX_POOL_2D)) {
+              (registrations_[i].code == tflite::BuiltinOperator_MAX_POOL_2D) ||
+              (registrations_[i].code == tflite::BuiltinOperator_QUANTIZE) ||
+              (registrations_[i].code == tflite::BuiltinOperator_TRANSPOSE_CONV)) {
       opName = tflite::EnumNameBuiltinOperator(registrations_[i].code);
       wr << "  registrations[OP_" << opName << "] = tflite::Register_"
          << opName << "();\n";
@@ -575,7 +615,7 @@ void tflmc::Compiler::writeHeader(std::ostream &out) {
 #include "tensorflow/lite/c/common.h"
 
 // Sets up the model with init and prepare steps.
-TfLiteStatus %PREFIX%init();
+TfLiteStatus %PREFIX%init(void *flash_data = nullptr);
 // Returns the input tensor with the given index.
 TfLiteTensor *%PREFIX%input(int index);
 // Returns the output tensor with the given index.

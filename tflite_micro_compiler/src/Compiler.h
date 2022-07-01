@@ -85,6 +85,7 @@ class Compiler {
   MemMap memMap_;
 
   size_t arenaBufferSize_ = 0;
+  size_t maxScratchBufferSize_ = 0;
   std::vector<TensorInfo> tensors_;
   std::vector<RegistrationInfo> registrations_;
   std::vector<NodeInfo> nodes_;
@@ -92,6 +93,7 @@ class Compiler {
   std::vector<int32_t> outputTensorIndices_;
 
   bool has_custom_ops = false;
+  bool has_tflite_custom_ops = false;
   bool has_quantization = false;
   Option<TfLiteType> common_tensor_type;
   Option<bool> common_tensor_is_variable;

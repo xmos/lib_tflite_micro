@@ -154,8 +154,8 @@ int inference_engine_load_model(inference_engine *ie, uint32_t model_bytes,
       (uint8_t *)ie->xtflm->interpreter_buffer, ie->xtflm->model, ie->xtflm->resolver,
       kTensorArena, kTensorArenaSize, &ie->xtflm->error_reporter, true,
       &ie->xtflm->xcore_profiler, flash_data);
-  ie->xtflm->interpreter->thread_info.nstackwords = stackWordsPerThread;
-  ie->xtflm->interpreter->thread_info.stacks = (void *)sp;
+  ie->xtflm->interpreter->xc_config.thread_info.nstackwords = stackWordsPerThread;
+  ie->xtflm->interpreter->xc_config.thread_info.stacks = (void *)sp;
 
   // Allocate memory from the kTensorArena for the model's tensors.
   TfLiteStatus allocate_tensors_status =
@@ -215,7 +215,7 @@ int interp_invoke_par_5(inference_engine *ie)
       printf("Thread count (5) does not match model thread count\n");
       return 1;
     }
-    return thread_invoke_5(ie, &ie->xtflm->interpreter->thread_info);
+    return thread_invoke_5(ie, &ie->xtflm->interpreter->xc_config.thread_info);
 }
 
 int interp_invoke_par_4(inference_engine *ie)
@@ -227,7 +227,7 @@ int interp_invoke_par_4(inference_engine *ie)
                          "Thread count (4) doesn't match model (%d)", ie->num_threads);
       return 5;
     }
-    return thread_invoke_4(ie, &ie->xtflm->interpreter->thread_info);
+    return thread_invoke_4(ie, &ie->xtflm->interpreter->xc_config.thread_info);
 }
 
 int interp_invoke_par_3(inference_engine *ie)
@@ -239,7 +239,7 @@ int interp_invoke_par_3(inference_engine *ie)
                          "Thread count (3) doesn't match model (%d)", ie->num_threads);
       return 5;
     }
-    return thread_invoke_3(ie, &ie->xtflm->interpreter->thread_info);
+    return thread_invoke_3(ie, &ie->xtflm->interpreter->xc_config.thread_info);
 }
 
 int interp_invoke_par_2(inference_engine *ie)
@@ -251,7 +251,7 @@ int interp_invoke_par_2(inference_engine *ie)
                          "Thread count (2) doesn't match model (%d)", ie->num_threads);
       return 5;
     }
-    return thread_invoke_2(ie, &ie->xtflm->interpreter->thread_info);
+    return thread_invoke_2(ie, &ie->xtflm->interpreter->xc_config.thread_info);
 }
 
 int interp_invoke(inference_engine *ie)
@@ -263,7 +263,7 @@ int interp_invoke(inference_engine *ie)
                          "Thread count (1) doesn't match model (%d)", ie->num_threads);
       return 5;
     }
-    return thread_invoke_1(ie, &ie->xtflm->interpreter->thread_info);
+    return thread_invoke_1(ie, &ie->xtflm->interpreter->xc_config.thread_info);
 }
 
 TfLiteStatus interp_invoke_internal(inference_engine *ie)

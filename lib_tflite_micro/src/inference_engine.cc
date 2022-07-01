@@ -1,12 +1,12 @@
 // Copyright (c) 2021, XMOS Ltd, All rights reserved
+#include "lib_tflite_micro/api/inference_engine.h"
+#include "lib_nn/api/version.h"
+#include "lib_tflite_micro/api/version.h"
+#include "lib_tflite_micro/api/xcore_shared_config.h"
+#include "thread_call.h"
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
-#include "lib_tflite_micro/api/inference_engine.h"
-#include "lib_tflite_micro/api/xcore_shared_config.h"
-#include "lib_tflite_micro/api/version.h"
-#include "lib_nn/api/version.h"
-#include "thread_call.h"
 
 #if !defined(XTFLM_DISABLED)
 
@@ -61,7 +61,8 @@ int inference_engine_load_model(inference_engine *ie, uint32_t model_bytes,
   // Retrieve shared metadata
   for (int i = 0; i < ie->xtflm->model->metadata()->size(); ++i) {
     auto metadata = ie->xtflm->model->metadata()->Get(i);
-    if (strncmp(metadata->name()->c_str(), shared_config::xcoreMetadataName, strlen(shared_config::xcoreMetadataName)) == 0) {
+    if (strncmp(metadata->name()->c_str(), shared_config::xcoreMetadataName,
+                strlen(shared_config::xcoreMetadataName)) == 0) {
       auto buf = metadata->buffer();
       auto *buffer = (*ie->xtflm->model->buffers())[buf];
       auto *array = buffer->data();
@@ -136,8 +137,8 @@ int inference_engine_load_model(inference_engine *ie, uint32_t model_bytes,
     isModelInPrimaryMemory = true;
   }
 
-  int stackWordsPerThread = 256;            // TODO: calculate
-  int nThreads = 5;                         // TODO: get from model
+  int stackWordsPerThread = 256; // TODO: calculate
+  int nThreads = 5;              // TODO: get from model
   int bytesForStack = nThreads * stackWordsPerThread * 4 + 4;
   kTensorArena += bytesForStack;
   kTensorArenaSize -= bytesForStack;
@@ -145,16 +146,17 @@ int inference_engine_load_model(inference_engine *ie, uint32_t model_bytes,
 #ifdef __xcore__
   sp = (uint8_t *)(((int)sp) & ~7);
 #endif
-  
+
   // Need to memset the arena to 0 otherwise assertion in xcore_planning.cc
   memset(kTensorArena, 0, kTensorArenaSize);
 
   // Build an interpreter to run the model with
   ie->xtflm->interpreter = tflite::micro::xcore::XCoreInterpreter::Create(
-      (uint8_t *)ie->xtflm->interpreter_buffer, ie->xtflm->model, ie->xtflm->resolver,
-      kTensorArena, kTensorArenaSize, &ie->xtflm->error_reporter, true,
-      &ie->xtflm->xcore_profiler, flash_data);
-  ie->xtflm->interpreter->xc_config.thread_info.nstackwords = stackWordsPerThread;
+      (uint8_t *)ie->xtflm->interpreter_buffer, ie->xtflm->model,
+      ie->xtflm->resolver, kTensorArena, kTensorArenaSize,
+      &ie->xtflm->error_reporter, true, &ie->xtflm->xcore_profiler, flash_data);
+  ie->xtflm->interpreter->xc_config.thread_info.nstackwords =
+      stackWordsPerThread;
   ie->xtflm->interpreter->xc_config.thread_info.stacks = (void *)sp;
 
   // Allocate memory from the kTensorArena for the model's tensors.
@@ -198,77 +200,73 @@ int inference_engine_load_model(inference_engine *ie, uint32_t model_bytes,
   ie->output_times_size = ie->operators_size;
 
   // We calculate and save the total bytes needed for the arena
-  // If the model is in primary memory, we add model bytes as that would also be in the arena
-  ie->arena_needed_bytes = ie->xtflm->interpreter->arena_used_bytes() + bytesForStack;
-  ie->arena_needed_bytes += 16; // buffers are aligned to 16 bytes so we add this to be safe
-  if(isModelInPrimaryMemory) {
+  // If the model is in primary memory, we add model bytes as that would also be
+  // in the arena
+  ie->arena_needed_bytes =
+      ie->xtflm->interpreter->arena_used_bytes() + bytesForStack;
+  ie->arena_needed_bytes +=
+      16; // buffers are aligned to 16 bytes so we add this to be safe
+  if (isModelInPrimaryMemory) {
     ie->arena_needed_bytes += model_bytes;
   }
 
   return 0;
 }
 
-int interp_invoke_par_5(inference_engine *ie)
-{
-    if(ie->num_threads > 5) 
-    {
-      printf("Thread count (5) does not match model thread count\n");
-      return 1;
-    }
-    return thread_invoke_5(ie, &ie->xtflm->interpreter->xc_config.thread_info);
+int interp_invoke_par_5(inference_engine *ie) {
+  if (ie->num_threads > 5) {
+    printf("Thread count (5) does not match model thread count\n");
+    return 1;
+  }
+  return thread_invoke_5(ie, &ie->xtflm->interpreter->xc_config.thread_info);
 }
 
-int interp_invoke_par_4(inference_engine *ie)
-{
-    if(ie->num_threads > 4) 
-    {
-      printf("Thread count (4) does not match model thread count\n");
-      TF_LITE_REPORT_ERROR(&ie->xtflm->error_reporter,
-                         "Thread count (4) doesn't match model (%d)", ie->num_threads);
-      return 5;
-    }
-    return thread_invoke_4(ie, &ie->xtflm->interpreter->xc_config.thread_info);
+int interp_invoke_par_4(inference_engine *ie) {
+  if (ie->num_threads > 4) {
+    printf("Thread count (4) does not match model thread count\n");
+    TF_LITE_REPORT_ERROR(&ie->xtflm->error_reporter,
+                         "Thread count (4) doesn't match model (%d)",
+                         ie->num_threads);
+    return 5;
+  }
+  return thread_invoke_4(ie, &ie->xtflm->interpreter->xc_config.thread_info);
 }
 
-int interp_invoke_par_3(inference_engine *ie)
-{
-    if(ie->num_threads > 3) 
-    {
-      printf("Thread count (3) does not match model thread count\n");
-      TF_LITE_REPORT_ERROR(&ie->xtflm->error_reporter,
-                         "Thread count (3) doesn't match model (%d)", ie->num_threads);
-      return 5;
-    }
-    return thread_invoke_3(ie, &ie->xtflm->interpreter->xc_config.thread_info);
+int interp_invoke_par_3(inference_engine *ie) {
+  if (ie->num_threads > 3) {
+    printf("Thread count (3) does not match model thread count\n");
+    TF_LITE_REPORT_ERROR(&ie->xtflm->error_reporter,
+                         "Thread count (3) doesn't match model (%d)",
+                         ie->num_threads);
+    return 5;
+  }
+  return thread_invoke_3(ie, &ie->xtflm->interpreter->xc_config.thread_info);
 }
 
-int interp_invoke_par_2(inference_engine *ie)
-{
-    if(ie->num_threads > 2) 
-    {
-      printf("Thread count (2) does not match model thread count\n");
-      TF_LITE_REPORT_ERROR(&ie->xtflm->error_reporter,
-                         "Thread count (2) doesn't match model (%d)", ie->num_threads);
-      return 5;
-    }
-    return thread_invoke_2(ie, &ie->xtflm->interpreter->xc_config.thread_info);
+int interp_invoke_par_2(inference_engine *ie) {
+  if (ie->num_threads > 2) {
+    printf("Thread count (2) does not match model thread count\n");
+    TF_LITE_REPORT_ERROR(&ie->xtflm->error_reporter,
+                         "Thread count (2) doesn't match model (%d)",
+                         ie->num_threads);
+    return 5;
+  }
+  return thread_invoke_2(ie, &ie->xtflm->interpreter->xc_config.thread_info);
 }
 
-int interp_invoke(inference_engine *ie)
-{
-    if(ie->num_threads > 1) 
-    {
-      printf("Thread count (1) does not match model thread count\n");
-      TF_LITE_REPORT_ERROR(&ie->xtflm->error_reporter,
-                         "Thread count (1) doesn't match model (%d)", ie->num_threads);
-      return 5;
-    }
-    return thread_invoke_1(ie, &ie->xtflm->interpreter->xc_config.thread_info);
+int interp_invoke(inference_engine *ie) {
+  if (ie->num_threads > 1) {
+    printf("Thread count (1) does not match model thread count\n");
+    TF_LITE_REPORT_ERROR(&ie->xtflm->error_reporter,
+                         "Thread count (1) doesn't match model (%d)",
+                         ie->num_threads);
+    return 5;
+  }
+  return thread_invoke_1(ie, &ie->xtflm->interpreter->xc_config.thread_info);
 }
 
-TfLiteStatus interp_invoke_internal(inference_engine *ie)
-{
-    return ie->xtflm->interpreter->Invoke();
+TfLiteStatus interp_invoke_internal(inference_engine *ie) {
+  return ie->xtflm->interpreter->Invoke();
 }
 
 void print_profiler_summary(inference_engine *ie) {

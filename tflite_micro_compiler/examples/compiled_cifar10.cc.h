@@ -16,20 +16,14 @@ TfLiteTensor *cifar_output(int index);
 TfLiteStatus cifar_invoke();
 
 // Returns the number of input tensors.
-inline size_t cifar_inputs() {
-  return 1;
-}
+inline size_t cifar_inputs() { return 1; }
 // Returns the number of output tensors.
-inline size_t cifar_outputs() {
-  return 1;
-}
+inline size_t cifar_outputs() { return 1; }
 
 inline void *cifar_input_ptr(int index) {
   return cifar_input(index)->data.data;
 }
-inline size_t cifar_input_size(int index) {
-  return cifar_input(index)->bytes;
-}
+inline size_t cifar_input_size(int index) { return cifar_input(index)->bytes; }
 inline int cifar_input_dims_len(int index) {
   return cifar_input(index)->dims->data[0];
 }

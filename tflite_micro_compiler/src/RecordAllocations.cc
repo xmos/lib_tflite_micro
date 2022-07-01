@@ -15,31 +15,31 @@ static uint8_t *g_arenaPtr = nullptr;
 static ptrdiff_t g_arena_size = 0;
 static size_t g_max_scratch_buffer_size = 0;
 
-static void* LoggingAllocatePersistentBuffer(struct TfLiteContext *ctx,
-                                                    size_t bytes) {
-  tflite::MicroInterpreter* con = ((tflite::MicroInterpreter*)ctx->impl_);
+static void *LoggingAllocatePersistentBuffer(struct TfLiteContext *ctx,
+                                             size_t bytes) {
+  tflite::MicroInterpreter *con = ((tflite::MicroInterpreter *)ctx->impl_);
   tflite::MicroAllocator &a = con->allocator_;
-  void* ptr = a.AllocatePersistentBuffer(bytes);
-  assert(ptr!=nullptr && "Alloc failure");
-  g_loggedAllocations.push_back(
-      {-(g_arenaPtr - (uint8_t *)ptr + g_arena_size), bytes,
-       g_currentNodeIndex});
+  void *ptr = a.AllocatePersistentBuffer(bytes);
+  assert(ptr != nullptr && "Alloc failure");
+  g_loggedAllocations.push_back({-(g_arenaPtr - (uint8_t *)ptr + g_arena_size),
+                                 bytes, g_currentNodeIndex});
   return ptr;
 }
 static TfLiteStatus LoggingRequestScratchBufferInArena(TfLiteContext *ctx,
                                                        size_t bytes,
                                                        int *buffer_idx) {
-  //assert(false && "Not handling scratch buffers currently");
-  tflite::MicroInterpreter* con = ((tflite::MicroInterpreter*)ctx->impl_);
+  // assert(false && "Not handling scratch buffers currently");
+  tflite::MicroInterpreter *con = ((tflite::MicroInterpreter *)ctx->impl_);
   tflite::MicroAllocator &a = con->allocator_;
   g_max_scratch_buffer_size = std::max(g_max_scratch_buffer_size, bytes);
-  //return a.RequestScratchBufferInArena(bytes,
-  //                                                 buffer_idx);
+  // return a.RequestScratchBufferInArena(bytes,
+  //                                                  buffer_idx);
   return kTfLiteOk;
 }
 
 std::vector<tflmc::Allocation> tflmc::RecordAllocations(
-    const tflite::Model *model, ptrdiff_t arena_size, size_t &max_scratch_buffer_size) {
+    const tflite::Model *model, ptrdiff_t arena_size,
+    size_t &max_scratch_buffer_size) {
   g_arena_size = arena_size;
   std::vector<uint8_t> arena_buf(g_arena_size);
   g_arenaPtr = arena_buf.data();
@@ -55,7 +55,7 @@ std::vector<tflmc::Allocation> tflmc::RecordAllocations(
   auto graph = &interpreter.graph_;
 
   tflite::SubgraphAllocations *subgraphAllocations;
-  tflite::ScratchBufferHandle* scratchhandle=nullptr;
+  tflite::ScratchBufferHandle *scratchhandle = nullptr;
 
   subgraphAllocations = allocator->StartModelAllocation(model);
 
@@ -71,8 +71,7 @@ std::vector<tflmc::Allocation> tflmc::RecordAllocations(
 
   // Both AllocatePersistentBuffer and RequestScratchBufferInArena is
   // available in Prepare stage.
-  ctx->RequestScratchBufferInArena =
-      &LoggingRequestScratchBufferInArena;
+  ctx->RequestScratchBufferInArena = &LoggingRequestScratchBufferInArena;
 
   graph->PrepareSubgraphs();
 
@@ -84,7 +83,8 @@ std::vector<tflmc::Allocation> tflmc::RecordAllocations(
   return g_loggedAllocations;
 }
 
-TfLiteEvalTensor *tflmc::GetEvalTensor(tflite::MicroInterpreter *interpreter, int i) {
+TfLiteEvalTensor *tflmc::GetEvalTensor(tflite::MicroInterpreter *interpreter,
+                                       int i) {
   auto ctx = &interpreter->context_;
   return ctx->GetEvalTensor(ctx, i);
 }

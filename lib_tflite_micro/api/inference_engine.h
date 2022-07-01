@@ -39,7 +39,9 @@
 struct tflite_micro_objects {
   tflite::micro::xcore::XCoreErrorReporter error_reporter;
   tflite::micro::xcore::XCoreProfiler xcore_profiler;
-  uint64_t interpreter_buffer[(sizeof(tflite::micro::xcore::XCoreInterpreter) + sizeof(uint64_t)-1)/sizeof(uint64_t)]; // This needs to be aligned on a double word boundary
+  uint64_t interpreter_buffer
+      [(sizeof(tflite::micro::xcore::XCoreInterpreter) + sizeof(uint64_t) - 1) /
+       sizeof(uint64_t)]; // This needs to be aligned on a double word boundary
   tflite::MicroMutableOpResolver<XTFLM_OPERATORS> resolver;
 
   tflite::micro::xcore::XCoreInterpreter *interpreter;
@@ -94,7 +96,7 @@ typedef struct inference_engine {
   uint8_t outputGpioMode;
   uint32_t debug_log_buffer[MAX_DEBUG_LOG_LENGTH /
                             sizeof(uint32_t)]; ///< buffer for error messages
-  uint32_t arena_needed_bytes; ///< Total arena needed in bytes.
+  uint32_t arena_needed_bytes;                 ///< Total arena needed in bytes.
   uint32_t num_threads;
 } inference_engine_t;
 
@@ -184,24 +186,24 @@ int inference_engine_load_model(inference_engine_t *UNSAFE ie,
                                 uint32_t *UNSAFE model_data, void *flash_data);
 #endif
 
-/** Function that invokes the inference engine. This function will create an extra four
- * threads enabling a model to run in 5 threads.
- * 
- * \param ie           pointer to inference engine.
- */
+    /** Function that invokes the inference engine. This function will create an
+     * extra four threads enabling a model to run in 5 threads.
+     *
+     * \param ie           pointer to inference engine.
+     */
     int interp_invoke_par_5(inference_engine_t *ie);
     int interp_invoke_par_4(inference_engine_t *ie);
     int interp_invoke_par_3(inference_engine_t *ie);
     int interp_invoke_par_2(inference_engine_t *ie);
     int interp_invoke(inference_engine_t *ie);
     TfLiteStatus interp_invoke_internal(inference_engine_t *ie);
-    
-/** Function that prints a summary of the time each operator took. This function
- * uses printf - you may want to avoid calling it.
- *  
- * \param ie           pointer to inference engine.
- */
-    void print_profiler_summary(inference_engine_t * UNSAFE ie);
+
+    /** Function that prints a summary of the time each operator took. This
+     * function uses printf - you may want to avoid calling it.
+     *
+     * \param ie           pointer to inference engine.
+     */
+    void print_profiler_summary(inference_engine_t *UNSAFE ie);
 #ifdef __cplusplus
     };
 #endif

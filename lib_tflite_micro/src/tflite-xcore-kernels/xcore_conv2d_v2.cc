@@ -276,9 +276,17 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
       tflite::micro::GetEvalInput(context, node, 1);
   const TfLiteEvalTensor *multipliers_and_biases_tensor =
       tflite::micro::GetEvalInput(context, node, 2);
+
+#ifdef NO_INTERPRETER
+  tflite::micro::xcore::xc_context_config_t *xc_config =
+      reinterpret_cast<tflite::micro::xcore::xc_context_config_t *>(
+          context->impl_);
+#else
   tflite::micro::xcore::XCoreInterpreter *xint =
       reinterpret_cast<tflite::micro::xcore::XCoreInterpreter *>(
           context->impl_);
+  tflite::micro::xcore::xc_context_config_t *xc_config = &xint->xc_config;
+#endif
 
   auto *op_data = reinterpret_cast<Conv2DOpData *>(node->user_data);
   int n_threads = op_data->thread_count;
@@ -355,20 +363,21 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
     ot->setOffsetsMultipliersAndBiases(multipliers_and_biases);
   } break;
   }
+
   // todo - this second for-loop is unpleasant
   for (int t = 0; t < n_threads-1; ++t) {
-    thread_variable_setup(thread_scratch[t], op_data->threads[t].kparams, xint->thread_info.thread_ids.id[t]);
+    thread_variable_setup(thread_scratch[t], op_data->threads[t].kparams, xc_config->thread_info.thread_ids.id[t]);
   }
   // Now set up shared data, shared function pointer, and data for final thread.
   thread_call((void *)&shared_data, thread_scratch[n_threads-1], op_data->threads[n_threads-1].kparams,
-              (thread_function_pointer_t)conv2d_v2_thread_worker, &xint->thread_info);
+             (thread_function_pointer_t)conv2d_v2_thread_worker, &xc_config->thread_info);
 
   return kTfLiteOk;
 }
 
 } // namespace conv_v2
 
-TfLiteRegistration *Register_Conv2D_V2() {
+TfLiteRegistration *Register_XC_conv2d_v2() {
   static TfLiteRegistration r = {conv_v2::Init, nullptr, conv_v2::Prepare,
                                  conv_v2::Eval};
   return &r;

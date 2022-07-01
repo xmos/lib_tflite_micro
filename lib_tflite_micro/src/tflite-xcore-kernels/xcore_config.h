@@ -8,8 +8,8 @@ namespace micro {
 namespace xcore {
 
 struct xc_context_config_t {
-    thread_info_t thread_info;
-    void *flash_data; // channel to flash reader.
+  thread_info_t thread_info;
+  void *flash_data; // channel to flash reader.
 };
 
 } // namespace xcore

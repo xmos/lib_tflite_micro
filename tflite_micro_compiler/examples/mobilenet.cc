@@ -69,19 +69,19 @@ void exit(void) {
 
 void run() {
   TfLiteTensor* model_input = interpreter->input(0);
-  memcpy(model_input->data.uint8, gnu_ppm, 160*160*3);
+  memcpy(model_input->data.uint8, gnu_ppm, 160 * 160 * 3);
 
   TfLiteStatus invoke_status = interpreter->Invoke();
   if (invoke_status != kTfLiteOk) {
     TF_LITE_REPORT_ERROR(error_reporter, "Invoke failed");
   }
   TfLiteTensor* model_output = interpreter->output(0);
-  uint32_t best=0;
-  uint32_t bestval=model_output->data.uint8[0];
-  for (uint32_t i=1;i<1001;++i) {
-    if (model_output->data.uint8[i]>bestval) {
-      bestval= model_output->data.uint8[i];
-      best=i;
+  uint32_t best = 0;
+  uint32_t bestval = model_output->data.uint8[0];
+  for (uint32_t i = 1; i < 1001; ++i) {
+    if (model_output->data.uint8[i] > bestval) {
+      bestval = model_output->data.uint8[i];
+      best = i;
     }
   }
   printf("Best match is %u with %d%%\n", best, (int)(bestval * 100 / 255));

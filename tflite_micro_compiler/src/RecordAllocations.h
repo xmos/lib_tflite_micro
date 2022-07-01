@@ -12,7 +12,7 @@ struct Allocation {
   int nodeIndex;
 };
 
-std::vector<Allocation> RecordAllocations(const tflite::Model *model, ptrdiff_t arena_size);
+std::vector<Allocation> RecordAllocations(const tflite::Model *model, ptrdiff_t arena_size, size_t &max_scratch_buffer_size);
 
 
 TfLiteEvalTensor *GetEvalTensor(tflite::MicroInterpreter *interpreter, int i);

@@ -20,7 +20,7 @@ XCoreInterpreter::XCoreInterpreter(const tflite::Model *model,
                                    XCoreProfiler *profiler, void *flash_data)
     : tflite::MicroInterpreter(model, resolver, allocator, reporter, nullptr,
                                profiler) {
-  this->flash_data = flash_data;
+  this->xc_config.flash_data = flash_data;
   this->model__ = model;
   this->error_reporter__ = reporter;
   this->memory_planner__ = memory_planner;

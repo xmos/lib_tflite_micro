@@ -17,26 +17,20 @@ pipeline {
         VIEW = getViewName(REPO)
     }
     stages {
-            stage('Setup') {
+            stage('Build') {
                 steps {
                     installPipfile(false)
                     withVenv {
                         sh 'git submodule update --depth=1 --init --recursive --jobs 8'
-                        sh 'make init'
+                        sh 'make build'
                         }
                     }
                 }
-            stage("Build") {
-                     steps {
-                         withVenv {
-                             sh 'make build'
-                             }
-                         }
-                     }
             stage("Test") {
                 steps {
                     withVenv {
-                        sh 'make test'
+			sh 'make init'
+			sh 'make test'
                         }
                     }
                 }

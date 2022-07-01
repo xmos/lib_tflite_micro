@@ -105,7 +105,7 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
 
 } // namespace bsign
 
-TfLiteRegistration *Register_BSign_8() {
+TfLiteRegistration *Register_XC_bsign_8() {
   static TfLiteRegistration r = {bsign::Init, nullptr, bsign::Prepare,
                                  bsign::Eval};
   return &r;

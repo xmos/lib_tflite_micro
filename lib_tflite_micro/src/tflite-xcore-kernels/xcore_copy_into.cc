@@ -36,8 +36,8 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   const TfLiteEvalTensor *input = tflite::micro::GetEvalInput(context, node, 0);
   const TfLiteEvalTensor *concatTensor = tflite::micro::GetEvalInput(context, node, 1);
   // Pointers to data in In/Out Tensors
-  void *in_data = (void *)(tflite::micro::GetTensorData<void>(input));
-  void *out_data = (void *)tflite::micro::GetTensorData<void>(concatTensor);
+  char *in_data = (char *)(tflite::micro::GetTensorData<void>(input));
+  char *out_data = (char *)tflite::micro::GetTensorData<void>(concatTensor);
   // Get size of input tensor
   TfLiteIntArray* input_dims = input->dims;
   int32_t input_size = 1;
@@ -50,7 +50,7 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
 
 } // namespace copy_into
 
-TfLiteRegistration *Register_XC_copy_into() {
+TfLiteRegistration *Register_Copy_Into() {
   static TfLiteRegistration r = {copy_into::Init, nullptr,
                                  copy_into::Prepare, copy_into::Eval};
   return &r;

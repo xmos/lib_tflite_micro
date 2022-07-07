@@ -6,8 +6,8 @@
 #include "tensorflow/lite/micro/memory_planner/micro_memory_planner.h"
 #include "tensorflow/lite/micro/micro_allocator.h"
 #include "tensorflow/lite/micro/micro_interpreter.h"
+#include "xcore_config.h"
 #include "xcore_profiler.h"
-#include "../thread_call.h"
 
 namespace tflite {
 namespace micro {
@@ -33,7 +33,6 @@ public:
   void PrintMemoryPlan();
   TfLiteTensor *tensor(size_t tensor_index);
   const char *node_name(int sub_idx, int i);
-  void *flash_data; // channel to flash reader.
 
   TfLiteStatus GetTensorDetails(size_t tensor_index, char *name, int name_len,
                                 int *shape, int *type, float *scale,
@@ -45,9 +44,9 @@ public:
   size_t input_tensor_index(size_t input_index);
   size_t output_tensor_index(size_t output_index);
   const Model *model__;
-  ErrorReporter* error_reporter__;
-  tflite::GreedyMemoryPlanner* memory_planner__;
-  thread_info_t thread_info;
+  ErrorReporter *error_reporter__;
+  tflite::GreedyMemoryPlanner *memory_planner__;
+  xc_context_config_t xc_config;
 };
 
 } // namespace xcore

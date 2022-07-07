@@ -130,6 +130,12 @@ void tflmc::CodeWriter::writeBuiltin(tflite::BuiltinOperator op,
           (TfLiteConcatenationParams const*)data;
       out_ << p->axis << ", " << to_string(p->activation) << " };";
     } break;
+    case tflite::BuiltinOperator_STRIDED_SLICE: {
+      out_ << "TfLiteStridedSliceParams " << name << " = { ";
+      TfLiteStridedSliceParams const* p = (TfLiteStridedSliceParams const*)data;
+      out_ << p->begin_mask << ", " << p->end_mask << ", " << p->ellipsis_mask
+           << ", " << p->new_axis_mask << ", " << p->shrink_axis_mask << " };";
+    } break;
     default: {
       size_t datalen = GetBuiltinDataSize(op, subgraph_);
       uint32_t alignment = datalen >= 4 ? 4 : datalen >= 2 ? 2 : 1;
@@ -224,8 +230,7 @@ static void dump_tensor_contents(std::ostream& out_, const TfLiteTensor& t,
     int outer_dim = t.dims->data[0];
     int middle_dim = t.dims->data[t.dims->size - 2];
     int inner_dim = t.dims->data[t.dims->size - 1];
-    for (int i = 1; i < t.dims->size - 2; ++i)
-      outer_dim *= t.dims->data[i];
+    for (int i = 1; i < t.dims->size - 2; ++i) outer_dim *= t.dims->data[i];
     for (int i = 0; i < outer_dim; ++i) {
       // out_ << "\n  ";
       // uint32_t outer_index = inner_dim * middle_dim;

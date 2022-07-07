@@ -35,6 +35,7 @@ file(GLOB_RECURSE COMPILER_SRCS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cc")
 
 target_compile_definitions(tflite_micro_compiler PUBLIC
     __xtflm_conf_h_exists__
+    NO_INTERPRETER
     NN_USE_REF
     TF_LITE_STATIC_MEMORY
     TF_LITE_DISABLE_X86_NEON

@@ -50,7 +50,7 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
 
 } // namespace copy_into
 
-TfLiteRegistration *Register_Copy_Into() {
+TfLiteRegistration *Register_XC_copy_into() {
   static TfLiteRegistration r = {copy_into::Init, nullptr,
                                  copy_into::Prepare, copy_into::Eval};
   return &r;

@@ -65,8 +65,9 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   // TODO parse data for parallelism
   // in this op we have one job per thread
   int n_threads = 1;
-  op_data->jobs.allocate(context, n_threads).initialize();     // TODO: REMOVE ALL OF THIS
-  op_data->threads.allocate(context, n_threads);               // SHOULD BE NOTHING LEFT.
+  op_data->jobs.allocate(context, n_threads)
+      .initialize();                             // TODO: REMOVE ALL OF THIS
+  op_data->threads.allocate(context, n_threads); // SHOULD BE NOTHING LEFT.
   for (auto &job : op_data->jobs) {
     op_data->threads.append({&op_data->args, &job});
   }
@@ -95,8 +96,8 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
       tflite::micro::GetEvalInput(context, node, 0));
   op_data->args.Y = tflite::micro::GetTensorData<int32_t>(
       tflite::micro::GetEvalOutput(context, node, 0));
- 
-  for (auto &thread : op_data->threads) {                     // TODO: remove - only 1 task!
+
+  for (auto &thread : op_data->threads) { // TODO: remove - only 1 task!
     bsign_8_thread_worker(reinterpret_cast<void *>(&thread));
   }
 
@@ -105,7 +106,7 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
 
 } // namespace bsign
 
-TfLiteRegistration *Register_BSign_8() {
+TfLiteRegistration *Register_XC_bsign_8() {
   static TfLiteRegistration r = {bsign::Init, nullptr, bsign::Prepare,
                                  bsign::Eval};
   return &r;

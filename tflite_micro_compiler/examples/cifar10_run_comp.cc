@@ -14,6 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 #include <iostream>
+
 #include "tensorflow/lite/c/common.h"
 #include "tensorflow/lite/kernels/internal/tensor_ctypes.h"
 
@@ -21,21 +22,20 @@ extern "C" const unsigned char truck[];
 
 extern void cifar_init();
 extern void cifar_invoke();
-extern TfLiteTensor* cifar_input(int index=0);
-extern TfLiteTensor* cifar_output(int index=0);
+extern TfLiteTensor* cifar_input(int index = 0);
+extern TfLiteTensor* cifar_output(int index = 0);
 
 void test_compiled(void) {
-	float *in = cifar_input()->data.f;
-	for (uint32_t i=0;i<32*32*3;++i) in[i]=truck[i]/255.0f;
-	float *out = cifar_output()->data.f;
-	cifar_invoke();
-	for (uint32_t i=0;i<10;++i)
-		std::cerr << out[i] << ", ";
-	std::cerr << std::endl;
+  float* in = cifar_input()->data.f;
+  for (uint32_t i = 0; i < 32 * 32 * 3; ++i) in[i] = truck[i] / 255.0f;
+  float* out = cifar_output()->data.f;
+  cifar_invoke();
+  for (uint32_t i = 0; i < 10; ++i) std::cerr << out[i] << ", ";
+  std::cerr << std::endl;
 }
 
 int main(int argc, char** argv) {
-	cifar_init();
-	test_compiled();
-	return 0;
+  cifar_init();
+  test_compiled();
+  return 0;
 }

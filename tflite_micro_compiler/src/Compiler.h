@@ -8,6 +8,7 @@
 #include "tensorflow/lite/micro/micro_error_reporter.h"
 #include "tensorflow/lite/micro/micro_interpreter.h"
 #include "tensorflow/lite/schema/schema_generated.h"
+#include "xcore_ops.h"
 
 namespace tflmc {
 
@@ -33,9 +34,7 @@ class Compiler {
 
  private:
   struct TensorInfo {
-    TensorInfo(const TfLiteTensor *tensor_ptr) :
-      tensor(tensor_ptr)
-    {}
+    TensorInfo(const TfLiteTensor *tensor_ptr) : tensor(tensor_ptr) {}
     const TfLiteTensor *tensor = nullptr;
   };
   struct RegistrationInfo {
@@ -52,10 +51,8 @@ class Compiler {
   };
   struct NodeInfo {
     NodeInfo() {}
-    NodeInfo(TfLiteNode tfl_node, ptrdiff_t reg_index) :
-      node(tfl_node),
-      regIndex(reg_index)
-    {}
+    NodeInfo(TfLiteNode tfl_node, ptrdiff_t reg_index)
+        : node(tfl_node), regIndex(reg_index) {}
     TfLiteNode node;
     ptrdiff_t regIndex = -1;
   };
@@ -84,6 +81,7 @@ class Compiler {
   MemMap memMap_;
 
   size_t arenaBufferSize_ = 0;
+  size_t maxScratchBufferSize_ = 0;
   std::vector<TensorInfo> tensors_;
   std::vector<RegistrationInfo> registrations_;
   std::vector<NodeInfo> nodes_;
@@ -91,6 +89,7 @@ class Compiler {
   std::vector<int32_t> outputTensorIndices_;
 
   bool has_custom_ops = false;
+  bool has_tflite_custom_ops = false;
   bool has_quantization = false;
   Option<TfLiteType> common_tensor_type;
   Option<bool> common_tensor_is_variable;

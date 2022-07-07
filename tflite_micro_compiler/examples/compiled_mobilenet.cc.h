@@ -16,13 +16,9 @@ TfLiteTensor *mobilenet_output(int index);
 TfLiteStatus mobilenet_invoke();
 
 // Returns the number of input tensors.
-inline size_t mobilenet_inputs() {
-  return 1;
-}
+inline size_t mobilenet_inputs() { return 1; }
 // Returns the number of output tensors.
-inline size_t mobilenet_outputs() {
-  return 1;
-}
+inline size_t mobilenet_outputs() { return 1; }
 
 inline void *mobilenet_input_ptr(int index) {
   return mobilenet_input(index)->data.data;

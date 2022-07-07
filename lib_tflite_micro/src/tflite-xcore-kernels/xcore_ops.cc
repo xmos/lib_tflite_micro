@@ -23,6 +23,8 @@ void RegisterXCOps(MicroOpResolver *res) {
                       tflite::ops::micro::xcore::Register_XC_ld_flash());
   resolver->AddCustom(tflite::ops::micro::xcore::XC_bsign_8_OpCode,
                       tflite::ops::micro::xcore::Register_XC_bsign_8());
+  resolver->AddCustom(tflite::ops::micro::xcore::XC_copy_into_OpCode,
+                      tflite::ops::micro::xcore::Register_XC_copy_into());
 }
 
 } // namespace xcore

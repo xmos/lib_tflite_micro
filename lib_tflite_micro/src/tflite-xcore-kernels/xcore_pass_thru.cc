@@ -2,6 +2,7 @@
 
 #include "MemCpyFn.hpp"
 #include "xcore_custom_options.h"
+#include "xcore_utils.h"
 
 namespace tflite {
 namespace ops {

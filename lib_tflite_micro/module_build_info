@@ -220,7 +220,7 @@ EXCLUDE_FILES += lite/kernels/fully_connected.cc
 EXCLUDE_FILES += lite/kernels/fully_connected_common.cc 
 EXCLUDE_FILES += lite/kernels/floor.cc 
 EXCLUDE_FILES += lite/kernels/svdf.cc 
-EXCLUDE_FILES += lite/kernels/logistic.cc 
+EXCLUDE_FILES += lite/kernels/logistic.cc
 EXCLUDE_FILES += lite/kernels/tanh.cc
 EXCLUDE_FILES += lite/kernels/mul.cc
 EXCLUDE_FILES += lite/kernels/cast_test.cc
@@ -336,7 +336,6 @@ matrix_diag.cc \
 matrix_diag_test.cc \
 matrix_set_diag.cc \
 matrix_set_diag_test.cc \
-maximum_minimum.cc \
 maximum_minimum_test.cc \
 mfcc.cc \
 mfcc_test.cc \

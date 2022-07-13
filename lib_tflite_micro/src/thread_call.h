@@ -70,7 +70,7 @@ void thread_init_1(thread_info_t *ptr);
  *
  * \param   ptr    Pointer to a thread_info block.
  */
-int thread_destroy(thread_info_t *ptr);
+void thread_destroy(thread_info_t *ptr);
 
 /** Function that sets up parameters for one of the client threads
  * This particular one passes three arguments to the thread.

@@ -119,6 +119,14 @@ void tflmc::CodeWriter::writeBuiltin(tflite::BuiltinOperator op,
       TfLiteMulParams const* p = (TfLiteMulParams const*)data;
       out_ << to_string(p->activation) << " };";
     } break;
+    case tflite::BuiltinOperator_PACK: {
+      out_ << "TfLitePackParams " << name << " = { ";
+      TfLitePackParams const* p = (TfLitePackParams const*)data;
+      out_ << p->values_count << ", " << p->axis << " };";
+    } break;
+    case tflite::BuiltinOperator_SHAPE: {
+      out_ << "TfLiteShapeParams " << name << " = { " << " };";
+    } break;
     case tflite::BuiltinOperator_SUB: {
       out_ << "TfLiteSubParams " << name << " = { ";
       TfLiteSubParams const* p = (TfLiteSubParams const*)data;

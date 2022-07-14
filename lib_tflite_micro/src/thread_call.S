@@ -289,6 +289,69 @@ thread_invoke_1:
 .Ltmp_thread_invoke_1:
     .size   thread_invoke_1, .Ltmp_thread_invoke_1-thread_invoke_1
 
+
+    .globl  thread_destroy
+    .type   thread_destroy,@function
+    .cc_top thread_destroy.function,thread_destroy
+    .align 4
+    //    void thread_destroy(inference_engine_t *ie, thread_info *ptr)
+
+thread_destroy:
+    ENTSP_lu6 0
+    ldw r1, r0[4]
+    mjoin res[r1]                 // get rid of the threads
+    freer res[r1]                 // get rid of the syncrhoniser
+    retsp 0
+
+
+    // RETURN_REG_HOLDER
+    .cc_bottom thread_destroy.function
+    .set    thread_destroy.nstackwords,0
+    .globl  thread_destroy.nstackwords
+    .set    thread_destroy.maxcores,1
+    .globl  thread_destroy.maxcores
+    .set    thread_destroy.maxtimers,0
+    .globl  thread_destroy.maxtimers
+    .set    thread_destroy.maxchanends,0
+    .globl  thread_destroy.maxchanends
+.Ltmp_thread_destroy:
+    .size   thread_destroy, .Ltmp_thread_destroy-thread_destroy
+
+
+    .globl  thread_init_1
+    .type   thread_init_1,@function
+    .cc_top thread_init_1.function,thread_init_1
+    .align 4
+    //    void thread_init_1(inference_engine_t *ie, thread_info *ptr)
+
+thread_init_1:
+    ENTSP_lu6 0
+
+    getr r1, XS1_RES_TYPE_SYNC     // start with a synchroniser
+    stw  r1, r0[4]                 // save synchroniser in xcore_interpreter
+
+    ldc      r2, 0                // No other threads - clear
+    stw r2, r0[0]
+    stw r2, r0[1]
+    stw r2, r0[2]
+    stw r2, r0[3]
+
+    retsp 0
+
+
+    // RETURN_REG_HOLDER
+    .cc_bottom thread_init_1.function
+    .set    thread_init_1.nstackwords,0
+    .globl  thread_init_1.nstackwords
+    .set    thread_init_1.maxcores,1
+    .globl  thread_init_1.maxcores
+    .set    thread_init_1.maxtimers,0
+    .globl  thread_init_1.maxtimers
+    .set    thread_init_1.maxchanends,0
+    .globl  thread_init_1.maxchanends
+.Ltmp_thread_init_1:
+    .size   thread_init_1, .Ltmp_thread_init_1-thread_init_1
+
 #undef NSTACKWORDS
 
 

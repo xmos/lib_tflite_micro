@@ -281,9 +281,9 @@ namespace xcore {
 
 constexpr int kTensorArenaSize = )"
      << arenaBufferSize_ << R"(;
-uint8_t tensor_arena[kTensorArenaSize] ALIGN(16);
+uint8_t tensor_arena[kTensorArenaSize] ALIGN(8);
 uint8_t scratch_buffer[)"
-     << maxScratchBufferSize_ << R"(] ALIGN(16);
+     << maxScratchBufferSize_ << R"(] ALIGN(8);
 template <int SZ, class T> struct TfArray {
   int sz; T elem[SZ];
 };
@@ -538,6 +538,7 @@ TfLiteStatus )"
                (registrations_[i].code ==
                 tflite::BuiltinOperator_MAX_POOL_2D) ||
                (registrations_[i].code == tflite::BuiltinOperator_QUANTIZE) ||
+               (registrations_[i].code == tflite::BuiltinOperator_SHAPE) ||
                (registrations_[i].code ==
                 tflite::BuiltinOperator_TRANSPOSE_CONV)) {
       opName = tflite::EnumNameBuiltinOperator(registrations_[i].code);

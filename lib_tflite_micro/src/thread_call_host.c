@@ -47,6 +47,13 @@ int thread_invoke_1(struct inference_engine *ie, thread_info_t*ptr) {
     return interp_invoke_internal(ie);
 }
 
+void thread_init_1(thread_info_t*ptr) {}
+void thread_init_2(thread_info_t*ptr) {}
+void thread_init_3(thread_info_t*ptr) {}
+void thread_init_4(thread_info_t*ptr) {}
+void thread_init_5(thread_info_t*ptr) {}
+void thread_destroy(thread_info_t*ptr) {}
+
 static void * args[4][10];
 static int32_t max_thread_id = -1;
 void thread_variable_setup(void *arg1, void *arg2, uint32_t thread_id) {

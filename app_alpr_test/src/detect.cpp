@@ -2,11 +2,13 @@
 // Generated on: 09.07.2022 11:07:51
 
 #include "../../src/tflite-xcore-kernels/xcore_config.h"
+#include "../../src/thread_call.h"
 #include "tensorflow/lite/c/builtin_op_data.h"
 #include "tensorflow/lite/c/common.h"
 #include "tensorflow/lite/micro/kernels/conv.h"
 #include "tensorflow/lite/micro/kernels/fully_connected.h"
 #include "tensorflow/lite/micro/kernels/micro_ops.h"
+#include <stdio.h>
 
 #if defined __GNUC__
 #define ALIGN(X) __attribute__((aligned(X)))
@@ -1523,12 +1525,19 @@ TfLiteTensor* detect_output(int index) {
   return &ctx.tensors[outTensorIndices[index]];
 }
 
+static int stack[100];
+
 TfLiteStatus detect_invoke() {
+  thread_init_1(&xc_config.thread_info);
+  xc_config.thread_info.nstackwords = 100;
+  xc_config.thread_info.stacks = &stack[98];
   for(size_t i = 0; i < 172; ++i) {
     TfLiteStatus status = registrations[nodeData[i].used_op_index].invoke(&ctx, &tflNodes[i]);
     if (status != kTfLiteOk) {
+      thread_destroy(&xc_config.thread_info);
       return status;
     }
   }
+  thread_destroy(&xc_config.thread_info);
   return kTfLiteOk;
 }

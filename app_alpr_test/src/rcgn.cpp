@@ -7152,12 +7152,19 @@ TfLiteTensor* rcgn_output(int index) {
   return &ctx.tensors[outTensorIndices[index]];
 }
 
+static int stack[100];
+
 TfLiteStatus rcgn_invoke() {
+  thread_init_1(&xc_config.thread_info);
+  xc_config.thread_info.nstackwords = 100;
+  xc_config.thread_info.stacks = &stack[98];
   for(size_t i = 0; i < 50; ++i) {
     TfLiteStatus status = registrations[nodeData[i].used_op_index].invoke(&ctx, &tflNodes[i]);
     if (status != kTfLiteOk) {
+      thread_destroy(&xc_config.thread_info);
       return status;
     }
   }
+  thread_destroy(&xc_config.thread_info);
   return kTfLiteOk;
 }

@@ -11,10 +11,10 @@ APP_SHARED_FLAGS  = -report \
 -DPRINT_PROFILER_SUMMARY \
 -lquadflash \
 -DTF_LITE_STRIP_ERROR_STRINGS \
--DNO_INTERPRETER
+-DNO_INTERPRETER -DTHREAD_INVOKE=detect_invoke
 
 # The USED_MODULES variable lists other module used by the application. 
-USED_MODULES = lib_nn lib_tflite_micro
+USED_MODULES = lib_nn lib_tflite_micro lib_i2c lib_uart lib_mipi
 
 XCC_FLAGS = $(APP_SHARED_FLAGS)
 XCC_CPP_FLAGS = $(APP_SHARED_FLAGS) -std=c++11  

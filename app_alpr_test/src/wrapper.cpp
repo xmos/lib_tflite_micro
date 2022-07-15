@@ -2,9 +2,12 @@
 #include "detect.cpp.h"
 #include "rcgn.cpp.h"
 
-void detect_rcgn_init(unsigned x) {
-    detect_init((void *)x);
+void rcgn_init_2() {
     rcgn_init();
+}
+
+void detect_init_2(unsigned x) {
+    detect_init((void *)x);
 }
 
 int8_t *detect_get_output() {

@@ -48,7 +48,6 @@ int box_calculation(uint32_t outputs[4],
                 max_index = i;
             }
         }
-        printf("Maxval %d maxindex %d\n", maxval, max_index);
          box_idx = max_index / 5;
         float zeropoint = 4;
         float scale = 0.017200695350766182;
@@ -56,7 +55,6 @@ int box_calculation(uint32_t outputs[4],
         gy = (boxes[max_index + 1] + zeropoint) * scale;// [-2.27..2.11]
         gw = (boxes[max_index + 2] + zeropoint) * scale;// [-2.27..2.11]
         gh = (boxes[max_index + 3] + zeropoint) * scale;// [-2.27..2.11]
-        printf("X/Y/W/H: %f %f %f %f\n", gx, gy, gw, gh);
     }
     float wr[4], dense[3];
     int resolution;
@@ -122,7 +120,6 @@ int box_calculation(uint32_t outputs[4],
     int wr_idx = (box_idx - h_idx * stride - w_idx * 12) / 3;
     int dense_idx = box_idx - h_idx * stride - w_idx * 12 - wr_idx * 3;
 
-    printf("h_idx w_idx %d %d res %d\n", h_idx, w_idx, resolution);
     float cx = (0.5 + w_idx) / (float) resolution;
     float cy = (0.5 + h_idx) / (float) resolution + dense[dense_idx];
     float dw = wr[wr_idx];
@@ -138,7 +135,6 @@ int box_calculation(uint32_t outputs[4],
     float ymin = y_center - h * 0.5;
     float xmax = x_center + w * 0.5;
     float ymax = y_center + h * 0.5;
-    printf("xmin/max  %f %f  ymin max %f %f\n", xmin, xmax, ymin, ymax);
 
     outputs[0] = xmin * o_width;
     outputs[1] = xmax * o_width;
@@ -167,7 +163,6 @@ int ocr_calculation(char outputs[17],
                 max_val = classes[i * CLASSES + char_code];
             }
         }
-        printf("%2d: %2d %4d\n", i, char_code, max_val);
         if (char_code == no_character_code || char_code == prev_char) {
             prev_char = char_code;
             continue;

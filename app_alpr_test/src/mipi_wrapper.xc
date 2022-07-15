@@ -160,8 +160,6 @@ void MipiImager(chanend c_line, chanend c_decoupler, chanend ?c_decoupler2 /*cha
                     else if (header == 0x1E) // YUV422
                     {
                         if (grabbing) {
-                            int t0, t1, t2;
-                            asm volatile ("gettime %0" : "=r" (t0));
                             subsample_x(subsample_x_output_buffer[cur_x_line], (uint8_t *)pt,
                                         decoupler_r -> x_coefficients, decoupler_r -> x_strides, required_width);
                             line4 = line3;
@@ -173,7 +171,6 @@ void MipiImager(chanend c_line, chanend c_decoupler, chanend ?c_decoupler2 /*cha
                             if (cur_x_line == 5) {
                                 cur_x_line = 0;
                             }
-                            asm volatile ("gettime %0" : "=r" (t1));
                             while(lineCount == decoupler_r -> y_strides[output_line_cnt]
                                 && output_line_cnt != required_height) {
                                 subsample_y((decoupler_r->full_image, int8_t[])+output_line_cnt*required_width*3,
@@ -185,11 +182,6 @@ void MipiImager(chanend c_line, chanend c_decoupler, chanend ?c_decoupler2 /*cha
                                             &decoupler_r -> y_coefficients[yindex], required_width);
                                 output_line_cnt++;
                                 yindex += 16*5;
-                            }
-                            asm volatile ("gettime %0" : "=r" (t2));
-                            if (output_line_cnt > 0 && output_line_cnt < 5) {
-                                printint(t1 - t0); printchar(' ');
-                                printintln(t2 - t1);
                             }
                             if (output_line_cnt == required_height)
                             {
@@ -243,38 +235,39 @@ void MipiImager(chanend c_line, chanend c_decoupler, chanend ?c_decoupler2 /*cha
 
 
 #pragma unsafe arrays
-void acquire_command_handler(chanend c_debayerer, client interface i2c_master_if i2c, chanend c_acquire)
+void acquire_command_handler_single(chanend c_debayerer, chanend c_acquire, int start_x)
 {
-    int fc = 0;
-    int start_x, end_x, start_y, end_y, required_width, required_height;
-    while(1) {    
-        c_acquire :> start_x;
-        c_acquire :> end_x;
-        c_acquire :> start_y;
-        c_acquire :> end_y;
-        c_acquire :> required_width;
-        c_acquire :> required_height;
-        unsafe 
-        {
-            int t0, t1, t2;
-            asm volatile ("gettime %0" : "=r" (t0));
-            build_y_coefficients_strides(decoupler_r -> y_coefficients, decoupler_r -> y_strides, start_y, end_y, required_height);
-            asm volatile ("gettime %0" : "=r" (t1));
-            build_x_coefficients_strides(decoupler_r -> x_coefficients, decoupler_r -> x_strides, start_x, end_x, required_width);
-            asm volatile ("gettime %0" : "=r" (t2));
-            printint(t1 - t0); printchar('='); printintln(t2-t1);
-            outuchar(c_debayerer, IMAGER_SAMPLE);        // Tell collector to grab image
-            outuint(c_debayerer, start_x);               // Tell collector size
-            outuint(c_debayerer, end_x);                 // Tell collector size
-            outuint(c_debayerer, start_y);               // Tell collector size
-            outuint(c_debayerer, end_y);                 // Tell collector size
-            outuint(c_debayerer, required_width);        // Tell collector size
-            outuint(c_debayerer, required_height);       // Tell collector size
-            inuchar(c_debayerer);                        // Wait for image collector ready
+    int end_x, start_y, end_y, required_width, required_height;
+    c_acquire :> end_x;
+    c_acquire :> start_y;
+    c_acquire :> end_y;
+    c_acquire :> required_width;
+    c_acquire :> required_height;
+    unsafe 
+    {
+        build_y_coefficients_strides(decoupler_r -> y_coefficients, decoupler_r -> y_strides, start_y, end_y, required_height);
+        build_x_coefficients_strides(decoupler_r -> x_coefficients, decoupler_r -> x_strides, start_x, end_x, required_width);
+        outuchar(c_debayerer, IMAGER_SAMPLE);        // Tell collector to grab image
+        outuint(c_debayerer, start_x);               // Tell collector size
+        outuint(c_debayerer, end_x);                 // Tell collector size
+        outuint(c_debayerer, start_y);               // Tell collector size
+        outuint(c_debayerer, end_y);                 // Tell collector size
+        outuint(c_debayerer, required_width);        // Tell collector size
+        outuint(c_debayerer, required_height);       // Tell collector size
+        inuchar(c_debayerer);                        // Wait for image collector ready
         
-            fc++;
-            printint(fc); printchar(' '); printint(frame_time); printchar(' '); printintln(line_time);
-            send_array(c_acquire, (int8_t * unsafe)decoupler_r -> full_image, required_width * required_height * 3);
+        send_array(c_acquire, (int8_t * unsafe)decoupler_r -> full_image, required_width * required_height * 3);
+    }
+}
+
+void acquire_command_handler(chanend c_debayerer, chanend c_acquire[], int n_acquire)
+{
+    int x;
+    while(1) {
+        select {
+            case (int i = 0; i < n_acquire; i++) c_acquire[i] :> x:
+                acquire_command_handler_single(c_debayerer, c_acquire[i], x);
+                break;
         }
     }
 }
@@ -284,7 +277,7 @@ void acquire_command_handler(chanend c_debayerer, client interface i2c_master_if
 #define TEST_DEMUX_EN       (0)
 #define DELAY_MIPI_CLK      (1)
 
-void mipi_main(client interface i2c_master_if i2c, chanend c_acquire)
+void mipi_main(client interface i2c_master_if i2c, chanend c_acquire[], int n_acquire)
 {
     chan c;
     chan c_kill, c_img, c_ctrl;
@@ -330,7 +323,7 @@ void mipi_main(client interface i2c_master_if i2c, chanend c_acquire)
         MipiDecoupler(c, c_kill, c_img);
 
         MipiImager(c_img, c_ctrl, null);
-        acquire_command_handler(c_ctrl, i2c, c_acquire);
+        acquire_command_handler(c_ctrl, c_acquire, n_acquire);
     }
     i2c.shutdown();
 }

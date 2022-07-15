@@ -25,6 +25,6 @@
 
 #include "i2c.h"
 
-void mipi_main(client interface i2c_master_if i2c, chanend c_acquire);
+void mipi_main(client interface i2c_master_if i2c, chanend c_acquire[], int n_acquire);
 
 #endif

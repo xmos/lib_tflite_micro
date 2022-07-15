@@ -17,7 +17,8 @@ int8_t * UNSAFE detect_get_output();
 int8_t * UNSAFE rcgn_get_output();
 int8_t * UNSAFE detect_get_input();
 int8_t * UNSAFE rcgn_get_input();
-void detect_rcgn_init(CHANEND x);
+void detect_init_2(CHANEND x);
+void rcgn_init_2();
 void wrapper_detect_invoke();
 void wrapper_rcgn_invoke();
     

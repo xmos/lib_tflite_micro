@@ -11,7 +11,7 @@ APP_SHARED_FLAGS  = -report \
 -DPRINT_PROFILER_SUMMARY \
 -lquadflash \
 -DTF_LITE_STRIP_ERROR_STRINGS \
--DNO_INTERPRETER -DTHREAD_INVOKE=detect_invoke
+-DNO_INTERPRETER
 
 # The USED_MODULES variable lists other module used by the application. 
 USED_MODULES = lib_nn lib_tflite_micro lib_i2c lib_uart lib_mipi

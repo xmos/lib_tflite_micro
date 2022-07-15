@@ -39,14 +39,12 @@ void send_array(chanend c_acquire, int8_t * unsafe data, int bytes) {
     }
 }
 
-void ai_runner(chanend c_acquire, client interface uart_tx_if uart_tx, chanend c_flash) {
+void detect_runner(chanend c_acquire, chanend c_flash, chanend to_rcgn) {
     uint32_t bbox[4];
-    detect_rcgn_init(c_flash);
+    detect_init_2(c_flash);
     unsafe {
     int8_t * unsafe detect_in = detect_get_input();
     int8_t * unsafe detect_out = detect_get_output();
-    int8_t * unsafe rcgn_in = rcgn_get_input();
-    int8_t * unsafe rcgn_out = rcgn_get_output();
 
     while(1) {
         int status;
@@ -60,26 +58,22 @@ void ai_runner(chanend c_acquire, client interface uart_tx_if uart_tx, chanend c
         c_acquire <: 128;
         c_acquire <: 128;
         read_array(c_acquire, detect_in, 128*128*3);
-        if(0) {printf("P3\n128 128 255\n");
-        for(int i = 0; i < 128*128*3; i++) {
-            printf("%d ", detect_in[i]+128);
-            if ((i&127) == 127) printf("\n");
-            timer tmr;
-            int t0;
-            tmr :> t0; tmr when timerafter(t0+100) :> void;
+        if(0) {
+            printf("P3\n128 128 255\n");
+            for(int i = 0; i < 128*128*3; i++) {
+                printf("%d ", detect_in[i]+128);
+                if ((i&127) == 127) printf("\n");
+                timer tmr;
+                int t0;
+                tmr :> t0; tmr when timerafter(t0+100) :> void;
+            }
+            printf("\n");
         }
-        printf("\n");}
         wrapper_detect_invoke();
         int val = box_calculation(bbox, detect_out, 
                                   WIDTH_ON_SENSOR, HEIGHT_ON_SENSOR);
 
-        for(int i = 0 ; i < 4; i++) {
-            printint(bbox[i]);
-            printchar(' ');
-        }
-        printint(val);
-        printchar('\n');
-        if (1) {        if (val < -100) {
+        if (val < -100) {
             printstr("Value too small\n");
             continue;
         }
@@ -91,7 +85,29 @@ void ai_runner(chanend c_acquire, client interface uart_tx_if uart_tx, chanend c
             printstr("Height too small\n");
             continue;
         }
-        }
+        to_rcgn <: bbox[0];
+        to_rcgn <: bbox[1];
+        to_rcgn <: bbox[2];
+        to_rcgn <: bbox[3];
+        to_rcgn :> int _;
+    }
+    }
+}
+
+void rcgn_runner(chanend c_acquire, client interface uart_tx_if uart_tx, chanend from_detect) {
+    uint32_t bbox[4];
+    rcgn_init_2();
+    unsafe {
+    int8_t * unsafe rcgn_in = rcgn_get_input();
+    int8_t * unsafe rcgn_out = rcgn_get_output();
+
+    while(1) {
+        int status;
+        timer tmr; int t0;
+        from_detect :> bbox[0];
+        from_detect :> bbox[1];
+        from_detect :> bbox[2];
+        from_detect :> bbox[3];
         c_acquire <: ORIGIN_X_INSIDE_SENSOR + bbox[0];
         c_acquire <: ORIGIN_X_INSIDE_SENSOR + bbox[1];
         c_acquire <: ORIGIN_Y_INSIDE_SENSOR + bbox[2];
@@ -99,25 +115,29 @@ void ai_runner(chanend c_acquire, client interface uart_tx_if uart_tx, chanend c
         c_acquire <: 128;
         c_acquire <: 32;
         read_array(c_acquire, rcgn_in, 128*32*3);
-        if (0) {        printf("P3\n128 32 255\n");
-        for(int i = 0; i < 128*32*3; i++) {
-            printf("%d ", rcgn_in[i]+128);
-            if ((i&127) == 127) printf("\n");
-            timer tmr;
-            int t0;
-            tmr :> t0; tmr when timerafter(t0+100) :> void;
+        if (0) {
+            printf("P3\n128 32 255\n");
+            for(int i = 0; i < 128*32*3; i++) {
+                printf("%d ", rcgn_in[i]+128);
+                if ((i&127) == 127) printf("\n");
+                timer tmr;
+                int t0;
+                tmr :> t0; tmr when timerafter(t0+100) :> void;
+            }
+            printf("\n");
         }
-        printf("\n");}
         wrapper_rcgn_invoke();
-        printf("P2\n66 16 255\n");
-        for(int i = 0; i < 66*16; i++) {
-            printf("%d ", rcgn_out[i]+128);
-            if ((i%66) == 65) printf("\n");
-            timer tmr;
-            int t0;
-            tmr :> t0; tmr when timerafter(t0+100) :> void;
+        if (0) {
+            printf("P2\n66 16 255\n");
+            for(int i = 0; i < 66*16; i++) {
+                printf("%d ", rcgn_out[i]+128);
+                if ((i%66) == 65) printf("\n");
+                timer tmr;
+                int t0;
+                tmr :> t0; tmr when timerafter(t0+100) :> void;
+            }
+            printf("\n");
         }
-        printf("\n");
 
         char ocr_outputs[17];
         int len = ocr_calculation(ocr_outputs, rcgn_out);
@@ -130,9 +150,9 @@ void ai_runner(chanend c_acquire, client interface uart_tx_if uart_tx, chanend c
             printchar(ocr_outputs[i]);
         }
         printstr("<<<\n");
-        printstr("Grabbed\n");
         tmr :> t0;
         tmr when timerafter(t0+200000000) :> void;
+        from_detect <: 0;
     }
     }
 }
@@ -210,12 +230,16 @@ int main(void)
     chan c_flash[1];
     interface uart_tx_if i_tx;
     output_gpio_if i_gpio_tx[1];
-    chan c_acquire;
+    chan c_acquire[2];
+    chan c_detect_to_rcgn;
     i2c_master_if i2c[1];
     par 
     {
         on tile[0]: {
-            ai_runner(c_acquire, i_tx, c_flash[0]);
+            detect_runner(c_acquire[0], c_flash[0], c_detect_to_rcgn);
+        }
+        on tile[1]: {
+            rcgn_runner(  c_acquire[1], i_tx,       c_detect_to_rcgn);
         }
         
         on tile[0]: {
@@ -238,7 +262,7 @@ int main(void)
             p_reset_camera @ 0 <: 0;
             p_reset_camera @ 1000 <: ~0;
             p_reset_camera @ 2000 <: 0;
-            mipi_main(i2c[0], c_acquire);
+            mipi_main(i2c[0], c_acquire, 2);
         }
     }
     return 0;

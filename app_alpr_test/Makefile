@@ -14,7 +14,7 @@ APP_SHARED_FLAGS  = -report \
 -DNO_INTERPRETER
 
 # The USED_MODULES variable lists other module used by the application. 
-USED_MODULES = lib_nn lib_tflite_micro
+USED_MODULES = lib_nn lib_tflite_micro lib_i2c lib_uart lib_mipi
 
 XCC_FLAGS = $(APP_SHARED_FLAGS)
 XCC_CPP_FLAGS = $(APP_SHARED_FLAGS) -std=c++11  

@@ -461,6 +461,8 @@ static void *GetScratchBuffer(struct TfLiteContext *context,
 }
 
 tflite::micro::xcore::xc_context_config_t xc_config;
+constexpr int kStackWordsPerThread = 256;
+uint64_t xc_stack[kStackWordsPerThread/2];
 } // namespace
 
 TfLiteStatus )"
@@ -605,13 +607,18 @@ TfLiteTensor* )"
 
 TfLiteStatus )"
       << prefix_ << R"(invoke() {
+  thread_init_1(&xc_config.thread_info);
+  xc_config.thread_info.nstackwords = kStackWordsPerThread;
+  xc_config.thread_info.stacks = &xc_stack[kStackWordsPerThread/2 - 1];
   for(size_t i = 0; i < )"
       << nodes_.size() << R"(; ++i) {
     TfLiteStatus status = registrations[nodeData[i].used_op_index].invoke(&ctx, &tflNodes[i]);
     if (status != kTfLiteOk) {
+      thread_destroy(&xc_config.thread_info);
       return status;
     }
   }
+  thread_destroy(&xc_config.thread_info);
   return kTfLiteOk;
 }
 )";

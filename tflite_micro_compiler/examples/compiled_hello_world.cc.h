@@ -16,20 +16,14 @@ TfLiteTensor *hello_output(int index);
 TfLiteStatus hello_invoke();
 
 // Returns the number of input tensors.
-inline size_t hello_inputs() {
-  return 1;
-}
+inline size_t hello_inputs() { return 1; }
 // Returns the number of output tensors.
-inline size_t hello_outputs() {
-  return 1;
-}
+inline size_t hello_outputs() { return 1; }
 
 inline void *hello_input_ptr(int index) {
   return hello_input(index)->data.data;
 }
-inline size_t hello_input_size(int index) {
-  return hello_input(index)->bytes;
-}
+inline size_t hello_input_size(int index) { return hello_input(index)->bytes; }
 inline int hello_input_dims_len(int index) {
   return hello_input(index)->dims->data[0];
 }

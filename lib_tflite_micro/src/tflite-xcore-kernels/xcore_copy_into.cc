@@ -3,6 +3,7 @@
 #include "MemCpyFn.hpp"
 #include "xcore_custom_options.h"
 #include "xcore_utils.h"
+#include "tensorflow/lite/kernels/kernel_util.h"
 
 namespace tflite {
 namespace ops {
@@ -32,19 +33,28 @@ TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
 
 TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
 
+  // auto *op_data = static_cast<CopyIntoOpData *>(node->user_data);
+  // // Get Input/Output Tensors
+  // const TfLiteEvalTensor *input = tflite::micro::GetEvalInput(context, node, 0);
+  // const TfLiteEvalTensor *concatTensor = tflite::micro::GetEvalInput(context, node, 1);
+  // // Pointers to data in In/Out Tensors
+  // char *in_data = (char *)(tflite::micro::GetTensorData<void>(input));
+  // char *out_data = (char *)tflite::micro::GetTensorData<void>(concatTensor);
+  // // Get size of input tensor
+  // TfLiteIntArray* input_dims = input->dims;
+  // int32_t input_size = 1;
+  // for(int i = 0; i < input_dims->size; i++) input_size*input_dims->data[i];
+  // // Memcpy input to concatTensor plus offset
+  // memcpy((out_data + op_data->offset), in_data, input_size);
+
+  // Get Input Tensors
+  const TfLiteTensor* input = GetInput(context, node, 0);
+  const TfLiteTensor* concatTensor = GetInput(context, node, 1);
+
   auto *op_data = static_cast<CopyIntoOpData *>(node->user_data);
-  // Get Input/Output Tensors
-  const TfLiteEvalTensor *input = tflite::micro::GetEvalInput(context, node, 0);
-  const TfLiteEvalTensor *concatTensor = tflite::micro::GetEvalInput(context, node, 1);
-  // Pointers to data in In/Out Tensors
-  char *in_data = (char *)(tflite::micro::GetTensorData<void>(input));
-  char *out_data = (char *)tflite::micro::GetTensorData<void>(concatTensor);
-  // Get size of input tensor
-  TfLiteIntArray* input_dims = input->dims;
-  int32_t input_size = 1;
-  for(int i = 0; i < input_dims->size; i++) input_size*input_dims->data[i];
+
   // Memcpy input to concatTensor plus offset
-  memcpy((out_data + op_data->offset), in_data, input_size);
+  memcpy(concatTensor->data.raw + op_data->offset, input->data.raw, input->bytes);
 
   return kTfLiteOk;
 }

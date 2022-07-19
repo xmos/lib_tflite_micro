@@ -31,6 +31,7 @@ TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
 TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
 
   auto *op_data = static_cast<LookupOpData *>(node->user_data);
+  
   // Get Input/Output Tensors
   const TfLiteEvalTensor *input = tflite::micro::GetEvalInput(context, node, 0);
   int input_size = 1;
@@ -43,10 +44,11 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   void *table_vals = const_cast<void *>(tflite::micro::GetTensorData<void>(table));
   void *out_data = tflite::micro::GetTensorData<void>(output);
   const int8_t *in_val = tflite::micro::GetTensorData<int8_t>(input);
-  printf("input size: %d\n", input_size);
+  
   for(int i = 0; i < input_size; i++)
   {
-    memcpy((int8_t*)out_data + i, (int8_t*)table_vals + *(in_val + i), 1);
+    if(in_val[i] >= 0) memcpy((int8_t*)out_data + i, (int8_t*)table_vals + *(in_val + i), 1);
+    else memcpy((int8_t*)out_data + i, (int8_t*)table_vals + 256 + *(in_val + i), 1);
   }
   
   return kTfLiteOk;

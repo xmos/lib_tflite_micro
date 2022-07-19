@@ -119,6 +119,14 @@ void tflmc::CodeWriter::writeBuiltin(tflite::BuiltinOperator op,
       TfLiteMulParams const* p = (TfLiteMulParams const*)data;
       out_ << to_string(p->activation) << " };";
     } break;
+    case tflite::BuiltinOperator_PACK: {
+      out_ << "TfLitePackParams " << name << " = { ";
+      TfLitePackParams const* p = (TfLitePackParams const*)data;
+      out_ << p->values_count << ", " << p->axis << " };";
+    } break;
+    case tflite::BuiltinOperator_SHAPE: {
+      out_ << "TfLiteShapeParams " << name << " = { " << " };";
+    } break;
     case tflite::BuiltinOperator_SUB: {
       out_ << "TfLiteSubParams " << name << " = { ";
       TfLiteSubParams const* p = (TfLiteSubParams const*)data;
@@ -133,7 +141,8 @@ void tflmc::CodeWriter::writeBuiltin(tflite::BuiltinOperator op,
     case tflite::BuiltinOperator_STRIDED_SLICE: {
       out_ << "TfLiteStridedSliceParams " << name << " = { ";
       TfLiteStridedSliceParams const* p = (TfLiteStridedSliceParams const*)data;
-      out_ << p->begin_mask << ", " << p->end_mask << ", " << p->ellipsis_mask << ", " << p->new_axis_mask << ", " << p->shrink_axis_mask << " };";
+      out_ << p->begin_mask << ", " << p->end_mask << ", " << p->ellipsis_mask
+           << ", " << p->new_axis_mask << ", " << p->shrink_axis_mask << " };";
     } break;
     default: {
       size_t datalen = GetBuiltinDataSize(op, subgraph_);
@@ -229,8 +238,7 @@ static void dump_tensor_contents(std::ostream& out_, const TfLiteTensor& t,
     int outer_dim = t.dims->data[0];
     int middle_dim = t.dims->data[t.dims->size - 2];
     int inner_dim = t.dims->data[t.dims->size - 1];
-    for (int i = 1; i < t.dims->size - 2; ++i)
-      outer_dim *= t.dims->data[i];
+    for (int i = 1; i < t.dims->size - 2; ++i) outer_dim *= t.dims->data[i];
     for (int i = 0; i < outer_dim; ++i) {
       // out_ << "\n  ";
       // uint32_t outer_index = inner_dim * middle_dim;

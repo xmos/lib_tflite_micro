@@ -16,20 +16,12 @@ TfLiteTensor *lstm_output(int index);
 TfLiteStatus lstm_invoke();
 
 // Returns the number of input tensors.
-inline size_t lstm_inputs() {
-  return 3;
-}
+inline size_t lstm_inputs() { return 3; }
 // Returns the number of output tensors.
-inline size_t lstm_outputs() {
-  return 3;
-}
+inline size_t lstm_outputs() { return 3; }
 
-inline void *lstm_input_ptr(int index) {
-  return lstm_input(index)->data.data;
-}
-inline size_t lstm_input_size(int index) {
-  return lstm_input(index)->bytes;
-}
+inline void *lstm_input_ptr(int index) { return lstm_input(index)->data.data; }
+inline size_t lstm_input_size(int index) { return lstm_input(index)->bytes; }
 inline int lstm_input_dims_len(int index) {
   return lstm_input(index)->dims->data[0];
 }
@@ -40,9 +32,7 @@ inline int *lstm_input_dims(int index) {
 inline void *lstm_output_ptr(int index) {
   return lstm_output(index)->data.data;
 }
-inline size_t lstm_output_size(int index) {
-  return lstm_output(index)->bytes;
-}
+inline size_t lstm_output_size(int index) { return lstm_output(index)->bytes; }
 inline int lstm_output_dims_len(int index) {
   return lstm_output(index)->dims->data[0];
 }

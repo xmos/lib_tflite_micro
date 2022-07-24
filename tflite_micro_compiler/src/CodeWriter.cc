@@ -114,6 +114,11 @@ void tflmc::CodeWriter::writeBuiltin(tflite::BuiltinOperator op,
       TfLiteAddParams const* p = (TfLiteAddParams const*)data;
       out_ << to_string(p->activation) << " };";
     } break;
+    case tflite::BuiltinOperator_MEAN: {
+      out_ << "TfLiteReducerParams " << name << " = { ";
+      TfLiteReducerParams const* p = (TfLiteReducerParams const*)data;
+      out_ << p->keep_dims << " };";
+    } break;
     case tflite::BuiltinOperator_MUL: {
       out_ << "TfLiteMulParams " << name << " = { ";
       TfLiteMulParams const* p = (TfLiteMulParams const*)data;
@@ -143,6 +148,11 @@ void tflmc::CodeWriter::writeBuiltin(tflite::BuiltinOperator op,
       TfLiteStridedSliceParams const* p = (TfLiteStridedSliceParams const*)data;
       out_ << p->begin_mask << ", " << p->end_mask << ", " << p->ellipsis_mask
            << ", " << p->new_axis_mask << ", " << p->shrink_axis_mask << " };";
+    } break;
+    case tflite::BuiltinOperator_TRANSPOSE_CONV: {
+      out_ << "TfLiteTransposeConvParams " << name << " = { ";
+      TfLiteTransposeConvParams const* p = (TfLiteTransposeConvParams const*)data;
+      out_ << to_string(p->padding) << ", " << p->stride_width << ", " << p->stride_height << " };";
     } break;
     default: {
       size_t datalen = GetBuiltinDataSize(op, subgraph_);

@@ -106,14 +106,12 @@ int inference_engine_load_model(inference_engine *ie, uint32_t model_bytes,
         return 1;
       }
 
-      // xformer version is saved for debugging purposes
+      // NOTE: xformer version is saved for debugging purposes
       // If lib_nn and lib_tflite_micro versions are as expected,
       // then the xformer version doesn't matter as the model should execute
-      printf("Model provided has been built with xformer version %d.%d.%d .",
-             ptr->xformer_major_version, ptr->xformer_minor_version,
-             ptr->xformer_patch_version);
+
+      // Get thread count required from the runtime by the xformer
       ie->num_threads = ptr->required_thread_count;
-      printf("\n\nrequired thread count %d\n\n", ptr->required_thread_count);
     }
   }
 
@@ -138,8 +136,7 @@ int inference_engine_load_model(inference_engine *ie, uint32_t model_bytes,
   }
 
   int stackWordsPerThread = 256; // TODO: calculate
-  int nThreads = 5;              // TODO: get from model
-  int bytesForStack = nThreads * stackWordsPerThread * 4 + 4;
+  int bytesForStack = ie->num_threads * stackWordsPerThread * 4 + 4;
   kTensorArena += bytesForStack;
   kTensorArenaSize -= bytesForStack;
   uint8_t *sp = kTensorArena - 8;

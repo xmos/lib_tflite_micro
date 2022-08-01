@@ -230,6 +230,11 @@ public:
   Dequantizer(int zero_point, float scale)
       : zero_point_(zero_point), scale_(scale) {}
   float operator()(uint8_t x) {
+    printf("uint: %d\n", x);
+    return (static_cast<float>(x) - zero_point_) * scale_;
+  }
+  float operator()(int8_t x) {
+    printf("int: %d\n", x);
     return (static_cast<float>(x) - zero_point_) * scale_;
   }
 
@@ -238,13 +243,14 @@ private:
   float scale_;
 };
 
+template <class T>
 void DequantizeBoxEncodings(const TfLiteEvalTensor *input_box_encodings,
                             int idx, float quant_zero_point, float quant_scale,
                             int length_box_encoding,
                             CenterSizeEncoding *box_centersize) {
-  const uint8_t *boxes =
-      tflite::micro::GetTensorData<uint8_t>(input_box_encodings) +
-      length_box_encoding * idx;
+  const T *boxes = tflite::micro::GetTensorData<T>(input_box_encodings) +
+                   length_box_encoding * idx;
+
   Dequantizer dequantize(quant_zero_point, quant_scale);
   // See definition of the KeyPointBoxCoder at
   // https://github.com/tensorflow/models/blob/master/research/object_detection/box_coders/keypoint_box_coder.py
@@ -297,12 +303,26 @@ TfLiteStatus DecodeCenterSizeBoxes(TfLiteContext *context, TfLiteNode *node,
     switch (input_box_encodings->type) {
       // Quantized
     case kTfLiteUInt8:
-      DequantizeBoxEncodings(
+      printf("UINT8 case used\n");
+      DequantizeBoxEncodings<uint8_t>(
           input_box_encodings, idx,
           static_cast<float>(op_data->input_box_encodings.zero_point),
           static_cast<float>(op_data->input_box_encodings.scale),
           input_box_encodings->dims->data[2], &box_centersize);
-      DequantizeBoxEncodings(
+      DequantizeBoxEncodings<uint8_t>(
+          input_anchors, idx,
+          static_cast<float>(op_data->input_anchors.zero_point),
+          static_cast<float>(op_data->input_anchors.scale), kNumCoordBox,
+          &anchor);
+      break;
+    case kTfLiteInt8:
+      printf("INT8 case used\n");
+      DequantizeBoxEncodings<int8_t>(
+          input_box_encodings, idx,
+          static_cast<float>(op_data->input_box_encodings.zero_point),
+          static_cast<float>(op_data->input_box_encodings.scale),
+          input_box_encodings->dims->data[2], &box_centersize);
+      DequantizeBoxEncodings<int8_t>(
           input_anchors, idx,
           static_cast<float>(op_data->input_anchors.zero_point),
           static_cast<float>(op_data->input_anchors.scale), kNumCoordBox,
@@ -310,6 +330,7 @@ TfLiteStatus DecodeCenterSizeBoxes(TfLiteContext *context, TfLiteNode *node,
       break;
       // Float
     case kTfLiteFloat32: {
+      printf("FLOAT32 case used\n");
       // Please see DequantizeBoxEncodings function for the support detail.
       const int box_encoding_idx = idx * input_box_encodings->dims->data[2];
       const float *boxes = &(tflite::micro::GetTensorData<float>(
@@ -718,6 +739,7 @@ TfLiteStatus NonMaxSuppressionMultiClassFastHelper(TfLiteContext *context,
   return kTfLiteOk;
 }
 
+template <class T>
 void DequantizeClassPredictions(const TfLiteEvalTensor *input_class_predictions,
                                 const int num_boxes,
                                 const int num_classes_with_background,
@@ -727,8 +749,8 @@ void DequantizeClassPredictions(const TfLiteEvalTensor *input_class_predictions,
   float quant_scale =
       static_cast<float>(op_data->input_class_predictions.scale);
   Dequantizer dequantize(quant_zero_point, quant_scale);
-  const uint8_t *scores_quant =
-      tflite::micro::GetTensorData<uint8_t>(input_class_predictions);
+  const T *scores_quant =
+      tflite::micro::GetTensorData<T>(input_class_predictions);
   for (int idx = 0; idx < num_boxes * num_classes_with_background; ++idx) {
     scores[idx] = dequantize(scores_quant[idx]);
   }
@@ -758,10 +780,21 @@ TfLiteStatus NonMaxSuppressionMultiClass(TfLiteContext *context,
   case kTfLiteUInt8: {
     float *temporary_scores = reinterpret_cast<float *>(
         context->GetScratchBuffer(context, op_data->scores_idx));
-    DequantizeClassPredictions(input_class_predictions, num_boxes,
-                               num_classes_with_background, temporary_scores,
-                               op_data);
+    DequantizeClassPredictions<uint8_t>(input_class_predictions, num_boxes,
+                                        num_classes_with_background,
+                                        temporary_scores, op_data);
     scores = temporary_scores;
+  } break;
+  case kTfLiteInt8: {
+
+    float *temporary_scores = reinterpret_cast<float *>(
+        context->GetScratchBuffer(context, op_data->scores_idx));
+    printf("%f\n", temporary_scores[0]);
+    DequantizeClassPredictions<int8_t>(input_class_predictions, num_boxes,
+                                       num_classes_with_background,
+                                       temporary_scores, op_data);
+    scores = temporary_scores;
+    printf("%d\n", scores[0]);
   } break;
   case kTfLiteFloat32:
     scores = tflite::micro::GetTensorData<float>(input_class_predictions);

@@ -229,8 +229,7 @@ class Dequantizer {
 public:
   Dequantizer(int zero_point, float scale)
       : zero_point_(zero_point), scale_(scale) {}
-  template <class T>
-  float operator()(T x) {
+  template <class T> float operator()(T x) {
     return (static_cast<float>(x) - zero_point_) * scale_;
   }
 
@@ -244,9 +243,8 @@ void DequantizeBoxEncodings(const TfLiteEvalTensor *input_box_encodings,
                             int idx, float quant_zero_point, float quant_scale,
                             int length_box_encoding,
                             CenterSizeEncoding *box_centersize) {
-  const T *boxes =
-      tflite::micro::GetTensorData<T>(input_box_encodings) +
-      length_box_encoding * idx;
+  const T *boxes = tflite::micro::GetTensorData<T>(input_box_encodings) +
+                   length_box_encoding * idx;
   Dequantizer dequantize(quant_zero_point, quant_scale);
   // See definition of the KeyPointBoxCoder at
   // https://github.com/tensorflow/models/blob/master/research/object_detection/box_coders/keypoint_box_coder.py
@@ -774,16 +772,16 @@ TfLiteStatus NonMaxSuppressionMultiClass(TfLiteContext *context,
     float *temporary_scores = reinterpret_cast<float *>(
         context->GetScratchBuffer(context, op_data->scores_idx));
     DequantizeClassPredictions<uint8_t>(input_class_predictions, num_boxes,
-                               num_classes_with_background, temporary_scores,
-                               op_data);
+                                        num_classes_with_background,
+                                        temporary_scores, op_data);
     scores = temporary_scores;
   } break;
   case kTfLiteInt8: {
     float *temporary_scores = reinterpret_cast<float *>(
         context->GetScratchBuffer(context, op_data->scores_idx));
     DequantizeClassPredictions<int8_t>(input_class_predictions, num_boxes,
-                               num_classes_with_background, temporary_scores,
-                               op_data);
+                                       num_classes_with_background,
+                                       temporary_scores, op_data);
     scores = temporary_scores;
   } break;
   case kTfLiteFloat32:

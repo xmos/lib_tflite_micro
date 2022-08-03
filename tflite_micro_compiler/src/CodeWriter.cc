@@ -130,7 +130,8 @@ void tflmc::CodeWriter::writeBuiltin(tflite::BuiltinOperator op,
       out_ << p->values_count << ", " << p->axis << " };";
     } break;
     case tflite::BuiltinOperator_SHAPE: {
-      out_ << "TfLiteShapeParams " << name << " = { " << " };";
+      out_ << "TfLiteShapeParams " << name << " = { "
+           << " };";
     } break;
     case tflite::BuiltinOperator_SUB: {
       out_ << "TfLiteSubParams " << name << " = { ";
@@ -151,8 +152,10 @@ void tflmc::CodeWriter::writeBuiltin(tflite::BuiltinOperator op,
     } break;
     case tflite::BuiltinOperator_TRANSPOSE_CONV: {
       out_ << "TfLiteTransposeConvParams " << name << " = { ";
-      TfLiteTransposeConvParams const* p = (TfLiteTransposeConvParams const*)data;
-      out_ << to_string(p->padding) << ", " << p->stride_width << ", " << p->stride_height << " };";
+      TfLiteTransposeConvParams const* p =
+          (TfLiteTransposeConvParams const*)data;
+      out_ << to_string(p->padding) << ", " << p->stride_width << ", "
+           << p->stride_height << " };";
     } break;
     default: {
       size_t datalen = GetBuiltinDataSize(op, subgraph_);

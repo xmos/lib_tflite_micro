@@ -6,7 +6,9 @@
 #include "MemMap.h"
 #include "tensorflow/lite/micro/all_ops_resolver.h"
 #include "tensorflow/lite/micro/micro_error_reporter.h"
+#define private public
 #include "tensorflow/lite/micro/micro_interpreter.h"
+#undef private
 #include "tensorflow/lite/schema/schema_generated.h"
 #include "xcore_ops.h"
 
@@ -87,6 +89,7 @@ class Compiler {
   std::vector<NodeInfo> nodes_;
   std::vector<int32_t> inputTensorIndices_;
   std::vector<int32_t> outputTensorIndices_;
+  std::vector<int32_t> scratchBufferOffsets;
 
   bool has_custom_ops = false;
   bool has_tflite_custom_ops = false;

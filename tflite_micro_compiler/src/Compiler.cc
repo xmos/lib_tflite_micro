@@ -376,6 +376,7 @@ void tflmc::Compiler::writeSource(std::ostream &out) {
 #include "tensorflow/lite/c/common.h"
 #include "tensorflow/lite/micro/kernels/conv.h"
 #include "tensorflow/lite/micro/kernels/fully_connected.h"
+#include "tensorflow/lite/micro/kernels/softmax.h"
 #include "tensorflow/lite/micro/kernels/micro_ops.h"
 
 #if defined __GNUC__
@@ -698,8 +699,12 @@ TfLiteStatus )"
                (registrations_[i].code == tflite::BuiltinOperator_LOGISTIC) ||
                (registrations_[i].code ==
                 tflite::BuiltinOperator_MAX_POOL_2D) ||
+               (registrations_[i].code == tflite::BuiltinOperator_MUL) ||
+               (registrations_[i].code == tflite::BuiltinOperator_PRELU) ||
                (registrations_[i].code == tflite::BuiltinOperator_QUANTIZE) ||
+               (registrations_[i].code == tflite::BuiltinOperator_RELU) ||
                (registrations_[i].code == tflite::BuiltinOperator_SHAPE) ||
+               (registrations_[i].code == tflite::BuiltinOperator_SOFTMAX) ||
                (registrations_[i].code ==
                 tflite::BuiltinOperator_TRANSPOSE_CONV)) {
       opName = tflite::EnumNameBuiltinOperator(registrations_[i].code);

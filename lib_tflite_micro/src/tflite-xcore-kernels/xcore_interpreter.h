@@ -6,7 +6,6 @@
 #include "tensorflow/lite/micro/memory_planner/micro_memory_planner.h"
 #include "tensorflow/lite/micro/micro_allocator.h"
 #include "tensorflow/lite/micro/micro_interpreter.h"
-#include "xcore_config.h"
 #include "xcore_profiler.h"
 
 namespace tflite {
@@ -21,14 +20,13 @@ public:
                    tflite::ErrorReporter *reporter,
                    tflite::GreedyMemoryPlanner *memory_planner__,
                    bool use_curent_thread = true,
-                   XCoreProfiler *profiler = nullptr,
-                   void *flash_data = nullptr);
+                   XCoreProfiler *profiler = nullptr);
 
   static XCoreInterpreter *
   Create(uint8_t interpreter_buffer[], const tflite::Model *model,
          const tflite::MicroOpResolver &resolver, uint8_t *arena,
          size_t arena_size, tflite::ErrorReporter *reporter,
-         bool use_current_thread, XCoreProfiler *profiler, void *flash_data);
+         bool use_current_thread, XCoreProfiler *profiler);
 
   void PrintMemoryPlan();
   TfLiteTensor *tensor(size_t tensor_index);
@@ -46,7 +44,6 @@ public:
   const Model *model__;
   ErrorReporter *error_reporter__;
   tflite::GreedyMemoryPlanner *memory_planner__;
-  xc_context_config_t xc_config;
 };
 
 } // namespace xcore

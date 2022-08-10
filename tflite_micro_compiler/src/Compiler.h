@@ -14,6 +14,17 @@
 
 namespace tflmc {
 
+struct Allocation {
+  ptrdiff_t offset;
+  size_t len;
+  int nodeIndex;
+};
+
+TfLiteStatus AllocateTensors(
+    std::unique_ptr<tflite::MicroInterpreter> &interpreter);
+TfLiteEvalTensor *GetEvalTensor(tflite::MicroInterpreter *interpreter, int i);
+TfLiteTensor *GetTensor(tflite::MicroInterpreter *interpreter, int i);
+
 bool CompileFile(const std::string &modelFileName,
                  const std::string &outFileName,
                  const std::string &prefix = "model_");
@@ -83,7 +94,6 @@ class Compiler {
   MemMap memMap_;
 
   size_t arenaBufferSize_ = 0;
-  size_t maxScratchBufferSize_ = 0;
   std::vector<TensorInfo> tensors_;
   std::vector<RegistrationInfo> registrations_;
   std::vector<NodeInfo> nodes_;

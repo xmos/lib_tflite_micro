@@ -4,6 +4,7 @@
 #include "tensorflow/lite/kernels/internal/tensor_ctypes.h"
 #include "tensorflow/lite/kernels/kernel_util.h"
 #include "tensorflow/lite/micro/kernels/kernel_util.h"
+#include "xcore_config.h"
 #include "xcore_custom_options.h"
 #include "xcore_interpreter.h"
 #include "xcore_utils.h"
@@ -38,16 +39,10 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   auto parser = CustomOptionParser(buffer, length);
   op_data->addr = parser.parseNamedCustomOption("addr").AsInt32();
   op_data->size = parser.parseNamedCustomOption("size").AsInt32();
-#ifdef NO_INTERPRETER
-  tflite::micro::xcore::xc_context_config_t *xc_config =
-      reinterpret_cast<tflite::micro::xcore::xc_context_config_t *>(
-          context->impl_);
-#else
-  tflite::micro::xcore::XCoreInterpreter *xint =
-      reinterpret_cast<tflite::micro::xcore::XCoreInterpreter *>(
-          context->impl_);
-  tflite::micro::xcore::xc_context_config_t *xc_config = &xint->xc_config;
-#endif
+
+  MicroContext *micro_context = GetMicroContext(context);
+  xc_context_config_t *xc_config = reinterpret_cast<xc_context_config_t *>(
+      micro_context->external_context());
   op_data->flash_data = xc_config->flash_data;
   op_data->name = "XC_Load_Flash";
   return op_data;

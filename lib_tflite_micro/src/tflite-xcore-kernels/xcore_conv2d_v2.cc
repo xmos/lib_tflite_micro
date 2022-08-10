@@ -6,6 +6,7 @@
 #include "tensorflow/lite/kernels/internal/tensor_ctypes.h"
 #include "tensorflow/lite/kernels/kernel_util.h"
 #include "tensorflow/lite/micro/kernels/kernel_util.h"
+#include "xcore_config.h"
 #include "xcore_custom_options.h"
 #include "xcore_interpreter.h"
 #include "xcore_utils.h"
@@ -276,16 +277,9 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   const TfLiteEvalTensor *multipliers_and_biases_tensor =
       tflite::micro::GetEvalInput(context, node, 2);
 
-#ifdef NO_INTERPRETER
-  tflite::micro::xcore::xc_context_config_t *xc_config =
-      reinterpret_cast<tflite::micro::xcore::xc_context_config_t *>(
-          context->impl_);
-#else
-  tflite::micro::xcore::XCoreInterpreter *xint =
-      reinterpret_cast<tflite::micro::xcore::XCoreInterpreter *>(
-          context->impl_);
-  tflite::micro::xcore::xc_context_config_t *xc_config = &xint->xc_config;
-#endif
+  MicroContext *micro_context = GetMicroContext(context);
+  xc_context_config_t *xc_config = reinterpret_cast<xc_context_config_t *>(
+      micro_context->external_context());
 
   auto *op_data = reinterpret_cast<Conv2DOpData *>(node->user_data);
   int n_threads = op_data->thread_count;

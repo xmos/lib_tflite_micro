@@ -53,6 +53,31 @@ INCLUDE_DIRS += submodules/gemmlowp/
 INCLUDE_DIRS += submodules/tflite-micro/third_party/eigen3/
 INCLUDE_DIRS += submodules/ruy/
 
+# files to exclude as we don't want to link with
+# them for compiled models
+#src
+EXCLUDE_FILES += inference_engine.cc
+EXCLUDE_FILES += xcore_interpreter.cc
+#lite/micro
+EXCLUDE_FILES += fake_micro_context.cc
+EXCLUDE_FILES += fake_micro_context_test.cc
+EXCLUDE_FILES += micro_graph.cc
+EXCLUDE_FILES += micro_allocator.cc
+EXCLUDE_FILES += micro_allocation_info_test.cc
+EXCLUDE_FILES += micro_context.cc
+EXCLUDE_FILES += micro_context_test.cc
+EXCLUDE_FILES += micro_interpreter.cc
+EXCLUDE_FILES += memory_helpers_test.cc
+#lite/micro/kernels
+EXCLUDE_FILES += read_variable.cc
+EXCLUDE_FILES += var_handle.cc
+EXCLUDE_FILES += while.cc
+EXCLUDE_FILES += while_test.cc
+EXCLUDE_FILES += broadcast_args_test.cc
+EXCLUDE_FILES += squared_difference_test.cc
+# files to exclude as we don't want to link with
+# them for compiled models
+
 #lite/micro
 EXCLUDE_FILES += micro/memory_arena_threshold_test.cc
 EXCLUDE_FILES += micro/micro_allocator_test.cc

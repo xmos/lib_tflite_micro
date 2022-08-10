@@ -19,7 +19,7 @@ typedef struct { // THIS STRUCT MUST BE IN SYNC WITH ASSEMBLY CODE.
   void *stacks;             // pointer to top of stack - live after load model
 } thread_info_t;
 
-typedef void (*thread_function_pointer_t)();
+typedef void (*thread_function_pointer_t)(void *arg0, void *arg1, void *arg2);
 struct inference_engine;
 
 /** Function that creates threads, then calls a interp_invoke_internal,
@@ -66,7 +66,8 @@ void thread_init_4(thread_info_t *ptr);
 void thread_init_3(thread_info_t *ptr);
 void thread_init_2(thread_info_t *ptr);
 void thread_init_1(thread_info_t *ptr);
-/** Function that destroys threads. Must be called from the same function that called an _init_ above.
+/** Function that destroys threads. Must be called from the same function that
+ * called an _init_ above.
  *
  * \param   ptr    Pointer to a thread_info block.
  */

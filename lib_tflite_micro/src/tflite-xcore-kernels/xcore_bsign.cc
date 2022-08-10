@@ -80,11 +80,15 @@ TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
   TF_LITE_ENSURE_EQ(context, NumOutputs(node), 1);
 
   auto *op_data = reinterpret_cast<BSign8OpData *>(node->user_data);
+  MicroContext *micro_context = GetMicroContext(context);
+  TfLiteTensor *input = micro_context->AllocateTempInputTensor(node, 0);
+  TF_LITE_ENSURE(context, input != nullptr);
 
-  const auto *input = GetInput(context, node, 0);
   const int32_t input_size = input->bytes / sizeof(int8_t);
   bsign_8_prepare(op_data->jobs.begin(), op_data->args.zero_point_vec,
                   input_size, input->params.zero_point, op_data->jobs.size());
+
+  micro_context->DeallocateTempTfLiteTensor(input);
 
   return kTfLiteOk;
 }

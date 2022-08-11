@@ -17,14 +17,13 @@ XCoreInterpreter::XCoreInterpreter(const tflite::Model *model,
                                    const tflite::MicroOpResolver &resolver,
                                    tflite::MicroAllocator *allocator,
                                    tflite::ErrorReporter *reporter,
-                                   tflite::GreedyMemoryPlanner *memory_planner,
                                    bool use_current_thread,
                                    XCoreProfiler *profiler)
     : tflite::MicroInterpreter(model, resolver, allocator, reporter, nullptr,
                                profiler) {
   this->model__ = model;
   this->error_reporter__ = reporter;
-  this->memory_planner__ = memory_planner;
+  this->allocator_ = allocator;
   if (profiler) {
     profiler->Init(allocator, model->subgraphs()->Get(0)->operators()->size());
   }
@@ -35,27 +34,15 @@ XCoreInterpreter *XCoreInterpreter::Create(
     const tflite::MicroOpResolver &resolver, uint8_t *arena, size_t arena_size,
     tflite::ErrorReporter *reporter, bool use_current_thread,
     XCoreProfiler *profiler) {
-  uint8_t *aligned_arena = AlignPointerUp(arena, MicroArenaBufferAlignment());
-  size_t aligned_arena_size = arena + arena_size - aligned_arena;
-  SingleArenaBufferAllocator *memory_allocator =
-      SingleArenaBufferAllocator::Create(reporter, aligned_arena,
-                                         aligned_arena_size);
-
-  uint8_t *memory_planner_buffer = memory_allocator->AllocatePersistentBuffer(
-      sizeof(tflite::GreedyMemoryPlanner),
-      alignof(tflite::GreedyMemoryPlanner));
-  tflite::GreedyMemoryPlanner *memory_planner =
-      new (memory_planner_buffer) tflite::GreedyMemoryPlanner();
-
-  MicroAllocator *ma =
-      MicroAllocator::Create(memory_allocator, memory_planner, reporter);
+  MicroAllocator *memory_allocator =
+      MicroAllocator::Create(arena, arena_size, reporter);
   return new (interpreter_buffer)
-      XCoreInterpreter(model, resolver, ma, reporter, memory_planner,
+      XCoreInterpreter(model, resolver, memory_allocator, reporter,
                        use_current_thread, profiler);
 }
 
 void XCoreInterpreter::PrintMemoryPlan() {
-  memory_planner__->PrintMemoryPlan();
+  allocator_->memory_planner()->PrintMemoryPlan();
 }
 
 TfLiteTensor *XCoreInterpreter::tensor(size_t tensor_index) {

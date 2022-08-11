@@ -2,6 +2,7 @@
 #define TFLMCOMPILER_COMPILER_H
 
 #include <iostream>
+#include <sstream>
 
 #include "MemMap.h"
 #include "tensorflow/lite/micro/all_ops_resolver.h"

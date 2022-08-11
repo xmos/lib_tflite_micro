@@ -185,6 +185,9 @@ list(APPEND ALL_SOURCES  "${TFLM_SRC_DIR}/kernels/if.cc")
 list(APPEND ALL_SOURCES  "${TFLM_SRC_DIR}/kernels/call_once.cc")
 list(APPEND ALL_SOURCES  "${TFLM_SRC_DIR}/kernels/assign_variable.cc")
 
+# link error on Linux
+list(APPEND ALL_SOURCES  "${TOP_DIR}/lib_tflite_micro/submodules/flatbuffers/src/util.cpp")
+
 # Append all sources to ALL_SOURCES
 list(APPEND ALL_SOURCES ${NN_SOURCES})
 list(APPEND ALL_SOURCES ${TFLITE_SOURCES})

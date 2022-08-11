@@ -67,6 +67,19 @@ index e7be654..1428a18 100644
 +#endif  // NO_INTERPRETER
 +
  #endif  // TENSORFLOW_LITE_MICRO_MICRO_CONTEXT_H_
+diff --git tensorflow/lite/micro/micro_error_reporter.h tensorflow/lite/micro/micro_error_reporter.h
+index 0e3b0c3..27388e0 100644
+--- tensorflow/lite/micro/micro_error_reporter.h
++++ tensorflow/lite/micro/micro_error_reporter.h
+@@ -46,8 +46,6 @@ class MicroErrorReporter : public ErrorReporter {
+  public:
+   ~MicroErrorReporter() override {}
+   int Report(const char* format, va_list args) override;
+-
+- private:
+   TF_LITE_REMOVE_VIRTUAL_DELETE
+ };
+ 
 diff --git tensorflow/lite/micro/micro_interpreter.h tensorflow/lite/micro/micro_interpreter.h
 index ae7fc8f..5c2fd6e 100644
 --- tensorflow/lite/micro/micro_interpreter.h

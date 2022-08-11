@@ -2,15 +2,29 @@
 #define TFLMCOMPILER_COMPILER_H
 
 #include <iostream>
+#include <sstream>
 
 #include "MemMap.h"
 #include "tensorflow/lite/micro/all_ops_resolver.h"
 #include "tensorflow/lite/micro/micro_error_reporter.h"
+#define private public
 #include "tensorflow/lite/micro/micro_interpreter.h"
+#undef private
 #include "tensorflow/lite/schema/schema_generated.h"
 #include "xcore_ops.h"
 
 namespace tflmc {
+
+struct Allocation {
+  ptrdiff_t offset;
+  size_t len;
+  int nodeIndex;
+};
+
+TfLiteStatus AllocateTensors(
+    std::unique_ptr<tflite::MicroInterpreter> &interpreter);
+TfLiteEvalTensor *GetEvalTensor(tflite::MicroInterpreter *interpreter, int i);
+TfLiteTensor *GetTensor(tflite::MicroInterpreter *interpreter, int i);
 
 bool CompileFile(const std::string &modelFileName,
                  const std::string &outFileName,
@@ -81,12 +95,12 @@ class Compiler {
   MemMap memMap_;
 
   size_t arenaBufferSize_ = 0;
-  size_t maxScratchBufferSize_ = 0;
   std::vector<TensorInfo> tensors_;
   std::vector<RegistrationInfo> registrations_;
   std::vector<NodeInfo> nodes_;
   std::vector<int32_t> inputTensorIndices_;
   std::vector<int32_t> outputTensorIndices_;
+  std::vector<int32_t> scratchBufferOffsets;
 
   bool has_custom_ops = false;
   bool has_tflite_custom_ops = false;

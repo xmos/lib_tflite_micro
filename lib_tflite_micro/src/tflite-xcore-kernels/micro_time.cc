@@ -13,8 +13,8 @@ extern "C" {
 
 namespace tflite {
 
-int32_t ticks_per_second() { return PLATFORM_REFERENCE_HZ; }
+uint32_t ticks_per_second() { return PLATFORM_REFERENCE_HZ; }
 
-int32_t GetCurrentTimeTicks() { return get_reference_time(); }
+uint32_t GetCurrentTimeTicks() { return get_reference_time(); }
 
 } // namespace tflite

@@ -1,3 +1,16 @@
+diff --git tensorflow/lite/micro/micro_allocator.h tensorflow/lite/micro/micro_allocator.h
+index f9660cf..e57e2fe 100644
+--- tensorflow/lite/micro/micro_allocator.h
++++ tensorflow/lite/micro/micro_allocator.h
+@@ -233,6 +233,8 @@ class MicroAllocator {
+ 
+   BuiltinDataAllocator* GetBuiltinDataAllocator();
+ 
++  MicroMemoryPlanner* memory_planner() { return memory_planner_;}
++
+  protected:
+   MicroAllocator(SingleArenaBufferAllocator* memory_allocator,
+                  MicroMemoryPlanner* memory_planner,
 diff --git tensorflow/lite/micro/micro_context.h tensorflow/lite/micro/micro_context.h
 index e7be654..1428a18 100644
 --- tensorflow/lite/micro/micro_context.h
@@ -5,7 +18,7 @@ index e7be654..1428a18 100644
 @@ -20,6 +20,22 @@ limitations under the License.
  #include "tensorflow/lite/micro/micro_allocator.h"
  #include "tensorflow/lite/micro/micro_graph.h"
-
+ 
 +#ifdef NO_INTERPRETER
 +
 +namespace tflite {

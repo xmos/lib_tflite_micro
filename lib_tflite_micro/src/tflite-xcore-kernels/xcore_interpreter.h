@@ -18,7 +18,6 @@ public:
                    const tflite::MicroOpResolver &resolver,
                    tflite::MicroAllocator *allocator,
                    tflite::ErrorReporter *reporter,
-                   tflite::GreedyMemoryPlanner *memory_planner__,
                    bool use_curent_thread = true,
                    XCoreProfiler *profiler = nullptr);
 
@@ -43,7 +42,7 @@ public:
   size_t output_tensor_index(size_t output_index);
   const Model *model__;
   ErrorReporter *error_reporter__;
-  tflite::GreedyMemoryPlanner *memory_planner__;
+  MicroAllocator *allocator_;
 };
 
 } // namespace xcore

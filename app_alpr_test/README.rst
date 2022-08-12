@@ -23,5 +23,6 @@ Clone the following repos, side by side:
 
 Then::
   
+  make build
   cd lib_tflite_micro/app_alpr_test
   xmake

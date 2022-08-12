@@ -1,6 +1,8 @@
 TARGET = XCORE-AI-EXPLORER-700.xn
 APP_NAME = app_alpr_test
 
+USE_WITH_TFLITE_MICRO_COMPILER=1
+
 APP_SHARED_FLAGS  = -report \
 -Os -fcomment-asm -mcmodel=large -fxscope -Wno-xcore-fptrgroup -save-temps \
 -Wno-unknown-pragmas \

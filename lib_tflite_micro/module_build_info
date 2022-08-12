@@ -53,6 +53,9 @@ INCLUDE_DIRS += submodules/gemmlowp/
 INCLUDE_DIRS += submodules/tflite-micro/third_party/eigen3/
 INCLUDE_DIRS += submodules/ruy/
 
+
+ifeq ($(USE_WITH_TFLITE_MICRO_COMPILER),1)
+
 # files to exclude as we don't want to link with
 # them for compiled models
 #src
@@ -75,8 +78,7 @@ EXCLUDE_FILES += while.cc
 EXCLUDE_FILES += while_test.cc
 EXCLUDE_FILES += broadcast_args_test.cc
 EXCLUDE_FILES += squared_difference_test.cc
-# files to exclude as we don't want to link with
-# them for compiled models
+endif
 
 #lite/micro
 EXCLUDE_FILES += micro/memory_arena_threshold_test.cc

@@ -24,24 +24,24 @@ pipeline {
                         sh 'git submodule update --depth=1 --init --recursive --jobs 8'
                         sh 'make init'
 			sh 'make build'
-                        }
                     }
                 }
+            }
             stage("Test") {
                 steps {
                     withVenv {
 			sh 'make init'
 			sh 'make test'
-                        }
                     }
                 }
-        }
+            }
     }
     post {
         cleanup {
             cleanWs()
         }
     }
+}
         // stage("Checkout repo") {
         //     steps {
         //         dir('lib_tflite_micro') {

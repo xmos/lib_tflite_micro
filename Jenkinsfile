@@ -37,6 +37,11 @@ pipeline {
                 }
         }
     }
+    post {
+        cleanup {
+            cleanWs()
+        }
+    }
         // stage("Checkout repo") {
         //     steps {
         //         dir('lib_tflite_micro') {

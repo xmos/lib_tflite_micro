@@ -144,6 +144,11 @@ void tflmc::CodeWriter::writeBuiltin(tflite::BuiltinOperator op,
           (TfLiteConcatenationParams const*)data;
       out_ << p->axis << ", " << to_string(p->activation) << " };";
     } break;
+    case tflite::BuiltinOperator_RESIZE_NEAREST_NEIGHBOR: {
+      out_ << "TfLiteResizeNearestNeighborParams " << name << " = { ";
+      TfLiteResizeNearestNeighborParams const* p = (TfLiteResizeNearestNeighborParams const*)data;
+      out_ << p->align_corners << ", " << p->half_pixel_centers << " };";
+    } break;
     case tflite::BuiltinOperator_STRIDED_SLICE: {
       out_ << "TfLiteStridedSliceParams " << name << " = { ";
       TfLiteStridedSliceParams const* p = (TfLiteStridedSliceParams const*)data;

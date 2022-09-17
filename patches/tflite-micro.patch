@@ -98,3 +98,27 @@ index ae7fc8f..5c2fd6e 100644
   protected:
    const MicroAllocator& allocator() const { return allocator_; }
    const TfLiteContext& context() const { return context_; }
+diff --git tensorflow/lite/micro/test_helpers.cc tensorflow/lite/micro/test_helpers.cc
+index 2411bbf..806963b 100644
+--- tensorflow/lite/micro/test_helpers.cc
++++ tensorflow/lite/micro/test_helpers.cc
+@@ -444,11 +444,19 @@ const Model* BuildModelWithUnusedOperatorOutputs() {
+           *builder, builder->CreateVector(tensor_shape, tensor_shape_size),
+           TensorType_INT8, 0,
+           builder->CreateString("test_unused_output_tensor"), 0, false)};
++#ifdef _MSC_VER
++  constexpr size_t inputs_size = 1;
++#else
+   constexpr size_t inputs_size = 0;
++#endif
+   const int32_t inputs[inputs_size] = {};
+   constexpr size_t outputs_size = 1;
+   const int32_t outputs[outputs_size] = {0};
++#ifdef _MSC_VER
++  constexpr size_t operator_inputs_size = 1;
++#else
+   constexpr size_t operator_inputs_size = 0;
++#endif
+   const int32_t operator_inputs[operator_inputs_size] = {};
+   constexpr size_t operator_outputs_size = 2;
+   const int32_t operator_outputs[operator_outputs_size] = {0, 1};

@@ -209,20 +209,24 @@ TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
   context->RequestScratchBufferInArena(
       context, op_data->max_detections * num_boxes * sizeof(int8_t),
       &op_data->sorted_values_idx);
-  assert(op_data->max_detections * num_boxes < UINT16_MAX && "Max index must be less than UINT16_MAX!");
+  assert(op_data->max_detections * num_boxes < UINT16_MAX &&
+         "Max index must be less than UINT16_MAX!");
   context->RequestScratchBufferInArena(context, num_boxes * sizeof(int16_t),
                                        &op_data->keep_indices_idx);
   context->RequestScratchBufferInArena(
       context, op_data->max_detections * num_boxes * sizeof(int16_t),
       &op_data->sorted_indices_idx);
   int buffer_size = std::max(num_classes, op_data->max_detections);
-  assert(buffer_size * num_boxes < UINT16_MAX && "Max index must be less than UINT16_MAX!");
+  assert(buffer_size * num_boxes < UINT16_MAX &&
+         "Max index must be less than UINT16_MAX!");
   context->RequestScratchBufferInArena(
       context, buffer_size * num_boxes * sizeof(int16_t), &op_data->buffer_idx);
   buffer_size = std::min(num_boxes, op_data->max_detections);
-  assert(buffer_size * num_boxes < UINT16_MAX && "Max index must be less than UINT16_MAX!");
+  assert(buffer_size * num_boxes < UINT16_MAX &&
+         "Max index must be less than UINT16_MAX!");
   context->RequestScratchBufferInArena(
-      context, buffer_size * num_boxes * sizeof(int16_t), &op_data->selected_idx);
+      context, buffer_size * num_boxes * sizeof(int16_t),
+      &op_data->selected_idx);
 
   // Outputs: detection_boxes, detection_scores, detection_classes,
   // num_detections
@@ -354,7 +358,8 @@ void DecreasingPartialArgSort(const int8_t *values, int num_values,
 
 int SelectDetectionsAboveScoreThreshold(const int8_t *values, int size,
                                         const int8_t threshold,
-                                        int8_t *keep_values, int16_t *keep_indices) {
+                                        int8_t *keep_values,
+                                        int16_t *keep_indices) {
   int counter = 0;
   for (int i = 0; i < size; i++) {
     if (values[i] >= threshold) {
@@ -433,10 +438,11 @@ NonMaxSuppressionSingleClassHelper(TfLiteContext *context, TfLiteNode *node,
 
   // Quantize suppression score for easy comparison
   float quant_zero_point =
-       static_cast<float>(op_data->input_class_predictions.zero_point);
+      static_cast<float>(op_data->input_class_predictions.zero_point);
   float quant_scale =
-       static_cast<float>(op_data->input_class_predictions.scale);
-  int8_t quantized_nms_score_threshold = static_cast<int8_t>((non_max_suppression_score_threshold/quant_scale) + quant_zero_point);
+      static_cast<float>(op_data->input_class_predictions.scale);
+  int8_t quantized_nms_score_threshold = static_cast<int8_t>(
+      (non_max_suppression_score_threshold / quant_scale) + quant_zero_point);
   int num_scores_kept = SelectDetectionsAboveScoreThreshold(
       scores, num_boxes, quantized_nms_score_threshold, keep_scores,
       keep_indices);
@@ -522,8 +528,9 @@ TfLiteStatus NonMaxSuppressionMultiClassRegularHelper(TfLiteContext *context,
   // For each class, perform non-max suppression.
   int8_t *class_scores = reinterpret_cast<int8_t *>(
       context->GetScratchBuffer(context, op_data->score_buffer_idx));
-  int16_t *box_indices_after_regular_non_max_suppression = reinterpret_cast<int16_t *>(
-      context->GetScratchBuffer(context, op_data->buffer_idx));
+  int16_t *box_indices_after_regular_non_max_suppression =
+      reinterpret_cast<int16_t *>(
+          context->GetScratchBuffer(context, op_data->buffer_idx));
   int8_t *scores_after_regular_non_max_suppression =
       reinterpret_cast<int8_t *>(context->GetScratchBuffer(
           context, op_data->scores_after_regular_non_max_suppression_idx));
@@ -595,7 +602,8 @@ TfLiteStatus NonMaxSuppressionMultiClassRegularHelper(TfLiteContext *context,
           box_indices_after_regular_non_max_suppression[output_box_index] -
           anchor_index * num_classes_with_background - label_offset;
 
-      const float selected_score = dequantize(scores_after_regular_non_max_suppression[output_box_index]);
+      const float selected_score = dequantize(
+          scores_after_regular_non_max_suppression[output_box_index]);
       // detection_boxes
       float *decoded_boxes = reinterpret_cast<float *>(
           context->GetScratchBuffer(context, op_data->decoded_boxes_idx));

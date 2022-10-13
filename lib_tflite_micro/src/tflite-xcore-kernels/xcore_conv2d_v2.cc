@@ -180,7 +180,8 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   const uint8_t *ot_fn_data =
       parser.parseNamedCustomOption("otp").AsBlob().data();
   int32_t scratch_size = parser.parseNamedCustomOption("scratch").AsInt32();
-  int32_t channelwise = parser.parseNamedCustomOption("cw").AsInt32();
+  int32_t channelwise = 0;//parser.parseNamedCustomOption("cw").AsInt32();
+  //printf("channelwise: %d\n", channelwise);
   auto ak_params_vec = parser.parseNamedCustomOption("akp").AsVector();
 
   auto thread_count = ak_params_vec.size();

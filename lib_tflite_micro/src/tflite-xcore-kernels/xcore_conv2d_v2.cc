@@ -57,10 +57,7 @@ enum KernelType {
   BNNConv2DValidIndirectInt8_t
 };
 
-enum OT_Type {
-  Group,
-  Channelwise
-}; 
+enum OT_Type { Group, Channelwise };
 
 /**
  * @brief This describes the memory requirements of a worker thread. It also
@@ -198,47 +195,45 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
 
   switch (kt) {
   case Conv2DValidDirect_t: {
-    if(ot_type == Channelwise){
+    if (ot_type == Channelwise) {
       ConstructFilter2Ds<nn::Conv2dValidDirect, nn::DerefInputFn,
-                        nn::MatMulDirectFn, nn::OT_int8_channelwise, nn::Filter2D>(
-          op_data, context, scratch_size, memcpy_fn_data, agg_fn_data, ot_fn_data,
-          ak_params_vec);
-    }
-    else {
+                         nn::MatMulDirectFn, nn::OT_int8_channelwise,
+                         nn::Filter2D>(op_data, context, scratch_size,
+                                       memcpy_fn_data, agg_fn_data, ot_fn_data,
+                                       ak_params_vec);
+    } else {
       ConstructFilter2Ds<nn::Conv2dValidDirect, nn::DerefInputFn,
-                        nn::MatMulDirectFn, nn::OT_int8, nn::Filter2D>(
-          op_data, context, scratch_size, memcpy_fn_data, agg_fn_data, ot_fn_data,
-          ak_params_vec);
+                         nn::MatMulDirectFn, nn::OT_int8, nn::Filter2D>(
+          op_data, context, scratch_size, memcpy_fn_data, agg_fn_data,
+          ot_fn_data, ak_params_vec);
     }
     op_data->name = "XC_Conv2DValidDir";
   } break;
   case Conv2DValidIndirect_t: {
-    if(ot_type == Channelwise) {
+    if (ot_type == Channelwise) {
       ConstructFilter2Ds<nn::Conv2dValidIndirect, nn::ImToColValid,
-                       nn::MatMulInt8, nn::OT_int8_channelwise, nn::Filter2D>(
-        op_data, context, scratch_size, memcpy_fn_data, agg_fn_data, ot_fn_data,
-        ak_params_vec);
-    }
-    else {
+                         nn::MatMulInt8, nn::OT_int8_channelwise, nn::Filter2D>(
+          op_data, context, scratch_size, memcpy_fn_data, agg_fn_data,
+          ot_fn_data, ak_params_vec);
+    } else {
       ConstructFilter2Ds<nn::Conv2dValidIndirect, nn::ImToColValid,
-                       nn::MatMulInt8, nn::OT_int8, nn::Filter2D>(
-        op_data, context, scratch_size, memcpy_fn_data, agg_fn_data, ot_fn_data,
-        ak_params_vec);
+                         nn::MatMulInt8, nn::OT_int8, nn::Filter2D>(
+          op_data, context, scratch_size, memcpy_fn_data, agg_fn_data,
+          ot_fn_data, ak_params_vec);
     }
     op_data->name = "XC_Conv2DValidInd";
   } break;
   case Conv2DPaddedIndirect_t: {
-    if(ot_type == Channelwise) {
+    if (ot_type == Channelwise) {
       ConstructFilter2Ds<nn::Conv2dPaddedInDirect, nn::ImToColPadded,
-                       nn::MatMulInt8, nn::OT_int8_channelwise, nn::Filter2D>(
-        op_data, context, scratch_size, memcpy_fn_data, agg_fn_data, ot_fn_data,
-        ak_params_vec);
-    }
-    else {
+                         nn::MatMulInt8, nn::OT_int8_channelwise, nn::Filter2D>(
+          op_data, context, scratch_size, memcpy_fn_data, agg_fn_data,
+          ot_fn_data, ak_params_vec);
+    } else {
       ConstructFilter2Ds<nn::Conv2dPaddedInDirect, nn::ImToColPadded,
-                       nn::MatMulInt8, nn::OT_int8, nn::Filter2D>(
-        op_data, context, scratch_size, memcpy_fn_data, agg_fn_data, ot_fn_data,
-        ak_params_vec);
+                         nn::MatMulInt8, nn::OT_int8, nn::Filter2D>(
+          op_data, context, scratch_size, memcpy_fn_data, agg_fn_data,
+          ot_fn_data, ak_params_vec);
     }
     op_data->name = "XC_Conv2DPadInd";
   } break;
@@ -337,11 +332,10 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
     nn::Filter2D *f = (nn::Filter2D *)op_data->filter2D;
     nn::MatMulDirectFn *aggr = (nn::MatMulDirectFn *)(f->aggregate_handler);
     aggr->setWeights(weights);
-    if(op_data->ot_type == Channelwise) {
+    if (op_data->ot_type == Channelwise) {
       nn::OT_int8_channelwise *ot = (nn::OT_int8_channelwise *)(f->ot_handler);
       ot->setMultipliersAndBiases(multipliers_and_biases);
-    }
-    else {
+    } else {
       nn::OT_int8 *ot = (nn::OT_int8 *)(f->ot_handler);
       ot->setMultipliersAndBiases(multipliers_and_biases);
     }
@@ -351,11 +345,10 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
     nn::Filter2D *f = (nn::Filter2D *)op_data->filter2D;
     nn::MatMulInt8 *aggr = (nn::MatMulInt8 *)(f->aggregate_handler);
     aggr->setWeights(weights);
-    if(op_data->ot_type == Channelwise) {
+    if (op_data->ot_type == Channelwise) {
       nn::OT_int8_channelwise *ot = (nn::OT_int8_channelwise *)(f->ot_handler);
       ot->setMultipliersAndBiases(multipliers_and_biases);
-    }
-    else {
+    } else {
       nn::OT_int8 *ot = (nn::OT_int8 *)(f->ot_handler);
       ot->setMultipliersAndBiases(multipliers_and_biases);
     }
@@ -366,11 +359,10 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
     nn::MatMulDirectFn_DW *aggr =
         (nn::MatMulDirectFn_DW *)(f->aggregate_handler);
     aggr->setWeights(weights);
-    if(op_data->ot_type == Channelwise) {
+    if (op_data->ot_type == Channelwise) {
       nn::OT_int8_channelwise *ot = (nn::OT_int8_channelwise *)(f->ot_handler);
       ot->setMultipliersAndBiases(multipliers_and_biases);
-    }
-    else {
+    } else {
       nn::OT_int8 *ot = (nn::OT_int8 *)(f->ot_handler);
       ot->setMultipliersAndBiases(multipliers_and_biases);
     }

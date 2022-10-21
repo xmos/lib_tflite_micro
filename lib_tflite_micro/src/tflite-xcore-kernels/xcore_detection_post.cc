@@ -195,31 +195,38 @@ TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
   context->RequestScratchBufferInArena(
       context,
       input_class_predictions->dims->data[1] *
-          input_class_predictions->dims->data[2] * sizeof(float),
+          input_class_predictions->dims->data[2] * sizeof(int8_t),
       &op_data->scores_idx);
 
   // Additional buffers
-  context->RequestScratchBufferInArena(context, num_boxes * sizeof(float),
+  context->RequestScratchBufferInArena(context, num_boxes * sizeof(int8_t),
                                        &op_data->score_buffer_idx);
-  context->RequestScratchBufferInArena(context, num_boxes * sizeof(float),
+  context->RequestScratchBufferInArena(context, num_boxes * sizeof(int8_t),
                                        &op_data->keep_scores_idx);
   context->RequestScratchBufferInArena(
-      context, op_data->max_detections * num_boxes * sizeof(float),
+      context, op_data->max_detections * num_boxes * sizeof(int8_t),
       &op_data->scores_after_regular_non_max_suppression_idx);
   context->RequestScratchBufferInArena(
-      context, op_data->max_detections * num_boxes * sizeof(float),
+      context, op_data->max_detections * num_boxes * sizeof(int8_t),
       &op_data->sorted_values_idx);
-  context->RequestScratchBufferInArena(context, num_boxes * sizeof(int),
+  assert(op_data->max_detections * num_boxes < UINT16_MAX &&
+         "Max index must be less than UINT16_MAX!");
+  context->RequestScratchBufferInArena(context, num_boxes * sizeof(int16_t),
                                        &op_data->keep_indices_idx);
   context->RequestScratchBufferInArena(
-      context, op_data->max_detections * num_boxes * sizeof(int),
+      context, op_data->max_detections * num_boxes * sizeof(int16_t),
       &op_data->sorted_indices_idx);
   int buffer_size = std::max(num_classes, op_data->max_detections);
+  assert(buffer_size * num_boxes < UINT16_MAX &&
+         "Max index must be less than UINT16_MAX!");
   context->RequestScratchBufferInArena(
-      context, buffer_size * num_boxes * sizeof(int), &op_data->buffer_idx);
+      context, buffer_size * num_boxes * sizeof(int16_t), &op_data->buffer_idx);
   buffer_size = std::min(num_boxes, op_data->max_detections);
+  assert(buffer_size * num_boxes < UINT16_MAX &&
+         "Max index must be less than UINT16_MAX!");
   context->RequestScratchBufferInArena(
-      context, buffer_size * num_boxes * sizeof(int), &op_data->selected_idx);
+      context, buffer_size * num_boxes * sizeof(int16_t),
+      &op_data->selected_idx);
 
   // Outputs: detection_boxes, detection_scores, detection_classes,
   // num_detections
@@ -258,21 +265,10 @@ void DequantizeBoxEncodings(const TfLiteEvalTensor *input_box_encodings,
   // The first four elements are the box coordinates, which is the same as the
   // FastRnnBoxCoder at
   // https://github.com/tensorflow/models/blob/master/research/object_detection/box_coders/faster_rcnn_box_coder.py
-#if 1
   box_centersize->y = dequantize(boxes[0]);
   box_centersize->x = dequantize(boxes[1]);
   box_centersize->h = dequantize(boxes[2]);
   box_centersize->w = dequantize(boxes[3]);
-#else // saves a bit. At least does not create more dynamic objects.
-  box_centersize->y =
-      (static_cast<float>(boxes[0]) - quant_zero_point) * quant_scale;
-  box_centersize->x =
-      (static_cast<float>(boxes[1]) - quant_zero_point) * quant_scale;
-  box_centersize->h =
-      (static_cast<float>(boxes[2]) - quant_zero_point) * quant_scale;
-  box_centersize->w =
-      (static_cast<float>(boxes[3]) - quant_zero_point) * quant_scale;
-#endif
 }
 
 template <class T> T ReInterpretTensor(const TfLiteEvalTensor *tensor) {
@@ -303,18 +299,6 @@ TfLiteStatus DecodeCenterSizeBoxes(TfLiteContext *context, TfLiteNode *node,
   for (int idx = 0; idx < num_boxes; ++idx) {
     switch (input_box_encodings->type) {
       // Quantized
-    case kTfLiteUInt8:
-      DequantizeBoxEncodings<uint8_t>(
-          input_box_encodings, idx,
-          static_cast<float>(op_data->input_box_encodings.zero_point),
-          static_cast<float>(op_data->input_box_encodings.scale),
-          input_box_encodings->dims->data[2], &box_centersize);
-      DequantizeBoxEncodings<uint8_t>(
-          input_anchors, idx,
-          static_cast<float>(op_data->input_anchors.zero_point),
-          static_cast<float>(op_data->input_anchors.scale), kNumCoordBox,
-          &anchor);
-      break;
     case kTfLiteInt8:
       DequantizeBoxEncodings<int8_t>(
           input_box_encodings, idx,
@@ -327,17 +311,6 @@ TfLiteStatus DecodeCenterSizeBoxes(TfLiteContext *context, TfLiteNode *node,
           static_cast<float>(op_data->input_anchors.scale), kNumCoordBox,
           &anchor);
       break;
-      // Float
-    case kTfLiteFloat32: {
-      // Please see DequantizeBoxEncodings function for the support detail.
-      const int box_encoding_idx = idx * input_box_encodings->dims->data[2];
-      const float *boxes = &(tflite::micro::GetTensorData<float>(
-          input_box_encodings)[box_encoding_idx]);
-      box_centersize = *reinterpret_cast<const CenterSizeEncoding *>(boxes);
-      anchor =
-          ReInterpretTensor<const CenterSizeEncoding *>(input_anchors)[idx];
-      break;
-    }
     default:
       // Unsupported type.
       return kTfLiteError;
@@ -375,17 +348,18 @@ TfLiteStatus DecodeCenterSizeBoxes(TfLiteContext *context, TfLiteNode *node,
   return kTfLiteOk;
 }
 
-void DecreasingPartialArgSort(const float *values, int num_values,
-                              int num_to_sort, int *indices) {
+void DecreasingPartialArgSort(const int8_t *values, int num_values,
+                              int num_to_sort, int16_t *indices) {
   std::iota(indices, indices + num_values, 0);
   std::partial_sort(
       indices, indices + num_to_sort, indices + num_values,
       [&values](const int i, const int j) { return values[i] > values[j]; });
 }
 
-int SelectDetectionsAboveScoreThreshold(const float *values, int size,
-                                        const float threshold,
-                                        float *keep_values, int *keep_indices) {
+int SelectDetectionsAboveScoreThreshold(const int8_t *values, int size,
+                                        const int8_t threshold,
+                                        int8_t *keep_values,
+                                        int16_t *keep_indices) {
   int counter = 0;
   for (int i = 0; i < size; i++) {
     if (values[i] >= threshold) {
@@ -434,8 +408,8 @@ float ComputeIntersectionOverUnion(const float *decoded_boxes, const int i,
 // Complexity is O(N^2) pairwise comparison between boxes
 TfLiteStatus
 NonMaxSuppressionSingleClassHelper(TfLiteContext *context, TfLiteNode *node,
-                                   OpData *op_data, const float *scores,
-                                   int *selected, int *selected_size,
+                                   OpData *op_data, const int8_t *scores,
+                                   int16_t *selected, int *selected_size,
                                    int max_detections) {
   const TfLiteEvalTensor *input_box_encodings =
       tflite::micro::GetEvalInput(context, node, kInputTensorBoxEncodings);
@@ -457,14 +431,22 @@ NonMaxSuppressionSingleClassHelper(TfLiteContext *context, TfLiteNode *node,
   TF_LITE_ENSURE(context, ValidateBoxes(decoded_boxes, num_boxes));
 
   // threshold scores
-  int *keep_indices = reinterpret_cast<int *>(
+  int16_t *keep_indices = reinterpret_cast<int16_t *>(
       context->GetScratchBuffer(context, op_data->keep_indices_idx));
-  float *keep_scores = reinterpret_cast<float *>(
+  int8_t *keep_scores = reinterpret_cast<int8_t *>(
       context->GetScratchBuffer(context, op_data->keep_scores_idx));
+
+  // Quantize suppression score for easy comparison
+  float quant_zero_point =
+      static_cast<float>(op_data->input_class_predictions.zero_point);
+  float quant_scale =
+      static_cast<float>(op_data->input_class_predictions.scale);
+  int8_t quantized_nms_score_threshold = static_cast<int8_t>(
+      (non_max_suppression_score_threshold / quant_scale) + quant_zero_point);
   int num_scores_kept = SelectDetectionsAboveScoreThreshold(
-      scores, num_boxes, non_max_suppression_score_threshold, keep_scores,
+      scores, num_boxes, quantized_nms_score_threshold, keep_scores,
       keep_indices);
-  int *sorted_indices = reinterpret_cast<int *>(
+  int16_t *sorted_indices = reinterpret_cast<int16_t *>(
       context->GetScratchBuffer(context, op_data->sorted_indices_idx));
 
   DecreasingPartialArgSort(keep_scores, num_scores_kept, num_scores_kept,
@@ -518,7 +500,7 @@ NonMaxSuppressionSingleClassHelper(TfLiteContext *context, TfLiteNode *node,
 TfLiteStatus NonMaxSuppressionMultiClassRegularHelper(TfLiteContext *context,
                                                       TfLiteNode *node,
                                                       OpData *op_data,
-                                                      const float *scores) {
+                                                      const int8_t *scores) {
 
   const TfLiteEvalTensor *input_box_encodings =
       tflite::micro::GetEvalInput(context, node, kInputTensorBoxEncodings);
@@ -544,18 +526,19 @@ TfLiteStatus NonMaxSuppressionMultiClassRegularHelper(TfLiteContext *context,
   TF_LITE_ENSURE(context, num_detections_per_class > 0);
 
   // For each class, perform non-max suppression.
-  float *class_scores = reinterpret_cast<float *>(
+  int8_t *class_scores = reinterpret_cast<int8_t *>(
       context->GetScratchBuffer(context, op_data->score_buffer_idx));
-  int *box_indices_after_regular_non_max_suppression = reinterpret_cast<int *>(
-      context->GetScratchBuffer(context, op_data->buffer_idx));
-  float *scores_after_regular_non_max_suppression =
-      reinterpret_cast<float *>(context->GetScratchBuffer(
+  int16_t *box_indices_after_regular_non_max_suppression =
+      reinterpret_cast<int16_t *>(
+          context->GetScratchBuffer(context, op_data->buffer_idx));
+  int8_t *scores_after_regular_non_max_suppression =
+      reinterpret_cast<int8_t *>(context->GetScratchBuffer(
           context, op_data->scores_after_regular_non_max_suppression_idx));
 
   int size_of_sorted_indices = 0;
-  int *sorted_indices = reinterpret_cast<int *>(
+  int16_t *sorted_indices = reinterpret_cast<int16_t *>(
       context->GetScratchBuffer(context, op_data->sorted_indices_idx));
-  float *sorted_values = reinterpret_cast<float *>(
+  int8_t *sorted_values = reinterpret_cast<int8_t *>(
       context->GetScratchBuffer(context, op_data->sorted_values_idx));
 
   for (int col = 0; col < num_classes; col++) {
@@ -566,7 +549,7 @@ TfLiteStatus NonMaxSuppressionMultiClassRegularHelper(TfLiteContext *context,
     }
     // Perform non-maximal suppression on single class
     int selected_size = 0;
-    int *selected = reinterpret_cast<int *>(
+    int16_t *selected = reinterpret_cast<int16_t *>(
         context->GetScratchBuffer(context, op_data->selected_idx));
     TF_LITE_ENSURE_STATUS(NonMaxSuppressionSingleClassHelper(
         context, node, op_data, class_scores, selected, &selected_size,
@@ -602,6 +585,12 @@ TfLiteStatus NonMaxSuppressionMultiClassRegularHelper(TfLiteContext *context,
     size_of_sorted_indices = num_indices_to_sort;
   }
 
+  float quant_zero_point =
+      static_cast<float>(op_data->input_class_predictions.zero_point);
+  float quant_scale =
+      static_cast<float>(op_data->input_class_predictions.scale);
+  Dequantizer dequantize(quant_zero_point, quant_scale);
+
   // Allocate output tensors
   for (int output_box_index = 0; output_box_index < max_detections;
        output_box_index++) {
@@ -612,8 +601,9 @@ TfLiteStatus NonMaxSuppressionMultiClassRegularHelper(TfLiteContext *context,
       const int class_index =
           box_indices_after_regular_non_max_suppression[output_box_index] -
           anchor_index * num_classes_with_background - label_offset;
-      const float selected_score =
-          scores_after_regular_non_max_suppression[output_box_index];
+
+      const float selected_score = dequantize(
+          scores_after_regular_non_max_suppression[output_box_index]);
       // detection_boxes
       float *decoded_boxes = reinterpret_cast<float *>(
           context->GetScratchBuffer(context, op_data->decoded_boxes_idx));
@@ -653,7 +643,7 @@ TfLiteStatus NonMaxSuppressionMultiClassRegularHelper(TfLiteContext *context,
 TfLiteStatus NonMaxSuppressionMultiClassFastHelper(TfLiteContext *context,
                                                    TfLiteNode *node,
                                                    OpData *op_data,
-                                                   const float *scores) {
+                                                   const int8_t *scores) {
   const TfLiteEvalTensor *input_box_encodings =
       tflite::micro::GetEvalInput(context, node, kInputTensorBoxEncodings);
   const TfLiteEvalTensor *input_class_predictions =
@@ -679,15 +669,15 @@ TfLiteStatus NonMaxSuppressionMultiClassFastHelper(TfLiteContext *context,
   TF_LITE_ENSURE(context, (max_categories_per_anchor > 0));
   const int num_categories_per_anchor =
       std::min(max_categories_per_anchor, num_classes);
-  float *max_scores = reinterpret_cast<float *>(
+  int8_t *max_scores = reinterpret_cast<int8_t *>(
       context->GetScratchBuffer(context, op_data->score_buffer_idx));
-  int *sorted_class_indices = reinterpret_cast<int *>(
+  int16_t *sorted_class_indices = reinterpret_cast<int16_t *>(
       context->GetScratchBuffer(context, op_data->buffer_idx));
 
   for (int row = 0; row < num_boxes; row++) {
-    const float *box_scores =
+    const int8_t *box_scores =
         scores + row * num_classes_with_background + label_offset;
-    int *class_indices = sorted_class_indices + row * num_classes;
+    int16_t *class_indices = sorted_class_indices + row * num_classes;
     DecreasingPartialArgSort(box_scores, num_classes, num_categories_per_anchor,
                              class_indices);
     max_scores[row] = box_scores[class_indices[0]];
@@ -695,7 +685,7 @@ TfLiteStatus NonMaxSuppressionMultiClassFastHelper(TfLiteContext *context,
 
   // Perform non-maximal suppression on max scores
   int selected_size = 0;
-  int *selected = reinterpret_cast<int *>(
+  int16_t *selected = reinterpret_cast<int16_t *>(
       context->GetScratchBuffer(context, op_data->selected_idx));
   TF_LITE_ENSURE_STATUS(NonMaxSuppressionSingleClassHelper(
       context, node, op_data, max_scores, selected, &selected_size,
@@ -707,9 +697,9 @@ TfLiteStatus NonMaxSuppressionMultiClassFastHelper(TfLiteContext *context,
   for (int i = 0; i < selected_size; i++) {
     int selected_index = selected[i];
 
-    const float *box_scores =
+    const int8_t *box_scores =
         scores + selected_index * num_classes_with_background + label_offset;
-    const int *class_indices =
+    const int16_t *class_indices =
         sorted_class_indices + selected_index * num_classes;
 
     for (int col = 0; col < num_categories_per_anchor; ++col) {
@@ -737,23 +727,6 @@ TfLiteStatus NonMaxSuppressionMultiClassFastHelper(TfLiteContext *context,
   return kTfLiteOk;
 }
 
-template <class T>
-void DequantizeClassPredictions(const TfLiteEvalTensor *input_class_predictions,
-                                const int num_boxes,
-                                const int num_classes_with_background,
-                                float *scores, OpData *op_data) {
-  float quant_zero_point =
-      static_cast<float>(op_data->input_class_predictions.zero_point);
-  float quant_scale =
-      static_cast<float>(op_data->input_class_predictions.scale);
-  Dequantizer dequantize(quant_zero_point, quant_scale);
-  const T *scores_quant =
-      tflite::micro::GetTensorData<T>(input_class_predictions);
-  for (int idx = 0; idx < num_boxes * num_classes_with_background; ++idx) {
-    scores[idx] = dequantize(scores_quant[idx]);
-  }
-}
-
 TfLiteStatus NonMaxSuppressionMultiClass(TfLiteContext *context,
                                          TfLiteNode *node, OpData *op_data) {
   // Get the input tensors
@@ -773,27 +746,11 @@ TfLiteStatus NonMaxSuppressionMultiClass(TfLiteContext *context,
   TF_LITE_ENSURE(context, (num_classes_with_background - num_classes <= 1));
   TF_LITE_ENSURE(context, (num_classes_with_background >= num_classes));
 
-  const float *scores;
+  const int8_t *scores;
   switch (input_class_predictions->type) {
-  case kTfLiteUInt8: {
-    float *temporary_scores = reinterpret_cast<float *>(
-        context->GetScratchBuffer(context, op_data->scores_idx));
-    DequantizeClassPredictions<uint8_t>(input_class_predictions, num_boxes,
-                                        num_classes_with_background,
-                                        temporary_scores, op_data);
-    scores = temporary_scores;
-  } break;
   case kTfLiteInt8: {
-    float *temporary_scores = reinterpret_cast<float *>(
-        context->GetScratchBuffer(context, op_data->scores_idx));
-    DequantizeClassPredictions<int8_t>(input_class_predictions, num_boxes,
-                                       num_classes_with_background,
-                                       temporary_scores, op_data);
-    scores = temporary_scores;
+    scores = tflite::micro::GetTensorData<int8_t>(input_class_predictions);
   } break;
-  case kTfLiteFloat32:
-    scores = tflite::micro::GetTensorData<float>(input_class_predictions);
-    break;
   default:
     // Unsupported type.
     return kTfLiteError;

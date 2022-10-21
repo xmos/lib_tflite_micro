@@ -188,6 +188,7 @@ bool tflmc::CompileFile(const std::string &modelFileName,
   }
 
   try {
+    bool debugPrint = false;
     Compiler compiler(model_data.data(), prefix);
     compiler.writeSource(outFile);
     compiler.writeHeader(outHeaderFile);
@@ -201,8 +202,9 @@ bool tflmc::CompileFile(const std::string &modelFileName,
   return false;
 }
 
-tflmc::Compiler::Compiler(const void *modelData, const std::string &prefix)
-    : prefix_(prefix) {
+tflmc::Compiler::Compiler(const void *modelData, const std::string &prefix,
+                          const bool debugPrint)
+    : prefix_(prefix), debugPrint_(debugPrint) {
   if (!init(modelData)) {
     throw std::runtime_error("Could not set up compiler");
   }
@@ -328,7 +330,10 @@ bool tflmc::Compiler::init(const void *modelData) {
     auto reg = nodeAndReg.registration;
     auto code = tflite::EnumValuesBuiltinOperator()[reg->builtin_code];
 
-    printf("operation %lu: %s\n", i, tflite::EnumNamesBuiltinOperator()[code]);
+    if (debugPrint_) {
+      printf("operation %lu: %s\n", i,
+             tflite::EnumNamesBuiltinOperator()[code]);
+    }
 
     RegistrationInfo regInfo;
     regInfo.reg = reg;
@@ -381,7 +386,9 @@ bool tflmc::Compiler::init(const void *modelData) {
   memMap_.recordRAM(arenaBufferSize_ + tensorMetaSize + nodeMetaSize,
                     sizeof(TfLiteContext), "TfLiteContext");
 
-  memMap_.report();
+  if (debugPrint_) {
+    memMap_.report();
+  }
 
   return true;
 }

@@ -1,3 +1,17 @@
+diff --git tensorflow/lite/micro/kernels/conv_common.cc tensorflow/lite/micro/kernels/conv_common.cc
+index 7115f7b..a8f4a6f 100644
+--- tensorflow/lite/micro/kernels/conv_common.cc
++++ tensorflow/lite/micro/kernels/conv_common.cc
+@@ -127,7 +127,8 @@ TfLiteStatus CalculateOpDataConv(TfLiteContext* context, TfLiteNode* node,
+   micro_context->DeallocateTempTfLiteTensor(input);
+   micro_context->DeallocateTempTfLiteTensor(filter);
+   micro_context->DeallocateTempTfLiteTensor(output);
+-  micro_context->DeallocateTempTfLiteTensor(bias);
++  if (bias)
++    micro_context->DeallocateTempTfLiteTensor(bias);
+ 
+   return kTfLiteOk;
+ }
 diff --git tensorflow/lite/micro/memory_planner/greedy_memory_planner.h tensorflow/lite/micro/memory_planner/greedy_memory_planner.h
 index a34f3c5..79839ef 100644
 --- tensorflow/lite/micro/memory_planner/greedy_memory_planner.h
@@ -21,20 +35,35 @@ index a34f3c5..79839ef 100644
  
  }  // namespace tflite
 diff --git tensorflow/lite/micro/micro_allocator.h tensorflow/lite/micro/micro_allocator.h
-index f9660cf..e57e2fe 100644
+index f9660cf..7c8dd03 100644
 --- tensorflow/lite/micro/micro_allocator.h
 +++ tensorflow/lite/micro/micro_allocator.h
-@@ -233,6 +233,8 @@ class MicroAllocator {
+@@ -233,6 +233,12 @@ class MicroAllocator {
  
    BuiltinDataAllocator* GetBuiltinDataAllocator();
  
 +  MicroMemoryPlanner* memory_planner() { return memory_planner_;}
 +
++  // Returns the pointer for the array of ScratchBufferRequest allocations in
++  // the head section.
++  internal::ScratchBufferRequest* GetScratchBufferRequests();
++
   protected:
    MicroAllocator(SingleArenaBufferAllocator* memory_allocator,
                   MicroMemoryPlanner* memory_planner,
+@@ -296,10 +302,6 @@ class MicroAllocator {
+   // preparing.
+   TfLiteStatus InitScratchBufferData();
+ 
+-  // Returns the pointer for the array of ScratchBufferRequest allocations in
+-  // the head section.
+-  internal::ScratchBufferRequest* GetScratchBufferRequests();
+-
+   // A simple memory allocator that always allocate from the arena tail or head.
+   INonPersistentBufferAllocator* non_persistent_buffer_allocator_;
+   IPersistentBufferAllocator* persistent_buffer_allocator_;
 diff --git tensorflow/lite/micro/micro_context.h tensorflow/lite/micro/micro_context.h
-index e7be654..1428a18 100644
+index e7be654..2693ff2 100644
 --- tensorflow/lite/micro/micro_context.h
 +++ tensorflow/lite/micro/micro_context.h
 @@ -20,6 +20,22 @@ limitations under the License.
@@ -50,7 +79,7 @@ index e7be654..1428a18 100644
 +      void (*DeallocateTempTfLiteTensor)(TfLiteTensor* tensor);
 +      void* (*external_context)();
 +  };
-+  static MicroContext* GetMicroContext(const struct TfLiteContext* context){
++  static inline MicroContext* GetMicroContext(const struct TfLiteContext* context){
 +      return reinterpret_cast<MicroContext*>(context->impl_);
 +  }
 +}
@@ -98,3 +127,27 @@ index ae7fc8f..5c2fd6e 100644
   protected:
    const MicroAllocator& allocator() const { return allocator_; }
    const TfLiteContext& context() const { return context_; }
+diff --git tensorflow/lite/micro/test_helpers.cc tensorflow/lite/micro/test_helpers.cc
+index 2411bbf..875f10b 100644
+--- tensorflow/lite/micro/test_helpers.cc
++++ tensorflow/lite/micro/test_helpers.cc
+@@ -444,11 +444,19 @@ const Model* BuildModelWithUnusedOperatorOutputs() {
+           *builder, builder->CreateVector(tensor_shape, tensor_shape_size),
+           TensorType_INT8, 0,
+           builder->CreateString("test_unused_output_tensor"), 0, false)};
++#ifdef _MSC_VER
++  constexpr size_t inputs_size = 1;
++#else
+   constexpr size_t inputs_size = 0;
++#endif
+   const int32_t inputs[inputs_size] = {};
+   constexpr size_t outputs_size = 1;
+   const int32_t outputs[outputs_size] = {0};
++#ifdef _MSC_VER
++  constexpr size_t operator_inputs_size = 1;
++#else
+   constexpr size_t operator_inputs_size = 0;
++#endif
+   const int32_t operator_inputs[operator_inputs_size] = {};
+   constexpr size_t operator_outputs_size = 2;
+   const int32_t operator_outputs[operator_outputs_size] = {0, 1};

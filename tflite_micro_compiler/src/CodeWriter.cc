@@ -146,7 +146,8 @@ void tflmc::CodeWriter::writeBuiltin(tflite::BuiltinOperator op,
     } break;
     case tflite::BuiltinOperator_RESIZE_NEAREST_NEIGHBOR: {
       out_ << "TfLiteResizeNearestNeighborParams " << name << " = { ";
-      TfLiteResizeNearestNeighborParams const* p = (TfLiteResizeNearestNeighborParams const*)data;
+      TfLiteResizeNearestNeighborParams const* p =
+          (TfLiteResizeNearestNeighborParams const*)data;
       out_ << p->align_corners << ", " << p->half_pixel_centers << " };";
     } break;
     case tflite::BuiltinOperator_STRIDED_SLICE: {

@@ -53,6 +53,33 @@ INCLUDE_DIRS += submodules/gemmlowp/
 INCLUDE_DIRS += submodules/tflite-micro/third_party/eigen3/
 INCLUDE_DIRS += submodules/ruy/
 
+
+ifeq ($(USE_WITH_TFLITE_MICRO_COMPILER),1)
+
+# files to exclude as we don't want to link with
+# them for compiled models
+#src
+EXCLUDE_FILES += inference_engine.cc
+EXCLUDE_FILES += xcore_interpreter.cc
+#lite/micro
+EXCLUDE_FILES += fake_micro_context.cc
+EXCLUDE_FILES += fake_micro_context_test.cc
+EXCLUDE_FILES += micro_graph.cc
+EXCLUDE_FILES += micro_allocator.cc
+EXCLUDE_FILES += micro_allocation_info_test.cc
+EXCLUDE_FILES += micro_context.cc
+EXCLUDE_FILES += micro_context_test.cc
+EXCLUDE_FILES += micro_interpreter.cc
+EXCLUDE_FILES += memory_helpers_test.cc
+#lite/micro/kernels
+EXCLUDE_FILES += read_variable.cc
+EXCLUDE_FILES += var_handle.cc
+EXCLUDE_FILES += while.cc
+EXCLUDE_FILES += while_test.cc
+EXCLUDE_FILES += broadcast_args_test.cc
+EXCLUDE_FILES += squared_difference_test.cc
+endif
+
 #lite/micro
 EXCLUDE_FILES += micro/memory_arena_threshold_test.cc
 EXCLUDE_FILES += micro/micro_allocator_test.cc
@@ -220,7 +247,7 @@ EXCLUDE_FILES += lite/kernels/fully_connected.cc
 EXCLUDE_FILES += lite/kernels/fully_connected_common.cc 
 EXCLUDE_FILES += lite/kernels/floor.cc 
 EXCLUDE_FILES += lite/kernels/svdf.cc 
-EXCLUDE_FILES += lite/kernels/logistic.cc 
+EXCLUDE_FILES += lite/kernels/logistic.cc
 EXCLUDE_FILES += lite/kernels/tanh.cc
 EXCLUDE_FILES += lite/kernels/mul.cc
 EXCLUDE_FILES += lite/kernels/cast_test.cc
@@ -336,7 +363,6 @@ matrix_diag.cc \
 matrix_diag_test.cc \
 matrix_set_diag.cc \
 matrix_set_diag_test.cc \
-maximum_minimum.cc \
 maximum_minimum_test.cc \
 mfcc.cc \
 mfcc_test.cc \

@@ -14,6 +14,7 @@ constexpr const char *XC_strided_slice_OpCode = "XC_strided_slice";
 constexpr const char *XC_copy_into_OpCode = "XC_copy_into";
 constexpr const char *XC_connector_OpCode = "XC_connector";
 constexpr const char *XC_pass_thru_OpCode = "XC_pass_thru";
+constexpr const char *XC_lookup_OpCode = "XC_lookup";
 // Binarized ops
 constexpr const char *XC_bsign_8_OpCode = "XC_bsign_8";
 
@@ -23,6 +24,7 @@ TfLiteRegistration *Register_XC_strided_slice();
 TfLiteRegistration *Register_XC_copy_into();
 TfLiteRegistration *Register_XC_connector();
 TfLiteRegistration *Register_XC_pass_thru();
+TfLiteRegistration *Register_XC_lookup();
 // Binarized ops
 TfLiteRegistration *Register_XC_bsign_8();
 

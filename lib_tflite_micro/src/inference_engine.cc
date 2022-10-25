@@ -10,13 +10,6 @@
 
 #if !defined(XTFLM_DISABLED)
 
-extern "C" void DebugLog(const char *s) {
-  while (*s) {
-    putchar(*s);
-    s++;
-  }
-} // Not sure why we need this
-
 tflite::MicroMutableOpResolver<XTFLM_OPERATORS> *
 inference_engine_initialize(inference_engine *ie, uint32_t memory_primary[],
                             uint32_t n_primary, uint32_t memory_secondary[],
@@ -106,14 +99,12 @@ int inference_engine_load_model(inference_engine *ie, uint32_t model_bytes,
         return 1;
       }
 
-      // xformer version is saved for debugging purposes
+      // NOTE: xformer version is saved for debugging purposes
       // If lib_nn and lib_tflite_micro versions are as expected,
       // then the xformer version doesn't matter as the model should execute
-      printf("Model provided has been built with xformer version %d.%d.%d .",
-             ptr->xformer_major_version, ptr->xformer_minor_version,
-             ptr->xformer_patch_version);
+
+      // Get thread count required from the runtime by the xformer
       ie->num_threads = ptr->required_thread_count;
-      printf("\n\nrequired thread count %d\n\n", ptr->required_thread_count);
     }
   }
 
@@ -138,8 +129,7 @@ int inference_engine_load_model(inference_engine *ie, uint32_t model_bytes,
   }
 
   int stackWordsPerThread = 256; // TODO: calculate
-  int nThreads = 5;              // TODO: get from model
-  int bytesForStack = nThreads * stackWordsPerThread * 4 + 4;
+  int bytesForStack = ie->num_threads * stackWordsPerThread * 4 + 4;
   kTensorArena += bytesForStack;
   kTensorArenaSize -= bytesForStack;
   uint8_t *sp = kTensorArena - 8;
@@ -154,10 +144,17 @@ int inference_engine_load_model(inference_engine *ie, uint32_t model_bytes,
   ie->xtflm->interpreter = tflite::micro::xcore::XCoreInterpreter::Create(
       (uint8_t *)ie->xtflm->interpreter_buffer, ie->xtflm->model,
       ie->xtflm->resolver, kTensorArena, kTensorArenaSize,
-      &ie->xtflm->error_reporter, true, &ie->xtflm->xcore_profiler, flash_data);
-  ie->xtflm->interpreter->xc_config.thread_info.nstackwords =
-      stackWordsPerThread;
-  ie->xtflm->interpreter->xc_config.thread_info.stacks = (void *)sp;
+      &ie->xtflm->error_reporter, true, &ie->xtflm->xcore_profiler);
+  ie->xc_config.flash_data = flash_data;
+  ie->xc_config.thread_info.nstackwords = stackWordsPerThread;
+  ie->xc_config.thread_info.stacks = (void *)sp;
+  TfLiteStatus set_external_context_status =
+      ie->xtflm->interpreter->SetMicroExternalContext((void *)&ie->xc_config);
+  if (set_external_context_status != kTfLiteOk) {
+    TF_LITE_REPORT_ERROR(&ie->xtflm->error_reporter,
+                         "SetExternalContext() failed");
+    return 2;
+  }
 
   // Allocate memory from the kTensorArena for the model's tensors.
   TfLiteStatus allocate_tensors_status =
@@ -218,7 +215,7 @@ int interp_invoke_par_5(inference_engine *ie) {
     printf("Thread count (5) does not match model thread count\n");
     return 1;
   }
-  return thread_invoke_5(ie, &ie->xtflm->interpreter->xc_config.thread_info);
+  return thread_invoke_5(ie, &ie->xc_config.thread_info);
 }
 
 int interp_invoke_par_4(inference_engine *ie) {
@@ -229,7 +226,7 @@ int interp_invoke_par_4(inference_engine *ie) {
                          ie->num_threads);
     return 5;
   }
-  return thread_invoke_4(ie, &ie->xtflm->interpreter->xc_config.thread_info);
+  return thread_invoke_4(ie, &ie->xc_config.thread_info);
 }
 
 int interp_invoke_par_3(inference_engine *ie) {
@@ -240,7 +237,7 @@ int interp_invoke_par_3(inference_engine *ie) {
                          ie->num_threads);
     return 5;
   }
-  return thread_invoke_3(ie, &ie->xtflm->interpreter->xc_config.thread_info);
+  return thread_invoke_3(ie, &ie->xc_config.thread_info);
 }
 
 int interp_invoke_par_2(inference_engine *ie) {
@@ -251,7 +248,7 @@ int interp_invoke_par_2(inference_engine *ie) {
                          ie->num_threads);
     return 5;
   }
-  return thread_invoke_2(ie, &ie->xtflm->interpreter->xc_config.thread_info);
+  return thread_invoke_2(ie, &ie->xc_config.thread_info);
 }
 
 int interp_invoke(inference_engine *ie) {
@@ -262,7 +259,7 @@ int interp_invoke(inference_engine *ie) {
                          ie->num_threads);
     return 5;
   }
-  return thread_invoke_1(ie, &ie->xtflm->interpreter->xc_config.thread_info);
+  return thread_invoke_1(ie, &ie->xc_config.thread_info);
 }
 
 TfLiteStatus interp_invoke_internal(inference_engine *ie) {
@@ -336,7 +333,6 @@ void print_profiler_summary(inference_engine *ie) {
 void inference_engine_unload_model(inference_engine *ie) {}
 
 void print_profiler_summary(inference_engine *ie) {}
-extern "C" void DebugLog(const char *s) {}
 
 void inference_engine_initialize(inference_engine *ie,
                                  uint8_t data_tensor_arena[], uint32_t n_int,

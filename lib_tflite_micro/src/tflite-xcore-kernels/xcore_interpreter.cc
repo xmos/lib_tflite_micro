@@ -1,10 +1,12 @@
 // Copyright (c) 2020, XMOS Ltd, All rights reserved
 
 #include "xcore_interpreter.h"
+#include "tensorflow/lite/micro/arena_allocator/single_arena_buffer_allocator.h"
+#include "tensorflow/lite/micro/memory_helpers.h"
 #include "tensorflow/lite/micro/memory_planner/greedy_memory_planner.h"
 #include "tensorflow/lite/micro/memory_planner/micro_memory_planner.h"
+#include "tensorflow/lite/micro/micro_arena_constants.h"
 #include "tensorflow/lite/micro/micro_error_reporter.h"
-#include "tensorflow/lite/micro/simple_memory_allocator.h"
 #include "xcore_utils.h"
 
 namespace tflite {
@@ -15,15 +17,13 @@ XCoreInterpreter::XCoreInterpreter(const tflite::Model *model,
                                    const tflite::MicroOpResolver &resolver,
                                    tflite::MicroAllocator *allocator,
                                    tflite::ErrorReporter *reporter,
-                                   tflite::GreedyMemoryPlanner *memory_planner,
                                    bool use_current_thread,
-                                   XCoreProfiler *profiler, void *flash_data)
+                                   XCoreProfiler *profiler)
     : tflite::MicroInterpreter(model, resolver, allocator, reporter, nullptr,
                                profiler) {
-  this->xc_config.flash_data = flash_data;
   this->model__ = model;
   this->error_reporter__ = reporter;
-  this->memory_planner__ = memory_planner;
+  this->allocator_ = allocator;
   if (profiler) {
     profiler->Init(allocator, model->subgraphs()->Get(0)->operators()->size());
   }
@@ -33,25 +33,16 @@ XCoreInterpreter *XCoreInterpreter::Create(
     uint8_t interpreter_buffer[], const tflite::Model *model,
     const tflite::MicroOpResolver &resolver, uint8_t *arena, size_t arena_size,
     tflite::ErrorReporter *reporter, bool use_current_thread,
-    XCoreProfiler *profiler, void *flash_data) {
-  SimpleMemoryAllocator *memory_allocator =
-      SimpleMemoryAllocator::Create(reporter, arena, arena_size);
-
-  uint8_t *memory_planner_buffer =
-      memory_allocator->AllocateFromTail(sizeof(tflite::GreedyMemoryPlanner),
-                                         alignof(tflite::GreedyMemoryPlanner));
-  tflite::GreedyMemoryPlanner *memory_planner =
-      new (memory_planner_buffer) tflite::GreedyMemoryPlanner();
-
-  MicroAllocator *ma =
-      MicroAllocator::Create(memory_allocator, memory_planner, reporter);
+    XCoreProfiler *profiler) {
+  MicroAllocator *memory_allocator =
+      MicroAllocator::Create(arena, arena_size, reporter);
   return new (interpreter_buffer)
-      XCoreInterpreter(model, resolver, ma, reporter, memory_planner,
-                       use_current_thread, profiler, flash_data);
+      XCoreInterpreter(model, resolver, memory_allocator, reporter,
+                       use_current_thread, profiler);
 }
 
 void XCoreInterpreter::PrintMemoryPlan() {
-  memory_planner__->PrintMemoryPlan();
+  allocator_->memory_planner()->PrintMemoryPlan();
 }
 
 TfLiteTensor *XCoreInterpreter::tensor(size_t tensor_index) {

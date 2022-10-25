@@ -21,6 +21,7 @@
 #endif
 
 #include "tensorflow/lite/c/c_api_types.h"
+#include "xcore_config.h"
 
 #ifdef __cplusplus
 
@@ -98,6 +99,7 @@ typedef struct inference_engine {
                             sizeof(uint32_t)]; ///< buffer for error messages
   uint32_t arena_needed_bytes;                 ///< Total arena needed in bytes.
   uint32_t num_threads;
+  struct xc_context_config_t xc_config;
 } inference_engine_t;
 
 #ifdef __cplusplus

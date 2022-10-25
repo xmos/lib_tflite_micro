@@ -1,16 +1,16 @@
 diff --git tensorflow/lite/micro/memory_planner/greedy_memory_planner.h tensorflow/lite/micro/memory_planner/greedy_memory_planner.h
-index 4c39e7c..b389476 100644
+index a34f3c5..79839ef 100644
 --- tensorflow/lite/micro/memory_planner/greedy_memory_planner.h
 +++ tensorflow/lite/micro/memory_planner/greedy_memory_planner.h
-@@ -108,6 +108,8 @@ class GreedyMemoryPlanner : public MicroMemoryPlanner {
-         sizeof(int);                  // buffer_offsets_;
+@@ -109,6 +109,8 @@ class GreedyMemoryPlanner : public MicroMemoryPlanner {
      return per_buffer_size;
    }
-+  
-+  TF_LITE_REMOVE_VIRTUAL_DELETE
  
++  TF_LITE_REMOVE_VIRTUAL_DELETE
++
   private:
    // Whether a buffer is active in a given time range.
+   bool DoesEntryOverlapInTime(const ListEntry* entry, const int first_time_used,
 @@ -158,8 +160,6 @@ class GreedyMemoryPlanner : public MicroMemoryPlanner {
  
    // Whether buffers have been added since the last plan was calculated.
@@ -20,64 +20,86 @@ index 4c39e7c..b389476 100644
  };
  
  }  // namespace tflite
-diff --git tensorflow/lite/micro/micro_allocator.cc tensorflow/lite/micro/micro_allocator.cc
-index 51a1254..3cc3079 100644
---- tensorflow/lite/micro/micro_allocator.cc
-+++ tensorflow/lite/micro/micro_allocator.cc
-@@ -926,11 +926,26 @@ TfLiteStatus MicroAllocator::CommitStaticMemoryPlan(
-   TF_LITE_ENSURE_STATUS(builder.AddScratchBuffers(scratch_buffer_requests,
-                                                   scratch_buffer_handles));
+diff --git tensorflow/lite/micro/micro_allocator.h tensorflow/lite/micro/micro_allocator.h
+index f9660cf..7c8dd03 100644
+--- tensorflow/lite/micro/micro_allocator.h
++++ tensorflow/lite/micro/micro_allocator.h
+@@ -233,6 +233,12 @@ class MicroAllocator {
  
-+  // Find out size needed to allocate buffers
-+  size_t buffer_size_needed = 0;
-+  for (size_t i = 0; i < allocation_info_count; ++i) {
-+    const AllocationInfo* current = &allocation_info[i];
-+    if (current->needs_allocating) {
-+      GreedyMemoryPlanner* memory_planner = (GreedyMemoryPlanner*)memory_planner_;
-+      buffer_size_needed += memory_planner->per_buffer_size();
-+    }
-+  }
-+  // We have to account for the memory needed for adding buffers which have to be allocated
-+  // Note that this is only the memory needed for storing info about the buffers
-+  memory_allocator_->CalculateMaxUsed(buffer_size_needed);
+   BuiltinDataAllocator* GetBuiltinDataAllocator();
+ 
++  MicroMemoryPlanner* memory_planner() { return memory_planner_;}
 +
-   // Remaining arena size that memory planner can use for calculating offsets.
-   size_t remaining_arena_size =
-       memory_allocator_->GetAvailableMemory(kBufferAlignment);
-+  // All the remaining memory is being allocated as temp memory here.
-+  // We don't want this to affect our calculation of max memory used
-   uint8_t* planner_arena =
--      memory_allocator_->AllocateTemp(remaining_arena_size, kBufferAlignment);
-+      memory_allocator_->AllocateTemp(remaining_arena_size, kBufferAlignment, /*affects_max=*/false);
-   TF_LITE_ENSURE(error_reporter_, planner_arena != nullptr);
-   memory_planner_->Init(planner_arena, remaining_arena_size);
-   TF_LITE_ENSURE_STATUS(CreatePlan(error_reporter_, memory_planner_,
-@@ -941,6 +956,8 @@ TfLiteStatus MicroAllocator::CommitStaticMemoryPlan(
++  // Returns the pointer for the array of ScratchBufferRequest allocations in
++  // the head section.
++  internal::ScratchBufferRequest* GetScratchBufferRequests();
++
+  protected:
+   MicroAllocator(SingleArenaBufferAllocator* memory_allocator,
+                  MicroMemoryPlanner* memory_planner,
+@@ -296,10 +302,6 @@ class MicroAllocator {
+   // preparing.
+   TfLiteStatus InitScratchBufferData();
  
-   size_t actual_available_arena_size =
-       memory_allocator_->GetAvailableMemory(kBufferAlignment);
-+  // We have to account for the memory needed by the memory planner
-+  memory_allocator_->CalculateMaxUsed(memory_planner_->GetMaximumMemorySize());
+-  // Returns the pointer for the array of ScratchBufferRequest allocations in
+-  // the head section.
+-  internal::ScratchBufferRequest* GetScratchBufferRequests();
+-
+   // A simple memory allocator that always allocate from the arena tail or head.
+   INonPersistentBufferAllocator* non_persistent_buffer_allocator_;
+   IPersistentBufferAllocator* persistent_buffer_allocator_;
+diff --git tensorflow/lite/micro/micro_context.h tensorflow/lite/micro/micro_context.h
+index e7be654..1428a18 100644
+--- tensorflow/lite/micro/micro_context.h
++++ tensorflow/lite/micro/micro_context.h
+@@ -20,6 +20,22 @@ limitations under the License.
+ #include "tensorflow/lite/micro/micro_allocator.h"
+ #include "tensorflow/lite/micro/micro_graph.h"
  
-   // Make sure we have enough arena size.
-   if (memory_planner_->GetMaximumMemorySize() > actual_available_arena_size) {
++#ifdef NO_INTERPRETER
++
++namespace tflite {
++  struct MicroContext{
++      TfLiteTensor* (*AllocateTempInputTensor)(const TfLiteNode* node, int index);
++      TfLiteTensor* (*AllocateTempOutputTensor)(const TfLiteNode* node, int index);
++      void (*DeallocateTempTfLiteTensor)(TfLiteTensor* tensor);
++      void* (*external_context)();
++  };
++  static MicroContext* GetMicroContext(const struct TfLiteContext* context){
++      return reinterpret_cast<MicroContext*>(context->impl_);
++  }
++}
++
++#else
++
+ namespace tflite {
+ // MicroContext is eventually going to become the API between TFLM and the
+ // kernels, replacing all the functions in TfLiteContext. The end state is code
+@@ -158,4 +174,6 @@ void MicroContextReportOpError(struct TfLiteContext* context,
+ 
+ }  // namespace tflite
+ 
++#endif  // NO_INTERPRETER
++
+ #endif  // TENSORFLOW_LITE_MICRO_MICRO_CONTEXT_H_
 diff --git tensorflow/lite/micro/micro_error_reporter.h tensorflow/lite/micro/micro_error_reporter.h
-index ac45224..d156b8a 100644
+index 0e3b0c3..27388e0 100644
 --- tensorflow/lite/micro/micro_error_reporter.h
 +++ tensorflow/lite/micro/micro_error_reporter.h
-@@ -40,7 +40,6 @@ class MicroErrorReporter : public ErrorReporter {
+@@ -46,8 +46,6 @@ class MicroErrorReporter : public ErrorReporter {
+  public:
    ~MicroErrorReporter() override {}
    int Report(const char* format, va_list args) override;
- 
+-
 - private:
    TF_LITE_REMOVE_VIRTUAL_DELETE
  };
  
 diff --git tensorflow/lite/micro/micro_interpreter.h tensorflow/lite/micro/micro_interpreter.h
-index 6650be8..8dfe808 100644
+index ae7fc8f..5c2fd6e 100644
 --- tensorflow/lite/micro/micro_interpreter.h
 +++ tensorflow/lite/micro/micro_interpreter.h
-@@ -127,6 +127,13 @@ class MicroInterpreter {
+@@ -140,6 +140,13 @@ class MicroInterpreter {
    // arena_used_bytes() + 16.
    size_t arena_used_bytes() const { return allocator_.used_bytes(); }
  
@@ -91,103 +113,27 @@ index 6650be8..8dfe808 100644
   protected:
    const MicroAllocator& allocator() const { return allocator_; }
    const TfLiteContext& context() const { return context_; }
-diff --git tensorflow/lite/micro/simple_memory_allocator.cc tensorflow/lite/micro/simple_memory_allocator.cc
-index 08b6789..b9d8d00 100644
---- tensorflow/lite/micro/simple_memory_allocator.cc
-+++ tensorflow/lite/micro/simple_memory_allocator.cc
-@@ -34,7 +34,8 @@ SimpleMemoryAllocator::SimpleMemoryAllocator(ErrorReporter* error_reporter,
-       buffer_tail_(buffer_tail),
-       head_(buffer_head),
-       tail_(buffer_tail),
--      temp_(buffer_head_) {}
-+      temp_(buffer_head_),
-+      max_used_(0) {}
- 
- SimpleMemoryAllocator::SimpleMemoryAllocator(ErrorReporter* error_reporter,
-                                              uint8_t* buffer,
-@@ -82,6 +83,7 @@ TfLiteStatus SimpleMemoryAllocator::SetHeadBufferSize(size_t size,
-   head_ = aligned_result + size;
-   temp_ = head_;
- 
-+  CalculateMaxUsed();
-   return kTfLiteOk;
- }
- 
-@@ -99,10 +101,11 @@ uint8_t* SimpleMemoryAllocator::AllocateFromTail(size_t size,
-     return nullptr;
-   }
-   tail_ = aligned_result;
-+  CalculateMaxUsed();
-   return aligned_result;
- }
- 
--uint8_t* SimpleMemoryAllocator::AllocateTemp(size_t size, size_t alignment) {
-+uint8_t* SimpleMemoryAllocator::AllocateTemp(size_t size, size_t alignment, bool affects_max) {
-   uint8_t* const aligned_result = AlignPointerUp(temp_, alignment);
-   const size_t available_memory = tail_ - aligned_result;
-   if (available_memory < size) {
-@@ -112,7 +115,11 @@ uint8_t* SimpleMemoryAllocator::AllocateTemp(size_t size, size_t alignment) {
-                          size, available_memory, size - available_memory);
-     return nullptr;
-   }
-+
-   temp_ = aligned_result + size;
-+  if(affects_max) {
-+    CalculateMaxUsed();
-+  }
-   return aligned_result;
- }
- 
-@@ -135,7 +142,7 @@ size_t SimpleMemoryAllocator::GetAvailableMemory(size_t alignment) const {
- }
- 
- size_t SimpleMemoryAllocator::GetUsedBytes() const {
--  return GetBufferSize() - (tail_ - temp_);
-+  return max_used_;
- }
- 
- size_t SimpleMemoryAllocator::GetBufferSize() const {
-@@ -146,4 +153,11 @@ uint8_t* SimpleMemoryAllocator::head() const { return head_; }
- 
- uint8_t* SimpleMemoryAllocator::tail() const { return tail_; }
- 
-+void SimpleMemoryAllocator::CalculateMaxUsed(size_t extraToBeAdded) {
-+  size_t tail_used = buffer_tail_ - tail_;
-+  size_t head_used = std::max(head_ - buffer_head_, temp_ - buffer_head_);
-+  size_t m = tail_used + head_used + extraToBeAdded;
-+  max_used_ = std::max(max_used_, m);
-+}
-+
- }  // namespace tflite
-diff --git tensorflow/lite/micro/simple_memory_allocator.h tensorflow/lite/micro/simple_memory_allocator.h
-index 36ab80b..b34aa1f 100644
---- tensorflow/lite/micro/simple_memory_allocator.h
-+++ tensorflow/lite/micro/simple_memory_allocator.h
-@@ -63,7 +63,7 @@ class SimpleMemoryAllocator {
-   // calls to AllocateTemp() must end with a call to ResetTempAllocations(). If
-   // AllocateFromHead() is called before a call to ResetTempAllocations(), it
-   // will fail with an error message.
--  virtual uint8_t* AllocateTemp(size_t size, size_t alignment);
-+  virtual uint8_t* AllocateTemp(size_t size, size_t alignment, bool affects_max=true);
- 
-   // Resets a chain of temporary allocations back to the current head of the
-   // arena (lowest address).
-@@ -87,6 +87,10 @@ class SimpleMemoryAllocator {
-   // account any temporary allocations.
-   size_t GetUsedBytes() const;
- 
-+  // Calculates and sets the max used bytes in the allocator. This number takes in
-+  // account any temporary allocations.
-+  void CalculateMaxUsed(size_t extraToBeAdded = 0);
-+
-   TF_LITE_REMOVE_VIRTUAL_DELETE
- 
-  protected:
-@@ -105,6 +109,7 @@ class SimpleMemoryAllocator {
-   uint8_t* head_;
-   uint8_t* tail_;
-   uint8_t* temp_;
-+  size_t max_used_;
- };
- 
- }  // namespace tflite
+diff --git tensorflow/lite/micro/test_helpers.cc tensorflow/lite/micro/test_helpers.cc
+index 2411bbf..875f10b 100644
+--- tensorflow/lite/micro/test_helpers.cc
++++ tensorflow/lite/micro/test_helpers.cc
+@@ -444,11 +444,19 @@ const Model* BuildModelWithUnusedOperatorOutputs() {
+           *builder, builder->CreateVector(tensor_shape, tensor_shape_size),
+           TensorType_INT8, 0,
+           builder->CreateString("test_unused_output_tensor"), 0, false)};
++#ifdef _MSC_VER
++  constexpr size_t inputs_size = 1;
++#else
+   constexpr size_t inputs_size = 0;
++#endif
+   const int32_t inputs[inputs_size] = {};
+   constexpr size_t outputs_size = 1;
+   const int32_t outputs[outputs_size] = {0};
++#ifdef _MSC_VER
++  constexpr size_t operator_inputs_size = 1;
++#else
+   constexpr size_t operator_inputs_size = 0;
++#endif
+   const int32_t operator_inputs[operator_inputs_size] = {};
+   constexpr size_t operator_outputs_size = 2;
+   const int32_t operator_outputs[operator_outputs_size] = {0, 1};

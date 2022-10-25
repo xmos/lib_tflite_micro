@@ -57,8 +57,6 @@ enum KernelType {
   BNNConv2DValidIndirectInt8_t
 };
 
-enum OT_Type { Group, Channelwise };
-
 /**
  * @brief This describes the memory requirements of a worker thread. It also
  * includes an array of the work to be done by said worker.
@@ -81,7 +79,6 @@ struct Conv2DThreadInfo {
 struct Conv2DOpData
     : XCoreOpData { // Inherits the operator name field from XCoreOpData
   size_t thread_count;
-  int ot_type;
   Conv2DThreadInfo *threads;
   KernelType kt;
   nn::AbstractKernel *filter2D; // The job to be done by this thread
@@ -182,12 +179,10 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   const uint8_t *ot_fn_data =
       parser.parseNamedCustomOption("otp").AsBlob().data();
   int32_t scratch_size = parser.parseNamedCustomOption("scratch").AsInt32();
-  int32_t ot_type = parser.parseNamedCustomOption("ott").AsInt32();
   auto ak_params_vec = parser.parseNamedCustomOption("akp").AsVector();
 
   auto thread_count = ak_params_vec.size();
   op_data->kt = kt;
-  op_data->ot_type = ot_type;
   op_data->thread_count = thread_count;
   op_data->threads =
       static_cast<Conv2DThreadInfo *>(context->AllocatePersistentBuffer(
@@ -195,76 +190,38 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
 
   switch (kt) {
   case Conv2DValidDirect_t: {
-    if (ot_type == Channelwise) {
-      ConstructFilter2Ds<nn::Conv2dValidDirect, nn::DerefInputFn,
-                         nn::MatMulDirectFn, nn::OT_int8_channelwise,
-                         nn::Filter2D>(op_data, context, scratch_size,
-                                       memcpy_fn_data, agg_fn_data, ot_fn_data,
-                                       ak_params_vec);
-    } else {
-      ConstructFilter2Ds<nn::Conv2dValidDirect, nn::DerefInputFn,
-                         nn::MatMulDirectFn, nn::OT_int8, nn::Filter2D>(
-          op_data, context, scratch_size, memcpy_fn_data, agg_fn_data,
-          ot_fn_data, ak_params_vec);
-    }
+    ConstructFilter2Ds<nn::Conv2dValidDirect, nn::DerefInputFn,
+                       nn::MatMulDirectFn, nn::OT_int8, nn::Filter2D>(
+        op_data, context, scratch_size, memcpy_fn_data, agg_fn_data, ot_fn_data,
+        ak_params_vec);
     op_data->name = "XC_Conv2DValidDir";
   } break;
   case Conv2DValidIndirect_t: {
-    if (ot_type == Channelwise) {
-      ConstructFilter2Ds<nn::Conv2dValidIndirect, nn::ImToColValid,
-                         nn::MatMulInt8, nn::OT_int8_channelwise, nn::Filter2D>(
-          op_data, context, scratch_size, memcpy_fn_data, agg_fn_data,
-          ot_fn_data, ak_params_vec);
-    } else {
-      ConstructFilter2Ds<nn::Conv2dValidIndirect, nn::ImToColValid,
-                         nn::MatMulInt8, nn::OT_int8, nn::Filter2D>(
-          op_data, context, scratch_size, memcpy_fn_data, agg_fn_data,
-          ot_fn_data, ak_params_vec);
-    }
+    ConstructFilter2Ds<nn::Conv2dValidIndirect, nn::ImToColValid,
+                       nn::MatMulInt8, nn::OT_int8, nn::Filter2D>(
+        op_data, context, scratch_size, memcpy_fn_data, agg_fn_data, ot_fn_data,
+        ak_params_vec);
     op_data->name = "XC_Conv2DValidInd";
   } break;
   case Conv2DPaddedIndirect_t: {
-    if (ot_type == Channelwise) {
-      ConstructFilter2Ds<nn::Conv2dPaddedInDirect, nn::ImToColPadded,
-                         nn::MatMulInt8, nn::OT_int8_channelwise, nn::Filter2D>(
-          op_data, context, scratch_size, memcpy_fn_data, agg_fn_data,
-          ot_fn_data, ak_params_vec);
-    } else {
-      ConstructFilter2Ds<nn::Conv2dPaddedInDirect, nn::ImToColPadded,
-                         nn::MatMulInt8, nn::OT_int8, nn::Filter2D>(
-          op_data, context, scratch_size, memcpy_fn_data, agg_fn_data,
-          ot_fn_data, ak_params_vec);
-    }
+    ConstructFilter2Ds<nn::Conv2dPaddedInDirect, nn::ImToColPadded,
+                       nn::MatMulInt8, nn::OT_int8, nn::Filter2D>(
+        op_data, context, scratch_size, memcpy_fn_data, agg_fn_data, ot_fn_data,
+        ak_params_vec);
     op_data->name = "XC_Conv2DPadInd";
   } break;
   case DepthwiseConv2DValidDirect_t: {
-    if (ot_type == Channelwise) {
-      ConstructFilter2Ds<nn::Conv2dDepthwiseValidDirect, nn::DerefInputFn,
-                         nn::MatMulDirectFn_DW, nn::OT_int8_channelwise,
-                         nn::Filter2D_DW>(op_data, context, scratch_size,
-                                          memcpy_fn_data, agg_fn_data,
-                                          ot_fn_data, ak_params_vec);
-    } else {
-      ConstructFilter2Ds<nn::Conv2dDepthwiseValidDirect, nn::DerefInputFn,
-                         nn::MatMulDirectFn_DW, nn::OT_int8, nn::Filter2D_DW>(
-          op_data, context, scratch_size, memcpy_fn_data, agg_fn_data,
-          ot_fn_data, ak_params_vec);
-    }
+    ConstructFilter2Ds<nn::Conv2dDepthwiseValidDirect, nn::DerefInputFn,
+                       nn::MatMulDirectFn_DW, nn::OT_int8, nn::Filter2D_DW>(
+        op_data, context, scratch_size, memcpy_fn_data, agg_fn_data, ot_fn_data,
+        ak_params_vec);
     op_data->name = "XC_DWConv2DValidInd";
   } break;
   case DepthwiseConv2DPaddedIndirect_t: {
-    if (ot_type == Channelwise) {
-      ConstructFilter2Ds<nn::Conv2dDepthwisePaddedIndirect, nn::ImToColPadded,
-                         nn::MatMulDirectFn_DW, nn::OT_int8_channelwise,
-                         nn::Filter2D_DW>(op_data, context, scratch_size,
-                                          memcpy_fn_data, agg_fn_data,
-                                          ot_fn_data, ak_params_vec);
-    } else {
-      ConstructFilter2Ds<nn::Conv2dDepthwisePaddedIndirect, nn::ImToColPadded,
-                         nn::MatMulDirectFn_DW, nn::OT_int8, nn::Filter2D_DW>(
-          op_data, context, scratch_size, memcpy_fn_data, agg_fn_data,
-          ot_fn_data, ak_params_vec);
-    }
+    ConstructFilter2Ds<nn::Conv2dDepthwisePaddedIndirect, nn::ImToColPadded,
+                       nn::MatMulDirectFn_DW, nn::OT_int8, nn::Filter2D_DW>(
+        op_data, context, scratch_size, memcpy_fn_data, agg_fn_data, ot_fn_data,
+        ak_params_vec);
     op_data->name = "XC_DWConv2DPadInd";
   } break;
   case BNNConv2DValidDirectBinary_t: {
@@ -348,26 +305,16 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
     nn::Filter2D *f = (nn::Filter2D *)op_data->filter2D;
     nn::MatMulDirectFn *aggr = (nn::MatMulDirectFn *)(f->aggregate_handler);
     aggr->setWeights(weights);
-    if (op_data->ot_type == Channelwise) {
-      nn::OT_int8_channelwise *ot = (nn::OT_int8_channelwise *)(f->ot_handler);
-      ot->setMultipliersAndBiases(multipliers_and_biases);
-    } else {
-      nn::OT_int8 *ot = (nn::OT_int8 *)(f->ot_handler);
-      ot->setMultipliersAndBiases(multipliers_and_biases);
-    }
+    nn::OT_int8 *ot = (nn::OT_int8 *)(f->ot_handler);
+    ot->setMultipliersAndBiases(multipliers_and_biases);
   } break;
   case Conv2DValidIndirect_t:
   case Conv2DPaddedIndirect_t: {
     nn::Filter2D *f = (nn::Filter2D *)op_data->filter2D;
     nn::MatMulInt8 *aggr = (nn::MatMulInt8 *)(f->aggregate_handler);
     aggr->setWeights(weights);
-    if (op_data->ot_type == Channelwise) {
-      nn::OT_int8_channelwise *ot = (nn::OT_int8_channelwise *)(f->ot_handler);
-      ot->setMultipliersAndBiases(multipliers_and_biases);
-    } else {
-      nn::OT_int8 *ot = (nn::OT_int8 *)(f->ot_handler);
-      ot->setMultipliersAndBiases(multipliers_and_biases);
-    }
+    nn::OT_int8 *ot = (nn::OT_int8 *)(f->ot_handler);
+    ot->setMultipliersAndBiases(multipliers_and_biases);
   } break;
   case DepthwiseConv2DPaddedIndirect_t:
   case DepthwiseConv2DValidDirect_t: {
@@ -375,13 +322,8 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
     nn::MatMulDirectFn_DW *aggr =
         (nn::MatMulDirectFn_DW *)(f->aggregate_handler);
     aggr->setWeights(weights);
-    if (op_data->ot_type == Channelwise) {
-      nn::OT_int8_channelwise *ot = (nn::OT_int8_channelwise *)(f->ot_handler);
-      ot->setMultipliersAndBiases(multipliers_and_biases);
-    } else {
-      nn::OT_int8 *ot = (nn::OT_int8 *)(f->ot_handler);
-      ot->setMultipliersAndBiases(multipliers_and_biases);
-    }
+    nn::OT_int8 *ot = (nn::OT_int8 *)(f->ot_handler);
+    ot->setMultipliersAndBiases(multipliers_and_biases);
   } break;
   case BNNConv2DValidDirectBinary_t: {
     nn::Filter2D *f = (nn::Filter2D *)op_data->filter2D;

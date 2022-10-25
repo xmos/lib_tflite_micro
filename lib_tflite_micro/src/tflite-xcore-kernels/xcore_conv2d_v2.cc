@@ -188,8 +188,6 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   auto thread_count = ak_params_vec.size();
   op_data->kt = kt;
   op_data->ot_type = ot_type;
-  printf("runtime OT: %d\n", op_data->ot_type);
-  printf("runtime KT: %d\n", op_data->kt);
   op_data->thread_count = thread_count;
   op_data->threads =
       static_cast<Conv2DThreadInfo *>(context->AllocatePersistentBuffer(
@@ -242,28 +240,30 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   case DepthwiseConv2DValidDirect_t: {
     if (ot_type == Channelwise) {
       ConstructFilter2Ds<nn::Conv2dDepthwiseValidDirect, nn::DerefInputFn,
-                        nn::MatMulDirectFn_DW, nn::OT_int8_channelwise, nn::Filter2D_DW>(
-          op_data, context, scratch_size, memcpy_fn_data, agg_fn_data, ot_fn_data,
-          ak_params_vec);
+                         nn::MatMulDirectFn_DW, nn::OT_int8_channelwise,
+                         nn::Filter2D_DW>(op_data, context, scratch_size,
+                                          memcpy_fn_data, agg_fn_data,
+                                          ot_fn_data, ak_params_vec);
     } else {
       ConstructFilter2Ds<nn::Conv2dDepthwiseValidDirect, nn::DerefInputFn,
-                        nn::MatMulDirectFn_DW, nn::OT_int8, nn::Filter2D_DW>(
-          op_data, context, scratch_size, memcpy_fn_data, agg_fn_data, ot_fn_data,
-          ak_params_vec);
+                         nn::MatMulDirectFn_DW, nn::OT_int8, nn::Filter2D_DW>(
+          op_data, context, scratch_size, memcpy_fn_data, agg_fn_data,
+          ot_fn_data, ak_params_vec);
     }
     op_data->name = "XC_DWConv2DValidInd";
   } break;
   case DepthwiseConv2DPaddedIndirect_t: {
     if (ot_type == Channelwise) {
       ConstructFilter2Ds<nn::Conv2dDepthwisePaddedIndirect, nn::ImToColPadded,
-                        nn::MatMulDirectFn_DW, nn::OT_int8_channelwise, nn::Filter2D_DW>(
-          op_data, context, scratch_size, memcpy_fn_data, agg_fn_data, ot_fn_data,
-          ak_params_vec);
+                         nn::MatMulDirectFn_DW, nn::OT_int8_channelwise,
+                         nn::Filter2D_DW>(op_data, context, scratch_size,
+                                          memcpy_fn_data, agg_fn_data,
+                                          ot_fn_data, ak_params_vec);
     } else {
       ConstructFilter2Ds<nn::Conv2dDepthwisePaddedIndirect, nn::ImToColPadded,
-                        nn::MatMulDirectFn_DW, nn::OT_int8, nn::Filter2D_DW>(
-          op_data, context, scratch_size, memcpy_fn_data, agg_fn_data, ot_fn_data,
-          ak_params_vec);
+                         nn::MatMulDirectFn_DW, nn::OT_int8, nn::Filter2D_DW>(
+          op_data, context, scratch_size, memcpy_fn_data, agg_fn_data,
+          ot_fn_data, ak_params_vec);
     }
     op_data->name = "XC_DWConv2DPadInd";
   } break;

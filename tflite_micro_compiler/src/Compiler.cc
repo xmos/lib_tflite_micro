@@ -473,6 +473,23 @@ enum used_operators_e {
   wr << R"( OP_LAST
 };
 
+#ifdef TFLMC_XCORE_PROFILE
+const char *op_strs[] = {
+)";
+  for (size_t i = 0; i < registrations_.size(); i++) {
+    if (registrations_[i].code == tflite::BuiltinOperator_CUSTOM) {
+      wr << "\"OP_" << registrations_[i].custom_name << "\", ";
+    } else {
+      wr << "\"OP_" << tflite::EnumNameBuiltinOperator(registrations_[i].code)
+         << "\", ";
+    }
+  }
+wr << R"(};
+int op_times[OP_LAST];
+int op_counts[OP_LAST];
+int time_t0, time_t1;
+#endif
+
 TfLiteContext ctx{};
 
 TfLiteRegistration registrations[OP_LAST];
@@ -715,22 +732,73 @@ TfLiteStatus )"
     }
   }
   wr << "\n";
+  wr << R"(
+#ifdef TFLMC_XCORE_PROFILE
+  printf("\nProfiling init()...");
+  memset(op_times, 0, sizeof(op_times));
+#endif
+
+)";
   wr << "  for(size_t i = 0; i < " << nodes_.size() << R"(; ++i) {
     if (registrations[used_ops[i]].init) {
+
+#ifdef TFLMC_XCORE_PROFILE
+      asm volatile ("gettime %0" : "=r" (time_t0));
+#endif
+
       tflNodes[i].user_data = registrations[used_ops[i]].init(&ctx, (const char*)tflNodes[i].builtin_data, )";
     wr << "tflNodes[i].custom_initial_data_size";
   wr << R"();
+
+#ifdef TFLMC_XCORE_PROFILE
+      asm volatile ("gettime %0" : "=r" (time_t1));
+      op_times[used_ops[i]] += time_t1 - time_t0;
+      printf("\nnode %-5d %-32s %-12d", i, op_strs[used_ops[i]], time_t1 - time_t0);
+#endif
+
     }
   }
+
+#ifdef TFLMC_XCORE_PROFILE
+    printf("\n\nCumulative times for init()...");
+    for(int i=0; i<OP_LAST; i++){
+      printf("\n%-32s %-12d", op_strs[i], op_times[i]);
+    }
+  printf("\n");
+  printf("\nProfiling prepare()...");
+  memset(op_times, 0, sizeof(op_times));
+#endif
+
 )";
   wr << "  for(size_t i = 0; i < " << nodes_.size() << R"(; ++i) {
     if (registrations[used_ops[i]].prepare) {
+
+#ifdef TFLMC_XCORE_PROFILE
+      asm volatile ("gettime %0" : "=r" (time_t0));
+#endif
+
       TfLiteStatus status = registrations[used_ops[i]].prepare(&ctx, &tflNodes[i]);
+
+#ifdef TFLMC_XCORE_PROFILE
+      asm volatile ("gettime %0" : "=r" (time_t1));
+      op_times[used_ops[i]] += time_t1 - time_t0;
+      printf("\nnode %-5d %-32s %-12d", i, op_strs[used_ops[i]], time_t1 - time_t0);
+#endif
+
       if (status != kTfLiteOk) {
         return status;
       }
     }
   }
+
+#ifdef TFLMC_XCORE_PROFILE
+    printf("\n\nCumulative times for prepare()...");
+    for(int i=0; i<OP_LAST; i++){
+      printf("\n%-32s %-12d", op_strs[i], op_times[i]);
+    }
+  printf("\n");
+#endif
+
   return kTfLiteOk;
 }
 
@@ -758,20 +826,77 @@ TfLiteTensor* )"
   return &ctx.tensors[outTensorIndices[index]];
 }
 
+#ifdef TFLMC_PRINT_TENSORS
+unsigned char checksum(char *data, unsigned int length)
+{
+  static char sum;
+  static char * end;
+  sum = 0;
+  end = data + length;
+
+  do
+  {
+      sum -= *data++;
+  } while (data != end);
+  return sum;
+}
+#endif
+
 TfLiteStatus )"
       << prefix_ << R"(invoke() {
   thread_init_1(&xc_config.thread_info);
   xc_config.thread_info.nstackwords = kStackWordsPerThread;
   xc_config.thread_info.stacks = &xc_stack[kStackWordsPerThread/2 - 1];
+
+#ifdef TFLMC_XCORE_PROFILE
+  printf("\nProfiling invoke()...");
+  memset(op_times, 0, sizeof(op_times));
+  memset(op_counts, 0, sizeof(op_counts));
+#endif
+
   for(size_t i = 0; i < )"
       << nodes_.size() << R"(; ++i) {
+
+#ifdef TFLMC_XCORE_PROFILE
+  asm volatile ("gettime %0" : "=r" (time_t0));
+#endif
+
     TfLiteStatus status = registrations[used_ops[i]].invoke(&ctx, &tflNodes[i]);
+
+#ifdef TFLMC_XCORE_PROFILE
+  asm volatile ("gettime %0" : "=r" (time_t1));
+  op_times[used_ops[i]] += time_t1 - time_t0;
+  op_counts[used_ops[i]] += 1;
+  printf("\nnode %-5d %-32s %-12d", i, op_strs[used_ops[i]], time_t1 - time_t0);
+#endif
+
+#ifdef TFLMC_PRINT_TENSORS
+    // print every output tensor
+    printf("\nnode %d", i);
+    for (int j=0; j<tflNodes[i].outputs->size; j++){
+      printf("\noutput %d, %d bytes, checksum %d\n", j, tflTensors[tflNodes[i].outputs->data[j]].bytes, checksum(tflTensors[tflNodes[i].outputs->data[j]].data.raw, tflTensors[tflNodes[i].outputs->data[j]].bytes));
+      for(int k=0; k<tflTensors[tflNodes[i].outputs->data[j]].bytes; k++){
+        printf("%d,", (int8_t)tflTensors[tflNodes[i].outputs->data[j]].data.raw[k]);
+      }
+    }
+    printf("\n");
+#endif
+
     if (status != kTfLiteOk) {
       thread_destroy(&xc_config.thread_info);
       return status;
     }
   }
   thread_destroy(&xc_config.thread_info);
+
+#ifdef TFLMC_XCORE_PROFILE
+  printf("\n\nCumulative times for invoke()...");
+  for(int i=0; i<OP_LAST; i++){
+    printf("\n%-5d %-32s %-12d", op_counts[i], op_strs[i], op_times[i]);
+  }
+  printf("\n");
+#endif
+
   return kTfLiteOk;
 }
 )";

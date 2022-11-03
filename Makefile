@@ -2,6 +2,7 @@ build:
 	(cd lib_tflite_micro/submodules/tflite-micro && git reset --hard && patch -p0 -i ../../../patches/tflite-micro.patch)
 	mkdir -p tflite_micro_compiler/build
 	(cd tflite_micro_compiler/build && cmake .. -DXBUILD=1 && make -j8)
+	(cd app_inference_engine && xmake)
 
 init:
 	python3 fetch_dependencies.py

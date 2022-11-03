@@ -9,6 +9,7 @@ extern "C" {
 
 #define XCORE_MAX_NUM_THREADS 8
 
+#ifndef __XC__
 typedef struct { // THIS STRUCT MUST BE IN SYNC WITH ASSEMBLY CODE.
   union {
     uint64_t id_aligned[2]; // Guarantee 64-bit alignment.
@@ -100,6 +101,7 @@ void thread_variable_setup(void *arg1, void *arg2, uint32_t thread_id);
  */
 void thread_call(void *arg0, void *arg1, void *arg2,
                  thread_function_pointer_t fp, thread_info_t *ptr);
+#endif
 #ifdef __cplusplus
 };
 #endif

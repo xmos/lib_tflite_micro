@@ -31,6 +31,7 @@ SOURCE_DIRS += src/tflite-xcore-kernels
 SOURCE_DIRS += submodules/tflite-micro/tensorflow/lite/micro
 SOURCE_DIRS += submodules/tflite-micro/tensorflow/lite/micro/xcore
 SOURCE_DIRS += submodules/tflite-micro/tensorflow/lite/micro/memory_planner
+SOURCE_DIRS += submodules/tflite-micro/tensorflow/lite/micro/arena_allocator
 SOURCE_DIRS += submodules/tflite-micro/tensorflow/lite/micro/kernels
 SOURCE_DIRS += submodules/tflite-micro/tensorflow/lite/micro/kernels/xcore
 SOURCE_DIRS += submodules/tflite-micro/tensorflow/lite/c
@@ -61,15 +62,17 @@ ifeq ($(USE_WITH_TFLITE_MICRO_COMPILER),1)
 #src
 EXCLUDE_FILES += inference_engine.cc
 EXCLUDE_FILES += xcore_interpreter.cc
+endif
+
 #lite/micro
-EXCLUDE_FILES += fake_micro_context.cc
+
 EXCLUDE_FILES += fake_micro_context_test.cc
-EXCLUDE_FILES += micro_graph.cc
-EXCLUDE_FILES += micro_allocator.cc
+
+
 EXCLUDE_FILES += micro_allocation_info_test.cc
-EXCLUDE_FILES += micro_context.cc
+
 EXCLUDE_FILES += micro_context_test.cc
-EXCLUDE_FILES += micro_interpreter.cc
+
 EXCLUDE_FILES += memory_helpers_test.cc
 #lite/micro/kernels
 EXCLUDE_FILES += read_variable.cc
@@ -78,7 +81,7 @@ EXCLUDE_FILES += while.cc
 EXCLUDE_FILES += while_test.cc
 EXCLUDE_FILES += broadcast_args_test.cc
 EXCLUDE_FILES += squared_difference_test.cc
-endif
+
 
 #lite/micro
 EXCLUDE_FILES += micro/memory_arena_threshold_test.cc
@@ -95,6 +98,11 @@ EXCLUDE_FILES += lite/micro/all_ops_resolver.cc
 EXCLUDE_FILES += lite/micro/test_helpers.cc
 EXCLUDE_FILES += lite/micro/micro_error_reporter_test.cc
 EXCLUDE_FILES += testing_helpers_test.cc
+
+EXCLUDE_FILES += micro/arena_allocator/non_persistent_arena_buffer_allocator_test.cc
+EXCLUDE_FILES += micro/arena_allocator/persistent_arena_buffer_allocator_test.cc
+EXCLUDE_FILES += micro/arena_allocator/recording_single_arena_buffer_allocator_test.cc
+EXCLUDE_FILES += micro/arena_allocator/single_arena_buffer_allocator_test.cc
 
 #lite/micro/kernels
 EXCLUDE_FILES += lite/micro/kernels/squeeze_test.cc

@@ -6,6 +6,13 @@ pipeline {
     agent {
         label "xcore.ai"
     }
+    parameters { // Available to modify on the job page within Jenkins if starting a build
+        string( // use to try different tools versions
+            name: 'TOOLS_VERSION',
+            defaultValue: '15.0.6',
+            description: 'The tools version to build with (check /projects/tools/ReleasesTools/)'
+        )
+    }
     options {
 
         // skipDefaultCheckout()
@@ -21,9 +28,10 @@ pipeline {
                 steps {
                     installPipfile(false)
                     withVenv {
+                        sh "/XMOS/get_tools.py " + params.TOOLS_VERSION
                         sh 'git submodule update --depth=1 --init --recursive --jobs 8'
                         sh 'make init'
-			sh 'make build'
+			            sh 'make build'
                     }
                 }
             }

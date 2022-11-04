@@ -31,6 +31,7 @@ pipeline {
                         sh 'git submodule update --depth=1 --init --recursive --jobs 8'
                         sh 'make init'
                         withTools(params.TOOLS_VERSION) {
+                            sh 'make init'
                             sh 'make build'
                         }
                     }

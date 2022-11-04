@@ -6,6 +6,13 @@ pipeline {
     agent {
         label "xcore.ai"
     }
+    parameters {
+        string(
+        name: 'TOOLS_VERSION',
+        defaultValue: '15.1.4',
+        description: 'The tools version to build with (check /projects/tools/ReleasesTools/)'
+        )
+    }
     options {
 
         // skipDefaultCheckout()
@@ -21,9 +28,9 @@ pipeline {
                 steps {
                     installPipfile(false)
                     withVenv {
-                        withTools(15.1) {
-                            sh 'git submodule update --depth=1 --init --recursive --jobs 8'
-                            sh 'make init'
+                        sh 'git submodule update --depth=1 --init --recursive --jobs 8'
+                        sh 'make init'
+                        withTools(params.TOOLS_VERSION) {
                             sh 'make build'
                         }
                     }

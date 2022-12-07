@@ -28,8 +28,6 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   int bias = parser.parseNamedCustomOption("bias").AsInt32();
   int shift = parser.parseNamedCustomOption("shift").AsInt32();
 
-  printf("\n\nm1 %d, m2 %d, bias %d, shift %d\n", m1, m2, bias, shift);
-
   // Broadcast values into vectors
   for (int i = 0; i < 16; i++) {
     op_data->params.m1[i] = (int16_t)m1;

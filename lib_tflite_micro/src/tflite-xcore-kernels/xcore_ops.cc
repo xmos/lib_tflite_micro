@@ -17,6 +17,8 @@ void RegisterXCOps(MicroOpResolver *res) {
   auto *resolver =
       reinterpret_cast<MicroMutableOpResolver<XTFLM_OPERATORS> *>(res);
   resolver->AddCustom(XC_conv2d_v2_OpCode, Register_XC_conv2d_v2());
+  resolver->AddCustom(tflite::ops::micro::xcore::XC_add_OpCode,
+                      tflite::ops::micro::xcore::Register_XC_add());
   resolver->AddCustom(tflite::ops::micro::xcore::XC_strided_slice_OpCode,
                       tflite::ops::micro::xcore::Register_XC_strided_slice());
   resolver->AddCustom(tflite::ops::micro::xcore::XC_ld_flash_OpCode,

@@ -29,10 +29,12 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   int shift = parser.parseNamedCustomOption("shift").AsInt32();
 
   // Broadcast values into vectors
-  for (int i = 0; i < 16; i++) {
+  // We are VLMACC-ing in 16-bit mode
+  for (int i = 0; i < VPU_INT16_VLMACC_ELMS; i++) {
     op_data->params.m1[i] = (int16_t)m1;
     op_data->params.m2[i] = (int16_t)m2;
     op_data->params.shift[i] = (int16_t)shift;
+    // Split 32-bit bias into two 16-bit values
     op_data->params.bias_hi[i] = bias >> 16;
     op_data->params.bias_lo[i] = (int16_t) (bias & 0XFFFF);
   }

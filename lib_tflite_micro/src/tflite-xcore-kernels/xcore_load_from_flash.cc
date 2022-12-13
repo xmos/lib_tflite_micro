@@ -20,15 +20,14 @@ namespace micro {
 namespace xcore {
 namespace flash {
 
+constexpr int kMaxOutputNum = 10; // Maximum number of output tensors
+
 // This is the struct that contains the data required to fully describe the work
-// that the operator will perform. It needs to descibe the work for T threads.
-// That means it must contain:
-// - T sets of work, i.e. a list of jobs for each thread.
-// - T scratch allocations, i.e. an amount of scratch memory for each thread.
+// that the operator will perform.
 struct FlashOpData
     : XCoreOpData { // Inherits the operator name field from XCoreOpData
   uint32_t addr;
-  uint32_t size;
+  uint32_t sizes[kMaxOutputNum];
   void *flash_data;
 };
 
@@ -38,7 +37,12 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   auto op_data = construct_persistent_object<FlashOpData>(context);
   auto parser = CustomOptionParser(buffer, length);
   op_data->addr = parser.parseNamedCustomOption("addr").AsInt32();
-  op_data->size = parser.parseNamedCustomOption("size").AsInt32();
+  auto sizes_vec = parser.parseNamedCustomOption("sizes").AsVector();
+  TFLITE_DCHECK(sizes_vec.size() <= kMaxOutputNum);
+
+  for (int i = 0; i < sizes_vec.size(); i++) {
+    op_data->sizes[i] = sizes_vec[i].AsInt32();
+  }
 
   MicroContext *micro_context = GetMicroContext(context);
   xc_context_config_t *xc_config = reinterpret_cast<xc_context_config_t *>(
@@ -54,8 +58,6 @@ TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
 }
 
 TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
-  TfLiteEvalTensor *output = tflite::micro::GetEvalOutput(context, node, 0);
-  int8_t *data_ptr = (int8_t *)tflite::micro::GetTensorData<int8_t>(output);
   auto *op_data = reinterpret_cast<FlashOpData *>(node->user_data);
 
 #ifdef __xcore__
@@ -73,8 +75,15 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   // load_from_flash_ll(op_data->c_flash, data_ptr, op_data->address,
   // op_data->bytes);
 #else
-  memcpy(data_ptr, ((int8_t *)op_data->flash_data) + op_data->addr,
-         op_data->size);
+  int addr_offset = 0;
+  for (int i = 0; i < node->outputs->size; ++i) {
+    TfLiteEvalTensor *output = tflite::micro::GetEvalOutput(context, node, i);
+    int8_t *data_ptr = tflite::micro::GetTensorData<int8_t>(output);
+    memcpy((void *)data_ptr,
+           ((int8_t *)op_data->flash_data) + op_data->addr + addr_offset,
+           op_data->sizes[i]);
+    addr_offset += op_data->sizes[i];
+  }
 #endif
 
   return kTfLiteOk;

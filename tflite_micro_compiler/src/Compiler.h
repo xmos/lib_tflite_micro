@@ -12,6 +12,7 @@
 #undef private
 #include "tensorflow/lite/schema/schema_generated.h"
 #include "xcore_ops.h"
+#include "xcore_shared_config.h"
 
 namespace tflmc {
 
@@ -36,6 +37,10 @@ class Compiler {
   // prefix: This string is prepended to every global name.
   Compiler(const void *modelData, const std::string &prefix = "model_",
            const bool debugPrint = false);
+
+  Compiler(const void *modelData,
+           const struct shared_config::xcore_metadata *sharedCfg,
+           const std::string &prefix = "model_", const bool debugPrint = false);
 
   void writeSource(std::ostream &out);
   void writeHeader(std::ostream &out);
@@ -91,6 +96,7 @@ class Compiler {
  private:
   bool debugPrint_;
   std::string prefix_;
+  const struct shared_config::xcore_metadata *sharedCfg_ = nullptr;
   tflite::MicroErrorReporter microErrReporter_;
   const tflite::Model *model_ = nullptr;
   const tflite::SubGraph *subgraph_ = nullptr;

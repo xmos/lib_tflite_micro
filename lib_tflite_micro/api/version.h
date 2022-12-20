@@ -4,9 +4,9 @@
 
 namespace lib_tflite_micro {
 
-unsigned major_version = 0;
-unsigned minor_version = 3;
-unsigned patch_version = 0;
+static const unsigned major_version = 0;
+static const unsigned minor_version = 3;
+static const unsigned patch_version = 0;
 
 } // namespace lib_tflite_micro
 

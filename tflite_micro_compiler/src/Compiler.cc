@@ -7,6 +7,8 @@
 
 #include "CodeWriter.h"
 #include "TypeToString.h"
+#include "lib_nn/api/version.h"
+#include "lib_tflite_micro/api/version.h"
 #include "xcore_config.h"
 #include "xtflm_conf.h"
 
@@ -204,7 +206,12 @@ bool tflmc::CompileFile(const std::string &modelFileName,
 
 tflmc::Compiler::Compiler(const void *modelData, const std::string &prefix,
                           const bool debugPrint)
-    : prefix_(prefix), debugPrint_(debugPrint) {
+    : Compiler(modelData, nullptr, prefix, debugPrint) {}
+
+tflmc::Compiler::Compiler(const void *modelData,
+                          const struct shared_config::xcore_metadata *sharedCfg,
+                          const std::string &prefix, const bool debugPrint)
+    : sharedCfg_(sharedCfg), prefix_(prefix), debugPrint_(debugPrint) {
   if (!init(modelData)) {
     throw std::runtime_error("Could not set up compiler");
   }
@@ -399,6 +406,8 @@ void tflmc::Compiler::writeSource(std::ostream &out) {
   wr << R"(
 
 #include "../../api/xcore_config.h"
+#include "lib_nn/api/version.h"
+#include "lib_tflite_micro/api/version.h"
 #include "tensorflow/lite/c/builtin_op_data.h"
 #include "tensorflow/lite/c/common.h"
 #include "tensorflow/lite/micro/kernels/conv.h"
@@ -415,8 +424,45 @@ void tflmc::Compiler::writeSource(std::ostream &out) {
 #elif defined __TASKING__
 #define ALIGN(X) __align(X)
 #endif
+)";
+
+  if (!sharedCfg_) {
+    wr << R"(
+// Check lib_nn and lib_tflite_micro versions
+// NOTE: xformer version is saved for debugging purposes
+// If lib_nn and lib_tflite_micro versions are as expected,
+// then the xformer version doesn't matter as the model should execute
+// If major version is zero, then minor versions must match
+// Otherwise, major versions must match and binary minor version
+// must be less or equal to runtime minor version
+// Check if runtime lib_tflite_micro version matches with compiled version
+static_assert(()"
+       << sharedCfg_->lib_tflite_micro_major_version
+       << R"( == 0 && lib_tflite_micro::major_version == 0 && )"
+       << sharedCfg_->lib_tflite_micro_minor_version
+       << R"( == lib_tflite_micro::minor_version) ||
+              ()"
+       << sharedCfg_->lib_tflite_micro_major_version
+       << R"( == lib_tflite_micro::major_version) ||
+              ()"
+       << sharedCfg_->lib_tflite_micro_minor_version
+       << R"(  < lib_tflite_micro::minor_version),
+             "Model has been compiled with lib_tflite_micro version incompatible with runtime lib_tflite_micro version!");
+
+// Check if runtime lib_nn version matches with compiled version
+static_assert(()"
+       << sharedCfg_->lib_nn_major_version
+       << R"( == 0 && lib_nn::major_version == 0 && )"
+       << sharedCfg_->lib_nn_minor_version << R"( == lib_nn::minor_version) ||
+              ()"
+       << sharedCfg_->lib_nn_major_version << R"( == lib_nn::major_version) ||
+              ()"
+       << sharedCfg_->lib_nn_minor_version << R"(  < lib_nn::minor_version),
+             "Model has been compiled with lib_nn version incompatible with runtime lib_nn version!");
 
 )";
+  }
+
   // declare custom registrations
   if (has_custom_ops) {
     wr << R"(namespace tflite {
@@ -484,7 +530,7 @@ const char *op_strs[] = {
          << "\", ";
     }
   }
-wr << R"(};
+  wr << R"(};
 int op_times[OP_LAST];
 int op_counts[OP_LAST];
 int time_t0, time_t1;
@@ -523,8 +569,6 @@ TfLiteRegistration registrations[OP_LAST];
     wr.writeIntArray(*node.outputs, "outputs" + std::to_string(i));
   }
 
-
-
   wr << R"(TfLiteTensor tflTensors[] = {
 )";
   for (size_t i = 0; i < tensors_.size(); i++) {
@@ -541,11 +585,12 @@ TfLiteRegistration registrations[OP_LAST];
 
     wr << tflmc::to_string(t->type) << ", ";
 
-if (has_quantization) {
+    if (has_quantization) {
       if (t->quantization.type == kTfLiteAffineQuantization) {
         wr << "{kTfLiteAffineQuantization, "
               "const_cast<void*>(static_cast<const void*>(&quant"
-           << i << ")) }, {quant"<< i <<".scale->data[0], quant"<< i <<".zero_point->data[0] ";
+           << i << ")) }, {quant" << i << ".scale->data[0], quant" << i
+           << ".zero_point->data[0] ";
       } else {
         wr << "{kTfLiteNoQuantization, nullptr }, {0,0";
       }
@@ -560,7 +605,6 @@ if (has_quantization) {
     wr << "},\n";
   }
   wr << "};\n";
-
 
   wr << R"(TfLiteNode tflNodes[] = {
 )";
@@ -747,7 +791,7 @@ TfLiteStatus )"
 #endif
 
       tflNodes[i].user_data = registrations[used_ops[i]].init(&ctx, (const char*)tflNodes[i].builtin_data, )";
-    wr << "tflNodes[i].custom_initial_data_size";
+  wr << "tflNodes[i].custom_initial_data_size";
   wr << R"();
 
 #ifdef TFLMC_XCORE_PROFILE

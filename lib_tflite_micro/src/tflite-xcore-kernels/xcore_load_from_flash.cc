@@ -66,10 +66,21 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   chan_out_word(c_flash, 0); // TODO: share with aiserver.
   transacting_chanend_t t = chan_init_transaction_slave(c_flash);
   t_chan_out_word(&t, op_data->addr);
-  t_chan_out_word(&t, op_data->size);
-  for (int i = 0; i < op_data->size; i++) {
-    data_ptr[i] = t_chan_in_byte(&t);
+
+  int32_t total_size = 0;
+  for (int i = 0; i < node->outputs->size; ++i) {
+    total_size += op_data->sizes[i];
   }
+  t_chan_out_word(&t, total_size);
+
+  for (int i = 0; i < node->outputs->size; ++i) {
+    TfLiteEvalTensor *output = tflite::micro::GetEvalOutput(context, node, i);
+    int8_t *data_ptr = tflite::micro::GetTensorData<int8_t>(output);
+    for (int j = 0; j < op_data->sizes[i]; ++j) {
+      data_ptr[j] = t_chan_in_byte(&t);
+    }
+  }
+
   chan_complete_transaction(t);
 
   // load_from_flash_ll(op_data->c_flash, data_ptr, op_data->address,

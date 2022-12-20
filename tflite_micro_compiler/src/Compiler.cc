@@ -426,7 +426,7 @@ void tflmc::Compiler::writeSource(std::ostream &out) {
 #endif
 )";
 
-  if (!sharedCfg_) {
+  if (sharedCfg_) {
     wr << R"(
 // Check lib_nn and lib_tflite_micro versions
 // NOTE: xformer version is saved for debugging purposes

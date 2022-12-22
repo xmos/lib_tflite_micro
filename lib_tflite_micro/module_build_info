@@ -43,6 +43,7 @@ SOURCE_DIRS += submodules/tflite-micro/tensorflow/lite/kernels
 EXPORT_INCLUDE_DIRS = api
 
 INCLUDE_DIRS = $(EXPORT_INCLUDE_DIRS)
+INCLUDE_DIRS += ../
 INCLUDE_DIRS += src/tflite-xcore-kernels
 INCLUDE_DIRS += submodules/tflite-micro/tensorflow/lite/micro/
 INCLUDE_DIRS += submodules/tflite-micro/tensorflow/lite/micro/kernels/xcore/ 

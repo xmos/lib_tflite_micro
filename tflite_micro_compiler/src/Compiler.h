@@ -97,6 +97,7 @@ class Compiler {
   bool debugPrint_;
   std::string prefix_;
   const struct shared_config::xcore_metadata *sharedCfg_ = nullptr;
+  int numXCThreads_ = 1;
   tflite::MicroErrorReporter microErrReporter_;
   const tflite::Model *model_ = nullptr;
   const tflite::SubGraph *subgraph_ = nullptr;

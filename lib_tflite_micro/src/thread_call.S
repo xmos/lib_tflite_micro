@@ -318,14 +318,249 @@ thread_destroy:
     .size   thread_destroy, .Ltmp_thread_destroy-thread_destroy
 
 
+
+#define NSTACKWORDS 4
+
+    .globl  thread_init_5
+    .type   thread_init_5,@function
+    .cc_top thread_init_5.function,thread_init_5
+    .align 4
+    //    void thread_init_5(thread_info *ptr)
+
+thread_init_5:
+    ENTSP_lu6 NSTACKWORDS
+    std r4, r5, sp[1]
+
+    getr r4, XS1_RES_TYPE_SYNC     // start with a synchroniser
+    stw  r4, r0[4]                 // save synchroniser in xcore_interpreter
+    ldw  r3, r0[5]                 // retrieve wordcount for each stack from xc_int
+    ldw  r5, r0[6]                 // retrieve base stack pointer from xc_interpreter
+    ldap r11, thread_client
+
+    ldaw r5, r5[-r3]
+    getst r2, res[r4]             // Obtain first thread
+    stw r2, r0[0]
+    init     t[r2]:pc, r11
+    init     t[r2]:sp, r5
+
+    ldaw r5, r5[-r3]
+    getst r2, res[r4]             // Obtain second thread
+    stw r2, r0[1]
+    init     t[r2]:pc, r11
+    init     t[r2]:sp, r5
+
+    ldaw r5, r5[-r3]
+    getst r2, res[r4]             // Obtain third thread
+    stw r2, r0[2]
+    init     t[r2]:pc, r11
+    init     t[r2]:sp, r5
+
+    ldaw r5, r5[-r3]
+    getst r2, res[r4]             // Obtain fourth thread
+    stw r2, r0[3]
+    init     t[r2]:pc, r11
+    init     t[r2]:sp, r5
+
+    msync res[r4]                 // let all threads initialise
+
+    ldd r4, r5, sp[1]             // and restore r4.
+    retsp NSTACKWORDS
+
+
+    // RETURN_REG_HOLDER
+    .cc_bottom thread_init_5.function
+    .set    thread_init_5.nstackwords, NSTACKWORDS
+    .globl  thread_init_5.nstackwords
+    .set    thread_init_5.maxcores,5
+    .globl  thread_init_5.maxcores
+    .set    thread_init_5.maxtimers,0
+    .globl  thread_init_5.maxtimers
+    .set    thread_init_5.maxchanends,0
+    .globl  thread_init_5.maxchanends
+.Ltmp_thread_init_5:
+    .size   thread_init_5, .Ltmp_thread_init_5-thread_init_5
+
+#undef NSTACKWORDS
+
+
+#define NSTACKWORDS 4
+
+    .globl  thread_init_4
+    .type   thread_init_4,@function
+    .cc_top thread_init_4.function,thread_init_4
+    .align 4
+    //    void thread_init_4(thread_info *ptr)
+
+thread_init_4:
+    ENTSP_lu6 NSTACKWORDS
+    std r4, r5, sp[1]
+
+    getr r4, XS1_RES_TYPE_SYNC     // start with a synchroniser
+    stw  r4, r0[4]                 // save synchroniser in xcore_interpreter
+    ldw  r3, r0[5]                 // retrieve wordcount for each stack from xc_int
+    ldw  r5, r0[6]                 // retrieve base stack pointer from xc_interpreter
+    ldap r11, thread_client
+
+    ldaw r5, r5[-r3]
+    getst r2, res[r4]             // Obtain first thread
+    stw r2, r0[0]
+    init     t[r2]:pc, r11
+    init     t[r2]:sp, r5
+
+    ldaw r5, r5[-r3]
+    getst r2, res[r4]             // Obtain second thread
+    stw r2, r0[1]
+    init     t[r2]:pc, r11
+    init     t[r2]:sp, r5
+
+    ldaw r5, r5[-r3]
+    getst r2, res[r4]             // Obtain third thread
+    stw r2, r0[2]
+    init     t[r2]:pc, r11
+    init     t[r2]:sp, r5
+
+    ldc      r2, 0                // No other threads - clear
+    stw r2, r0[3]
+
+    msync res[r4]                 // let all threads initialise
+
+    ldd r4, r5, sp[1]             // and restore r4.
+    retsp NSTACKWORDS
+
+
+    // RETURN_REG_HOLDER
+    .cc_bottom thread_init_4.function
+    .set    thread_init_4.nstackwords, NSTACKWORDS
+    .globl  thread_init_4.nstackwords
+    .set    thread_init_4.maxcores,4
+    .globl  thread_init_4.maxcores
+    .set    thread_init_4.maxtimers,0
+    .globl  thread_init_4.maxtimers
+    .set    thread_init_4.maxchanends,0
+    .globl  thread_init_4.maxchanends
+.Ltmp_thread_init_4:
+    .size   thread_init_4, .Ltmp_thread_init_4-thread_init_4
+
+#undef NSTACKWORDS
+
+
+#define NSTACKWORDS 4
+
+    .globl  thread_init_3
+    .type   thread_init_3,@function
+    .cc_top thread_init_3.function,thread_init_3
+    .align 4
+    //    void thread_init_3(thread_info *ptr)
+
+thread_init_3:
+    ENTSP_lu6 NSTACKWORDS
+    std r4, r5, sp[1]
+
+    getr r4, XS1_RES_TYPE_SYNC     // start with a synchroniser
+    stw  r4, r0[4]                 // save synchroniser in xcore_interpreter
+    ldw  r3, r0[5]                 // retrieve wordcount for each stack from xc_int
+    ldw  r5, r0[6]                 // retrieve base stack pointer from xc_interpreter
+    ldap r11, thread_client
+
+    ldaw r5, r5[-r3]
+    getst r2, res[r4]             // Obtain first thread
+    stw r2, r0[0]
+    init     t[r2]:pc, r11
+    init     t[r2]:sp, r5
+
+    ldaw r5, r5[-r3]
+    getst r2, res[r4]             // Obtain second thread
+    stw r2, r0[1]
+    init     t[r2]:pc, r11
+    init     t[r2]:sp, r5
+
+    ldc      r2, 0                // No other threads - clear
+    stw r2, r0[2]
+    stw r2, r0[3]
+
+    msync res[r4]                 // let all threads initialise
+
+    ldd r4, r5, sp[1]             // and restore r4.
+    retsp NSTACKWORDS
+
+
+    // RETURN_REG_HOLDER
+    .cc_bottom thread_init_3.function
+    .set    thread_init_3.nstackwords, NSTACKWORDS
+    .globl  thread_init_3.nstackwords
+    .set    thread_init_3.maxcores,3
+    .globl  thread_init_3.maxcores
+    .set    thread_init_3.maxtimers,0
+    .globl  thread_init_3.maxtimers
+    .set    thread_init_3.maxchanends,0
+    .globl  thread_init_3.maxchanends
+.Ltmp_thread_init_3:
+    .size   thread_init_3, .Ltmp_thread_init_3-thread_init_3
+
+#undef NSTACKWORDS
+
+
+#define NSTACKWORDS 4
+
+    .globl  thread_init_2
+    .type   thread_init_2,@function
+    .cc_top thread_init_2.function,thread_init_2
+    .align 4
+    //    void thread_init_2(thread_info *ptr)
+
+thread_init_2:
+    ENTSP_lu6 NSTACKWORDS
+    std r4, r5, sp[1]
+
+    getr r4, XS1_RES_TYPE_SYNC     // start with a synchroniser
+    stw  r4, r0[4]                 // save synchroniser in xcore_interpreter
+    ldw  r3, r0[5]                 // retrieve wordcount for each stack from xc_int
+    ldw  r5, r0[6]                 // retrieve base stack pointer from xc_interpreter
+    ldap r11, thread_client
+
+    ldaw r5, r5[-r3]
+    getst r2, res[r4]             // Obtain first thread
+    stw r2, r0[0]
+    init     t[r2]:pc, r11
+    init     t[r2]:sp, r5
+
+    ldc      r2, 0                // No other threads - clear
+    stw r2, r0[1]
+    stw r2, r0[2]
+    stw r2, r0[3]
+
+    msync res[r4]                 // let all threads initialise
+
+    ldd r4, r5, sp[1]             // and restore r4.
+    retsp NSTACKWORDS
+
+
+    // RETURN_REG_HOLDER
+    .cc_bottom thread_init_2.function
+    .set    thread_init_2.nstackwords, NSTACKWORDS
+    .globl  thread_init_2.nstackwords
+    .set    thread_init_2.maxcores,2
+    .globl  thread_init_2.maxcores
+    .set    thread_init_2.maxtimers,0
+    .globl  thread_init_2.maxtimers
+    .set    thread_init_2.maxchanends,0
+    .globl  thread_init_2.maxchanends
+.Ltmp_thread_init_2:
+    .size   thread_init_2, .Ltmp_thread_init_2-thread_init_2
+
+#undef NSTACKWORDS
+
+
+#define NSTACKWORDS 0
+
     .globl  thread_init_1
     .type   thread_init_1,@function
     .cc_top thread_init_1.function,thread_init_1
     .align 4
-    //    void thread_init_1(inference_engine_t *ie, thread_info *ptr)
+    //    void thread_init_1(thread_info *ptr)
 
 thread_init_1:
-    ENTSP_lu6 0
+    ENTSP_lu6 NSTACKWORDS
 
     getr r1, XS1_RES_TYPE_SYNC     // start with a synchroniser
     stw  r1, r0[4]                 // save synchroniser in xcore_interpreter
@@ -336,12 +571,12 @@ thread_init_1:
     stw r2, r0[2]
     stw r2, r0[3]
 
-    retsp 0
+    retsp NSTACKWORDS
 
 
     // RETURN_REG_HOLDER
     .cc_bottom thread_init_1.function
-    .set    thread_init_1.nstackwords,0
+    .set    thread_init_1.nstackwords, NSTACKWORDS
     .globl  thread_init_1.nstackwords
     .set    thread_init_1.maxcores,1
     .globl  thread_init_1.maxcores
@@ -443,14 +678,14 @@ thread_call:
     std     r4, r5, sp[1]           // save r4, r5, r6, r7
     std     r6, r7, sp[2]
     ldw     r4, sp[NSTACKWORDS+1]   // Pick up ptr
-    ldd     r6, r7, r4[0]           // Pick up two thread-ids, they may be zero...
+    ldd     r7, r6, r4[0]           // Pick up two thread-ids, they may be zero...
     bf      r6, .thread_call_start_threads
     set     t[r6]:r11, r3           // set function pointer of thread 0
     set     t[r6]:r0, r0            // set shared data
     bf      r7, .thread_call_start_threads
     set     t[r7]:r11, r3           // set function pointer of thread 1
     set     t[r7]:r0, r0            // set shared data
-    ldd     r6, r7, r4[1]
+    ldd     r7, r6, r4[1]
     bf      r6, .thread_call_start_threads
     set     t[r6]:r11, r3           // set function pointer of thread 2
     set     t[r6]:r0, r0            // set shared data

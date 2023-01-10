@@ -212,6 +212,9 @@ tflmc::Compiler::Compiler(const void *modelData,
                           const struct shared_config::xcore_metadata *sharedCfg,
                           const std::string &prefix, const bool debugPrint)
     : sharedCfg_(sharedCfg), prefix_(prefix), debugPrint_(debugPrint) {
+  if (sharedCfg_) {
+    numXCThreads_ = sharedCfg_->required_thread_count;
+  }
   if (!init(modelData)) {
     throw std::runtime_error("Could not set up compiler");
   }
@@ -666,7 +669,10 @@ tflite::MicroContext mc;
 // Xcore context and thread variables
 xc_context_config_t xc_config;
 constexpr int kStackWordsPerThread = 256;
-uint64_t xc_stack[kStackWordsPerThread/2];
+constexpr int threadsStackSizeInUint64 = )"
+     << numXCThreads_ << R"( * kStackWordsPerThread/2;
+// We use uint64_t for xcThreadsStack so that it is aligned to 8 bytes
+uint64_t xcThreadsStack[threadsStackSizeInUint64];
 
 // Functions to be used as function pointers for TfLiteContext and MicroContext 
 static void* AllocatePersistentBuffer(struct TfLiteContext* ctx,
@@ -888,9 +894,9 @@ unsigned char checksum(char *data, unsigned int length)
 
 TfLiteStatus )"
       << prefix_ << R"(invoke() {
-  thread_init_1(&xc_config.thread_info);
   xc_config.thread_info.nstackwords = kStackWordsPerThread;
-  xc_config.thread_info.stacks = &xc_stack[kStackWordsPerThread/2 - 1];
+  xc_config.thread_info.stacks = &xcThreadsStack[threadsStackSizeInUint64 - 1];
+  thread_init_)"<< numXCThreads_ <<R"((&xc_config.thread_info);
 
 #ifdef TFLMC_XCORE_PROFILE
   printf("\nProfiling invoke()...");

@@ -81,6 +81,11 @@ struct Conv2DThreadInfo {
 struct Conv2DOpData
     : XCoreOpData { // Inherits the operator name field from XCoreOpData
   size_t thread_count;
+#ifdef TFLMC_XCORE_PROFILE
+  int evalStartTime;
+  int threadsStartTime;
+  int threadsDoneTime;
+#endif
   int ot_type;
   Conv2DThreadInfo *threads;
   KernelType kt;
@@ -327,6 +332,10 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   auto *op_data = reinterpret_cast<Conv2DOpData *>(node->user_data);
   int n_threads = op_data->thread_count;
 
+#ifdef TFLMC_XCORE_PROFILE
+  asm volatile ("gettime %0" : "=r" (op_data->evalStartTime));
+#endif
+
   int8_t *weights =
       (int8_t *)tflite::micro::GetTensorData<int8_t>(weights_tensor);
   int16_t *multipliers_and_biases =
@@ -420,11 +429,20 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
     thread_variable_setup(thread_scratch[t], op_data->threads[t].kparams,
                           xc_config->thread_info.thread_ids.id[t]);
   }
+
+#ifdef TFLMC_XCORE_PROFILE
+  asm volatile ("gettime %0" : "=r" (op_data->threadsStartTime));
+#endif
+
   // Now set up shared data, shared function pointer, and data for final thread.
   thread_call((void *)&shared_data, thread_scratch[n_threads - 1],
               op_data->threads[n_threads - 1].kparams,
               (thread_function_pointer_t)conv2d_v2_thread_worker,
               &xc_config->thread_info);
+
+#ifdef TFLMC_XCORE_PROFILE
+  asm volatile ("gettime %0" : "=r" (op_data->threadsDoneTime));
+#endif
 
   return kTfLiteOk;
 }

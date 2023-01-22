@@ -44,7 +44,4 @@ int fast_flash_init(fl_QSPIPorts &qspi);
  */
 void fast_flash_read(fl_QSPIPorts &qspi, unsigned addr, unsigned word_count, unsigned read_data[], chanend ?c_data_out);
 
-void fast_flash_read_no_chanend(fl_QSPIPorts &qspi, unsigned addr, unsigned word_count, unsigned read_data[]);
-
-
 #endif

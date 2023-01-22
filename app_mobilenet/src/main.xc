@@ -71,27 +71,21 @@ on tile[0]: fl_QSPIPorts qspi = {
 
 
 
-#define TEST_INPUT_SIZE  (256*192*3)
-#define TEST_OUTPUT_SIZE0  (80)
-#define TEST_OUTPUT_SIZE1  (20)
-#define TEST_OUTPUT_SIZE2  (20)
-#define TEST_OUTPUT_SIZE3  (1)
+#define TEST_INPUT_SIZE  (224*224*3)
+#define TEST_OUTPUT_SIZE0  (1000)
 
 
 int8_t s1[TEST_INPUT_SIZE] = {
-#include "s1.csv"
-};
-int8_t s2[TEST_INPUT_SIZE] = {
 #include "s2.csv"
 };
-int8_t s3[TEST_INPUT_SIZE] = {
-#include "s1.csv"
-};
+// int8_t s2[TEST_INPUT_SIZE] = {
+// #include "s2.csv"
+// };
+// int8_t s3[TEST_INPUT_SIZE] = {
+// #include "s1.csv"
+// };
 
-int32_t output0[TEST_OUTPUT_SIZE0];
-int32_t output1[TEST_OUTPUT_SIZE1];
-int8_t output2[TEST_OUTPUT_SIZE2];
-int32_t output3[TEST_OUTPUT_SIZE3];
+int8_t output0[TEST_OUTPUT_SIZE0];
 
 #pragma unsafe arrays
 void data_creation(chanend x) {
@@ -103,108 +97,15 @@ void data_creation(chanend x) {
     printf("\nDone writing input1\n\n");
 
     for(int i = 0 ; i < TEST_OUTPUT_SIZE0; i++) {
-        output0[i] = inuint(x);
-        printf("%d,",(int)output0[i]);
+        output0[i] = inuchar(x);
+        if (output0[i] != -128) {
+            printf("%d %d\n",i, (int)output0[i]);
+        }
     }
     printf("\n\n");
-
-
-    for(int i = 0 ; i < TEST_OUTPUT_SIZE1; i++) {
-        output1[i] = inuint(x);
-        printf("%d,",(int)output1[i]);
-    }
-    printf("\n\n");
-
-
-    for(int i = 0 ; i < TEST_OUTPUT_SIZE2; i++) {
-        output2[i] = inuchar(x);
-        printf("%d,",(int)output2[i]);
-    }
-    printf("\n\n");
-
-
-    for(int i = 0 ; i < TEST_OUTPUT_SIZE3; i++) {
-        output3[i] = inuint(x);
-        printf("%d,",(int)output3[i]);
-    }
-    printf("\n\n");
-
 
     outct(x, 1);
     chkct(x, 1);
-
-
-    // for(int i = 0 ; i < TEST_INPUT_SIZE; i++) {
-    //     outuchar(x, s2[i]);
-    // }
-    // printf("\nDone writing input2\n\n");
-
-    // for(int i = 0 ; i < TEST_OUTPUT_SIZE0; i++) {
-    //     output0[i] = inuint(x);
-    //     printf("%d,",(int)output0[i]);
-    // }
-    // printf("\n\n");
-
-
-    // for(int i = 0 ; i < TEST_OUTPUT_SIZE1; i++) {
-    //     output1[i] = inuint(x);
-    //     printf("%d,",(int)output1[i]);
-    // }
-    // printf("\n\n");
-
-
-    // for(int i = 0 ; i < TEST_OUTPUT_SIZE2; i++) {
-    //     output2[i] = inuchar(x);
-    //     printf("%d,",(int)output2[i]);
-    // }
-    // printf("\n\n");
-
-
-    // for(int i = 0 ; i < TEST_OUTPUT_SIZE3; i++) {
-    //     output3[i] = inuint(x);
-    //     printf("%d,",(int)output3[i]);
-    // }
-    // printf("\n\n");
-
-
-    // outct(x, 1);
-    // chkct(x, 1);
-
-
-    // for(int i = 0 ; i < TEST_INPUT_SIZE; i++) {
-    //     outuchar(x, s3[i]);
-    // }
-    // printf("\nDone writing input3\n\n");
-
-    // for(int i = 0 ; i < TEST_OUTPUT_SIZE0; i++) {
-    //     output0[i] = inuint(x);
-    //     printf("%d,",(int)output0[i]);
-    // }
-    // printf("\n\n");
-
-
-    // for(int i = 0 ; i < TEST_OUTPUT_SIZE1; i++) {
-    //     output1[i] = inuint(x);
-    //     printf("%d,",(int)output1[i]);
-    // }
-    // printf("\n\n");
-
-
-    // for(int i = 0 ; i < TEST_OUTPUT_SIZE2; i++) {
-    //     output2[i] = inuchar(x);
-    //     printf("%d,",(int)output2[i]);
-    // }
-    // printf("\n\n");
-
-
-    // for(int i = 0 ; i < TEST_OUTPUT_SIZE3; i++) {
-    //     output3[i] = inuint(x);
-    //     printf("%d,",(int)output3[i]);
-    // }
-    // printf("\n\n");
-
-    // outct(x, 1);
-    // chkct(x, 1);
 }
 
 extern void inferencer(chanend x, chanend f);
@@ -227,12 +128,6 @@ int main(void) {
             unsafe {
             printf("\nStart inferencing1");
             inferencer(x, c_flash[0]);
-            
-            // printf("\nStart inferencing2");
-            // inferencer(x, c_flash[0]);
-                        
-            // printf("\nStart inferencing3");
-            // inferencer(x, c_flash[0]);
 
             printf("\nDone inferencing");
 

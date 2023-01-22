@@ -191,7 +191,6 @@ int fast_flash_init(fl_QSPIPorts &qspi) {
                 
                 // Read the data with the current settings
                 fast_read_loop(qspi, data_offset, 0, read_adj, PATTERN_WORDS, read_data_tmp, null);
-                               // TODO: remove the +4.
                 
                 // Check if the data is correct
                 passing_words = 0;
@@ -237,8 +236,4 @@ int fast_flash_init(fl_QSPIPorts &qspi) {
 
 void fast_flash_read(fl_QSPIPorts &qspi, unsigned addr, unsigned read_count, unsigned read_data[], chanend ?c_data_out) {
     fast_read_loop(qspi, data_offset + addr, 0, best_read_adj, read_count, read_data, c_data_out);
-}
-
-void fast_flash_read_no_chanend(fl_QSPIPorts &qspi, unsigned addr, unsigned read_count, unsigned read_data[]) {
-    fast_read_loop(qspi, data_offset + addr, 0, best_read_adj, read_count, read_data, NULL);
 }

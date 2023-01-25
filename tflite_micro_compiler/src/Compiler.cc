@@ -384,17 +384,7 @@ bool tflmc::Compiler::init(const void *modelData) {
   // - Tensors
   // - Scratch buffers
   // - Persistent buffers
-  // tensor metadata is not included, since we declare them outside the arena
   arenaBufferSize_ = ramTensorBufferSize + totalRuntimeAllocSize;
-
-  // TODO: This is overestimating by quite a bit because of ABI differences.
-  size_t tensorMetaSize = tensors_.size() * sizeof(TfLiteTensor);
-  size_t nodeMetaSize = nodes_.size() * sizeof(TfLiteNode);
-  memMap_.recordRAM(arenaBufferSize_, tensorMetaSize, "TensorMetadata");
-  memMap_.recordRAM(arenaBufferSize_ + tensorMetaSize, nodeMetaSize,
-                    "NodeMetadata");
-  memMap_.recordRAM(arenaBufferSize_ + tensorMetaSize + nodeMetaSize,
-                    sizeof(TfLiteContext), "TfLiteContext");
 
   if (debugPrint_) {
     memMap_.report();
@@ -940,6 +930,25 @@ TfLiteStatus )"
   thread_destroy(&xc_config.thread_info);
 
 #ifdef TFLMC_XCORE_PROFILE
+  struct convopdata{
+    const char * name;
+    size_t thread_count;
+    int evalStartTime;
+    int threadsStartTime;
+    int threadsDoneTime;
+  };
+  int conv_times1 = 0, conv_times2 = 0;
+  printf("\n\nConv()...");
+  for(size_t i = 0; i < )" << nodes_.size() << R"(; ++i) {
+    if(used_ops[i] == OP_XC_conv2d_v2) {
+      auto *op_data = reinterpret_cast<convopdata *>(tflNodes[i].user_data);
+      conv_times1 += op_data->threadsStartTime - op_data->evalStartTime;
+      conv_times2 += op_data->threadsDoneTime - op_data->threadsStartTime;
+      printf("\nnode %-5d %-25s %-25s %-6d %-6d %-12d", i, op_strs[used_ops[i]], op_data->name, op_data->thread_count, op_data->threadsStartTime - op_data->evalStartTime, op_data->threadsDoneTime - op_data->threadsStartTime);
+    }
+  }
+  printf("\nSummed - %-10d %-10d", conv_times1, conv_times2);
+
   printf("\n\nCumulative times for invoke()...");
   for(int i=0; i<OP_LAST; i++){
     printf("\n%-5d %-32s %-12d", op_counts[i], op_strs[i], op_times[i]);

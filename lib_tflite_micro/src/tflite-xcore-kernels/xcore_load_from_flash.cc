@@ -64,27 +64,32 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   chanend_t c_flash = (chanend_t) static_cast<int>(
       reinterpret_cast<intptr_t>(op_data->flash_data));
   chan_out_word(c_flash, 0); // TODO: share with aiserver.
-  transacting_chanend_t t = chan_init_transaction_slave(c_flash);
-  t_chan_out_word(&t, op_data->addr);
+  chan_out_word(c_flash, op_data->addr);
 
   int32_t total_size = 0;
   for (int i = 0; i < node->outputs->size; ++i) {
     total_size += op_data->sizes[i];
   }
-  t_chan_out_word(&t, total_size);
+  chan_out_word(c_flash, total_size);
 
   for (int i = 0; i < node->outputs->size; ++i) {
     TfLiteEvalTensor *output = tflite::micro::GetEvalOutput(context, node, i);
     int8_t *data_ptr = tflite::micro::GetTensorData<int8_t>(output);
-    for (int j = 0; j < op_data->sizes[i]; ++j) {
-      data_ptr[j] = t_chan_in_byte(&t);
+
+    // The sizes are in bytes and we read from flash in words
+    for (int j = 0; j < op_data->sizes[i]/4; j++) {
+      // We are reading directly from flash chanend here.
+      // We use chanend_in_word() instead of chan_in_word() to
+      // avoid handshake.
+      // Adding something like a printf() within this loop
+      // might slow it down enough to corrupt the received data.
+      ((uint32_t *)data_ptr)[j] = chanend_in_word(c_flash);
     }
   }
+  // As there is no handshake, we have to accept the end token
+  // to close the chanend
+  chanend_check_end_token(c_flash);
 
-  chan_complete_transaction(t);
-
-  // load_from_flash_ll(op_data->c_flash, data_ptr, op_data->address,
-  // op_data->bytes);
 #else
   int addr_offset = 0;
   for (int i = 0; i < node->outputs->size; ++i) {

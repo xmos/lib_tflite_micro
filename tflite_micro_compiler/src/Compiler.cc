@@ -526,6 +526,7 @@ const char *op_strs[] = {
   wr << R"(};
 int op_times[OP_LAST];
 int op_counts[OP_LAST];
+int64_t op_times_summed;
 int time_t0, time_t1;
 #endif
 
@@ -892,6 +893,7 @@ TfLiteStatus )"
   printf("\nProfiling invoke()...");
   memset(op_times, 0, sizeof(op_times));
   memset(op_counts, 0, sizeof(op_counts));
+  op_times_summed = 0;
 #endif
 
   for(size_t i = 0; i < )"
@@ -951,9 +953,10 @@ TfLiteStatus )"
 
   printf("\n\nCumulative times for invoke()...");
   for(int i=0; i<OP_LAST; i++){
-    printf("\n%-5d %-32s %-12d", op_counts[i], op_strs[i], op_times[i]);
+    op_times_summed += op_times[i];
+    printf("\n%-5d %-32s %-12d %dms", op_counts[i], op_strs[i], op_times[i], op_times[i]/100000);
   }
-  printf("\n");
+  printf("\n\nTotal time for invoke() - %-10lld %lldms\n\n", op_times_summed, op_times_summed/100000);
 #endif
 
   return kTfLiteOk;

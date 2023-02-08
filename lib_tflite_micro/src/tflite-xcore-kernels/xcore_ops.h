@@ -23,6 +23,7 @@ TfLiteRegistration *Register_XC_add();
 TfLiteRegistration *Register_XC_strided_slice();
 TfLiteRegistration *Register_XC_lookup();
 TfLiteRegistration *Register_XC_pad();
+TfLiteRegistration *Register_XC_pad_3_to_4();
 // Binarized ops
 TfLiteRegistration *Register_XC_bsign_8();
 

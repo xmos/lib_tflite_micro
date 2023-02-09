@@ -899,6 +899,18 @@ TfLiteStatus )"
   for(size_t i = 0; i < )"
       << nodes_.size() << R"(; ++i) {
 
+#ifdef TFLMC_PRINT_TENSORS
+    // print every input tensor
+    printf("\nnode in %d", i);
+    for (int j=0; j<tflNodes[i].inputs->size; j++){
+      printf("\ntensor %d, input %d, %d bytes, checksum %d\n", tflNodes[i].inputs->data[j], j, tflTensors[tflNodes[i].inputs->data[j]].bytes, checksum(tflTensors[tflNodes[i].inputs->data[j]].data.raw, tflTensors[tflNodes[i].inputs->data[j]].bytes));
+      for(int k=0; k<tflTensors[tflNodes[i].inputs->data[j]].bytes; k++){
+        printf("%d,", (int8_t)tflTensors[tflNodes[i].inputs->data[j]].data.raw[k]);
+      }
+    }
+    printf("\n");
+#endif
+
 #ifdef TFLMC_XCORE_PROFILE
   asm volatile ("gettime %0" : "=r" (time_t0));
 #endif
@@ -916,7 +928,7 @@ TfLiteStatus )"
     // print every output tensor
     printf("\nnode %d", i);
     for (int j=0; j<tflNodes[i].outputs->size; j++){
-      printf("\noutput %d, %d bytes, checksum %d\n", j, tflTensors[tflNodes[i].outputs->data[j]].bytes, checksum(tflTensors[tflNodes[i].outputs->data[j]].data.raw, tflTensors[tflNodes[i].outputs->data[j]].bytes));
+      printf("\ntensor %d, output %d, %d bytes, checksum %d\n", tflNodes[i].outputs->data[j], j, tflTensors[tflNodes[i].outputs->data[j]].bytes, checksum(tflTensors[tflNodes[i].outputs->data[j]].data.raw, tflTensors[tflNodes[i].outputs->data[j]].bytes));
       for(int k=0; k<tflTensors[tflNodes[i].outputs->data[j]].bytes; k++){
         printf("%d,", (int8_t)tflTensors[tflNodes[i].outputs->data[j]].data.raw[k]);
       }

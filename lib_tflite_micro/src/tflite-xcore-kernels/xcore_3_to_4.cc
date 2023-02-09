@@ -27,7 +27,7 @@ void* Init(TfLiteContext* context, const char* buffer, size_t length) {
   auto n_3 = parser.parseNamedCustomOption("n3").AsUInt32();
   auto pad_value = parser.parseNamedCustomOption("pv").AsUInt32();
   op_data->n_3 = n_3;
-  op_data->pad_value = pad_value;
+  op_data->pad_val = pad_value;
   return op_data;
 }
 

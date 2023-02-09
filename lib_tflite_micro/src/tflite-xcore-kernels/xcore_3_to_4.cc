@@ -12,7 +12,7 @@ namespace tflite {
 namespace ops {
 namespace micro {
 namespace xcore {
-namespace pad {
+namespace pad_3_to_4 {
 
 struct OpData {
   uint32_t n_3;
@@ -51,8 +51,8 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
   int8_t *input_p =
       const_cast<int8_t *>(tflite::micro::GetTensorData<int8_t>(input));
 
-  pad_3_to_4_run((char*)output_p,
-          (char*)input_p,
+  pad_3_to_4_run(output_p,
+          input_p,
           data->n_3, data->pad_val);
 
   return kTfLiteOk;
@@ -61,7 +61,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
 }  // namespace pad
 
 TfLiteRegistration *Register_XC_pad_3_to_4() {
-  static TfLiteRegistration r = {pad::Init, nullptr, pad::Prepare, pad::Eval};
+  static TfLiteRegistration r = {pad_3_to_4::Init, nullptr, pad_3_to_4::Prepare, pad_3_to_4::Eval};
   return &r;
 }
 

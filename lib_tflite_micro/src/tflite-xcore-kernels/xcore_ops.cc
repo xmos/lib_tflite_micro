@@ -29,6 +29,8 @@ void RegisterXCOps(MicroOpResolver *res) {
                       tflite::ops::micro::xcore::Register_XC_lookup());
   resolver->AddCustom(tflite::ops::micro::xcore::XC_pad_OpCode,
                       tflite::ops::micro::xcore::Register_XC_pad());
+  resolver->AddCustom(tflite::ops::micro::xcore::XC_pad_3_to_4_OpCode,
+                      tflite::ops::micro::xcore::Register_XC_pad_3_to_4());
 }
 
 } // namespace xcore

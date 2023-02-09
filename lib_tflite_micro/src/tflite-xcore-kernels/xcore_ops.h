@@ -14,6 +14,7 @@ constexpr const char *XC_add_OpCode = "XC_add";
 constexpr const char *XC_strided_slice_OpCode = "XC_strided_slice";
 constexpr const char *XC_lookup_OpCode = "XC_lookup";
 constexpr const char *XC_pad_OpCode = "XC_pad";
+constexpr const char *XC_pad_3_to_4_OpCode = "XC_pad_3_to_4";
 // Binarized ops
 constexpr const char *XC_bsign_8_OpCode = "XC_bsign_8";
 
@@ -23,6 +24,7 @@ TfLiteRegistration *Register_XC_add();
 TfLiteRegistration *Register_XC_strided_slice();
 TfLiteRegistration *Register_XC_lookup();
 TfLiteRegistration *Register_XC_pad();
+TfLiteRegistration *Register_XC_pad_3_to_4();
 // Binarized ops
 TfLiteRegistration *Register_XC_bsign_8();
 

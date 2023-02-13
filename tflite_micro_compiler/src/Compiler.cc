@@ -526,6 +526,7 @@ const char *op_strs[] = {
   wr << R"(};
 int op_times[OP_LAST];
 int op_counts[OP_LAST];
+int64_t op_times_summed;
 int time_t0, time_t1;
 #endif
 
@@ -892,10 +893,23 @@ TfLiteStatus )"
   printf("\nProfiling invoke()...");
   memset(op_times, 0, sizeof(op_times));
   memset(op_counts, 0, sizeof(op_counts));
+  op_times_summed = 0;
 #endif
 
   for(size_t i = 0; i < )"
       << nodes_.size() << R"(; ++i) {
+
+#ifdef TFLMC_PRINT_TENSORS
+    // print every input tensor
+    printf("\nnode in %d", i);
+    for (int j=0; j<tflNodes[i].inputs->size; j++){
+      printf("\ntensor %d, input %d, %d bytes, checksum %d\n", tflNodes[i].inputs->data[j], j, tflTensors[tflNodes[i].inputs->data[j]].bytes, checksum(tflTensors[tflNodes[i].inputs->data[j]].data.raw, tflTensors[tflNodes[i].inputs->data[j]].bytes));
+      for(int k=0; k<tflTensors[tflNodes[i].inputs->data[j]].bytes; k++){
+        printf("%d,", (int8_t)tflTensors[tflNodes[i].inputs->data[j]].data.raw[k]);
+      }
+    }
+    printf("\n");
+#endif
 
 #ifdef TFLMC_XCORE_PROFILE
   asm volatile ("gettime %0" : "=r" (time_t0));
@@ -914,7 +928,7 @@ TfLiteStatus )"
     // print every output tensor
     printf("\nnode %d", i);
     for (int j=0; j<tflNodes[i].outputs->size; j++){
-      printf("\noutput %d, %d bytes, checksum %d\n", j, tflTensors[tflNodes[i].outputs->data[j]].bytes, checksum(tflTensors[tflNodes[i].outputs->data[j]].data.raw, tflTensors[tflNodes[i].outputs->data[j]].bytes));
+      printf("\ntensor %d, output %d, %d bytes, checksum %d\n", tflNodes[i].outputs->data[j], j, tflTensors[tflNodes[i].outputs->data[j]].bytes, checksum(tflTensors[tflNodes[i].outputs->data[j]].data.raw, tflTensors[tflNodes[i].outputs->data[j]].bytes));
       for(int k=0; k<tflTensors[tflNodes[i].outputs->data[j]].bytes; k++){
         printf("%d,", (int8_t)tflTensors[tflNodes[i].outputs->data[j]].data.raw[k]);
       }
@@ -951,9 +965,10 @@ TfLiteStatus )"
 
   printf("\n\nCumulative times for invoke()...");
   for(int i=0; i<OP_LAST; i++){
-    printf("\n%-5d %-32s %-12d", op_counts[i], op_strs[i], op_times[i]);
+    op_times_summed += op_times[i];
+    printf("\n%-5d %-32s %-12d %dms", op_counts[i], op_strs[i], op_times[i], op_times[i]/100000);
   }
-  printf("\n");
+  printf("\n\nTotal time for invoke() - %-10lld %lldms\n\n", op_times_summed, op_times_summed/100000);
 #endif
 
   return kTfLiteOk;

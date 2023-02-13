@@ -10,7 +10,7 @@
 #
 # You can also set MODULE_XCC_C_FLAGS, MODULE_XCC_XC_FLAGS etc..
 
-VERSION = 0.1.0
+VERSION = 0.4.0
 
 DEPENDENT_MODULES = lib_nn(>=0.0.0)
 OPTIONAL_HEADERS += xtflm_conf.h 

@@ -24,15 +24,18 @@ void* Init(TfLiteContext* context, const char* buffer, size_t length) {
   auto op_data = construct_persistent_object<OpData>(context);
 
   auto parser = CustomOptionParser(buffer, length);
-  auto n_3 = parser.parseNamedCustomOption("n3").AsUInt32();
   auto pad_value = parser.parseNamedCustomOption("pv").AsUInt32();
-  op_data->n_3 = n_3;
   op_data->pad_val = pad_value;
   return op_data;
 }
 
 TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
-  MicroContext* micro_context = GetMicroContext(context);
+  TfLiteEvalTensor *output = tflite::micro::GetEvalOutput(context, node, 0);
+  auto shape = tflite::micro::GetTensorShape(output);
+  TFLITE_DCHECK(shape.DimensionsCount() == 4 && shape.DimsData()[0] == 1);
+  int number_of_pixels = shape.DimsData()[1] * shape.DimsData()[2];
+  OpData* op_data = static_cast<OpData*>(node->user_data);
+  op_data->n_3 = number_of_pixels;
   return kTfLiteOk;
 }
 

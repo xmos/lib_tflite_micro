@@ -1045,6 +1045,7 @@ def bin_to_float(num):
 model_path = "mobilenet_v1_25.tflite"
 
 opt_model_path = "mobilenet_v1_25.xcore.tflite"
+opt_params_path = "mobilenet_v1_25.xcore.params"
 
 # interpreter = tf.lite.Interpreter(model_path="simple.tflite")
 # interpreter.allocate_tensors()
@@ -1054,9 +1055,10 @@ opt_model_path = "mobilenet_v1_25.xcore.tflite"
 
 interpreter = xcore_tflm_host_interpreter()
 #xformer.convert(model_path, opt_model_path, {"lce-translate-tfl":""})
-xformer.convert(model_path, opt_model_path, {"xcore-conv-err-threshold":"1"})
+xformer.convert(model_path, opt_model_path, {"xcore-conv-err-threshold":"1", "xcore-flash-image-file" : opt_params_path, "xcore-allow-input-modification" :""})
 
-interpreter.set_model(model_path=opt_model_path)
+interpreter.set_model(model_path=opt_model_path, params_path=opt_params_path)
+xformer.generate_flash(opt_model_path, opt_params_path, "xcore_flash_binary.out")
 
 input_details = interpreter.get_input_details()
 output_details = interpreter.get_output_details()

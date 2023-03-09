@@ -292,7 +292,6 @@ bool tflmc::Compiler::init(const void *modelData) {
     common_tensor_type = tensor->type;
     common_tensor_is_variable = tensor->is_variable;
   }
-  printf("\n");
   for (size_t i = 0; i < numTensors; i++) {
     auto tensor = GetTensor(interpreter_.get(), i);
     tensors_.push_back({tensor});
@@ -302,7 +301,6 @@ bool tflmc::Compiler::init(const void *modelData) {
       romOffset += tensor->bytes;
     } else {
       ptrdiff_t offset = (uint8_t *)tensor->data.data - arena_buf_.data();
-      printf("%d, ", offset);
       ptrdiff_t highSize = offset + tensor->bytes;
       ramTensorBufferSize = std::max(ramTensorBufferSize, highSize);
       memMap_.recordRAM(offset, tensor->bytes, getTensorName(i));
@@ -321,7 +319,6 @@ bool tflmc::Compiler::init(const void *modelData) {
       common_tensor_is_variable.clear();
     }
   }
-  printf("\n");
 
   for (size_t k = 0; k < interpreter_->allocator_.scratch_buffer_request_count_;
        k++) {

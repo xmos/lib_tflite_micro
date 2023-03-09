@@ -296,7 +296,6 @@ bool tflmc::Compiler::init(const void *modelData) {
     auto tensor = GetTensor(interpreter_.get(), i);
     tensors_.push_back({tensor});
     if (tensor->allocation_type == kTfLiteMmapRo) {
-      printf("-1, ");
       memMap_.recordROM(romOffset, tensor->bytes, getTensorName(i));
       romOffset += tensor->bytes;
     } else {

@@ -745,34 +745,53 @@ TfLiteStatus )"
            << "] = *(tflite::ops::micro::xcore::Register_" << opName
            << "());\n";
       }
-    } else if ((registrations_[i].code == tflite::BuiltinOperator_ADD) ||
+    } else if ((registrations_[i].code == tflite::BuiltinOperator_ABS) ||
+               (registrations_[i].code == tflite::BuiltinOperator_ARG_MAX) ||
+               (registrations_[i].code == tflite::BuiltinOperator_ARG_MIN) ||
+               (registrations_[i].code == tflite::BuiltinOperator_CEIL) ||
                (registrations_[i].code ==
-                tflite::BuiltinOperator_AVERAGE_POOL_2D) ||
-               (registrations_[i].code == tflite::BuiltinOperator_CONV_2D) ||
+                tflite::BuiltinOperator_CONCATENATION) ||
+               (registrations_[i].code == tflite::BuiltinOperator_COS) ||
+               (registrations_[i].code == tflite::BuiltinOperator_EQUAL) ||
+               (registrations_[i].code == tflite::BuiltinOperator_FLOOR) ||
+               (registrations_[i].code == tflite::BuiltinOperator_GREATER) ||
                (registrations_[i].code ==
-                tflite::BuiltinOperator_DEPTHWISE_CONV_2D) ||
-               (registrations_[i].code == tflite::BuiltinOperator_DEQUANTIZE) ||
+                tflite::BuiltinOperator_GREATER_EQUAL) ||
                (registrations_[i].code ==
-                tflite::BuiltinOperator_FULLY_CONNECTED) ||
-               (registrations_[i].code == tflite::BuiltinOperator_LOGISTIC) ||
+                tflite::BuiltinOperator_L2_NORMALIZATION) ||
+               (registrations_[i].code == tflite::BuiltinOperator_LESS) ||
+               (registrations_[i].code == tflite::BuiltinOperator_LESS_EQUAL) ||
+               (registrations_[i].code == tflite::BuiltinOperator_LOG) ||
                (registrations_[i].code ==
-                tflite::BuiltinOperator_MAX_POOL_2D) ||
-               (registrations_[i].code == tflite::BuiltinOperator_MEAN) ||
-               (registrations_[i].code == tflite::BuiltinOperator_MUL) ||
-               (registrations_[i].code == tflite::BuiltinOperator_PRELU) ||
-               (registrations_[i].code == tflite::BuiltinOperator_QUANTIZE) ||
-               (registrations_[i].code == tflite::BuiltinOperator_RELU) ||
-               (registrations_[i].code == tflite::BuiltinOperator_SHAPE) ||
-               (registrations_[i].code == tflite::BuiltinOperator_SOFTMAX) ||
+                tflite::BuiltinOperator_LOGICAL_NOT) ||
+               (registrations_[i].code == tflite::BuiltinOperator_MAXIMUM) ||
+               (registrations_[i].code == tflite::BuiltinOperator_MINIMUM) ||
+               (registrations_[i].code == tflite::BuiltinOperator_NEG) ||
+               (registrations_[i].code == tflite::BuiltinOperator_NOT_EQUAL) ||
+               (registrations_[i].code == tflite::BuiltinOperator_PACK) ||
+               (registrations_[i].code == tflite::BuiltinOperator_PAD) ||
+               (registrations_[i].code == tflite::BuiltinOperator_PADV2) ||
+               (registrations_[i].code == tflite::BuiltinOperator_RESHAPE) ||
                (registrations_[i].code ==
-                tflite::BuiltinOperator_TRANSPOSE_CONV)) {
-      opName = tflite::EnumNameBuiltinOperator(registrations_[i].code);
-      wr << "  registrations[OP_" << opName << "] = tflite::Register_" << opName
-         << "();\n";
-    } else {
+                tflite::BuiltinOperator_RESIZE_NEAREST_NEIGHBOR) ||
+               (registrations_[i].code == tflite::BuiltinOperator_ROUND) ||
+               (registrations_[i].code == tflite::BuiltinOperator_RSQRT) ||
+               (registrations_[i].code == tflite::BuiltinOperator_SIN) ||
+               (registrations_[i].code == tflite::BuiltinOperator_SPLIT) ||
+               (registrations_[i].code == tflite::BuiltinOperator_SPLIT_V) ||
+               (registrations_[i].code == tflite::BuiltinOperator_SQRT) ||
+               (registrations_[i].code == tflite::BuiltinOperator_SQUARE) ||
+               (registrations_[i].code ==
+                tflite::BuiltinOperator_STRIDED_SLICE) ||
+               (registrations_[i].code == tflite::BuiltinOperator_TANH) ||
+               (registrations_[i].code == tflite::BuiltinOperator_UNPACK)) {
       opName = tflite::EnumNameBuiltinOperator(registrations_[i].code);
       wr << "  registrations[OP_" << opName
          << "] = tflite::ops::micro::Register_" << opName << "();\n";
+    } else {
+      opName = tflite::EnumNameBuiltinOperator(registrations_[i].code);
+      wr << "  registrations[OP_" << opName << "] = tflite::Register_" << opName
+         << "();\n";
     }
   }
   wr << "\n";
@@ -890,7 +909,8 @@ TfLiteStatus )"
       << prefix_ << R"(invoke() {
   xc_config.thread_info.nstackwords = kStackWordsPerThread;
   xc_config.thread_info.stacks = &xcThreadsStack[threadsStackSizeInUint64 - 1];
-  thread_init_)"<< numXCThreads_ <<R"((&xc_config.thread_info);
+  thread_init_)"
+      << numXCThreads_ << R"((&xc_config.thread_info);
 
 #ifdef TFLMC_XCORE_PROFILE
   printf("\nProfiling invoke()...");
@@ -979,7 +999,8 @@ printf("\n]");
   };
   int conv_times1 = 0, conv_times2 = 0;
   printf("\n\nConv()...");
-  for(size_t i = 0; i < )" << nodes_.size() << R"(; ++i) {
+  for(size_t i = 0; i < )"
+      << nodes_.size() << R"(; ++i) {
     if(used_ops[i] == OP_XC_conv2d_v2) {
       auto *op_data = reinterpret_cast<convopdata *>(tflNodes[i].user_data);
       conv_times1 += op_data->threadsStartTime - op_data->evalStartTime;

@@ -512,7 +512,7 @@ enum used_operators_e {
   wr << R"( OP_LAST
 };
 
-#ifdef TFLMC_XCORE_PROFILE
+#if defined(TFLMC_XCORE_PROFILE) || defined(TFLMC_PRINT_TENSORS)
 const char *op_strs[] = {
 )";
   for (size_t i = 0; i < registrations_.size(); i++) {
@@ -524,6 +524,9 @@ const char *op_strs[] = {
     }
   }
   wr << R"(};
+#endif
+
+#ifdef TFLMC_XCORE_PROFILE
 int op_times[OP_LAST];
 int op_counts[OP_LAST];
 int64_t op_times_summed;
@@ -896,10 +899,14 @@ TfLiteStatus )"
   op_times_summed = 0;
 #endif
 
+#ifdef TFLMC_PRINT_TENSORS
+printf("[\n");
+#endif
+
   for(size_t i = 0; i < )"
       << nodes_.size() << R"(; ++i) {
 
-#ifdef TFLMC_PRINT_TENSORS
+#ifdef TFLMC_PRINT_INPUT_TENSORS
     // print every input tensor
     printf("\nnode in %d", i);
     for (int j=0; j<tflNodes[i].inputs->size; j++){
@@ -926,14 +933,29 @@ TfLiteStatus )"
 
 #ifdef TFLMC_PRINT_TENSORS
     // print every output tensor
-    printf("\nnode %d", i);
+    printf("\n{\"node\" : \"%d\", \"op\" : \"%s\", \"data\" : [", i, op_strs[used_ops[i]]);
     for (int j=0; j<tflNodes[i].outputs->size; j++){
-      printf("\ntensor %d, output %d, %d bytes, checksum %d\n", tflNodes[i].outputs->data[j], j, tflTensors[tflNodes[i].outputs->data[j]].bytes, checksum(tflTensors[tflNodes[i].outputs->data[j]].data.raw, tflTensors[tflNodes[i].outputs->data[j]].bytes));
+      printf("\n{\"tensor\" : %d, \"output\" : %d, \"bytes\" : %d, \"checksum\" : %d,\n", tflNodes[i].outputs->data[j], j, tflTensors[tflNodes[i].outputs->data[j]].bytes, checksum(tflTensors[tflNodes[i].outputs->data[j]].data.raw, tflTensors[tflNodes[i].outputs->data[j]].bytes));
+      printf("\"val\" : [");
       for(int k=0; k<tflTensors[tflNodes[i].outputs->data[j]].bytes; k++){
-        printf("%d,", (int8_t)tflTensors[tflNodes[i].outputs->data[j]].data.raw[k]);
+        printf("%d", (int8_t)tflTensors[tflNodes[i].outputs->data[j]].data.raw[k]);
+        if (k < tflTensors[tflNodes[i].outputs->data[j]].bytes-1){
+          printf(",");
+        }
+      }
+      if(j<tflNodes[i].outputs->size-1){
+        printf("]},\n");
+      } else {
+        printf("]}]\n");
       }
     }
-    printf("\n");
+
+    if(i<)"
+      << nodes_.size() << R"(-1){
+      printf("},\n");
+    } else {
+      printf("}\n");
+    }
 #endif
 
     if (status != kTfLiteOk) {
@@ -941,6 +963,10 @@ TfLiteStatus )"
       return status;
     }
   }
+#ifdef TFLMC_PRINT_TENSORS
+printf("\n]");
+#endif
+
   thread_destroy(&xc_config.thread_info);
 
 #ifdef TFLMC_XCORE_PROFILE

@@ -100,12 +100,8 @@ EXCLUDE_FILES += testing_helpers_test.cc
 #lite/micro/kernels
 EXCLUDE_FILES += lite/micro/kernels/squeeze_test.cc
 EXCLUDE_FILES += lite/micro/kernels/l2_pool_2d_test.cc
-EXCLUDE_FILES += lite/micro/kernels/div.cc # TODO do not exclude
-EXCLUDE_FILES += lite/micro/kernels/elu.cc # TODO do not exclude
 EXCLUDE_FILES += lite/micro/kernels/elu_test.cc
-EXCLUDE_FILES += lite/micro/kernels/leaky_relu.cc #TODO do not exclude
 EXCLUDE_FILES += lite/micro/kernels/leaky_relu_test.cc
-EXCLUDE_FILES += lite/micro/kernels/transpose.cc #TODO do not exclude
 EXCLUDE_FILES += lite/micro/kernels/transpose_test.cc
 EXCLUDE_FILES += lite/micro/kernels/cast_test.cc
 EXCLUDE_FILES += lite/micro/kernels/zeros_like_test.cc
@@ -156,14 +152,9 @@ EXCLUDE_FILES += micro_interpreter_test.cc
 EXCLUDE_FILES += micro_mutable_op_resolver_test.cc
 EXCLUDE_FILES += tanh_test.cc
 EXCLUDE_FILES += split_v_test.cc
-EXCLUDE_FILES += cast.cc #submodules/tflite-micro/tensorflow/lite/micros/kernels/
-EXCLUDE_FILES += depth_to_space.cc #submodules/tflite-micro/tensorflow/lite/micros/kernels/
 EXCLUDE_FILES += depth_to_space_test.cc #submodules/tflite-micro/tensorflow/lite/micros/kernels/
-EXCLUDE_FILES += exp.cc #submodules/tflite-micro/tensorflow/lite/micros/kernels/
 EXCLUDE_FILES += exp_test.cc #submodules/tflite-micro/tensorflow/lite/micros/kernels/
-EXCLUDE_FILES += fill.cc #submodules/tflite-micro/tensorflow/lite/micros/kernels/
 EXCLUDE_FILES += fill_test.cc #submodules/tflite-micro/tensorflow/lite/micros/kernels/
-EXCLUDE_FILES += space_to_depth.cc #submodules/tflite-micro/tensorflow/lite/micros/kernels/
 EXCLUDE_FILES += space_to_depth_test.cc #submodules/tflite-micro/tensorflow/lite/micros/kernels/
 
 #lite/micro/memory/planner
@@ -260,10 +251,8 @@ acceleration_test_util_internal.cc \
 acceleration_test_util_internal.h \
 acceleration_test_util_internal_test.cc \
 activations_test.cc \
-add_n.cc \
 add_n_test.cc \
 add_test.cc \
-arg_min_max.cc \
 arg_min_max_test.cc \
 assign_variable.cc \
 audio_spectrogram.cc \
@@ -272,13 +261,11 @@ basic_rnn.cc \
 basic_rnn_test.cc \
 batch_matmul.cc \
 batch_matmul_test.cc \
-batch_to_space_nd.cc \
 batch_to_space_nd_test.cc \
 bidirectional_sequence_lstm.cc \
 bidirectional_sequence_lstm_test.cc \
 bidirectional_sequence_rnn.cc \
 bidirectional_sequence_rnn_test.cc \
-broadcast_to.cc \
 broadcast_to_test.cc \
 call_once.cc \
 call_once_test.cc \
@@ -299,12 +286,10 @@ cpu_backend_context.cc \
 cpu_backend_gemm_eigen.cc \
 cpu_backend_gemm_test.cc \
 cpu_backend_threadpool_test.cc \
-cumsum.cc \
 cumsum_test.cc \
 densify.cc \
 densify_test.cc \
 deprecated_backends.cc \
-depth_to_space.cc \
 depth_to_space_test.cc \
 depthwise_conv_hybrid_test.cc \
 depthwise_conv_test.cc \
@@ -316,29 +301,20 @@ lite/kernels/div.cc \
 div_test.cc \
 eigen_support.cc \
 eigen_support_test.cc \
-elementwise.cc \
 elementwise_test.cc \
 embedding_lookup.cc \
 embedding_lookup_sparse.cc \
 embedding_lookup_sparse_test.cc \
 embedding_lookup_test.cc \
-exp.cc \
 exp_test.cc \
-expand_dims.cc \
 expand_dims_test.cc \
 fake_quant.cc \
 fake_quant_test.cc \
-fill.cc \
 fill_test.cc \
-floor.cc \
-floor_div.cc \
 floor_div_test.cc \
-floor_mod.cc \
 floor_mod_test.cc \
 floor_test.cc \
 fully_connected_test.cc \
-gather.cc \
-gather_nd.cc \
 gather_nd_test.cc \
 gather_test.cc \
 hashtable_lookup.cc \
@@ -367,7 +343,6 @@ matrix_set_diag_test.cc \
 maximum_minimum_test.cc \
 mfcc.cc \
 mfcc_test.cc \
-mirror_pad.cc \
 mirror_pad_test.cc \
 lite/kernels/mul.cc \
 mul_test.cc \
@@ -468,7 +443,6 @@ lite/kernels/transpose.cc \
 lite/kernels/transpose_conv.cc \
 lite/kernels/transpose_conv_test.cc \
 lite/kernels/transpose_test.cc \
-lite/kernels/unidirectional_sequence_lstm.cc \
 lite/kernels/unidirectional_sequence_lstm_test.cc \
 lite/kernels/unidirectional_sequence_rnn.cc \
 lite/kernels/unidirectional_sequence_rnn_test.cc \

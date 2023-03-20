@@ -6,6 +6,10 @@
 #include <cstring>
 #include <new>
 
+#ifdef __xcore__
+#include<print.h>
+#endif
+
 //#if !defined(TF_LITE_STRIP_ERROR_STRINGS)
 #include "tensorflow/lite/micro/debug_log.h"
 #include "tensorflow/lite/micro/micro_string.h"
@@ -36,6 +40,12 @@ void XCoreErrorReporter::Log(const char *format, va_list args) {
   }
   MicroVsnprintf(buffer + len, kMaxLogLen, format, args);
   len = strlen(buffer);
+#ifdef __xcore__
+  printstr(buffer);
+#else
+  printf(buffer);
+#endif
+
 #endif
 }
 

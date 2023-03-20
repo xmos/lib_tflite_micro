@@ -123,6 +123,8 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
       ops::micro::xcore::construct_persistent_object<OpData>(context);
   auto parser = ops::micro::xcore::CustomOptionParser(buffer, length);
 
+  assert(op_data->max_detections < 10 &&
+         "Max detections must be less than 10!");
   op_data->max_detections =
       parser.parseNamedCustomOption("max_detections").AsInt32();
   op_data->max_classes_per_detection =

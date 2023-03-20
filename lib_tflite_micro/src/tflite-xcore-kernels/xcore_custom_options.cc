@@ -22,10 +22,10 @@ CustomOptionParser::CustomOptionParser(const char *buffer, size_t buffer_length)
 }
 
 flexbuffers::Reference
-CustomOptionParser::parseNamedCustomOption(const std::string &name) const {
+CustomOptionParser::parseNamedCustomOption(const char *name) const {
   for (int i = 0; i < keys_.size(); ++i) {
-    const auto &key = keys_[i].AsString().str();
-    if (key.compare(name) == 0) {
+    const auto &key = keys_[i].AsString().c_str();
+    if (strcmp(key, name) == 0) {
       return values_[i];
     }
   }

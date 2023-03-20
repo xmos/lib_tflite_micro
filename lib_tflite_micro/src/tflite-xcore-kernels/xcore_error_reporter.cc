@@ -43,7 +43,7 @@ void XCoreErrorReporter::Log(const char *format, va_list args) {
 #ifdef __xcore__
   printstr(buffer);
 #else
-  printf(buffer);
+  printf("%s", buffer);
 #endif
 
 #endif

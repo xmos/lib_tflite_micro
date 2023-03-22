@@ -123,10 +123,11 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
       ops::micro::xcore::construct_persistent_object<OpData>(context);
   auto parser = ops::micro::xcore::CustomOptionParser(buffer, length);
 
-  assert(op_data->max_detections < 10 &&
-         "Max detections must be less than 10!");
-  op_data->max_detections =
-      parser.parseNamedCustomOption("max_detections").AsInt32();
+  int max_detections = parser.parseNamedCustomOption("max_detections").AsInt32();
+  if(max_detections > 10){
+    TF_LITE_KERNEL_LOG(context, "Max detections for detection postprocess will be clamped to 10!");
+  }
+  op_data->max_detections = max_detections < 10 ? max_detections : 10;
   op_data->max_classes_per_detection =
       parser.parseNamedCustomOption("max_classes_per_detection").AsInt32();
   auto detections_per_class =

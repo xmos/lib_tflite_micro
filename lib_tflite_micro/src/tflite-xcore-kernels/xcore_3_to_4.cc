@@ -1,6 +1,5 @@
 // Copyright (c) 2023, XMOS Ltd, All rights reserved
 
-#include <string.h>
 #include "xcore_custom_options.h"
 #include "xcore_utils.h"
 

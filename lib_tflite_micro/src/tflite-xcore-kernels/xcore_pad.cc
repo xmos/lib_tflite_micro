@@ -17,7 +17,6 @@ namespace pad {
 struct OpData {
   nn_pad_plan_t *pad_plan;
   uint32_t pad_value;
-  // uint32_t n_threads
 };
 
 

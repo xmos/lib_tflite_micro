@@ -5,7 +5,7 @@
 
 #include "TypeToString.h"
 #include "tensorflow/lite/c/builtin_op_data.h"
-#include "tensorflow/lite/micro/micro_error_reporter.h"
+#include "tensorflow/lite/micro/tflite_bridge/micro_error_reporter.h"
 
 namespace {
 

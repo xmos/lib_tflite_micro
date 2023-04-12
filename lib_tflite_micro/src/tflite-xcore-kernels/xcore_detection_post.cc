@@ -795,8 +795,8 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
 }
 } // namespace
 
-TfLiteRegistration *Register_DETECTION_POSTPROCESS() {
-  static TfLiteRegistration r = {/*init=*/Init,
+TfLiteRegistration_V1 *Register_DETECTION_POSTPROCESS() {
+  static TfLiteRegistration_V1 r = {/*init=*/Init,
                                  /*free=*/Free,
                                  /*prepare=*/Prepare,
                                  /*invoke=*/Eval,

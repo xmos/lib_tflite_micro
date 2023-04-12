@@ -449,8 +449,8 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
 
 } // namespace conv_v2
 
-TfLiteRegistration *Register_XC_conv2d_v2() {
-  static TfLiteRegistration r = {conv_v2::Init, nullptr, conv_v2::Prepare,
+TfLiteRegistration_V1 *Register_XC_conv2d_v2() {
+  static TfLiteRegistration_V1 r = {conv_v2::Init, nullptr, conv_v2::Prepare,
                                  conv_v2::Eval};
   return &r;
 }

@@ -29,12 +29,13 @@ MODULE_XCC_CPP_FLAGS = $(XCC_CPP_FLAGS) -std=c++11 $(TLFLITE_MICRO_SHARED_FLAGS)
 SOURCE_DIRS = src 
 SOURCE_DIRS += src/tflite-xcore-kernels
 SOURCE_DIRS += submodules/tflite-micro/tensorflow/lite/micro
+SOURCE_DIRS += submodules/tflite-micro/tensorflow/lite/micro/tflite_bridge
 SOURCE_DIRS += submodules/tflite-micro/tensorflow/lite/micro/xcore
 SOURCE_DIRS += submodules/tflite-micro/tensorflow/lite/micro/arena_allocator
 SOURCE_DIRS += submodules/tflite-micro/tensorflow/lite/micro/memory_planner
 SOURCE_DIRS += submodules/tflite-micro/tensorflow/lite/micro/kernels
 SOURCE_DIRS += submodules/tflite-micro/tensorflow/lite/micro/kernels/xcore
-SOURCE_DIRS += submodules/tflite-micro/tensorflow/lite/c
+SOURCE_DIRS += submodules/tflite-micro/tensorflow/lite/core/c
 SOURCE_DIRS += submodules/tflite-micro/tensorflow/lite
 SOURCE_DIRS += submodules/tflite-micro/tensorflow/lite/schema
 SOURCE_DIRS += submodules/tflite-micro/tensorflow/lite/core/api
@@ -78,6 +79,8 @@ endif
 #lite/micro
 EXCLUDE_FILES += micro_allocation_info_test.cc
 EXCLUDE_FILES += while_test.cc
+EXCLUDE_FILES += select_test.cc
+EXCLUDE_FILES += micro_log_test.cc
 EXCLUDE_FILES += fake_micro_context_test.cc
 EXCLUDE_FILES += squared_difference_test.cc
 EXCLUDE_FILES += broadcast_args_test.cc

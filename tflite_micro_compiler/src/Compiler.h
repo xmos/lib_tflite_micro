@@ -6,7 +6,6 @@
 
 #include "MemMap.h"
 #include "tensorflow/lite/micro/all_ops_resolver.h"
-#include "tensorflow/lite/micro/micro_error_reporter.h"
 #define private public
 #include "tensorflow/lite/micro/micro_interpreter.h"
 #undef private
@@ -53,7 +52,6 @@ class Compiler {
 
  private:
   bool init(const void *modelData);
-  tflite::ErrorReporter &errReporter() { return microErrReporter_; }
 
  private:
   struct TensorInfo {
@@ -61,7 +59,7 @@ class Compiler {
     const TfLiteTensor *tensor = nullptr;
   };
   struct RegistrationInfo {
-    const TfLiteRegistration *reg = nullptr;
+    const TfLiteRegistration_V1 *reg = nullptr;
     tflite::BuiltinOperator code;
     std::string custom_name;
     bool operator==(const RegistrationInfo &other) {
@@ -98,7 +96,6 @@ class Compiler {
   std::string prefix_;
   const struct shared_config::xcore_metadata *sharedCfg_ = nullptr;
   int numXCThreads_ = 1;
-  tflite::MicroErrorReporter microErrReporter_;
   const tflite::Model *model_ = nullptr;
   const tflite::SubGraph *subgraph_ = nullptr;
   tflite::AllOpsResolver resolver_;

@@ -6,7 +6,6 @@
 #include "tensorflow/lite/micro/memory_planner/greedy_memory_planner.h"
 #include "tensorflow/lite/micro/memory_planner/micro_memory_planner.h"
 #include "tensorflow/lite/micro/micro_arena_constants.h"
-#include "tensorflow/lite/micro/micro_error_reporter.h"
 #include "xcore_utils.h"
 
 namespace tflite {
@@ -16,13 +15,11 @@ namespace xcore {
 XCoreInterpreter::XCoreInterpreter(const tflite::Model *model,
                                    const tflite::MicroOpResolver &resolver,
                                    tflite::MicroAllocator *allocator,
-                                   tflite::ErrorReporter *reporter,
                                    bool use_current_thread,
                                    XCoreProfiler *profiler)
-    : tflite::MicroInterpreter(model, resolver, allocator, reporter, nullptr,
+    : tflite::MicroInterpreter(model, resolver, allocator, nullptr,
                                profiler) {
   this->model__ = model;
-  this->error_reporter__ = reporter;
   this->allocator_ = allocator;
   if (profiler) {
     profiler->Init(allocator, model->subgraphs()->Get(0)->operators()->size());
@@ -31,13 +28,12 @@ XCoreInterpreter::XCoreInterpreter(const tflite::Model *model,
 
 XCoreInterpreter *XCoreInterpreter::Create(
     uint8_t interpreter_buffer[], const tflite::Model *model,
-    const tflite::MicroOpResolver &resolver, uint8_t *arena, size_t arena_size,
-    tflite::ErrorReporter *reporter, bool use_current_thread,
+    const tflite::MicroOpResolver &resolver, uint8_t *arena, size_t arena_size, bool use_current_thread,
     XCoreProfiler *profiler) {
   MicroAllocator *memory_allocator =
-      MicroAllocator::Create(arena, arena_size, reporter);
+      MicroAllocator::Create(arena, arena_size);
   return new (interpreter_buffer)
-      XCoreInterpreter(model, resolver, memory_allocator, reporter,
+      XCoreInterpreter(model, resolver, memory_allocator,
                        use_current_thread, profiler);
 }
 
@@ -94,7 +90,7 @@ TfLiteStatus XCoreInterpreter::GetTensorDetails(size_t tensor_index, char *name,
   scale[0] = 0.0;
   zero_point[0] = 0;
 
-  ConvertTensorType(tensor_p->type(), (TfLiteType *)type, error_reporter__);
+  ConvertTensorType(tensor_p->type(), (TfLiteType *)type);
   const tflite::QuantizationParameters *quantization_params =
       tensor_p->quantization();
   if (quantization_params) {

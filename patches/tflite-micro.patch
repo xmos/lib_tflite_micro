@@ -556,3 +556,15 @@ index 8a7e1cb..8eaa3ff 100644
    const int32_t operator_inputs[operator_inputs_size] = {};
    constexpr size_t operator_outputs_size = 2;
    const int32_t operator_outputs[operator_outputs_size] = {0, 1};
+diff --git tensorflow/lite/micro/tflite_bridge/micro_error_reporter.h tensorflow/lite/micro/tflite_bridge/micro_error_reporter.h
+index d3702f4..186a226 100644
+--- tensorflow/lite/micro/tflite_bridge/micro_error_reporter.h
++++ tensorflow/lite/micro/tflite_bridge/micro_error_reporter.h
+@@ -28,7 +28,6 @@ class MicroErrorReporter : public ErrorReporter {
+   ~MicroErrorReporter() override {}
+   int Report(const char* format, va_list args) override;
+ 
+- private:
+   TF_LITE_REMOVE_VIRTUAL_DELETE
+ };
+ 

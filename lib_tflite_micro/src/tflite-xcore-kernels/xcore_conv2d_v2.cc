@@ -1,4 +1,4 @@
-// Copyright (c) 2022, XMOS Ltd, All rights reserved
+// Copyright (c) 2023, XMOS Ltd, All rights reserved
 
 #include "../thread_call.h"
 #include "lib_nn/api/Conv2d.hpp"
@@ -449,8 +449,8 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
 
 } // namespace conv_v2
 
-TfLiteRegistration *Register_XC_conv2d_v2() {
-  static TfLiteRegistration r = {conv_v2::Init, nullptr, conv_v2::Prepare,
+TfLiteRegistration_V1 *Register_XC_conv2d_v2() {
+  static TfLiteRegistration_V1 r = {conv_v2::Init, nullptr, conv_v2::Prepare,
                                  conv_v2::Eval};
   return &r;
 }

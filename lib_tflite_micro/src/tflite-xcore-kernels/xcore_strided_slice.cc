@@ -1,4 +1,4 @@
-// Copyright (c) 2022, XMOS Ltd, All rights reserved
+// Copyright (c) 2023, XMOS Ltd, All rights reserved
 
 #include "MemCpyFn.hpp"
 #include "xcore_custom_options.h"
@@ -68,8 +68,8 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
 
 } // namespace strided_slice
 
-TfLiteRegistration *Register_XC_strided_slice() {
-  static TfLiteRegistration r = {strided_slice::Init, nullptr,
+TfLiteRegistration_V1 *Register_XC_strided_slice() {
+  static TfLiteRegistration_V1 r = {strided_slice::Init, nullptr,
                                  strided_slice::Prepare, strided_slice::Eval};
   return &r;
 }

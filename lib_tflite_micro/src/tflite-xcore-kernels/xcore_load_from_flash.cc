@@ -1,4 +1,4 @@
-// Copyright (c) 2022, XMOS Ltd, All rights reserved
+// Copyright (c) 2023, XMOS Ltd, All rights reserved
 
 #include "tensorflow/lite/c/common.h"
 #include "tensorflow/lite/kernels/internal/tensor_ctypes.h"
@@ -107,8 +107,8 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
 
 } // namespace flash
 
-TfLiteRegistration *Register_XC_ld_flash() {
-  static TfLiteRegistration r = {flash::Init, nullptr, flash::Prepare,
+TfLiteRegistration_V1 *Register_XC_ld_flash() {
+  static TfLiteRegistration_V1 r = {flash::Init, nullptr, flash::Prepare,
                                  flash::Eval};
   return &r;
 }

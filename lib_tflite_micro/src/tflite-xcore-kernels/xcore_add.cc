@@ -1,4 +1,4 @@
-// Copyright (c) 2022, XMOS Ltd, All rights reserved
+// Copyright (c) 2023, XMOS Ltd, All rights reserved
 
 #include "xcore_custom_options.h"
 #include "xcore_utils.h"
@@ -72,8 +72,8 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
 
 } // namespace add
 
-TfLiteRegistration *Register_XC_add() {
-  static TfLiteRegistration r = {add::Init, nullptr, add::Prepare, add::Eval};
+TfLiteRegistration_V1 *Register_XC_add() {
+  static TfLiteRegistration_V1 r = {add::Init, nullptr, add::Prepare, add::Eval};
   return &r;
 }
 

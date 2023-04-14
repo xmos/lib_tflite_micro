@@ -123,8 +123,11 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
       ops::micro::xcore::construct_persistent_object<OpData>(context);
   auto parser = ops::micro::xcore::CustomOptionParser(buffer, length);
 
-  op_data->max_detections =
-      parser.parseNamedCustomOption("max_detections").AsInt32();
+  int max_detections = parser.parseNamedCustomOption("max_detections").AsInt32();
+  if(max_detections > 10){
+    TF_LITE_KERNEL_LOG(context, "Max detections for detection postprocess will be clamped to 10!");
+  }
+  op_data->max_detections = max_detections < 10 ? max_detections : 10;
   op_data->max_classes_per_detection =
       parser.parseNamedCustomOption("max_classes_per_detection").AsInt32();
   auto detections_per_class =
@@ -792,8 +795,8 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
 }
 } // namespace
 
-TfLiteRegistration *Register_DETECTION_POSTPROCESS() {
-  static TfLiteRegistration r = {/*init=*/Init,
+TfLiteRegistration_V1 *Register_DETECTION_POSTPROCESS() {
+  static TfLiteRegistration_V1 r = {/*init=*/Init,
                                  /*free=*/Free,
                                  /*prepare=*/Prepare,
                                  /*invoke=*/Eval,

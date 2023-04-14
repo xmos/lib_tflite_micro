@@ -1,6 +1,5 @@
 // Copyright (c) 2023, XMOS Ltd, All rights reserved
 
-#include <string.h>
 #include "xcore_custom_options.h"
 #include "xcore_utils.h"
 
@@ -63,8 +62,8 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
 
 }  // namespace pad
 
-TfLiteRegistration *Register_XC_pad_3_to_4() {
-  static TfLiteRegistration r = {pad_3_to_4::Init, nullptr, pad_3_to_4::Prepare, pad_3_to_4::Eval};
+TfLiteRegistration_V1 *Register_XC_pad_3_to_4() {
+  static TfLiteRegistration_V1 r = {pad_3_to_4::Init, nullptr, pad_3_to_4::Prepare, pad_3_to_4::Eval};
   return &r;
 }
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2022, XMOS Ltd, All rights reserved
+// Copyright (c) 2023, XMOS Ltd, All rights reserved
 
 #include "MemCpyFn.hpp"
 #include "xcore_custom_options.h"
@@ -54,8 +54,8 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
 
 } // namespace lookup
 
-TfLiteRegistration *Register_XC_lookup() {
-  static TfLiteRegistration r = {lookup::Init, nullptr, lookup::Prepare,
+TfLiteRegistration_V1 *Register_XC_lookup() {
+  static TfLiteRegistration_V1 r = {lookup::Init, nullptr, lookup::Prepare,
                                  lookup::Eval};
   return &r;
 }

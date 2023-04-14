@@ -37,114 +37,6 @@ static void *LoggingAllocatePersistentBuffer(struct TfLiteContext *ctx,
   return ptr;
 }
 
-TfLiteStatus tflmc::AllocateTensors(
-    std::unique_ptr<tflite::MicroInterpreter> &interpreter) {
-  tflite::SubgraphAllocations *allocations =
-      interpreter->allocator_.StartModelAllocation(interpreter->model_);
-
-  // if (allocations == nullptr) {
-  //   TF_LITE_REPORT_ERROR(error_reporter_,
-  //                        "Failed starting model allocation.\n");
-  //   initialization_status_ = kTfLiteError;
-  //   return kTfLiteError;
-  // }
-
-  interpreter->graph_.SetSubgraphAllocations(allocations);
-
-  TF_LITE_ENSURE_STATUS(
-      interpreter->PrepareNodeAndRegistrationDataFromFlatbuffer());
-
-  // Only allow AllocatePersistentBuffer in Init stage.
-  interpreter->context_.AllocatePersistentBuffer =
-      &LoggingAllocatePersistentBuffer;
-  interpreter->context_.RequestScratchBufferInArena = nullptr;
-  interpreter->context_.GetScratchBuffer = nullptr;
-  interpreter->context_.GetExternalContext = nullptr;
-  TF_LITE_ENSURE_STATUS(interpreter->graph_.InitSubgraphs());
-
-  // Both AllocatePersistentBuffer and RequestScratchBufferInArena is
-  // available in Prepare stage.
-  interpreter->context_.RequestScratchBufferInArena =
-      tflite::MicroContextRequestScratchBufferInArena;
-  // external_context become available in Prepare stage.
-  interpreter->context_.GetExternalContext =
-      tflite::MicroContextGetExternalContext;
-
-  TF_LITE_ENSURE_STATUS(interpreter->graph_.PrepareSubgraphs());
-
-  // Prepare is done, we're ready for Invoke. Memory allocation is no longer
-  // allowed. Kernels can only fetch scratch buffers via GetScratchBuffer.
-  interpreter->context_.AllocatePersistentBuffer = nullptr;
-  interpreter->context_.RequestScratchBufferInArena = nullptr;
-  interpreter->context_.GetScratchBuffer = tflite::MicroContextGetScratchBuffer;
-
-  TF_LITE_ENSURE_OK(
-      &interpreter->context_,
-      interpreter->allocator_.FinishModelAllocation(
-          interpreter->model_, interpreter->graph_.GetAllocations(),
-          &interpreter->scratch_buffer_handles_));
-
-  interpreter->micro_context_.SetScratchBufferHandles(
-      interpreter->scratch_buffer_handles_);
-
-  // TODO(b/162311891): Drop these allocations when the interpreter supports
-  // handling buffers from TfLiteEvalTensor.
-  interpreter->input_tensors_ = reinterpret_cast<TfLiteTensor **>(
-      interpreter->allocator_.AllocatePersistentBuffer(
-          sizeof(TfLiteTensor *) * interpreter->inputs_size()));
-  // if (input_tensors_ == nullptr) {
-  //   TF_LITE_REPORT_ERROR(
-  //       error_reporter_,
-  //       "Failed to allocate memory for context->input_tensors_, "
-  //       "%d bytes required",
-  //       sizeof(TfLiteTensor*) * inputs_size());
-  //   return kTfLiteError;
-  // }
-
-  for (size_t i = 0; i < interpreter->inputs_size(); ++i) {
-    interpreter->input_tensors_[i] =
-        interpreter->allocator_.AllocatePersistentTfLiteTensor(
-            interpreter->model_, interpreter->graph_.GetAllocations(),
-            interpreter->inputs().Get(i), 0);
-    // if (input_tensors_[i] == nullptr) {
-    //   TF_LITE_REPORT_ERROR(error_reporter_,
-    //                        "Failed to initialize input tensor %d", i);
-    //   return kTfLiteError;
-    // }
-  }
-
-  // TODO(b/162311891): Drop these allocations when the interpreter supports
-  // handling buffers from TfLiteEvalTensor.
-  interpreter->output_tensors_ = reinterpret_cast<TfLiteTensor **>(
-      interpreter->allocator_.AllocatePersistentBuffer(
-          sizeof(TfLiteTensor *) * interpreter->outputs_size()));
-  // if (output_tensors_ == nullptr) {
-  //   TF_LITE_REPORT_ERROR(
-  //       error_reporter_,
-  //       "Failed to allocate memory for context->output_tensors_, "
-  //       "%d bytes required",
-  //       sizeof(TfLiteTensor*) * outputs_size());
-  //   return kTfLiteError;
-  // }
-
-  for (size_t i = 0; i < interpreter->outputs_size(); ++i) {
-    interpreter->output_tensors_[i] =
-        interpreter->allocator_.AllocatePersistentTfLiteTensor(
-            interpreter->model_, interpreter->graph_.GetAllocations(),
-            interpreter->outputs().Get(i), 0);
-    // if (output_tensors_[i] == nullptr) {
-    //   TF_LITE_REPORT_ERROR(error_reporter_,
-    //                        "Failed to initialize output tensor %d", i);
-    //   return kTfLiteError;
-    // }
-  }
-
-  TF_LITE_ENSURE_STATUS(interpreter->ResetVariableTensors());
-
-  interpreter->tensors_allocated_ = true;
-  return kTfLiteOk;
-}
-
 TfLiteEvalTensor *tflmc::GetEvalTensor(tflite::MicroInterpreter *interpreter,
                                        int i) {
   auto ctx = &interpreter->context_;
@@ -223,7 +115,7 @@ tflmc::Compiler::Compiler(const void *modelData,
 bool tflmc::Compiler::init(const void *modelData) {
   model_ = tflite::GetModel(modelData);
   if (model_->version() != TFLITE_SCHEMA_VERSION) {
-    errReporter().Report(
+    MicroPrintf(
         "Model provided is schema version %d not equal "
         "to supported version %d.",
         model_->version(), TFLITE_SCHEMA_VERSION);
@@ -265,22 +157,24 @@ bool tflmc::Compiler::init(const void *modelData) {
 
   interpreter_ = std::unique_ptr<tflite::MicroInterpreter>(
       new tflite::MicroInterpreter(model_, resolver_, arena_buf_.data(),
-                                   arena_buf_.size(), &microErrReporter_));
+                                   arena_buf_.size()));
 
   assert(interpreter_->graph_.NumSubgraphs() == 1);
 
   TfLiteStatus set_external_context_status =
       interpreter_->SetMicroExternalContext((void *)&g_xc_config);
   if (set_external_context_status != kTfLiteOk) {
-    errReporter().Report("SetExternalContext() failed");
+    MicroPrintf("SetExternalContext() failed");
     return false;
   }
 
+  interpreter_->context_.AllocatePersistentBuffer =
+       &LoggingAllocatePersistentBuffer;
+
   // Allocate memory from the tensor_arena for the model's tensors.
-  // TfLiteStatus allocate_status = interpreter_->AllocateTensors();
-  TfLiteStatus allocate_status = AllocateTensors(interpreter_);
+  TfLiteStatus allocate_status = interpreter_->AllocateTensors();
   if (allocate_status != kTfLiteOk) {
-    errReporter().Report("AllocateTensors() failed");
+    MicroPrintf("AllocateTensors() failed");
     return false;
   }
 
@@ -319,7 +213,7 @@ bool tflmc::Compiler::init(const void *modelData) {
     }
   }
 
-  for (size_t k = 0; k < interpreter_->allocator_.scratch_buffer_request_count_;
+  for (size_t k = 0; k < interpreter_->allocator_.GetScratchBufferRequestCount();
        k++) {
     void *data = interpreter_->micro_context_.GetScratchBuffer(k);
     ptrdiff_t offset = (uint8_t *)data - arena_buf_.data();
@@ -466,7 +360,7 @@ namespace xcore {
     for (size_t i = 0; i < registrations_.size(); i++) {
       if (registrations_[i].code == tflite::BuiltinOperator_CUSTOM &&
           registrations_[i].custom_name != "TFLite_Detection_PostProcess") {
-        wr << "extern TfLiteRegistration *Register_"
+        wr << "extern TfLiteRegistration_V1 *Register_"
            << registrations_[i].custom_name << "(void);\n";
       }
     }
@@ -483,7 +377,7 @@ namespace xcore {
     for (size_t i = 0; i < registrations_.size(); i++) {
       if (registrations_[i].code == tflite::BuiltinOperator_CUSTOM &&
           registrations_[i].custom_name == "TFLite_Detection_PostProcess") {
-        wr << "extern TfLiteRegistration "
+        wr << "extern TfLiteRegistration_V1 "
               "*Register_DETECTION_POSTPROCESS(void);\n";
       }
     }
@@ -535,7 +429,7 @@ int time_t0, time_t1;
 
 TfLiteContext ctx{};
 
-TfLiteRegistration registrations[OP_LAST];
+TfLiteRegistration_V1 registrations[OP_LAST];
 )";
   for (size_t i = 0; i < tensors_.size(); i++) {
     auto &t = tensors_[i].tensor;
@@ -745,46 +639,8 @@ TfLiteStatus )"
            << "] = *(tflite::ops::micro::xcore::Register_" << opName
            << "());\n";
       }
-    } else if ((registrations_[i].code == tflite::BuiltinOperator_ABS) ||
-               (registrations_[i].code == tflite::BuiltinOperator_ARG_MAX) ||
-               (registrations_[i].code == tflite::BuiltinOperator_ARG_MIN) ||
-               (registrations_[i].code == tflite::BuiltinOperator_CEIL) ||
-               (registrations_[i].code ==
-                tflite::BuiltinOperator_CONCATENATION) ||
-               (registrations_[i].code == tflite::BuiltinOperator_COS) ||
-               (registrations_[i].code == tflite::BuiltinOperator_EQUAL) ||
-               (registrations_[i].code == tflite::BuiltinOperator_FLOOR) ||
-               (registrations_[i].code == tflite::BuiltinOperator_GREATER) ||
-               (registrations_[i].code ==
-                tflite::BuiltinOperator_GREATER_EQUAL) ||
-               (registrations_[i].code ==
-                tflite::BuiltinOperator_L2_NORMALIZATION) ||
-               (registrations_[i].code == tflite::BuiltinOperator_LESS) ||
-               (registrations_[i].code == tflite::BuiltinOperator_LESS_EQUAL) ||
-               (registrations_[i].code == tflite::BuiltinOperator_LOG) ||
-               (registrations_[i].code ==
-                tflite::BuiltinOperator_LOGICAL_NOT) ||
-               (registrations_[i].code == tflite::BuiltinOperator_MAXIMUM) ||
-               (registrations_[i].code == tflite::BuiltinOperator_MINIMUM) ||
-               (registrations_[i].code == tflite::BuiltinOperator_NEG) ||
-               (registrations_[i].code == tflite::BuiltinOperator_NOT_EQUAL) ||
-               (registrations_[i].code == tflite::BuiltinOperator_PACK) ||
-               (registrations_[i].code == tflite::BuiltinOperator_PAD) ||
-               (registrations_[i].code == tflite::BuiltinOperator_PADV2) ||
-               (registrations_[i].code == tflite::BuiltinOperator_RESHAPE) ||
-               (registrations_[i].code ==
-                tflite::BuiltinOperator_RESIZE_NEAREST_NEIGHBOR) ||
-               (registrations_[i].code == tflite::BuiltinOperator_ROUND) ||
-               (registrations_[i].code == tflite::BuiltinOperator_RSQRT) ||
-               (registrations_[i].code == tflite::BuiltinOperator_SIN) ||
-               (registrations_[i].code == tflite::BuiltinOperator_SPLIT) ||
-               (registrations_[i].code == tflite::BuiltinOperator_SPLIT_V) ||
-               (registrations_[i].code == tflite::BuiltinOperator_SQRT) ||
-               (registrations_[i].code == tflite::BuiltinOperator_SQUARE) ||
-               (registrations_[i].code ==
-                tflite::BuiltinOperator_STRIDED_SLICE) ||
-               (registrations_[i].code == tflite::BuiltinOperator_TANH) ||
-               (registrations_[i].code == tflite::BuiltinOperator_UNPACK)) {
+    } else if ((registrations_[i].code == tflite::BuiltinOperator_RESHAPE) ||
+               (registrations_[i].code == tflite::BuiltinOperator_ROUND)) {
       opName = tflite::EnumNameBuiltinOperator(registrations_[i].code);
       wr << "  registrations[OP_" << opName
          << "] = tflite::ops::micro::Register_" << opName << "();\n";

@@ -17,7 +17,7 @@ private:
 public:
   CustomOptionParser(const flexbuffers::Map &map);
   CustomOptionParser(const char *buffer, size_t buffer_length);
-  flexbuffers::Reference parseNamedCustomOption(const std::string &name) const;
+  flexbuffers::Reference parseNamedCustomOption(const char *name) const;
 };
 
 } // namespace xcore

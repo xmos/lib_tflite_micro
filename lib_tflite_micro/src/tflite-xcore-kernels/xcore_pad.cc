@@ -17,7 +17,6 @@ namespace pad {
 struct OpData {
   nn_pad_plan_t *pad_plan;
   uint32_t pad_value;
-  // uint32_t n_threads
 };
 
 
@@ -61,8 +60,8 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
 
 }  // namespace pad
 
-TfLiteRegistration *Register_XC_pad() {
-  static TfLiteRegistration r = {pad::Init, nullptr, pad::Prepare, pad::Eval};
+TfLiteRegistration_V1 *Register_XC_pad() {
+  static TfLiteRegistration_V1 r = {pad::Init, nullptr, pad::Prepare, pad::Eval};
   return &r;
 }
 

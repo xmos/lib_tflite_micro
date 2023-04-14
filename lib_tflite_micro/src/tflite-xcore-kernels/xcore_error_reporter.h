@@ -4,7 +4,7 @@
 #define XCORE_ERROR_REPORTER_H_
 
 #include "tensorflow/lite/micro/compatibility.h"
-#include "tensorflow/lite/micro/micro_error_reporter.h"
+#include "tensorflow/lite/micro/tflite_bridge/micro_error_reporter.h"
 
 namespace tflite {
 namespace micro {

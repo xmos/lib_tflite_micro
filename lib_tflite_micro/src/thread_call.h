@@ -9,6 +9,12 @@ extern "C" {
 
 #define XCORE_MAX_NUM_THREADS 8
 
+#ifdef __XC__
+    #define UNSAFE unsafe
+#else
+    #define UNSAFE /**/
+#endif
+
 typedef struct { // THIS STRUCT MUST BE IN SYNC WITH ASSEMBLY CODE.
   union {
     uint64_t id_aligned[2]; // Guarantee 64-bit alignment.
@@ -16,10 +22,13 @@ typedef struct { // THIS STRUCT MUST BE IN SYNC WITH ASSEMBLY CODE.
   } thread_ids;             // ids of at most 4 threads - live during invoke
   uint32_t synchroniser;    // synchroniser for threads - live during invoke
   uint32_t nstackwords;     // nstackwords per stack   - live after load model
-  void *stacks;             // pointer to top of stack - live after load model
+  void *UNSAFE stacks;      // pointer to top of stack - live after load model
 } thread_info_t;
 
-typedef void (*thread_function_pointer_t)(void *arg0, void *arg1, void *arg2);
+
+#ifndef __XC__
+
+typedef void (*thread_function_pointer_t)(void * arg0, void * arg1, void * arg2);
 struct inference_engine;
 
 /** Function that creates threads, then calls a interp_invoke_internal,
@@ -84,7 +93,7 @@ void thread_destroy(thread_info_t *ptr);
  * \param arg2      Third argument for the thread function
  * \param thread_id The thread_id to initialise; one of ptr[0]..ptr[3] above
  */
-void thread_variable_setup(void *arg1, void *arg2, uint32_t thread_id);
+void thread_variable_setup(void * arg1, void * arg2, uint32_t thread_id);
 
 /** Function that starts all thread functions and runs them until completion.
  * It is assumed that the variable parts have been set up per thread.
@@ -98,10 +107,12 @@ void thread_variable_setup(void *arg1, void *arg2, uint32_t thread_id);
  * \param ptr       Pointer to the thread info block held in the xcore
  * interpreter.
  */
-void thread_call(void *arg0, void *arg1, void *arg2,
+void thread_call(void * arg0, void * arg1, void * arg2,
                  thread_function_pointer_t fp, thread_info_t *ptr);
 #ifdef __cplusplus
 };
 #endif
 
-#endif
+#endif // __XC__
+
+#endif // __micro_thread_library_h__

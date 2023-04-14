@@ -17,14 +17,13 @@ public:
   XCoreInterpreter(const tflite::Model *model,
                    const tflite::MicroOpResolver &resolver,
                    tflite::MicroAllocator *allocator,
-                   tflite::ErrorReporter *reporter,
                    bool use_curent_thread = true,
                    XCoreProfiler *profiler = nullptr);
 
   static XCoreInterpreter *
   Create(uint8_t interpreter_buffer[], const tflite::Model *model,
          const tflite::MicroOpResolver &resolver, uint8_t *arena,
-         size_t arena_size, tflite::ErrorReporter *reporter,
+         size_t arena_size,
          bool use_current_thread, XCoreProfiler *profiler);
 
   void PrintMemoryPlan();
@@ -41,7 +40,6 @@ public:
   size_t input_tensor_index(size_t input_index);
   size_t output_tensor_index(size_t output_index);
   const Model *model__;
-  ErrorReporter *error_reporter__;
   MicroAllocator *allocator_;
 };
 

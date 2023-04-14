@@ -5,7 +5,7 @@
 
 struct xc_context_config_t {
   thread_info_t thread_info;
-  void *flash_data; // channel to flash reader.
+  void *UNSAFE flash_data; // channel to flash reader.
 };
 
 #endif // XCORE_CONFIG_H_

@@ -18,15 +18,15 @@ constexpr const char *XC_pad_3_to_4_OpCode = "XC_pad_3_to_4";
 // Binarized ops
 constexpr const char *XC_bsign_8_OpCode = "XC_bsign_8";
 
-TfLiteRegistration *Register_XC_conv2d_v2();
-TfLiteRegistration *Register_XC_ld_flash();
-TfLiteRegistration *Register_XC_add();
-TfLiteRegistration *Register_XC_strided_slice();
-TfLiteRegistration *Register_XC_lookup();
-TfLiteRegistration *Register_XC_pad();
-TfLiteRegistration *Register_XC_pad_3_to_4();
+TfLiteRegistration_V1 *Register_XC_conv2d_v2();
+TfLiteRegistration_V1 *Register_XC_ld_flash();
+TfLiteRegistration_V1 *Register_XC_add();
+TfLiteRegistration_V1 *Register_XC_strided_slice();
+TfLiteRegistration_V1 *Register_XC_lookup();
+TfLiteRegistration_V1 *Register_XC_pad();
+TfLiteRegistration_V1 *Register_XC_pad_3_to_4();
 // Binarized ops
-TfLiteRegistration *Register_XC_bsign_8();
+TfLiteRegistration_V1 *Register_XC_bsign_8();
 
 void RegisterXCOps(tflite::MicroOpResolver *res);
 

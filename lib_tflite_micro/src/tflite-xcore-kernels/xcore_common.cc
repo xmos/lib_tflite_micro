@@ -1,11 +1,19 @@
 #include <cstdio>
 #include <cstring>
 
+#if defined __GNUC__
+#define ALIGN(X) __attribute__((aligned(X)))
+#elif defined _MSC_VER
+#define ALIGN(X) __declspec(align(X))
+#elif defined __TASKING__
+#define ALIGN(X) __align(X)
+#endif
+
 #define MAX_DEBUG_LOG_LENGTH  256
 #define MAX_DEBUG_LOG_ENTRIES 3
 
 int debug_log_index = 0;
-char debug_log_buffer[MAX_DEBUG_LOG_LENGTH * MAX_DEBUG_LOG_ENTRIES] __attribute__((aligned(4)));
+char debug_log_buffer[MAX_DEBUG_LOG_LENGTH * MAX_DEBUG_LOG_ENTRIES] ALIGN(4);
 
 extern "C" void DebugLog(const char* s)
 {

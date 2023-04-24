@@ -481,13 +481,15 @@ index b06252a..9b3ca46 100644
    if (external_context_payload == nullptr ||
        external_context_payload_ != nullptr) {
 diff --git tensorflow/lite/micro/micro_context.h tensorflow/lite/micro/micro_context.h
-index 63b4b7d..30e9524 100644
+index 63b4b7d..169ddb8 100644
 --- tensorflow/lite/micro/micro_context.h
 +++ tensorflow/lite/micro/micro_context.h
-@@ -20,6 +20,22 @@ limitations under the License.
+@@ -20,6 +20,24 @@ limitations under the License.
  #include "tensorflow/lite/micro/micro_allocator.h"
  #include "tensorflow/lite/micro/micro_graph.h"
  
++#define XCORE_TFLITE_MICRO_PATCHED
++
 +#ifdef NO_INTERPRETER
 +
 +namespace tflite {
@@ -507,7 +509,7 @@ index 63b4b7d..30e9524 100644
  namespace tflite {
  // MicroContext is eventually going to become the API between TFLM and the
  // kernels, replacing all the functions in TfLiteContext. The end state is code
-@@ -184,4 +200,6 @@ void MicroContextReportOpError(struct TfLiteContext* context,
+@@ -184,4 +202,6 @@ void MicroContextReportOpError(struct TfLiteContext* context,
  
  }  // namespace tflite
  

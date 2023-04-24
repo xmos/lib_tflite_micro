@@ -13,7 +13,7 @@
 #define MAX_DEBUG_LOG_ENTRIES 3
 
 int debug_log_index = 0;
-char debug_log_buffer[MAX_DEBUG_LOG_LENGTH * MAX_DEBUG_LOG_ENTRIES] ALIGN(4);
+char ALIGN(4) debug_log_buffer[MAX_DEBUG_LOG_LENGTH * MAX_DEBUG_LOG_ENTRIES];
 
 extern "C" void DebugLog(const char* s)
 {

@@ -49,71 +49,7 @@ extern unsigned int fl_getDataPartitionBase(void);
 // How many 32 bit words are in the pattern
 #define PATTERN_WORDS 8
 
-// This function has a bit longer latency but meets the timing specs for CS_N active setup time to rising edge of clock for faster clock speeds.
-#pragma unsafe arrays
-static void fast_read_loop(fl_QSPIPorts &qspi, unsigned addr, unsigned mode, unsigned read_adj, unsigned read_count, unsigned read_data[], chanend ?c_data_out)
-{
-    
-    unsigned addr_mode_wr;
-    unsigned int1, int2;
-    unsigned read_start_pt;
-    
-    // Starting data read port timer value
-    read_start_pt = 27 + read_adj;
-
-    // We shift the address left by 8 bits to align the MSB of address with MSB of the int. We or in the mode bits.
-    // Buffered ports remember always shift right.
-    // So LSB first
-    // We need to nibble swap the address and mode word as it needs to be output MS nibble first and ports do the opposite
-    {int1, int2} = unzip(byterev((addr << 8) | mode), 2);
-    addr_mode_wr = zip(int2, int1, 2);
-    
-    // Need to set the first data output bit (MS bit of flash command) before we start the clock.
-    partout(qspi.qspiSIO, 4, 0x1);
-    start_clock(qspi.qspiClkblk);
-    sync(qspi.qspiSIO);
-    stop_clock(qspi.qspiClkblk);
-    
-    qspi.qspiCS <: 0; // Set CS_N low
-    
-    // Pre load the transfer register in the port with data. This will not go out yet because clock has not been started.
-    // This data needs to be shifted as when starting the clock we will clock the first bit of data to flash before this data goes out.
-    // We also need to Or in the first nibble of addr_mode_wr that we want to output.
-    // This is the 7 LSB of the 0xEB instruction on dat[0], dat[3:1] = 0
-    qspi.qspiSIO <: 0x01101011 | ((addr_mode_wr & 0x0000000F) << 28); 
-    
-    // Start the clock block running. This starts output of data and resets the port timer to 0 on the clk port.
-    start_clock(qspi.qspiClkblk);
-
-    partout(qspi.qspiSIO, 28, (addr_mode_wr >> 4)); // Immediately follow up with the remaining address and mode bits
-    
-    // Now we want to turn the port around at the right point.
-    // At specified value of port timer we read the transfer reg word and discard, data will be junk. Exact timing of port going high-z would need simulation but it will be in the cycle specified.
-    qspi.qspiSIO @ 18 :> void;
-    // Now we need to read the transfer register at the correct port time so that the initial data from flash will be in there
-    unsigned first_word;
-    qspi.qspiSIO @ read_start_pt :> first_word;
-    // All following reads will happen directly after this read with no gaps so do not need to be timed.
-    if (isnull(c_data_out)) {
-        read_data[0] = first_word;
-        for (int i = 1; i < read_count; i++) {
-            qspi.qspiSIO :> read_data[i];
-        }
-    } else {
-        outuint(c_data_out, first_word);
-        for (int i = 1; i < read_count; i++) {
-            unsigned x;
-            qspi.qspiSIO :> x;
-            outuint(c_data_out, x);
-        }
-        outct(c_data_out, 1);
-    }
-    // Stop the clock
-    stop_clock(qspi.qspiClkblk);
-    
-    // Put chip select back high
-    qspi.qspiCS <: 1;
-}
+extern void fast_read_loop(fl_QSPIPorts &qspi, unsigned addr, unsigned mode, unsigned read_adj, unsigned read_count, unsigned read_data[], chanend ?c_data_out);
 
 static void ports_clocks_setup(fl_QSPIPorts &qspi)
 {
@@ -203,6 +139,7 @@ int fast_flash_init(fl_QSPIPorts &qspi) {
                 char setting = sdelay | (read_adj << 1) | (pad_delay << 3);
                 // Store the settings and pass/fail in the results
                 if (passing_words == PATTERN_WORDS) {
+                    printf("%d: OK\n", setting);
                     if (pass_count == 0) // This is first PASS we've seen
                     {
                         pass_start = time_index; // Record the setting index
@@ -210,6 +147,7 @@ int fast_flash_init(fl_QSPIPorts &qspi) {
                     pass_count++;
                     results[time_index] = setting | 1 << 7;
                 } else {
+                    printf("%d: BAD\n", setting);
                     results[time_index] = setting;
                 }
                 time_index++;

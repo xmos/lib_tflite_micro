@@ -400,6 +400,19 @@ index 5b795ea..adc435f 100644
        output_num_dims, axis, num_axis_dimensions, keep_dims, temp_index,
        resolved_axis, temp_sum, compute_sum);
  }
+diff --git tensorflow/lite/micro/kernels/concatenation.cc tensorflow/lite/micro/kernels/concatenation.cc
+index 9decf72..1cf987c 100644
+--- tensorflow/lite/micro/kernels/concatenation.cc
++++ tensorflow/lite/micro/kernels/concatenation.cc
+@@ -29,7 +29,7 @@ namespace tflite {
+ 
+ namespace {
+ 
+-constexpr int kMaxInputNum = 10;  // Maximum number of input tensors
++constexpr int kMaxInputNum = 20;  // Maximum number of input tensors
+ constexpr int kOutputTensor = 0;
+ 
+ struct OpData {
 diff --git tensorflow/lite/micro/kernels/conv_common.cc tensorflow/lite/micro/kernels/conv_common.cc
 index c548c93..4ee3ee0 100644
 --- tensorflow/lite/micro/kernels/conv_common.cc

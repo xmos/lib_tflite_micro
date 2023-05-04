@@ -204,6 +204,10 @@ template <class T, class printT>
 static void dump_tensor_contents(std::ostream& out_, const TfLiteTensor& t,
                                  const std::string& tname,
                                  const std::string& name) {
+  if (t.type == kTfLiteFloat32 || t.type == kTfLiteUInt8 || t.type == kTfLiteInt64 || t.type == kTfLiteFloat64) {
+    std::cerr << "Warning : tensor type " << tname << " present in the compiled model!\n";
+  }
+
   if (t.dims->size == 0) {  // special case 0 dimensions, we output an array to
                             // avoid distinction from >0 dimension at every use
     out_ << "const " << tname << " " << name << "[1] = { "

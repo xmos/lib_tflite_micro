@@ -1,24 +1,70 @@
+#include <cstdio>
+#include <cstring>
+
+#if defined __GNUC__
+#define ALIGN(X) __attribute__((aligned(X)))
+#elif defined _MSC_VER
+#define ALIGN(X) __declspec(align(X))
+#elif defined __TASKING__
+#define ALIGN(X) __align(X)
+#endif
+
+#define MAX_DEBUG_LOG_LENGTH  256
+#define MAX_DEBUG_LOG_ENTRIES 3
+
+int debug_log_index = 0;
+char ALIGN(4) debug_log_buffer[MAX_DEBUG_LOG_LENGTH * MAX_DEBUG_LOG_ENTRIES];
+
+extern "C" void DebugLog(const char* s)
+{
+    strcpy(&debug_log_buffer[debug_log_index * MAX_DEBUG_LOG_ENTRIES], s);
+    printf("%s", &debug_log_buffer[debug_log_index * MAX_DEBUG_LOG_ENTRIES]);
+    debug_log_index++;
+    if(debug_log_index == MAX_DEBUG_LOG_ENTRIES)
+        debug_log_index = 0;
+}
+
 #ifndef __xcore__
 
 #include "../thread_call.h"
 #include <assert.h>
-#include <stdint.h>
-#include <stdio.h>
-
-extern "C" void DebugLog(const char *s) {
-  while (*s) {
-    putchar(*s);
-    s++;
-  }
-} // Not sure why we need this
 
 //////
 
-void thread_init_1(thread_info_t *ptr) {}
-void thread_init_2(thread_info_t *ptr) {}
-void thread_init_3(thread_info_t *ptr) {}
-void thread_init_4(thread_info_t *ptr) {}
-void thread_init_5(thread_info_t *ptr) {}
+void thread_init_1(thread_info_t *ptr) {
+    ptr->thread_ids.id[0] = -1;
+    ptr->thread_ids.id[1] = -1;
+    ptr->thread_ids.id[2] = -1;
+    ptr->thread_ids.id[3] = -1;
+}
+
+void thread_init_2(thread_info_t *ptr) {
+    ptr->thread_ids.id[0] = 0;
+    ptr->thread_ids.id[1] = -1;
+    ptr->thread_ids.id[2] = -1;
+    ptr->thread_ids.id[3] = -1;
+}
+
+void thread_init_3(thread_info_t *ptr) {
+    ptr->thread_ids.id[0] = 0;
+    ptr->thread_ids.id[1] = 1;
+    ptr->thread_ids.id[2] = -1;
+    ptr->thread_ids.id[3] = -1;
+}
+void thread_init_4(thread_info_t *ptr) {
+    ptr->thread_ids.id[0] = 0;
+    ptr->thread_ids.id[1] = 1;
+    ptr->thread_ids.id[2] = 2;
+    ptr->thread_ids.id[3] = -1;
+}
+
+void thread_init_5(thread_info_t *ptr) {
+    ptr->thread_ids.id[0] = 0;
+    ptr->thread_ids.id[1] = 1;
+    ptr->thread_ids.id[2] = 2;
+    ptr->thread_ids.id[3] = 3;
+}
+
 void thread_destroy(thread_info_t *ptr) {}
 
 static void *args[4][10];

@@ -212,9 +212,10 @@ int inference_engine_load_model(inference_engine *ie, uint32_t model_bytes,
 int interp_invoke_par_5(inference_engine *ie) {
   if (ie->num_threads > 5) {
     printf("Thread count (5) does not match model thread count\n");
-    return 1;
+    return 5;
   }
-  return thread_invoke_5(ie, &ie->xc_config.thread_info);
+  thread_init_5(&ie->xc_config.thread_info);
+  return interp_invoke_internal(ie);
 }
 
 int interp_invoke_par_4(inference_engine *ie) {
@@ -225,7 +226,8 @@ int interp_invoke_par_4(inference_engine *ie) {
                          ie->num_threads);
     return 5;
   }
-  return thread_invoke_4(ie, &ie->xc_config.thread_info);
+  thread_init_4(&ie->xc_config.thread_info);
+  return interp_invoke_internal(ie);
 }
 
 int interp_invoke_par_3(inference_engine *ie) {
@@ -236,7 +238,8 @@ int interp_invoke_par_3(inference_engine *ie) {
                          ie->num_threads);
     return 5;
   }
-  return thread_invoke_3(ie, &ie->xc_config.thread_info);
+  thread_init_3(&ie->xc_config.thread_info);
+  return interp_invoke_internal(ie);
 }
 
 int interp_invoke_par_2(inference_engine *ie) {
@@ -247,7 +250,8 @@ int interp_invoke_par_2(inference_engine *ie) {
                          ie->num_threads);
     return 5;
   }
-  return thread_invoke_2(ie, &ie->xc_config.thread_info);
+  thread_init_2(&ie->xc_config.thread_info);
+  return interp_invoke_internal(ie);
 }
 
 int interp_invoke(inference_engine *ie) {
@@ -258,7 +262,8 @@ int interp_invoke(inference_engine *ie) {
                          ie->num_threads);
     return 5;
   }
-  return thread_invoke_1(ie, &ie->xc_config.thread_info);
+  thread_init_1(&ie->xc_config.thread_info);
+  return interp_invoke_internal(ie);
 }
 
 TfLiteStatus interp_invoke_internal(inference_engine *ie) {

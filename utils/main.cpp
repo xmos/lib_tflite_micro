@@ -1,4 +1,4 @@
-#include "1.cpp.h"
+#include "model.tflite.h"
 #include<stdio.h>
 
 #include <xtensor/xarray.hpp>
@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
   xt::xarray<int8_t> input = xt::load_npy<int8_t>("input.npy");
   int8_t *in = model_input(0)->data.int8;
   for (int i=0;i<model_input_size(0);++i) {
-    in[i] = input[i];
+    in[i] = 100;
   }
   printf("\n");
 
@@ -54,12 +54,9 @@ int main(int argc, char *argv[])
   for(int n=0; n< model_outputs(); ++n) {
     int8_t *out = model_output(n)->data.int8;
      for (int i=0;i<model_output_size(n);++i){
-	if (out[i] != -128) {
-            //printf("%d %d\n",i, (int)out[i]);
-        }
        //printf("%d,",(int)out[i]);
      }
-    //printf(" checksum : %d\n", (int)checksum_calc((char*)out, model_output_size(n)));
+    printf("\nchecksum : %d\n\n", (int)checksum_calc((char*)out, model_output_size(n)));
   }
 
   return 0;

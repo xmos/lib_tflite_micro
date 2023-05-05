@@ -267,10 +267,10 @@ bool tflmc::Compiler::init(const void *modelData) {
   }
   size_t totalRuntimeAllocSize = 0;
   for (const auto &alloc : runtimeAllocations) {
-    // TODO: This drops the alignment between buffers. Is this fine?
-    totalRuntimeAllocSize += alloc.len;
+    int doubleAlignedSize = ((alloc.len + 7) / 8) * 8;
+    totalRuntimeAllocSize += doubleAlignedSize;
     ptrdiff_t offset = alloc.offset - minRuntimeOffset + ramTensorBufferSize;
-    memMap_.recordRAM(offset, alloc.len,
+    memMap_.recordRAM(offset, doubleAlignedSize,
                       "PersistentBuf" + std::to_string(alloc.nodeIndex));
   }
 
@@ -281,6 +281,7 @@ bool tflmc::Compiler::init(const void *modelData) {
   arenaBufferSize_ = ramTensorBufferSize + totalRuntimeAllocSize;
 
   if (debugPrint_) {
+    interpreter_->allocator_.memory_planner()->PrintMemoryPlan();
     memMap_.report();
   }
 
@@ -303,6 +304,10 @@ void tflmc::Compiler::writeSource(std::ostream &out) {
 #include "tensorflow/lite/micro/kernels/reduce.h"
 #include "tensorflow/lite/micro/kernels/softmax.h"
 #include "tensorflow/lite/micro/micro_context.h"
+
+// #define TFLMC_XCORE_PROFILE
+// #define TFLMC_PRINT_TENSORS
+// #define TFLMC_PRINT_INPUT_TENSORS
 
 #if defined __GNUC__
 #define ALIGN(X) __attribute__((aligned(X)))
@@ -556,6 +561,13 @@ tflite::MicroContext mc;
 
 // Xcore context and thread variables
 xc_context_config_t xc_config;
+// When using USE_DDR_FIX for enabling LPDDR support, only one thread can be used
+#ifdef USE_DDR_FIX
+static_assert(()"
+       << numXCThreads_
+       << R"( == 1),
+             "Only one thread can be used when using USE_DDR_FIX! Please recompile with one thread!");
+#endif
 constexpr int kStackWordsPerThread = 256;
 constexpr int threadsStackSizeInUint64 = )"
      << numXCThreads_ << R"( * kStackWordsPerThread/2;
@@ -566,7 +578,8 @@ uint64_t xcThreadsStack[threadsStackSizeInUint64];
 static void* AllocatePersistentBuffer(struct TfLiteContext* ctx,
                                                  size_t bytes) {
   static uint8_t *AllocPtr = tensor_arena + sizeof(tensor_arena);
-
+  // Align to double word
+  bytes = ((bytes + 7) / 8) * 8;
   AllocPtr -= bytes;
   return AllocPtr;
 }

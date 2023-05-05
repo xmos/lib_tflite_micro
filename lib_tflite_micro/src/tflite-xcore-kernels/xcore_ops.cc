@@ -8,6 +8,10 @@
 #endif
 #endif
 
+#ifndef XCORE_TFLITE_MICRO_PATCHED
+#error "tflite-micro patch not applied! Fix by running 'make patch' in lib_tflite_micro!"
+#endif
+
 namespace tflite {
 namespace ops {
 namespace micro {

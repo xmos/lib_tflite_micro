@@ -400,6 +400,19 @@ index 5b795ea..adc435f 100644
        output_num_dims, axis, num_axis_dimensions, keep_dims, temp_index,
        resolved_axis, temp_sum, compute_sum);
  }
+diff --git tensorflow/lite/micro/kernels/concatenation.cc tensorflow/lite/micro/kernels/concatenation.cc
+index 9decf72..1cf987c 100644
+--- tensorflow/lite/micro/kernels/concatenation.cc
++++ tensorflow/lite/micro/kernels/concatenation.cc
+@@ -29,7 +29,7 @@ namespace tflite {
+ 
+ namespace {
+ 
+-constexpr int kMaxInputNum = 10;  // Maximum number of input tensors
++constexpr int kMaxInputNum = 20;  // Maximum number of input tensors
+ constexpr int kOutputTensor = 0;
+ 
+ struct OpData {
 diff --git tensorflow/lite/micro/kernels/conv_common.cc tensorflow/lite/micro/kernels/conv_common.cc
 index c548c93..4ee3ee0 100644
 --- tensorflow/lite/micro/kernels/conv_common.cc
@@ -481,13 +494,15 @@ index b06252a..9b3ca46 100644
    if (external_context_payload == nullptr ||
        external_context_payload_ != nullptr) {
 diff --git tensorflow/lite/micro/micro_context.h tensorflow/lite/micro/micro_context.h
-index 63b4b7d..30e9524 100644
+index 63b4b7d..169ddb8 100644
 --- tensorflow/lite/micro/micro_context.h
 +++ tensorflow/lite/micro/micro_context.h
-@@ -20,6 +20,22 @@ limitations under the License.
+@@ -20,6 +20,24 @@ limitations under the License.
  #include "tensorflow/lite/micro/micro_allocator.h"
  #include "tensorflow/lite/micro/micro_graph.h"
  
++#define XCORE_TFLITE_MICRO_PATCHED
++
 +#ifdef NO_INTERPRETER
 +
 +namespace tflite {
@@ -507,7 +522,7 @@ index 63b4b7d..30e9524 100644
  namespace tflite {
  // MicroContext is eventually going to become the API between TFLM and the
  // kernels, replacing all the functions in TfLiteContext. The end state is code
-@@ -184,4 +200,6 @@ void MicroContextReportOpError(struct TfLiteContext* context,
+@@ -184,4 +202,6 @@ void MicroContextReportOpError(struct TfLiteContext* context,
  
  }  // namespace tflite
  

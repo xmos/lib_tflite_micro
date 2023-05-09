@@ -12,6 +12,10 @@
 #include "xcore_config.h"
 #include "xtflm_conf.h"
 
+bool debugPrint_ = false;
+
+#define DEBUG_LOG(x) if(debugPrint_){printf x;}
+
 #ifndef SUFFICIENT_ARENA_SIZE
 #define SUFFICIENT_ARENA_SIZE (128 * 1024 * 1024)
 #endif
@@ -103,7 +107,8 @@ tflmc::Compiler::Compiler(const void *modelData, const std::string &prefix,
 tflmc::Compiler::Compiler(const void *modelData,
                           const struct shared_config::xcore_metadata *sharedCfg,
                           const std::string &prefix, const bool debugPrint)
-    : sharedCfg_(sharedCfg), prefix_(prefix), debugPrint_(debugPrint) {
+    : sharedCfg_(sharedCfg), prefix_(prefix) {
+  debugPrint_ = debugPrint;
   if (sharedCfg_) {
     numXCThreads_ = sharedCfg_->required_thread_count;
   }
@@ -186,14 +191,17 @@ bool tflmc::Compiler::init(const void *modelData) {
     common_tensor_type = tensor->type;
     common_tensor_is_variable = tensor->is_variable;
   }
+  DEBUG_LOG(("\n\nTFLMC Allocated offsets:\n"));
   for (size_t i = 0; i < numTensors; i++) {
     auto tensor = GetTensor(interpreter_.get(), i);
     tensors_.push_back({tensor});
     if (tensor->allocation_type == kTfLiteMmapRo) {
       memMap_.recordROM(romOffset, tensor->bytes, getTensorName(i));
+      DEBUG_LOG(("-1,"));
       romOffset += tensor->bytes;
     } else {
       ptrdiff_t offset = (uint8_t *)tensor->data.data - arena_buf_.data();
+      DEBUG_LOG(("%d,", offset));
       ptrdiff_t highSize = offset + tensor->bytes;
       ramTensorBufferSize = std::max(ramTensorBufferSize, highSize);
       memMap_.recordRAM(offset, tensor->bytes, getTensorName(i));
@@ -212,6 +220,7 @@ bool tflmc::Compiler::init(const void *modelData) {
       common_tensor_is_variable.clear();
     }
   }
+  DEBUG_LOG(("\n\n"));
 
   for (size_t k = 0; k < interpreter_->allocator_.GetScratchBufferRequestCount();
        k++) {
@@ -675,7 +684,9 @@ TfLiteStatus )"
     if (registrations[used_ops[i]].init) {
 
 #ifdef TFLMC_XCORE_PROFILE
+#ifdef __xcore__
       asm volatile ("gettime %0" : "=r" (time_t0));
+#endif
 #endif
 
       tflNodes[i].user_data = registrations[used_ops[i]].init(&ctx, (const char*)tflNodes[i].builtin_data, )";
@@ -683,7 +694,9 @@ TfLiteStatus )"
   wr << R"();
 
 #ifdef TFLMC_XCORE_PROFILE
+#ifdef __xcore__
       asm volatile ("gettime %0" : "=r" (time_t1));
+#endif
       op_times[used_ops[i]] += time_t1 - time_t0;
       printf("\nnode %-5d %-32s %-12d", i, op_strs[used_ops[i]], time_t1 - time_t0);
 #endif
@@ -706,13 +719,17 @@ TfLiteStatus )"
     if (registrations[used_ops[i]].prepare) {
 
 #ifdef TFLMC_XCORE_PROFILE
+#ifdef __xcore__
       asm volatile ("gettime %0" : "=r" (time_t0));
+#endif
 #endif
 
       TfLiteStatus status = registrations[used_ops[i]].prepare(&ctx, &tflNodes[i]);
 
 #ifdef TFLMC_XCORE_PROFILE
+#ifdef __xcore__
       asm volatile ("gettime %0" : "=r" (time_t1));
+#endif
       op_times[used_ops[i]] += time_t1 - time_t0;
       printf("\nnode %-5d %-32s %-12d", i, op_strs[used_ops[i]], time_t1 - time_t0);
 #endif
@@ -808,13 +825,17 @@ printf("[\n");
 #endif
 
 #ifdef TFLMC_XCORE_PROFILE
+#ifdef __xcore__
   asm volatile ("gettime %0" : "=r" (time_t0));
+#endif
 #endif
 
     TfLiteStatus status = registrations[used_ops[i]].invoke(&ctx, &tflNodes[i]);
 
 #ifdef TFLMC_XCORE_PROFILE
+#ifdef __xcore__
   asm volatile ("gettime %0" : "=r" (time_t1));
+#endif
   op_times[used_ops[i]] += time_t1 - time_t0;
   op_counts[used_ops[i]] += 1;
   printf("\nnode %-5d %-32s %-12d", i, op_strs[used_ops[i]], time_t1 - time_t0);

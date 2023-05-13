@@ -23,8 +23,7 @@ public:
   static XCoreInterpreter *
   Create(uint8_t interpreter_buffer[], const tflite::Model *model,
          const tflite::MicroOpResolver &resolver, uint8_t *arena,
-         size_t arena_size,
-         bool use_current_thread, XCoreProfiler *profiler);
+         size_t arena_size, bool use_current_thread, XCoreProfiler *profiler);
 
   void PrintMemoryPlan();
   TfLiteTensor *tensor(size_t tensor_index);

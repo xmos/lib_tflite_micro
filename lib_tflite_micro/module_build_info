@@ -64,6 +64,7 @@ ifeq ($(USE_WITH_TFLITE_MICRO_COMPILER),1)
 #src
 EXCLUDE_FILES += inference_engine.cc
 EXCLUDE_FILES += xcore_interpreter.cc
+EXCLUDE_FILES += xcore_ops.cc
 #lite/micro
 EXCLUDE_FILES += fake_micro_context.cc
 EXCLUDE_FILES += micro_graph.cc

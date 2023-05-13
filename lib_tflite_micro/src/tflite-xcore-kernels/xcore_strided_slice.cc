@@ -73,7 +73,7 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
                               op_data->begin_y, op_data->begin_x, 0);
   }
   else if(op_data->memcpy_type == SliceCpy_t){
-    size_t input_offset = Offset(tflite::micro::GetTensorShape(input), 0, op_data->begin_x, op_data->begin_y, 0);
+    size_t input_offset = Offset(tflite::micro::GetTensorShape(input), 0, op_data->begin_y, op_data->begin_x, 0);
     size_t num_bytes = (op_data->mf_params->input_height + 1) * op_data->mf_params->bytes_per_h_line;
     memcpy((int8_t *)out_data, (int8_t *)in_data + input_offset, num_bytes);
   } else {

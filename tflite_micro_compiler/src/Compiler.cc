@@ -556,7 +556,7 @@ TfLiteRegistration_V1 registrations[OP_LAST];
   wr << R"(
 
 // Scratch buffer variables
-int scratch_buffer_idx = 0;
+int scratch_buffer_idx;
 const int scratch_buffer_offsets[)"
      << scratchBufferOffsets.size() << R"(] = { )";
   if (scratchBufferOffsets.size() > 0) {
@@ -583,14 +583,16 @@ constexpr int threadsStackSizeInUint64 = )"
 // We use uint64_t for xcThreadsStack so that it is aligned to 8 bytes
 uint64_t xcThreadsStack[threadsStackSizeInUint64];
 
+// Persistent buffer ptr
+// Initialized to the tail end of the tensor arena
+uint8_t *persistentBufferPtr;
 // Functions to be used as function pointers for TfLiteContext and MicroContext 
 static void* AllocatePersistentBuffer(struct TfLiteContext* ctx,
                                                  size_t bytes) {
-  static uint8_t *AllocPtr = tensor_arena + sizeof(tensor_arena);
   // Align to double word
   bytes = ((bytes + 7) / 8) * 8;
-  AllocPtr -= bytes;
-  return AllocPtr;
+  persistentBufferPtr -= bytes;
+  return persistentBufferPtr;
 }
 
 static TfLiteEvalTensor *GetEvalTensor(const struct TfLiteContext *context,
@@ -628,6 +630,10 @@ static void* external_context() {
 
 TfLiteStatus )"
      << prefix_ << R"(init(void *flash_data) {
+  // Clear and initialize
+  scratch_buffer_idx = 0;
+  persistentBufferPtr = tensor_arena + sizeof(tensor_arena);
+
   // Set flash data in xcore context config
   xc_config.flash_data = flash_data;
 
@@ -677,6 +683,7 @@ TfLiteStatus )"
 #ifdef TFLMC_XCORE_PROFILE
   printf("\nProfiling init()...");
   memset(op_times, 0, sizeof(op_times));
+  op_times_summed = 0;
 #endif
 
 )";
@@ -707,11 +714,14 @@ TfLiteStatus )"
 #ifdef TFLMC_XCORE_PROFILE
     printf("\n\nCumulative times for init()...");
     for(int i=0; i<OP_LAST; i++){
-      printf("\n%-32s %-12d", op_strs[i], op_times[i]);
+      op_times_summed += op_times[i];
+      printf("\n%-32s %-12d %.2fms", op_strs[i], op_times[i], op_times[i]/100000.0);
     }
+    printf("\n\nTotal time for init() - %-10lld %.2fms\n\n", op_times_summed, op_times_summed/100000.0);
   printf("\n");
   printf("\nProfiling prepare()...");
   memset(op_times, 0, sizeof(op_times));
+  op_times_summed = 0;
 #endif
 
 )";
@@ -741,10 +751,12 @@ TfLiteStatus )"
   }
 
 #ifdef TFLMC_XCORE_PROFILE
-    printf("\n\nCumulative times for prepare()...");
+printf("\n\nCumulative times for prepare()...");
     for(int i=0; i<OP_LAST; i++){
-      printf("\n%-32s %-12d", op_strs[i], op_times[i]);
+      op_times_summed += op_times[i];
+      printf("\n%-32s %-12d %.2fms", op_strs[i], op_times[i], op_times[i]/100000.0);
     }
+    printf("\n\nTotal time for prepare() - %-10lld %.2fms\n\n", op_times_summed, op_times_summed/100000.0);
   printf("\n");
 #endif
 
@@ -903,9 +915,9 @@ printf("\n]");
   printf("\n\nCumulative times for invoke()...");
   for(int i=0; i<OP_LAST; i++){
     op_times_summed += op_times[i];
-    printf("\n%-5d %-32s %-12d %dms", op_counts[i], op_strs[i], op_times[i], op_times[i]/100000);
+    printf("\n%-5d %-32s %-12d %.2fms", op_counts[i], op_strs[i], op_times[i], op_times[i]/100000.0);
   }
-  printf("\n\nTotal time for invoke() - %-10lld %lldms\n\n", op_times_summed, op_times_summed/100000);
+  printf("\n\nTotal time for invoke() - %-10lld %.2fms\n\n", op_times_summed, op_times_summed/100000.0);
 #endif
 
   return kTfLiteOk;

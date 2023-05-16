@@ -317,6 +317,7 @@ void tflmc::Compiler::writeSource(std::ostream &out) {
 // #define TFLMC_XCORE_PROFILE
 // #define TFLMC_PRINT_TENSORS
 // #define TFLMC_PRINT_INPUT_TENSORS
+// #define SHARED_MEMORY_ARENA
 
 #if defined __GNUC__
 #define ALIGN(X) __attribute__((aligned(X)))
@@ -403,7 +404,14 @@ namespace xcore {
 
 constexpr int kTensorArenaSize = )"
      << arenaBufferSize_ << R"(;
+#ifndef SHARED_MEMORY_ARENA
+namespace {
 uint8_t tensor_arena[kTensorArenaSize] ALIGN(8);
+}
+#else
+extern uint8_t tensor_arena[];
+#endif
+
 template <int SZ, class T> struct TfArray {
   int sz; T elem[SZ];
 };
@@ -632,7 +640,7 @@ TfLiteStatus )"
      << prefix_ << R"(init(void *flash_data) {
   // Clear and initialize
   scratch_buffer_idx = 0;
-  persistentBufferPtr = tensor_arena + sizeof(tensor_arena);
+  persistentBufferPtr = tensor_arena + kTensorArenaSize;
 
   // Set flash data in xcore context config
   xc_config.flash_data = flash_data;

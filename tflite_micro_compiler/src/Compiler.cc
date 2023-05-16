@@ -400,7 +400,7 @@ namespace xcore {
 
 )";
   }
-  wr << R"(namespace {
+  wr << R"(
 
 constexpr int kTensorArenaSize = )"
      << arenaBufferSize_ << R"(;
@@ -412,6 +412,7 @@ uint8_t tensor_arena[kTensorArenaSize] ALIGN(8);
 extern uint8_t tensor_arena[];
 #endif
 
+namespace {
 template <int SZ, class T> struct TfArray {
   int sz; T elem[SZ];
 };

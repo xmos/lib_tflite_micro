@@ -61,6 +61,7 @@ list(APPEND XTFLIB_KERNEL_SOURCES  "${XTFLIB_SRC_DIR}/xcore_lookup.cc")
 list(APPEND XTFLIB_KERNEL_SOURCES  "${XTFLIB_SRC_DIR}/xcore_strided_slice.cc")
 list(APPEND XTFLIB_KERNEL_SOURCES  "${XTFLIB_SRC_DIR}/xcore_pad.cc")
 list(APPEND XTFLIB_KERNEL_SOURCES  "${XTFLIB_SRC_DIR}/xcore_3_to_4.cc")
+list(APPEND XTFLIB_KERNEL_SOURCES  "${XTFLIB_SRC_DIR}/xcore_mul.cc")
 
 list(APPEND TFLM_SOURCES  "${TFLM_SRC_DIR}/all_ops_resolver.cc")
 list(APPEND TFLM_SOURCES  "${TFLM_SRC_DIR}/micro_op_resolver.cc")

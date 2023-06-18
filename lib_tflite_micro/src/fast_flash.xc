@@ -139,7 +139,7 @@ int fast_flash_init(fl_QSPIPorts &qspi) {
                 char setting = sdelay | (read_adj << 1) | (pad_delay << 3);
                 // Store the settings and pass/fail in the results
                 if (passing_words == PATTERN_WORDS) {
-                    printf("%d: OK\n", setting);
+                    //printf("%d: OK\n", setting);
                     if (pass_count == 0) // This is first PASS we've seen
                     {
                         pass_start = time_index; // Record the setting index
@@ -147,7 +147,7 @@ int fast_flash_init(fl_QSPIPorts &qspi) {
                     pass_count++;
                     results[time_index] = setting | 1 << 7;
                 } else {
-                    printf("%d: BAD\n", setting);
+                    //printf("%d: BAD\n", setting);
                     results[time_index] = setting;
                 }
                 time_index++;

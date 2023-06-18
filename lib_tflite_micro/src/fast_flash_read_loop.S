@@ -17,7 +17,7 @@
 	.cc_top fast_read_loop.function,fast_read_loop
 
 fast_read_loop:
-	entsp 8
+	ENTSP_lu6 8
 	std   r4, r5, sp[1]
 	std   r6, r7, sp[2]
 	std   r8, r9, sp[3]

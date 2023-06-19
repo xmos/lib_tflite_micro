@@ -93,6 +93,24 @@ index 00fe01f..65e248d 100644
  }
  
  template <typename T>
+diff --git tensorflow/lite/kernels/internal/quantization_util.cc tensorflow/lite/kernels/internal/quantization_util.cc
+index 62045d6..4b8cfba 100644
+--- tensorflow/lite/kernels/internal/quantization_util.cc
++++ tensorflow/lite/kernels/internal/quantization_util.cc
+@@ -314,8 +314,13 @@ void PreprocessSoftmaxScaling(double beta, double input_scale,
+                        max_real_multiplier);
+ #endif  // TFLITE_EMULATE_FLOAT
+ 
++if(input_beta_real_multiplier > 1.) {
+   QuantizeMultiplierGreaterThanOne(input_beta_real_multiplier,
+                                    quantized_multiplier, left_shift);
++} else {
++  QuantizeMultiplierSmallerThanOneExp(input_beta_real_multiplier,
++                                   quantized_multiplier, left_shift);
++}
+ }
+ 
+ void PreprocessLogSoftmaxScalingExp(double beta, double input_scale,
 diff --git tensorflow/lite/kernels/internal/reference/integer_ops/add.h tensorflow/lite/kernels/internal/reference/integer_ops/add.h
 index 579964d..bd50617 100644
 --- tensorflow/lite/kernels/internal/reference/integer_ops/add.h

@@ -10,6 +10,11 @@ namespace micro {
 namespace xcore {
 namespace strided_slice {
 
+enum MemcpyType {
+  PixelCpy_t,
+  SliceCpy_t,
+};
+
 // This is the struct that contains the data required by the operator
 struct StridedSliceOpData
     : XCoreOpData { // Inherits the operator name field from XCoreOpData
@@ -17,6 +22,7 @@ struct StridedSliceOpData
   int32_t begin_y;
   nn::ImToColValid::Params *mf_params;
   nn::ImToColValid *memcpy;
+  int32_t memcpy_type;
 };
 
 template <typename T>
@@ -43,6 +49,7 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   op_data->memcpy = new (context->AllocatePersistentBuffer(
       context, sizeof(nn::ImToColValid::Params)))
       nn::ImToColValid(op_data->mf_params);
+  op_data->memcpy_type = parser.parseNamedCustomOption("type").AsInt32();
   return op_data;
 }
 
@@ -61,8 +68,17 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   void *in_data = const_cast<void *>(tflite::micro::GetTensorData<void>(input));
   void *out_data = tflite::micro::GetTensorData<void>(output);
 
+  if (op_data->memcpy_type == PixelCpy_t) {
   op_data->memcpy->memcopy_fn((int8_t *)out_data, (int8_t *)in_data,
                               op_data->begin_y, op_data->begin_x, 0);
+  }
+  else if(op_data->memcpy_type == SliceCpy_t){
+    size_t input_offset = Offset(tflite::micro::GetTensorShape(input), 0, op_data->begin_y, op_data->begin_x, 0);
+    size_t num_bytes = (op_data->mf_params->input_height + 1) * op_data->mf_params->bytes_per_h_line;
+    memcpy((int8_t *)out_data, (int8_t *)in_data + input_offset, num_bytes);
+  } else {
+    return kTfLiteError;
+  }
   return kTfLiteOk;
 }
 

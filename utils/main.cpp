@@ -44,8 +44,13 @@ int main(int argc, char *argv[])
 
   xt::xarray<int8_t> input = xt::load_npy<int8_t>("input.npy");
   int8_t *in = model_input(0)->data.int8;
+  int k = -128;
   for (int i=0;i<model_input_size(0);++i) {
-    in[i] = 100;
+    if (k == 128) {
+      k = -128;
+    }
+    in[i] = k;//input[i];
+    k++;
   }
   printf("\n");
 

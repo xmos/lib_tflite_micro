@@ -12,6 +12,10 @@
 #include "xcore_config.h"
 #include "xtflm_conf.h"
 
+bool debugPrint_ = false;
+
+#define DEBUG_LOG(x) if(debugPrint_){printf x;}
+
 #ifndef SUFFICIENT_ARENA_SIZE
 #define SUFFICIENT_ARENA_SIZE (128 * 1024 * 1024)
 #endif
@@ -103,7 +107,8 @@ tflmc::Compiler::Compiler(const void *modelData, const std::string &prefix,
 tflmc::Compiler::Compiler(const void *modelData,
                           const struct shared_config::xcore_metadata *sharedCfg,
                           const std::string &prefix, const bool debugPrint)
-    : sharedCfg_(sharedCfg), prefix_(prefix), debugPrint_(debugPrint) {
+    : sharedCfg_(sharedCfg), prefix_(prefix) {
+  debugPrint_ = debugPrint;
   if (sharedCfg_) {
     numXCThreads_ = sharedCfg_->required_thread_count;
   }
@@ -186,14 +191,17 @@ bool tflmc::Compiler::init(const void *modelData) {
     common_tensor_type = tensor->type;
     common_tensor_is_variable = tensor->is_variable;
   }
+  DEBUG_LOG(("\n\nTFLMC Allocated offsets:\n"));
   for (size_t i = 0; i < numTensors; i++) {
     auto tensor = GetTensor(interpreter_.get(), i);
     tensors_.push_back({tensor});
     if (tensor->allocation_type == kTfLiteMmapRo) {
       memMap_.recordROM(romOffset, tensor->bytes, getTensorName(i));
+      DEBUG_LOG(("-1,"));
       romOffset += tensor->bytes;
     } else {
       ptrdiff_t offset = (uint8_t *)tensor->data.data - arena_buf_.data();
+      DEBUG_LOG(("%d,", offset));
       ptrdiff_t highSize = offset + tensor->bytes;
       ramTensorBufferSize = std::max(ramTensorBufferSize, highSize);
       memMap_.recordRAM(offset, tensor->bytes, getTensorName(i));
@@ -212,6 +220,7 @@ bool tflmc::Compiler::init(const void *modelData) {
       common_tensor_is_variable.clear();
     }
   }
+  DEBUG_LOG(("\n\n"));
 
   for (size_t k = 0; k < interpreter_->allocator_.GetScratchBufferRequestCount();
        k++) {
@@ -308,6 +317,7 @@ void tflmc::Compiler::writeSource(std::ostream &out) {
 // #define TFLMC_XCORE_PROFILE
 // #define TFLMC_PRINT_TENSORS
 // #define TFLMC_PRINT_INPUT_TENSORS
+// #define SHARED_MEMORY_ARENA
 
 #if defined __GNUC__
 #define ALIGN(X) __attribute__((aligned(X)))
@@ -390,11 +400,19 @@ namespace xcore {
 
 )";
   }
-  wr << R"(namespace {
+  wr << R"(
 
 constexpr int kTensorArenaSize = )"
      << arenaBufferSize_ << R"(;
+#ifndef SHARED_MEMORY_ARENA
+namespace {
 uint8_t tensor_arena[kTensorArenaSize] ALIGN(8);
+}
+#else
+extern uint8_t tensor_arena[];
+#endif
+
+namespace {
 template <int SZ, class T> struct TfArray {
   int sz; T elem[SZ];
 };
@@ -547,7 +565,7 @@ TfLiteRegistration_V1 registrations[OP_LAST];
   wr << R"(
 
 // Scratch buffer variables
-int scratch_buffer_idx = 0;
+int scratch_buffer_idx;
 const int scratch_buffer_offsets[)"
      << scratchBufferOffsets.size() << R"(] = { )";
   if (scratchBufferOffsets.size() > 0) {
@@ -574,14 +592,16 @@ constexpr int threadsStackSizeInUint64 = )"
 // We use uint64_t for xcThreadsStack so that it is aligned to 8 bytes
 uint64_t xcThreadsStack[threadsStackSizeInUint64];
 
+// Persistent buffer ptr
+// Initialized to the tail end of the tensor arena
+uint8_t *persistentBufferPtr;
 // Functions to be used as function pointers for TfLiteContext and MicroContext 
 static void* AllocatePersistentBuffer(struct TfLiteContext* ctx,
                                                  size_t bytes) {
-  static uint8_t *AllocPtr = tensor_arena + sizeof(tensor_arena);
   // Align to double word
   bytes = ((bytes + 7) / 8) * 8;
-  AllocPtr -= bytes;
-  return AllocPtr;
+  persistentBufferPtr -= bytes;
+  return persistentBufferPtr;
 }
 
 static TfLiteEvalTensor *GetEvalTensor(const struct TfLiteContext *context,
@@ -619,6 +639,10 @@ static void* external_context() {
 
 TfLiteStatus )"
      << prefix_ << R"(init(void *flash_data) {
+  // Clear and initialize
+  scratch_buffer_idx = 0;
+  persistentBufferPtr = tensor_arena + kTensorArenaSize;
+
   // Set flash data in xcore context config
   xc_config.flash_data = flash_data;
 
@@ -668,6 +692,7 @@ TfLiteStatus )"
 #ifdef TFLMC_XCORE_PROFILE
   printf("\nProfiling init()...");
   memset(op_times, 0, sizeof(op_times));
+  op_times_summed = 0;
 #endif
 
 )";
@@ -675,7 +700,9 @@ TfLiteStatus )"
     if (registrations[used_ops[i]].init) {
 
 #ifdef TFLMC_XCORE_PROFILE
+#ifdef __xcore__
       asm volatile ("gettime %0" : "=r" (time_t0));
+#endif
 #endif
 
       tflNodes[i].user_data = registrations[used_ops[i]].init(&ctx, (const char*)tflNodes[i].builtin_data, )";
@@ -683,7 +710,9 @@ TfLiteStatus )"
   wr << R"();
 
 #ifdef TFLMC_XCORE_PROFILE
+#ifdef __xcore__
       asm volatile ("gettime %0" : "=r" (time_t1));
+#endif
       op_times[used_ops[i]] += time_t1 - time_t0;
       printf("\nnode %-5d %-32s %-12d", i, op_strs[used_ops[i]], time_t1 - time_t0);
 #endif
@@ -694,11 +723,14 @@ TfLiteStatus )"
 #ifdef TFLMC_XCORE_PROFILE
     printf("\n\nCumulative times for init()...");
     for(int i=0; i<OP_LAST; i++){
-      printf("\n%-32s %-12d", op_strs[i], op_times[i]);
+      op_times_summed += op_times[i];
+      printf("\n%-32s %-12d %.2fms", op_strs[i], op_times[i], op_times[i]/100000.0);
     }
+    printf("\n\nTotal time for init() - %-10lld %.2fms\n\n", op_times_summed, op_times_summed/100000.0);
   printf("\n");
   printf("\nProfiling prepare()...");
   memset(op_times, 0, sizeof(op_times));
+  op_times_summed = 0;
 #endif
 
 )";
@@ -706,13 +738,17 @@ TfLiteStatus )"
     if (registrations[used_ops[i]].prepare) {
 
 #ifdef TFLMC_XCORE_PROFILE
+#ifdef __xcore__
       asm volatile ("gettime %0" : "=r" (time_t0));
+#endif
 #endif
 
       TfLiteStatus status = registrations[used_ops[i]].prepare(&ctx, &tflNodes[i]);
 
 #ifdef TFLMC_XCORE_PROFILE
+#ifdef __xcore__
       asm volatile ("gettime %0" : "=r" (time_t1));
+#endif
       op_times[used_ops[i]] += time_t1 - time_t0;
       printf("\nnode %-5d %-32s %-12d", i, op_strs[used_ops[i]], time_t1 - time_t0);
 #endif
@@ -724,10 +760,12 @@ TfLiteStatus )"
   }
 
 #ifdef TFLMC_XCORE_PROFILE
-    printf("\n\nCumulative times for prepare()...");
+printf("\n\nCumulative times for prepare()...");
     for(int i=0; i<OP_LAST; i++){
-      printf("\n%-32s %-12d", op_strs[i], op_times[i]);
+      op_times_summed += op_times[i];
+      printf("\n%-32s %-12d %.2fms", op_strs[i], op_times[i], op_times[i]/100000.0);
     }
+    printf("\n\nTotal time for prepare() - %-10lld %.2fms\n\n", op_times_summed, op_times_summed/100000.0);
   printf("\n");
 #endif
 
@@ -799,22 +837,29 @@ printf("[\n");
     // print every input tensor
     printf("\nnode in %d", i);
     for (int j=0; j<tflNodes[i].inputs->size; j++){
-      printf("\ntensor %d, input %d, %d bytes, checksum %d\n", tflNodes[i].inputs->data[j], j, tflTensors[tflNodes[i].inputs->data[j]].bytes, checksum(tflTensors[tflNodes[i].inputs->data[j]].data.raw, tflTensors[tflNodes[i].inputs->data[j]].bytes));
-      for(int k=0; k<tflTensors[tflNodes[i].inputs->data[j]].bytes; k++){
-        printf("%d,", (int8_t)tflTensors[tflNodes[i].inputs->data[j]].data.raw[k]);
+      // -1 such as in case of no bias tensor for conv
+      if (tflNodes[i].inputs->data[j] != -1) {
+        printf("\ntensor %d, input %d, %d bytes, checksum %d\n", tflNodes[i].inputs->data[j], j, tflTensors[tflNodes[i].inputs->data[j]].bytes, checksum(tflTensors[tflNodes[i].inputs->data[j]].data.raw, tflTensors[tflNodes[i].inputs->data[j]].bytes));
+        for(int k=0; k<tflTensors[tflNodes[i].inputs->data[j]].bytes; k++){
+          printf("%d,", (int8_t)tflTensors[tflNodes[i].inputs->data[j]].data.raw[k]);
+        }
       }
     }
     printf("\n");
 #endif
 
 #ifdef TFLMC_XCORE_PROFILE
+#ifdef __xcore__
   asm volatile ("gettime %0" : "=r" (time_t0));
+#endif
 #endif
 
     TfLiteStatus status = registrations[used_ops[i]].invoke(&ctx, &tflNodes[i]);
 
 #ifdef TFLMC_XCORE_PROFILE
+#ifdef __xcore__
   asm volatile ("gettime %0" : "=r" (time_t1));
+#endif
   op_times[used_ops[i]] += time_t1 - time_t0;
   op_counts[used_ops[i]] += 1;
   printf("\nnode %-5d %-32s %-12d", i, op_strs[used_ops[i]], time_t1 - time_t0);
@@ -882,9 +927,9 @@ printf("\n]");
   printf("\n\nCumulative times for invoke()...");
   for(int i=0; i<OP_LAST; i++){
     op_times_summed += op_times[i];
-    printf("\n%-5d %-32s %-12d %dms", op_counts[i], op_strs[i], op_times[i], op_times[i]/100000);
+    printf("\n%-5d %-32s %-12d %.2fms", op_counts[i], op_strs[i], op_times[i], op_times[i]/100000.0);
   }
-  printf("\n\nTotal time for invoke() - %-10lld %lldms\n\n", op_times_summed, op_times_summed/100000);
+  printf("\n\nTotal time for invoke() - %-10lld %.2fms\n\n", op_times_summed, op_times_summed/100000.0);
 #endif
 
   return kTfLiteOk;

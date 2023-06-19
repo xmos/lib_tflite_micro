@@ -92,7 +92,6 @@ class Compiler {
   };
 
  private:
-  bool debugPrint_;
   std::string prefix_;
   const struct shared_config::xcore_metadata *sharedCfg_ = nullptr;
   int numXCThreads_ = 1;

@@ -46,11 +46,11 @@ int main(int argc, char *argv[])
   int8_t *in = model_input(0)->data.int8;
   int k = -128;
   for (int i=0;i<model_input_size(0);++i) {
-    if (k == 128) {
+    if (k >= 128) {
       k = -128;
     }
     in[i] = k;//input[i];
-    k++;
+    k = k + 3;
   }
   printf("\n");
 
@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
   for(int n=0; n< model_outputs(); ++n) {
     int8_t *out = model_output(n)->data.int8;
      for (int i=0;i<model_output_size(n);++i){
-       //printf("%d,",(int)out[i]);
+       printf("%d,",(int)out[i]);
      }
     printf("\nchecksum : %d\n\n", (int)checksum_calc((char*)out, model_output_size(n)));
   }

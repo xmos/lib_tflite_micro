@@ -75,6 +75,12 @@ xf.convert(
     },
 )
 
+xf.generate_flash(
+    output_file="xcore_flash_binary.out",
+    model_files=["src/xcore_optimised_mobilenetV2_input_160x160x3_alpha_1.tflite"],
+    param_files=["1.params"],
+)
+
 # clean up
 # list of files to be deleted
 files = [

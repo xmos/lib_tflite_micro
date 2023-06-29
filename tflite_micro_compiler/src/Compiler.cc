@@ -41,15 +41,14 @@ static void *LoggingAllocatePersistentBuffer(struct TfLiteContext *ctx,
   return ptr;
 }
 
-TfLiteEvalTensor *tflmc::GetEvalTensor(tflite::MicroInterpreter *interpreter,
-                                       int i) {
+TfLiteTensor *tflmc::GetTensor(tflite::MicroInterpreter *interpreter, int i, int sg) {
   auto ctx = &interpreter->context_;
-  return ctx->GetEvalTensor(ctx, i);
+  return tflite::MicroContextGetTensor(ctx, i, sg);
 }
 
-TfLiteTensor *tflmc::GetTensor(tflite::MicroInterpreter *interpreter, int i) {
+TfLiteEvalTensor *tflmc::GetEvalTensor(tflite::MicroInterpreter *interpreter, int i, int sg) {
   auto ctx = &interpreter->context_;
-  return ctx->GetTensor(ctx, i);
+  return tflite::MicroContextGetEvalTensor(ctx, i, sg);
 }
 
 bool tflmc::CompileFile(const std::string &modelFileName,
@@ -128,22 +127,24 @@ bool tflmc::Compiler::init(const void *modelData) {
   }
 
   auto subgraphs = model_->subgraphs();
-  if (subgraphs->size() != 1) {
-    std::cerr << "Model needs to have exactly one subgraph as expected by TF "
-                 "Lite for Micro\n";
-    return false;
-  }
-  subgraph_ = (*subgraphs)[0];
-  auto tensors = subgraph_->tensors();
-  if (subgraph_->inputs()->size() == 0 || subgraph_->outputs()->size() == 0) {
+  tensors_.resize(subgraphs->size());
+  nodes_.resize(subgraphs->size());
+  inputTensorIndices_.resize(subgraphs->size());
+  outputTensorIndices_.resize(subgraphs->size());
+
+  mainGraph_ = (*subgraphs)[0];
+  if (mainGraph_->inputs()->size() == 0 || mainGraph_->outputs()->size() == 0) {
     std::cerr << "No inputs or no outputs found in model\n";
     return false;
   }
-  for (auto inIndex : *subgraph_->inputs()) {
-    inputTensorIndices_.push_back(inIndex);
-  }
-  for (auto outIndex : *subgraph_->outputs()) {
-    outputTensorIndices_.push_back(outIndex);
+  for(int g = 0; g < subgraphs->size(); g++) {
+    auto sg = (*subgraphs)[g];
+    for (auto inIndex : *sg->inputs()) {
+      inputTensorIndices_[g].push_back(inIndex);
+    }
+    for (auto outIndex : *sg->outputs()) {
+      outputTensorIndices_[g].push_back(outIndex);
+    }
   }
 
   if (XTFLM_OPERATORS != 128) {
@@ -164,8 +165,6 @@ bool tflmc::Compiler::init(const void *modelData) {
       new tflite::MicroInterpreter(model_, resolver_, arena_buf_.data(),
                                    arena_buf_.size()));
 
-  assert(interpreter_->graph_.NumSubgraphs() == 1);
-
   TfLiteStatus set_external_context_status =
       interpreter_->SetMicroExternalContext((void *)&g_xc_config);
   if (set_external_context_status != kTfLiteOk) {
@@ -183,28 +182,41 @@ bool tflmc::Compiler::init(const void *modelData) {
     return false;
   }
 
+  // Get all tensors using dummy interpreter.
+  // Calling GetTensor() allocates temp TfLiteTensor and trashes 
+  // the arena as it is not meant to be called after AllocateTensors().
+  std::vector<uint8_t> dummy_arena;
+  dummy_arena.resize(SUFFICIENT_ARENA_SIZE);
+  auto dummy_interpreter = std::unique_ptr<tflite::MicroInterpreter>(
+      new tflite::MicroInterpreter(model_, resolver_, dummy_arena.data(),
+                                   dummy_arena.size()));
+  for(int g = 0; g < subgraphs->size(); g++) {
+    auto sg = (*subgraphs)[g];
+    for(int i = 0; i < sg->tensors()->size(); i++) {
+      auto tensor = GetTensor(dummy_interpreter.get(), i, g);
+      tensors_[g].push_back(tensor);
+    }
+  }
+
+  // Iterate through all subgraphs and find allocated offsets for tensors
   ptrdiff_t ramTensorBufferSize = 0;
   ptrdiff_t romOffset = 0;
-  auto numTensors = tensors->size();
-  if (numTensors > 0) {
-    auto tensor = GetTensor(interpreter_.get(), 0);
-    common_tensor_type = tensor->type;
-    common_tensor_is_variable = tensor->is_variable;
-  }
   DEBUG_LOG(("\n\nTFLMC Allocated offsets:\n"));
-  for (size_t i = 0; i < numTensors; i++) {
-    auto tensor = GetTensor(interpreter_.get(), i);
-    tensors_.push_back({tensor});
+  for(int g=0; g<subgraphs->size(); g++) {
+    auto sg = (*subgraphs)[g];
+  for (size_t i = 0; i < sg->tensors()->size(); i++) {
+    auto tensor = tensors_[g][i].tensor;
     if (tensor->allocation_type == kTfLiteMmapRo) {
-      memMap_.recordROM(romOffset, tensor->bytes, getTensorName(i));
+      memMap_.recordROM(romOffset, tensor->bytes, getTensorName(i, g));
       DEBUG_LOG(("-1,"));
       romOffset += tensor->bytes;
     } else {
-      ptrdiff_t offset = (uint8_t *)tensor->data.data - arena_buf_.data();
+      auto t = GetEvalTensor(interpreter_.get(), i, g);
+      ptrdiff_t offset = (uint8_t *)t->data.data - arena_buf_.data();
       DEBUG_LOG(("%d,", offset));
       ptrdiff_t highSize = offset + tensor->bytes;
       ramTensorBufferSize = std::max(ramTensorBufferSize, highSize);
-      memMap_.recordRAM(offset, tensor->bytes, getTensorName(i));
+      memMap_.recordRAM(offset, tensor->bytes, getTensorName(i, g));
     }
     // determine whether we need to individually set these properties for each
     // tensor
@@ -212,33 +224,11 @@ bool tflmc::Compiler::init(const void *modelData) {
         tensor->quantization.type != kTfLiteNoQuantization) {
       has_quantization = true;
     }
-    if ((!common_tensor_type.None) && common_tensor_type.Some != tensor->type) {
-      common_tensor_type.clear();
-    }
-    if ((!common_tensor_is_variable.None) &&
-        common_tensor_is_variable.Some != tensor->is_variable) {
-      common_tensor_is_variable.clear();
-    }
   }
   DEBUG_LOG(("\n\n"));
 
-  for (size_t k = 0; k < interpreter_->allocator_.GetScratchBufferRequestCount();
-       k++) {
-    void *data = interpreter_->micro_context_.GetScratchBuffer(k);
-    ptrdiff_t offset = (uint8_t *)data - arena_buf_.data();
-    tflite::internal::ScratchBufferRequest *requests =
-        interpreter_->allocator_.GetScratchBufferRequests();
-    int bytes = requests[k].bytes;
-    ptrdiff_t highSize = offset + bytes;
-    ramTensorBufferSize = std::max(ramTensorBufferSize, highSize);
-    memMap_.recordRAM(offset, bytes,
-                      "Scratch_idx" + std::to_string((int)k) + "_op" +
-                          std::to_string((int)requests[k].node_idx));
-    scratchBufferOffsets.push_back(offset);
-  }
-
-  for (size_t i = 0; i < interpreter_->operators_size(); i++) {
-    auto nodeAndReg = interpreter_->node_and_registration(i);
+  for (size_t i = 0; i < interpreter_->operators_size(g); i++) {
+    auto nodeAndReg = interpreter_->node_and_registration(i, g);
     auto node = &nodeAndReg.node;
     auto reg = nodeAndReg.registration;
     auto code = tflite::EnumValuesBuiltinOperator()[reg->builtin_code];
@@ -265,7 +255,24 @@ bool tflmc::Compiler::init(const void *modelData) {
     }
 
     // There doesn't seem to be a way to get the node pointer, so copy it.
-    nodes_.push_back(NodeInfo{*node, itOp - registrations_.begin()});
+    nodes_[g].push_back(NodeInfo{*node, itOp - registrations_.begin()});
+  }
+}
+
+  // scratch buffers
+  for (size_t k = 0; k < interpreter_->allocator_.GetScratchBufferRequestCount();
+       k++) {
+    void *data = interpreter_->micro_context_.GetScratchBuffer(k);
+    ptrdiff_t offset = (uint8_t *)data - arena_buf_.data();
+    tflite::internal::ScratchBufferRequest *requests =
+        interpreter_->allocator_.GetScratchBufferRequests();
+    int bytes = requests[k].bytes;
+    ptrdiff_t highSize = offset + bytes;
+    ramTensorBufferSize = std::max(ramTensorBufferSize, highSize);
+    memMap_.recordRAM(offset, bytes,
+                      "Scratch_idx" + std::to_string((int)k) + "_op" +
+                          std::to_string((int)requests[k].node_idx));
+    scratchBufferOffsets.push_back(offset);
   }
 
   // g_loggedAllocations
@@ -298,7 +305,7 @@ bool tflmc::Compiler::init(const void *modelData) {
 }
 
 void tflmc::Compiler::writeSource(std::ostream &out) {
-  CodeWriter wr(out, subgraph_);
+  CodeWriter wr(out, mainGraph_);
 
   wr << R"(
 
@@ -454,8 +461,12 @@ TfLiteContext ctx{};
 
 TfLiteRegistration_V1 registrations[OP_LAST];
 )";
-  for (size_t i = 0; i < tensors_.size(); i++) {
-    auto &t = tensors_[i].tensor;
+for(size_t g = 0; g < tensors_.size(); g++) {
+wr << R"(
+struct {
+)";
+  for (size_t i = 0; i < tensors_[g].size(); i++) {
+    auto &t = tensors_[g][i].tensor;
     if (t->allocation_type == kTfLiteMmapRo) {
       wr.writeTensor(*t, "tensor_data" + std::to_string(i));
     }
@@ -466,9 +477,9 @@ TfLiteRegistration_V1 registrations[OP_LAST];
                                 "quant_details" + std::to_string(i));
 #endif
   }
-  for (size_t i = 0; i < nodes_.size(); i++) {
-    auto &node = nodes_[i].node;
-    auto &regInfo = registrations_[nodes_[i].regIndex];
+  for (size_t i = 0; i < nodes_[g].size(); i++) {
+    auto &node = nodes_[g][i].node;
+    auto &regInfo = registrations_[nodes_[g][i].regIndex];
     if (regInfo.code == tflite::BuiltinOperator_CUSTOM) {
       wr << "uint8_t ALIGN(4) opdata" + std::to_string(i) << "["
          << node.custom_initial_data_size << "] = { ";
@@ -482,33 +493,41 @@ TfLiteRegistration_V1 registrations[OP_LAST];
     wr.writeIntArray(*node.inputs, "inputs" + std::to_string(i));
     wr.writeIntArray(*node.outputs, "outputs" + std::to_string(i));
   }
-
-  wr << R"(TfLiteTensor tflTensors[] = {
+wr << R"(} g)"<< g <<R"(;
 )";
-  for (size_t i = 0; i < tensors_.size(); i++) {
-    auto &t = tensors_[i].tensor;
-    wr << "  { ";
+}
+
+  wr << R"(
+TfLiteTensor tflTensors[] = 
+{)";
+for(size_t g = 0; g < tensors_.size(); g++) {
+  for (size_t i = 0; i < tensors_[g].size(); i++) {
+    auto &t = tensors_[g][i].tensor;
+    auto tEval = GetEvalTensor(interpreter_.get(), i, g);
+    wr << "{ ";
 
     if (t->allocation_type == kTfLiteMmapRo) {
-      wr << "{(int32_t*)tensor_data" << i << "},";
+      wr << "{(int32_t*)g"<<g<<".tensor_data" << i << "},";
     } else {
       wr << "{(int32_t*)(tensor_arena + "
-         << ((uintptr_t)t->data.data - (uintptr_t)arena_buf_.data()) << ")},";
+         << ((uintptr_t)tEval->data.data - (uintptr_t)arena_buf_.data()) << ")},";
     }
-    wr << "(TfLiteIntArray*)&tensor_dimension" << i << ", ";
+    wr << "(TfLiteIntArray*)&g"<<g<<".tensor_dimension" << i << ", ";
 
     wr << tflmc::to_string(t->type) << ", ";
 
     if (has_quantization) {
       if (t->quantization.type == kTfLiteAffineQuantization) {
         wr << "{kTfLiteAffineQuantization, "
-              "const_cast<void*>(static_cast<const void*>(&quant"
-           << i << ")) }, {quant" << i << ".scale->data[0], quant" << i
+              "const_cast<void*>(static_cast<const void*>(&g"<<g<<".quant"
+           << i << ")) }, {g"<<g<<".quant" << i << ".scale->data[0], g"<<g<<".quant" << i
            << ".zero_point->data[0] ";
       } else {
         wr << "{kTfLiteNoQuantization, nullptr }, {0,0";
       }
       wr << "},";
+    } else {
+      wr << "{kTfLiteNoQuantization, nullptr }, {0,0},";
     }
 
     wr << t->bytes << ", ";
@@ -518,39 +537,45 @@ TfLiteRegistration_V1 registrations[OP_LAST];
 
     wr << "},\n";
   }
+}
   wr << "};\n";
 
-  wr << R"(TfLiteNode tflNodes[] = {
-)";
-  for (size_t i = 0; i < nodes_.size(); i++) {
-    wr << "  { (TfLiteIntArray*)&inputs" << i << ", ";
-    wr << "(TfLiteIntArray*)&outputs" << i << ", ";
-    wr << "(TfLiteIntArray*)&inputs" << i << ", ";
+  wr << R"(
+TfLiteNode tflNodes[] = 
+{)";
+for(size_t g = 0; g < tensors_.size(); g++) {
+  for (size_t i = 0; i < nodes_[g].size(); i++) {
+    wr << "{ (TfLiteIntArray*)&g"<<g<<".inputs" << i << ", ";
+    wr << "(TfLiteIntArray*)&g"<<g<<".outputs" << i << ", ";
+    wr << "(TfLiteIntArray*)&g"<<g<<".inputs" << i << ", ";
     wr << "nullptr, ";
     // TODO: Is this cast safe or does the data need to be non-const?
     // CP: I think so (as it typically just carries the trained operator
     // parameters) CP: Also if it were written to, we would see a segfault
     // (write to text segment)
-    if (nodes_[i].node.builtin_data || nodes_[i].node.custom_initial_data) {
-      wr << "const_cast<void*>(static_cast<const void*>(&opdata" << i << ")), ";
+    if (nodes_[g][i].node.builtin_data || nodes_[g][i].node.custom_initial_data) {
+      wr << "const_cast<void*>(static_cast<const void*>(&g"<<g<<".opdata" << i << ")), ";
     } else {
       wr << "nullptr, ";
     }
     wr << "nullptr, ";
-    auto regI = nodes_[i].regIndex;
+    auto regI = nodes_[g][i].regIndex;
     if (registrations_[regI].code == tflite::BuiltinOperator_CUSTOM) {
-      wr << nodes_[i].node.custom_initial_data_size << ", ";
+      wr << nodes_[g][i].node.custom_initial_data_size << ", ";
     } else {
       wr << "0, ";
     }
     wr << "},\n";
   }
-  wr << "};\n";
+}
+wr << "};\n";
 
-  wr << R"(used_operators_e used_ops[] = {
-)";
-  for (size_t i = 0; i < nodes_.size(); i++) {
-    auto regI = nodes_[i].regIndex;
+wr << R"(
+used_operators_e used_ops[] =
+{)";
+for(size_t g = 0; g < tensors_.size(); g++) {
+  for (size_t i = 0; i < nodes_[g].size(); i++) {
+    auto regI = nodes_[g][i].regIndex;
     if (registrations_[regI].code == tflite::BuiltinOperator_CUSTOM) {
       wr << "OP_" << registrations_[regI].custom_name << ", ";
     } else {
@@ -558,7 +583,63 @@ TfLiteRegistration_V1 registrations[OP_LAST];
          << ", ";
     }
   }
-  wr << "};\n";
+}
+  wr << "};\n\n";
+
+wr << "\n// Indices into tflTensors and tflNodes for subgraphs";
+wr << "\nsize_t tflTensors_subgraph_index[] = {0, ";
+int index = 0;
+for(size_t g = 0; g < tensors_.size(); g++) {
+  index += tensors_[g].size();
+  wr << index << ", ";
+}
+wr << "};";
+
+wr << "\nsize_t tflNodes_subgraph_index[] = {0, ";
+index = 0;
+for(size_t g = 0; g < tensors_.size(); g++) {
+  index += nodes_[g].size();
+  wr << index << ", ";
+}
+wr << "};\n";
+
+wr << R"(static const int inTensorIndices[] = {
+  )";
+  for(size_t g = 0; g < tensors_.size(); g++) {
+    for (auto inIndex : inputTensorIndices_[g]) {
+      wr << inIndex << ", ";
+    }
+  }
+  wr << R"(
+};
+
+static const int outTensorIndices[] = {
+  )";  // TODO: perhaps use a smaller type than int?
+  for(size_t g = 0; g < tensors_.size(); g++) {
+    for (auto outIndex : outputTensorIndices_[g]) {
+      wr << outIndex << ", ";
+    }
+  }
+  wr << R"(
+};
+)";
+
+wr << "\n// Indices into inTensors and outTensors for subgraphs";
+wr << "\nsize_t inTensors_subgraph_index[] = {0, ";
+index = 0;
+for(size_t g = 0; g < tensors_.size(); g++) {
+  index += inputTensorIndices_[g].size();
+  wr << index << ", ";
+}
+wr << "};";
+
+wr << "\nsize_t outTensors_subgraph_index[] = {0, ";
+index = 0;
+for(size_t g = 0; g < tensors_.size(); g++) {
+  index += outputTensorIndices_[g].size();
+  wr << index << ", ";
+}
+wr << "};";
 
   // TODO: This code assumes that persistent allocations are made from the end
   // (which is true for the current implementation)
@@ -576,6 +657,8 @@ const int scratch_buffer_offsets[)"
   }
   wr << R"( };
 tflite::MicroContext mc;
+tflite::MicroGraph micro_graph;
+size_t currentSubgraphIndex = 0;
 
 // Xcore context and thread variables
 xc_context_config_t xc_config;
@@ -606,7 +689,7 @@ static void* AllocatePersistentBuffer(struct TfLiteContext* ctx,
 
 static TfLiteEvalTensor *GetEvalTensor(const struct TfLiteContext *context,
                                        int tensor_idx) {
-  return (TfLiteEvalTensor*)&tflTensors[tensor_idx];
+  return (TfLiteEvalTensor*)&tflTensors[tflTensors_subgraph_index[currentSubgraphIndex] + tensor_idx];
 }
 
 static TfLiteStatus RequestScratchBufferInArena(struct TfLiteContext *context, size_t bytes,
@@ -620,218 +703,53 @@ static void *GetScratchBuffer(struct TfLiteContext *context,
   return tensor_arena + scratch_buffer_offsets[buffer_idx];
 }
 
-static TfLiteTensor* AllocateTempInputTensor(const TfLiteNode* node, int index) {
-      return &ctx.tensors[node->inputs->data[index]];
+static TfLiteTensor* mc_AllocateTempInputTensor(const TfLiteNode* node, int index) {
+      return &ctx.tensors[tflTensors_subgraph_index[currentSubgraphIndex] + node->inputs->data[index]];
 }
 
-static TfLiteTensor* AllocateTempOutputTensor(const TfLiteNode* node, int index) {
-      return &ctx.tensors[node->outputs->data[index]];
+static TfLiteTensor* mc_AllocateTempOutputTensor(const TfLiteNode* node, int index) {
+      return &ctx.tensors[tflTensors_subgraph_index[currentSubgraphIndex] + node->outputs->data[index]];
 }
 
-static void DeallocateTempTfLiteTensor(TfLiteTensor* tensor) {
+static void mc_DeallocateTempTfLiteTensor(TfLiteTensor* tensor) {
 }
 
-static void* external_context() {
+static void* mc_external_context() {
   return &xc_config;
 }
 
-} // namespace
-
-TfLiteStatus )"
-     << prefix_ << R"(init(void *flash_data) {
-  // Clear and initialize
-  scratch_buffer_idx = 0;
-  persistentBufferPtr = tensor_arena + kTensorArenaSize;
-
-  // Set flash data in xcore context config
-  xc_config.flash_data = flash_data;
-
-  // Setup microcontext functions
-  mc.AllocateTempInputTensor = &AllocateTempInputTensor;
-  mc.AllocateTempOutputTensor = &AllocateTempOutputTensor;
-  mc.DeallocateTempTfLiteTensor = &DeallocateTempTfLiteTensor;
-  mc.external_context = &external_context;
-
-  // Setup tflitecontext functions
-  ctx.AllocatePersistentBuffer = &AllocatePersistentBuffer;
-  ctx.GetEvalTensor = &GetEvalTensor;
-  ctx.RequestScratchBufferInArena = &RequestScratchBufferInArena;
-  ctx.GetScratchBuffer = &GetScratchBuffer;
-  
-  // Set microcontext as the context ptr
-  ctx.impl_ = (void*)&mc;
-  ctx.tensors = tflTensors;
-)";
-  wr << "  ctx.tensors_size = " << tensors_.size() << ";\n";
-
-  for (size_t i = 0; i < registrations_.size(); i++) {
-    std::string opName;
-    if (registrations_[i].code == tflite::BuiltinOperator_CUSTOM) {
-      opName = registrations_[i].custom_name;
-      if (opName == "TFLite_Detection_PostProcess") {
-        wr << "  registrations[OP_" << opName
-           << "] = *(tflite::Register_DETECTION_POSTPROCESS());\n";
-      } else {
-        wr << "  registrations[OP_" << opName
-           << "] = *(tflite::ops::micro::xcore::Register_" << opName
-           << "());\n";
-      }
-    } else if ((registrations_[i].code == tflite::BuiltinOperator_RESHAPE) ||
-               (registrations_[i].code == tflite::BuiltinOperator_ROUND)) {
-      opName = tflite::EnumNameBuiltinOperator(registrations_[i].code);
-      wr << "  registrations[OP_" << opName
-         << "] = tflite::ops::micro::Register_" << opName << "();\n";
-    } else {
-      opName = tflite::EnumNameBuiltinOperator(registrations_[i].code);
-      wr << "  registrations[OP_" << opName << "] = tflite::Register_" << opName
-         << "();\n";
-    }
-  }
-  wr << "\n";
-  wr << R"(
-#ifdef TFLMC_XCORE_PROFILE
-  printf("\nProfiling init()...");
-  memset(op_times, 0, sizeof(op_times));
-  op_times_summed = 0;
-#endif
-
-)";
-  wr << "  for(size_t i = 0; i < " << nodes_.size() << R"(; ++i) {
-    if (registrations[used_ops[i]].init) {
-
-#ifdef TFLMC_XCORE_PROFILE
-#ifdef __xcore__
-      asm volatile ("gettime %0" : "=r" (time_t0));
-#endif
-#endif
-
-      tflNodes[i].user_data = registrations[used_ops[i]].init(&ctx, (const char*)tflNodes[i].builtin_data, )";
-  wr << "tflNodes[i].custom_initial_data_size";
-  wr << R"();
-
-#ifdef TFLMC_XCORE_PROFILE
-#ifdef __xcore__
-      asm volatile ("gettime %0" : "=r" (time_t1));
-#endif
-      op_times[used_ops[i]] += time_t1 - time_t0;
-      printf("\nnode %-5d %-32s %-12d", i, op_strs[used_ops[i]], time_t1 - time_t0);
-#endif
-
-    }
-  }
-
-#ifdef TFLMC_XCORE_PROFILE
-    printf("\n\nCumulative times for init()...");
-    for(int i=0; i<OP_LAST; i++){
-      op_times_summed += op_times[i];
-      printf("\n%-32s %-12d %.2fms", op_strs[i], op_times[i], op_times[i]/100000.0);
-    }
-    printf("\n\nTotal time for init() - %-10lld %.2fms\n\n", op_times_summed, op_times_summed/100000.0);
-  printf("\n");
-  printf("\nProfiling prepare()...");
-  memset(op_times, 0, sizeof(op_times));
-  op_times_summed = 0;
-#endif
-
-)";
-  wr << "  for(size_t i = 0; i < " << nodes_.size() << R"(; ++i) {
-    if (registrations[used_ops[i]].prepare) {
-
-#ifdef TFLMC_XCORE_PROFILE
-#ifdef __xcore__
-      asm volatile ("gettime %0" : "=r" (time_t0));
-#endif
-#endif
-
-      TfLiteStatus status = registrations[used_ops[i]].prepare(&ctx, &tflNodes[i]);
-
-#ifdef TFLMC_XCORE_PROFILE
-#ifdef __xcore__
-      asm volatile ("gettime %0" : "=r" (time_t1));
-#endif
-      op_times[used_ops[i]] += time_t1 - time_t0;
-      printf("\nnode %-5d %-32s %-12d", i, op_strs[used_ops[i]], time_t1 - time_t0);
-#endif
-
-      if (status != kTfLiteOk) {
-        return status;
-      }
-    }
-  }
-
-#ifdef TFLMC_XCORE_PROFILE
-printf("\n\nCumulative times for prepare()...");
-    for(int i=0; i<OP_LAST; i++){
-      op_times_summed += op_times[i];
-      printf("\n%-32s %-12d %.2fms", op_strs[i], op_times[i], op_times[i]/100000.0);
-    }
-    printf("\n\nTotal time for prepare() - %-10lld %.2fms\n\n", op_times_summed, op_times_summed/100000.0);
-  printf("\n");
-#endif
-
-  return kTfLiteOk;
+static tflite::MicroGraph& mc_graph() {
+  return micro_graph;
 }
 
-static const int inTensorIndices[] = {
-  )";
-  for (auto inIndex : inputTensorIndices_) {
-    out << inIndex << ", ";
-  }
-  out << R"(
-};
-TfLiteTensor* )"
-      << prefix_ << R"(input(int index) {
-  return &ctx.tensors[inTensorIndices[index]];
+static int mg_NumSubgraphs(){
+  return sizeof(tflTensors_subgraph_index)/sizeof(size_t) - 1;
 }
 
-static const int outTensorIndices[] = {
-  )";  // TODO: perhaps use a smaller type than int?
-  for (auto outIndex : outputTensorIndices_) {
-    out << outIndex << ", ";
-  }
-  out << R"(
-};
-TfLiteTensor* )"
-      << prefix_ << R"(output(int index) {
-  return &ctx.tensors[outTensorIndices[index]];
+static size_t mg_NumSubgraphInputs(int subgraph_idx){
+  return inTensors_subgraph_index[subgraph_idx+1] - inTensors_subgraph_index[subgraph_idx];
 }
 
-#ifdef TFLMC_PRINT_TENSORS
-unsigned char checksum(char *data, unsigned int length)
-{
-  static char sum;
-  static char * end;
-  sum = 0;
-  end = data + length;
-
-  do
-  {
-      sum -= *data++;
-  } while (data != end);
-  return sum;
+static size_t mg_NumSubgraphOutputs(int subgraph_idx){
+  return outTensors_subgraph_index[subgraph_idx+1] - outTensors_subgraph_index[subgraph_idx];
 }
-#endif
 
-TfLiteStatus )"
-      << prefix_ << R"(invoke() {
-  xc_config.thread_info.nstackwords = kStackWordsPerThread;
-  xc_config.thread_info.stacks = &xcThreadsStack[threadsStackSizeInUint64 - 1];
-  thread_init_)"
-      << numXCThreads_ << R"((&xc_config.thread_info);
+static TfLiteEvalTensor* mg_GetSubgraphInput(int subgraph_idx, int i){
+  return (TfLiteEvalTensor*)&tflTensors[tflTensors_subgraph_index[subgraph_idx] + inTensorIndices[inTensors_subgraph_index[subgraph_idx] + i]];
+}
 
-#ifdef TFLMC_XCORE_PROFILE
-  printf("\nProfiling invoke()...");
-  memset(op_times, 0, sizeof(op_times));
-  memset(op_counts, 0, sizeof(op_counts));
-  op_times_summed = 0;
-#endif
+static TfLiteEvalTensor* mg_GetSubgraphOutput(int subgraph_idx, int i){
+  return (TfLiteEvalTensor*)&tflTensors[tflTensors_subgraph_index[subgraph_idx] + outTensorIndices[outTensors_subgraph_index[subgraph_idx] + i]];
+}
 
+static TfLiteStatus mg_InvokeSubgraph(int g){
+  int prevSubgraphIndex = currentSubgraphIndex;
+  currentSubgraphIndex = g;
 #ifdef TFLMC_PRINT_TENSORS
 printf("[\n");
 #endif
 
-  for(size_t i = 0; i < )"
-      << nodes_.size() << R"(; ++i) {
+  for(size_t i = tflNodes_subgraph_index[g]; i < tflNodes_subgraph_index[g+1]; ++i) {
 
 #ifdef TFLMC_PRINT_INPUT_TENSORS
     // print every input tensor
@@ -893,13 +811,212 @@ printf("[\n");
 #endif
 
     if (status != kTfLiteOk) {
-      thread_destroy(&xc_config.thread_info);
+      currentSubgraphIndex = prevSubgraphIndex;
       return status;
     }
   }
 #ifdef TFLMC_PRINT_TENSORS
 printf("\n]");
 #endif
+
+  currentSubgraphIndex = prevSubgraphIndex;
+  return kTfLiteOk;
+}
+
+} // namespace
+
+TfLiteTensor* )"
+      << prefix_ << R"(input(int index) {
+  return &ctx.tensors[inTensorIndices[index]];
+}
+
+TfLiteTensor* )"
+      << prefix_ << R"(output(int index) {
+  return &ctx.tensors[outTensorIndices[index]];
+}
+
+TfLiteStatus )"
+     << prefix_ << R"(init(void *flash_data) {
+  // Clear and initialize
+  scratch_buffer_idx = 0;
+  persistentBufferPtr = tensor_arena + kTensorArenaSize;
+
+  // Set flash data in xcore context config
+  xc_config.flash_data = flash_data;
+
+  // Setup microcontext functions
+  mc.AllocateTempInputTensor = &mc_AllocateTempInputTensor;
+  mc.AllocateTempOutputTensor = &mc_AllocateTempOutputTensor;
+  mc.DeallocateTempTfLiteTensor = &mc_DeallocateTempTfLiteTensor;
+  mc.external_context = &mc_external_context;
+  mc.graph = &mc_graph;
+
+  micro_graph.NumSubgraphs = &mg_NumSubgraphs;
+  micro_graph.NumSubgraphInputs = &mg_NumSubgraphInputs;
+  micro_graph.NumSubgraphOutputs = &mg_NumSubgraphOutputs;
+  micro_graph.GetSubgraphInput = &mg_GetSubgraphInput;
+  micro_graph.GetSubgraphOutput = &mg_GetSubgraphOutput;
+  micro_graph.InvokeSubgraph = &mg_InvokeSubgraph;
+
+  // Setup tflitecontext functions
+  ctx.AllocatePersistentBuffer = &AllocatePersistentBuffer;
+  ctx.GetEvalTensor = &GetEvalTensor;
+  ctx.RequestScratchBufferInArena = &RequestScratchBufferInArena;
+  ctx.GetScratchBuffer = &GetScratchBuffer;
+  
+  // Set microcontext as the context ptr
+  ctx.impl_ = (void*)&mc;
+  ctx.tensors = tflTensors;
+)";
+  wr << "  ctx.tensors_size = " << tensors_[0].size() << ";\n";
+
+  for (size_t i = 0; i < registrations_.size(); i++) {
+    std::string opName;
+    if (registrations_[i].code == tflite::BuiltinOperator_CUSTOM) {
+      opName = registrations_[i].custom_name;
+      if (opName == "TFLite_Detection_PostProcess") {
+        wr << "  registrations[OP_" << opName
+           << "] = *(tflite::Register_DETECTION_POSTPROCESS());\n";
+      } else {
+        wr << "  registrations[OP_" << opName
+           << "] = *(tflite::ops::micro::xcore::Register_" << opName
+           << "());\n";
+      }
+    } else if ((registrations_[i].code == tflite::BuiltinOperator_RESHAPE) ||
+               (registrations_[i].code == tflite::BuiltinOperator_ROUND)) {
+      opName = tflite::EnumNameBuiltinOperator(registrations_[i].code);
+      wr << "  registrations[OP_" << opName
+         << "] = tflite::ops::micro::Register_" << opName << "();\n";
+    } else {
+      opName = tflite::EnumNameBuiltinOperator(registrations_[i].code);
+      wr << "  registrations[OP_" << opName << "] = tflite::Register_" << opName
+         << "();\n";
+    }
+  }
+  wr << "\n";
+  wr << R"(
+#ifdef TFLMC_XCORE_PROFILE
+  printf("\nProfiling init()...");
+  memset(op_times, 0, sizeof(op_times));
+  op_times_summed = 0;
+#endif
+
+)";
+  wr << "  for(size_t g = 0; g < " << nodes_.size() << R"(; ++g) {
+    currentSubgraphIndex = g;
+    for(size_t i = tflNodes_subgraph_index[g]; i < tflNodes_subgraph_index[g+1]; ++i) {
+    if (registrations[used_ops[i]].init) {
+
+#ifdef TFLMC_XCORE_PROFILE
+#ifdef __xcore__
+      asm volatile ("gettime %0" : "=r" (time_t0));
+#endif
+#endif
+
+      tflNodes[i].user_data = registrations[used_ops[i]].init(&ctx, (const char*)tflNodes[i].builtin_data, )";
+  wr << "tflNodes[i].custom_initial_data_size";
+  wr << R"();
+
+#ifdef TFLMC_XCORE_PROFILE
+#ifdef __xcore__
+      asm volatile ("gettime %0" : "=r" (time_t1));
+#endif
+      op_times[used_ops[i]] += time_t1 - time_t0;
+      printf("\nnode %-5d %-32s %-12d", i, op_strs[used_ops[i]], time_t1 - time_t0);
+#endif
+
+    }
+  }
+  }
+  currentSubgraphIndex = 0;
+
+#ifdef TFLMC_XCORE_PROFILE
+    printf("\n\nCumulative times for init()...");
+    for(int i=0; i<OP_LAST; i++){
+      op_times_summed += op_times[i];
+      printf("\n%-32s %-12d %.2fms", op_strs[i], op_times[i], op_times[i]/100000.0);
+    }
+    printf("\n\nTotal time for init() - %-10lld %.2fms\n\n", op_times_summed, op_times_summed/100000.0);
+  printf("\n");
+  printf("\nProfiling prepare()...");
+  memset(op_times, 0, sizeof(op_times));
+  op_times_summed = 0;
+#endif
+
+)";
+  wr << "  for(size_t g = 0; g < " << nodes_.size() << R"(; ++g) {
+        currentSubgraphIndex = g;
+        for(size_t i = tflNodes_subgraph_index[g]; i < tflNodes_subgraph_index[g+1]; ++i) {
+    if (registrations[used_ops[i]].prepare) {
+
+#ifdef TFLMC_XCORE_PROFILE
+#ifdef __xcore__
+      asm volatile ("gettime %0" : "=r" (time_t0));
+#endif
+#endif
+
+      TfLiteStatus status = registrations[used_ops[i]].prepare(&ctx, &tflNodes[i]);
+
+#ifdef TFLMC_XCORE_PROFILE
+#ifdef __xcore__
+      asm volatile ("gettime %0" : "=r" (time_t1));
+#endif
+      op_times[used_ops[i]] += time_t1 - time_t0;
+      printf("\nnode %-5d %-32s %-12d", i, op_strs[used_ops[i]], time_t1 - time_t0);
+#endif
+
+      if (status != kTfLiteOk) {
+        return status;
+      }
+    }
+  }
+  }
+  currentSubgraphIndex = 0;
+
+#ifdef TFLMC_XCORE_PROFILE
+printf("\n\nCumulative times for prepare()...");
+    for(int i=0; i<OP_LAST; i++){
+      op_times_summed += op_times[i];
+      printf("\n%-32s %-12d %.2fms", op_strs[i], op_times[i], op_times[i]/100000.0);
+    }
+    printf("\n\nTotal time for prepare() - %-10lld %.2fms\n\n", op_times_summed, op_times_summed/100000.0);
+  printf("\n");
+#endif
+
+  return kTfLiteOk;
+}
+
+#ifdef TFLMC_PRINT_TENSORS
+unsigned char checksum(char *data, unsigned int length)
+{
+  static char sum;
+  static char * end;
+  sum = 0;
+  end = data + length;
+
+  do
+  {
+      sum -= *data++;
+  } while (data != end);
+  return sum;
+}
+#endif
+
+TfLiteStatus )"
+      << prefix_ << R"(invoke() {
+  xc_config.thread_info.nstackwords = kStackWordsPerThread;
+  xc_config.thread_info.stacks = &xcThreadsStack[threadsStackSizeInUint64 - 1];
+  thread_init_)"
+      << numXCThreads_ << R"((&xc_config.thread_info);
+
+#ifdef TFLMC_XCORE_PROFILE
+  printf("\nProfiling invoke()...");
+  memset(op_times, 0, sizeof(op_times));
+  memset(op_counts, 0, sizeof(op_counts));
+  op_times_summed = 0;
+#endif
+
+  mg_InvokeSubgraph(0);
 
   thread_destroy(&xc_config.thread_info);
 
@@ -938,7 +1055,7 @@ printf("\n]");
 }
 
 void tflmc::Compiler::writeHeader(std::ostream &out) {
-  tflmc::CodeWriter wr(out, subgraph_);
+  tflmc::CodeWriter wr(out, mainGraph_);
 
   std::string code = R"(
 #ifndef %PREFIX%GEN_H
@@ -957,12 +1074,12 @@ TfLiteStatus %PREFIX%invoke();
 
 // Returns the number of input tensors.
 inline size_t %PREFIX%inputs() {
-  return )" + std::to_string(inputTensorIndices_.size()) +
+  return )" + std::to_string(inputTensorIndices_[0].size()) +
                      R"(;
 }
 // Returns the number of output tensors.
 inline size_t %PREFIX%outputs() {
-  return )" + std::to_string(outputTensorIndices_.size()) +
+  return )" + std::to_string(outputTensorIndices_[0].size()) +
                      R"(;
 }
 
@@ -1001,32 +1118,34 @@ inline int *%PREFIX%output_dims(int index) {
   wr << code;
 }
 
-std::string tflmc::Compiler::getTensorName(int tensorIndex) const {
-  auto tensor = GetTensor(interpreter_.get(), tensorIndex);
+std::string tflmc::Compiler::getTensorName(int tensorIndex, int sg) const {
+  auto tensor = tensors_[sg][tensorIndex].tensor;
 
   std::stringstream ss;
   ss << (tensor->allocation_type == kTfLiteMmapRo ? "ROM" : "RAM") << "Tensor_";
 
-  auto nOps = interpreter_->operators_size();
-  for (size_t i = 0; i < nOps; i++) {
-    auto nodeAndReg = interpreter_->node_and_registration(i);
-    auto node = &nodeAndReg.node;
+  for(size_t g = 0; g < tensors_.size(); g++){
+    auto nOps = interpreter_->operators_size(g);
+    for (size_t i = 0; i < nOps; i++) {
+      auto nodeAndReg = interpreter_->node_and_registration(i, g);
+      auto node = &nodeAndReg.node;
 
-    auto checkAndAdd = [&](const TfLiteIntArray *indices,
-                           const std::string &tag) {
-      if (indices) {
-        for (int k = 0; k < indices->size; k++) {
-          if (indices->data[k] == tensorIndex) {
-            ss << "L" << i << tag;
+      auto checkAndAdd = [&](const TfLiteIntArray *indices,
+                            const std::string &tag) {
+        if (indices) {
+          for (int k = 0; k < indices->size; k++) {
+            if (indices->data[k] == tensorIndex) {
+              ss << "L" << g << "_" << i << tag;
+            }
           }
         }
-      }
-    };
+      };
 
-    checkAndAdd(node->inputs, "in");
-    checkAndAdd(node->outputs, "out");
-    //  checkAndAdd(node->intermediates, "int");
-    //  checkAndAdd(node->temporaries, "tmp");
+      checkAndAdd(node->inputs, "in");
+      checkAndAdd(node->outputs, "out");
+      //  checkAndAdd(node->intermediates, "int");
+      //  checkAndAdd(node->temporaries, "tmp");
+    }
   }
 
   return ss.str();

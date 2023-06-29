@@ -23,8 +23,8 @@ struct Allocation {
 
 TfLiteStatus AllocateTensors(
     std::unique_ptr<tflite::MicroInterpreter> &interpreter);
-TfLiteEvalTensor *GetEvalTensor(tflite::MicroInterpreter *interpreter, int i);
-TfLiteTensor *GetTensor(tflite::MicroInterpreter *interpreter, int i);
+TfLiteTensor *GetTensor(tflite::MicroInterpreter *interpreter, int i, int sg);
+TfLiteEvalTensor *GetEvalTensor(tflite::MicroInterpreter *interpreter, int i, int sg);
 
 bool CompileFile(const std::string &modelFileName,
                  const std::string &outFileName,
@@ -45,7 +45,7 @@ class Compiler {
   void writeHeader(std::ostream &out);
 
   // Returns a name that describes a tensors relation to network layers.
-  std::string getTensorName(int tensorIndex) const;
+  std::string getTensorName(int tensorIndex, int sg) const;
 
   // Returns tensor arena size
   size_t getTensorArenaSize() const { return arenaBufferSize_; }
@@ -96,25 +96,24 @@ class Compiler {
   const struct shared_config::xcore_metadata *sharedCfg_ = nullptr;
   int numXCThreads_ = 1;
   const tflite::Model *model_ = nullptr;
-  const tflite::SubGraph *subgraph_ = nullptr;
+  const tflite::SubGraph *mainGraph_ = nullptr;
   tflite::AllOpsResolver resolver_;
   std::vector<uint8_t> arena_buf_;
   std::unique_ptr<tflite::MicroInterpreter> interpreter_;
   MemMap memMap_;
 
   size_t arenaBufferSize_ = 0;
-  std::vector<TensorInfo> tensors_;
+  // Vector of vector is for subgraphs
+  std::vector<std::vector<TensorInfo>> tensors_;
+  std::vector<std::vector<NodeInfo>> nodes_;
+  std::vector<std::vector<int32_t>> inputTensorIndices_;
+  std::vector<std::vector<int32_t>> outputTensorIndices_;
   std::vector<RegistrationInfo> registrations_;
-  std::vector<NodeInfo> nodes_;
-  std::vector<int32_t> inputTensorIndices_;
-  std::vector<int32_t> outputTensorIndices_;
   std::vector<int32_t> scratchBufferOffsets;
 
   bool has_custom_ops = false;
   bool has_tflite_custom_ops = false;
   bool has_quantization = false;
-  Option<TfLiteType> common_tensor_type;
-  Option<bool> common_tensor_is_variable;
 };
 
 }  // namespace tflmc

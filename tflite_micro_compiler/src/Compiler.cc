@@ -214,7 +214,9 @@ bool tflmc::Compiler::init(const void *modelData) {
       auto t = GetEvalTensor(interpreter_.get(), i, g);
       ptrdiff_t offset = (uint8_t *)t->data.data - arena_buf_.data();
       DEBUG_LOG(("%d,", offset));
-      ptrdiff_t highSize = offset + tensor->bytes;
+      // double word align tensor bytes
+      int aligned_bytes = ((tensor->bytes + 7) / 8) * 8;
+      ptrdiff_t highSize = offset + aligned_bytes;
       ramTensorBufferSize = std::max(ramTensorBufferSize, highSize);
       memMap_.recordRAM(offset, tensor->bytes, getTensorName(i, g));
     }
@@ -245,6 +247,8 @@ bool tflmc::Compiler::init(const void *modelData) {
       regInfo.custom_name = reg->custom_name;
       if (regInfo.custom_name == "TFLite_Detection_PostProcess") {
         has_tflite_custom_ops = true;
+      } else if (regInfo.custom_name == "XC_conv2d_v2") {
+        has_xc_conv_ops = true;
       }
       has_custom_ops = true;
     }
@@ -267,6 +271,8 @@ bool tflmc::Compiler::init(const void *modelData) {
     tflite::internal::ScratchBufferRequest *requests =
         interpreter_->allocator_.GetScratchBufferRequests();
     int bytes = requests[k].bytes;
+    // double word align scratch buffer bytes
+    bytes = ((bytes + 7) / 8) * 8;
     ptrdiff_t highSize = offset + bytes;
     ramTensorBufferSize = std::max(ramTensorBufferSize, highSize);
     memMap_.recordRAM(offset, bytes,
@@ -275,7 +281,7 @@ bool tflmc::Compiler::init(const void *modelData) {
     scratchBufferOffsets.push_back(offset);
   }
 
-  // g_loggedAllocations
+  // g_loggedAllocations for persistent buffers
   auto runtimeAllocations = g_loggedAllocations;
   ptrdiff_t minRuntimeOffset = 0;  // These are negative so zero start is fine.
   for (const auto &alloc : runtimeAllocations) {
@@ -436,7 +442,7 @@ enum used_operators_e {
   wr << R"( OP_LAST
 };
 
-#if defined(TFLMC_XCORE_PROFILE) || defined(TFLMC_PRINT_TENSORS)
+#if defined(TFLMC_XCORE_PROFILE) || defined(TFLMC_PRINT_TENSORS) || defined(TFLMC_PRINT_INPUT_TENSORS)
 const char *op_strs[] = {
 )";
   for (size_t i = 0; i < registrations_.size(); i++) {
@@ -448,6 +454,21 @@ const char *op_strs[] = {
     }
   }
   wr << R"(};
+
+unsigned char checksum(char *data, unsigned int length)
+{
+  static char sum;
+  static char * end;
+  sum = 0;
+  end = data + length;
+
+  do
+  {
+      sum -= *data++;
+  } while (data != end);
+  return sum;
+}
+
 #endif
 
 #ifdef TFLMC_XCORE_PROFILE
@@ -758,8 +779,8 @@ printf("[\n");
       // -1 such as in case of no bias tensor for conv
       if (tflNodes[i].inputs->data[j] != -1) {
         printf("\ntensor %d, input %d, %d bytes, checksum %d\n", tflNodes[i].inputs->data[j], j, tflTensors[tflNodes[i].inputs->data[j]].bytes, checksum(tflTensors[tflNodes[i].inputs->data[j]].data.raw, tflTensors[tflNodes[i].inputs->data[j]].bytes));
-        for(int k=0; k<tflTensors[tflNodes[i].inputs->data[j]].bytes; k++){
-          printf("%d,", (int8_t)tflTensors[tflNodes[i].inputs->data[j]].data.raw[k]);
+        for(int k=0; k<tflTensors[tflTensors_subgraph_index[g] + tflNodes[i].inputs->data[j]].bytes; k++){
+          printf("%d,", (int8_t)tflTensors[tflTensors_subgraph_index[g] + tflNodes[i].inputs->data[j]].data.raw[k]);
         }
       }
     }
@@ -789,9 +810,9 @@ printf("[\n");
     for (int j=0; j<tflNodes[i].outputs->size; j++){
       printf("\n{\"tensor\" : %d, \"output\" : %d, \"bytes\" : %d, \"checksum\" : %d,\n", tflNodes[i].outputs->data[j], j, tflTensors[tflNodes[i].outputs->data[j]].bytes, checksum(tflTensors[tflNodes[i].outputs->data[j]].data.raw, tflTensors[tflNodes[i].outputs->data[j]].bytes));
       printf("\"val\" : [");
-      for(int k=0; k<tflTensors[tflNodes[i].outputs->data[j]].bytes; k++){
-        printf("%d", (int8_t)tflTensors[tflNodes[i].outputs->data[j]].data.raw[k]);
-        if (k < tflTensors[tflNodes[i].outputs->data[j]].bytes-1){
+      for(int k=0; k<tflTensors[tflTensors_subgraph_index[g] + tflNodes[i].outputs->data[j]].bytes; k++){
+        printf("%d", (int8_t)tflTensors[tflTensors_subgraph_index[g] + tflNodes[i].outputs->data[j]].data.raw[k]);
+        if (k < tflTensors[tflTensors_subgraph_index[g] + tflNodes[i].outputs->data[j]].bytes-1){
           printf(",");
         }
       }
@@ -802,8 +823,7 @@ printf("[\n");
       }
     }
 
-    if(i<)"
-      << nodes_.size() << R"(-1){
+    if(i < ((tflNodes_subgraph_index[g+1] - tflNodes_subgraph_index[g]) - 1)){
       printf("},\n");
     } else {
       printf("}\n");
@@ -986,22 +1006,6 @@ printf("\n\nCumulative times for prepare()...");
   return kTfLiteOk;
 }
 
-#ifdef TFLMC_PRINT_TENSORS
-unsigned char checksum(char *data, unsigned int length)
-{
-  static char sum;
-  static char * end;
-  sum = 0;
-  end = data + length;
-
-  do
-  {
-      sum -= *data++;
-  } while (data != end);
-  return sum;
-}
-#endif
-
 TfLiteStatus )"
       << prefix_ << R"(invoke() {
   xc_config.thread_info.nstackwords = kStackWordsPerThread;
@@ -1027,21 +1031,24 @@ TfLiteStatus )"
     int evalStartTime;
     int threadsStartTime;
     int threadsDoneTime;
-  };
-  int conv_times1 = 0, conv_times2 = 0;
-  printf("\n\nConv()...");
-  for(size_t i = 0; i < )"
-      << nodes_.size() << R"(; ++i) {
-    if(used_ops[i] == OP_XC_conv2d_v2) {
-      auto *op_data = reinterpret_cast<convopdata *>(tflNodes[i].user_data);
-      conv_times1 += op_data->threadsStartTime - op_data->evalStartTime;
-      conv_times2 += op_data->threadsDoneTime - op_data->threadsStartTime;
-      printf("\nnode %-5d %-25s %-25s %-6d %-6d %-12d", i, op_strs[used_ops[i]], op_data->name, op_data->thread_count, op_data->threadsStartTime - op_data->evalStartTime, op_data->threadsDoneTime - op_data->threadsStartTime);
+  };)";
+  if (has_xc_conv_ops) {
+    wr << R"(int conv_times1 = 0, conv_times2 = 0;
+    printf("\n\nConv()...");
+    for(size_t g = 0; g < )" << nodes_.size() << R"(; ++g) {
+      for(size_t i = tflNodes_subgraph_index[g]; i < tflNodes_subgraph_index[g+1]; ++i) {
+        if(used_ops[i] == OP_XC_conv2d_v2) {
+          auto *op_data = reinterpret_cast<convopdata *>(tflNodes[i].user_data);
+          conv_times1 += op_data->threadsStartTime - op_data->evalStartTime;
+          conv_times2 += op_data->threadsDoneTime - op_data->threadsStartTime;
+          printf("\nnode %-5d %-25s %-25s %-6d %-6d %-12d", i, op_strs[used_ops[i]], op_data->name, op_data->thread_count, op_data->threadsStartTime - op_data->evalStartTime, op_data->threadsDoneTime - op_data->threadsStartTime);
+        }
+      }
     }
+    printf("\nSummed - %-10d %-10d", conv_times1, conv_times2);
+    )";
   }
-  printf("\nSummed - %-10d %-10d", conv_times1, conv_times2);
-
-  printf("\n\nCumulative times for invoke()...");
+  wr << R"(printf("\n\nCumulative times for invoke()...");
   for(int i=0; i<OP_LAST; i++){
     op_times_summed += op_times[i];
     printf("\n%-5d %-32s %-12d %.2fms", op_counts[i], op_strs[i], op_times[i], op_times[i]/100000.0);

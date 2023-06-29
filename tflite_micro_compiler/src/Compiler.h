@@ -112,6 +112,7 @@ class Compiler {
   std::vector<int32_t> scratchBufferOffsets;
 
   bool has_custom_ops = false;
+  bool has_xc_conv_ops = false;
   bool has_tflite_custom_ops = false;
   bool has_quantization = false;
 };

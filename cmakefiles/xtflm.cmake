@@ -187,13 +187,13 @@ list(APPEND TFLM_KERNEL_SOURCES  "${TFLM_SRC_DIR}/kernels/lstm_eval_common.cc")
 list(APPEND TFLM_KERNEL_SOURCES  "${TFLM_SRC_DIR}/kernels/unidirectional_sequence_lstm.cc")
 list(APPEND TFLM_KERNEL_SOURCES  "${TFLM_SRC_DIR}/kernels/unpack.cc")
 list(APPEND TFLM_KERNEL_SOURCES  "${TFLM_SRC_DIR}/kernels/zeros_like.cc")
+list(APPEND TFLM_KERNEL_SOURCES  "${TFLM_SRC_DIR}/kernels/if.cc")
+list(APPEND TFLM_KERNEL_SOURCES  "${TFLM_SRC_DIR}/kernels/while.cc")
 
 # We dont support these kernels yet for compiled models
 # They link with micro_graph from within the kernels
 list(APPEND ALL_SOURCES  "${TFLM_SRC_DIR}/kernels/var_handle.cc")
-list(APPEND ALL_SOURCES  "${TFLM_SRC_DIR}/kernels/while.cc")
 list(APPEND ALL_SOURCES  "${TFLM_SRC_DIR}/kernels/read_variable.cc")
-list(APPEND ALL_SOURCES  "${TFLM_SRC_DIR}/kernels/if.cc")
 list(APPEND ALL_SOURCES  "${TFLM_SRC_DIR}/kernels/call_once.cc")
 list(APPEND ALL_SOURCES  "${TFLM_SRC_DIR}/kernels/assign_variable.cc")
 

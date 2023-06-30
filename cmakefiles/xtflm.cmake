@@ -184,7 +184,7 @@ list(APPEND TFLM_KERNEL_SOURCES  "${TFLM_SRC_DIR}/kernels/transpose.cc")
 list(APPEND TFLM_KERNEL_SOURCES  "${TFLM_SRC_DIR}/kernels/transpose_conv.cc")
 list(APPEND TFLM_KERNEL_SOURCES  "${TFLM_SRC_DIR}/kernels/lstm_eval.cc")
 list(APPEND TFLM_KERNEL_SOURCES  "${TFLM_SRC_DIR}/kernels/lstm_eval_common.cc")
-list(APPEND TFLM_KERNEL_SOURCES  "${TFLM_SRC_DIR}/kernels/unidirectional_sequence_lstm")
+list(APPEND TFLM_KERNEL_SOURCES  "${TFLM_SRC_DIR}/kernels/unidirectional_sequence_lstm.cc")
 list(APPEND TFLM_KERNEL_SOURCES  "${TFLM_SRC_DIR}/kernels/unpack.cc")
 list(APPEND TFLM_KERNEL_SOURCES  "${TFLM_SRC_DIR}/kernels/zeros_like.cc")
 

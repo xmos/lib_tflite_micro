@@ -1118,6 +1118,7 @@ TfLiteStatus )"
   for (int i = 0; i < )" << varTensors_count << R"(; i++) {
     memset(tflTensors[varTensors_index[i]].data.data, tflTensors[varTensors_index[i]].params.zero_point, tflTensors[varTensors_index[i]].bytes);
   }
+  return kTfLiteOk;
 }
 )";
 }

@@ -1,7 +1,7 @@
-diff --git tensorflow/lite/c/common.h tensorflow/lite/c/common.h
+diff --git a/tensorflow/lite/c/common.h b/tensorflow/lite/c/common.h
 index e3e8001..0e48581 100644
---- tensorflow/lite/c/common.h
-+++ tensorflow/lite/c/common.h
+--- a/tensorflow/lite/c/common.h
++++ b/tensorflow/lite/c/common.h
 @@ -38,4 +38,10 @@ limitations under the License.
  
  #include "tensorflow/lite/core/c/common.h"
@@ -13,10 +13,10 @@ index e3e8001..0e48581 100644
 +typedef TfLiteDelegate TfLiteOpaqueDelegate;
 +
  #endif  // TENSORFLOW_LITE_C_COMMON_H_
-diff --git tensorflow/lite/core/c/common.h tensorflow/lite/core/c/common.h
+diff --git a/tensorflow/lite/core/c/common.h b/tensorflow/lite/core/c/common.h
 index dcee532..afe98b5 100644
---- tensorflow/lite/core/c/common.h
-+++ tensorflow/lite/core/c/common.h
+--- a/tensorflow/lite/core/c/common.h
++++ b/tensorflow/lite/core/c/common.h
 @@ -531,13 +531,6 @@ typedef struct TfLiteNode {
  // - name
  // - sparsity
@@ -59,10 +59,10 @@ index dcee532..afe98b5 100644
    // How memory is mapped
    //  kTfLiteMmapRo: Memory mapped read only.
    //  i.e. weights
-diff --git tensorflow/lite/kernels/internal/common.h tensorflow/lite/kernels/internal/common.h
+diff --git a/tensorflow/lite/kernels/internal/common.h b/tensorflow/lite/kernels/internal/common.h
 index 00fe01f..65e248d 100644
---- tensorflow/lite/kernels/internal/common.h
-+++ tensorflow/lite/kernels/internal/common.h
+--- a/tensorflow/lite/kernels/internal/common.h
++++ b/tensorflow/lite/kernels/internal/common.h
 @@ -328,16 +328,14 @@ template <typename T>
  int CountLeadingZeros(T integer_input) {
    static_assert(std::is_unsigned<T>::value,
@@ -93,10 +93,10 @@ index 00fe01f..65e248d 100644
  }
  
  template <typename T>
-diff --git tensorflow/lite/kernels/internal/quantization_util.cc tensorflow/lite/kernels/internal/quantization_util.cc
+diff --git a/tensorflow/lite/kernels/internal/quantization_util.cc b/tensorflow/lite/kernels/internal/quantization_util.cc
 index 62045d6..4b8cfba 100644
---- tensorflow/lite/kernels/internal/quantization_util.cc
-+++ tensorflow/lite/kernels/internal/quantization_util.cc
+--- a/tensorflow/lite/kernels/internal/quantization_util.cc
++++ b/tensorflow/lite/kernels/internal/quantization_util.cc
 @@ -314,8 +314,13 @@ void PreprocessSoftmaxScaling(double beta, double input_scale,
                         max_real_multiplier);
  #endif  // TFLITE_EMULATE_FLOAT
@@ -111,10 +111,10 @@ index 62045d6..4b8cfba 100644
  }
  
  void PreprocessLogSoftmaxScalingExp(double beta, double input_scale,
-diff --git tensorflow/lite/kernels/internal/reference/integer_ops/add.h tensorflow/lite/kernels/internal/reference/integer_ops/add.h
+diff --git a/tensorflow/lite/kernels/internal/reference/integer_ops/add.h b/tensorflow/lite/kernels/internal/reference/integer_ops/add.h
 index 579964d..bd50617 100644
---- tensorflow/lite/kernels/internal/reference/integer_ops/add.h
-+++ tensorflow/lite/kernels/internal/reference/integer_ops/add.h
+--- a/tensorflow/lite/kernels/internal/reference/integer_ops/add.h
++++ b/tensorflow/lite/kernels/internal/reference/integer_ops/add.h
 @@ -35,23 +35,24 @@ inline void CheckArithmeticParams(const ArithmeticParams& params) {
    TFLITE_DCHECK_LE(-params.input2_offset, std::numeric_limits<int8_t>::max());
  }
@@ -148,10 +148,10 @@ index 579964d..bd50617 100644
      void (*check_arithmetic_params)(const ArithmeticParams&),
      T (*binary_func)(T, T, const ArithmeticParams&)) {
    NdArrayDesc<6> desc1;
-diff --git tensorflow/lite/kernels/internal/reference/integer_ops/mean.h tensorflow/lite/kernels/internal/reference/integer_ops/mean.h
+diff --git a/tensorflow/lite/kernels/internal/reference/integer_ops/mean.h b/tensorflow/lite/kernels/internal/reference/integer_ops/mean.h
 index 7e3f690..09d37b7 100644
---- tensorflow/lite/kernels/internal/reference/integer_ops/mean.h
-+++ tensorflow/lite/kernels/internal/reference/integer_ops/mean.h
+--- a/tensorflow/lite/kernels/internal/reference/integer_ops/mean.h
++++ b/tensorflow/lite/kernels/internal/reference/integer_ops/mean.h
 @@ -1,10 +1,10 @@
 -/* Copyright 2023 The TensorFlow Authors. All Rights Reserved.
 +/* Copyright 2019 The TensorFlow Authors. All Rights Reserved.
@@ -231,10 +231,10 @@ index 7e3f690..09d37b7 100644
 +}  // namespace tflite
 +
  #endif  // TENSORFLOW_LITE_KERNELS_INTERNAL_REFERENCE_INTEGER_OPS_MEAN_H_
-diff --git tensorflow/lite/kernels/internal/reference/reduce.h tensorflow/lite/kernels/internal/reference/reduce.h
+diff --git a/tensorflow/lite/kernels/internal/reference/reduce.h b/tensorflow/lite/kernels/internal/reference/reduce.h
 index 5b795ea..adc435f 100644
---- tensorflow/lite/kernels/internal/reference/reduce.h
-+++ tensorflow/lite/kernels/internal/reference/reduce.h
+--- a/tensorflow/lite/kernels/internal/reference/reduce.h
++++ b/tensorflow/lite/kernels/internal/reference/reduce.h
 @@ -268,11 +268,11 @@ inline bool Mean(const T* input_data, const int* input_dims,
    return true;
  }
@@ -418,10 +418,10 @@ index 5b795ea..adc435f 100644
        output_num_dims, axis, num_axis_dimensions, keep_dims, temp_index,
        resolved_axis, temp_sum, compute_sum);
  }
-diff --git tensorflow/lite/micro/kernels/concatenation.cc tensorflow/lite/micro/kernels/concatenation.cc
+diff --git a/tensorflow/lite/micro/kernels/concatenation.cc b/tensorflow/lite/micro/kernels/concatenation.cc
 index 9decf72..1cf987c 100644
---- tensorflow/lite/micro/kernels/concatenation.cc
-+++ tensorflow/lite/micro/kernels/concatenation.cc
+--- a/tensorflow/lite/micro/kernels/concatenation.cc
++++ b/tensorflow/lite/micro/kernels/concatenation.cc
 @@ -29,7 +29,7 @@ namespace tflite {
  
  namespace {
@@ -431,10 +431,10 @@ index 9decf72..1cf987c 100644
  constexpr int kOutputTensor = 0;
  
  struct OpData {
-diff --git tensorflow/lite/micro/kernels/conv_common.cc tensorflow/lite/micro/kernels/conv_common.cc
+diff --git a/tensorflow/lite/micro/kernels/conv_common.cc b/tensorflow/lite/micro/kernels/conv_common.cc
 index c548c93..4ee3ee0 100644
---- tensorflow/lite/micro/kernels/conv_common.cc
-+++ tensorflow/lite/micro/kernels/conv_common.cc
+--- a/tensorflow/lite/micro/kernels/conv_common.cc
++++ b/tensorflow/lite/micro/kernels/conv_common.cc
 @@ -123,7 +123,8 @@ TfLiteStatus CalculateOpDataConv(TfLiteContext* context, TfLiteNode* node,
    micro_context->DeallocateTempTfLiteTensor(input);
    micro_context->DeallocateTempTfLiteTensor(filter);
@@ -445,10 +445,10 @@ index c548c93..4ee3ee0 100644
  
    return kTfLiteOk;
  }
-diff --git tensorflow/lite/micro/memory_planner/greedy_memory_planner.h tensorflow/lite/micro/memory_planner/greedy_memory_planner.h
+diff --git a/tensorflow/lite/micro/memory_planner/greedy_memory_planner.h b/tensorflow/lite/micro/memory_planner/greedy_memory_planner.h
 index ae3705d..b9c9d85 100644
---- tensorflow/lite/micro/memory_planner/greedy_memory_planner.h
-+++ tensorflow/lite/micro/memory_planner/greedy_memory_planner.h
+--- a/tensorflow/lite/micro/memory_planner/greedy_memory_planner.h
++++ b/tensorflow/lite/micro/memory_planner/greedy_memory_planner.h
 @@ -107,6 +107,8 @@ class GreedyMemoryPlanner : public MicroMemoryPlanner {
      return per_buffer_size;
    }
@@ -467,10 +467,10 @@ index ae3705d..b9c9d85 100644
  };
  
  }  // namespace tflite
-diff --git tensorflow/lite/micro/micro_allocator.h tensorflow/lite/micro/micro_allocator.h
+diff --git a/tensorflow/lite/micro/micro_allocator.h b/tensorflow/lite/micro/micro_allocator.h
 index 05dbf89..64d9df6 100644
---- tensorflow/lite/micro/micro_allocator.h
-+++ tensorflow/lite/micro/micro_allocator.h
+--- a/tensorflow/lite/micro/micro_allocator.h
++++ b/tensorflow/lite/micro/micro_allocator.h
 @@ -235,6 +235,14 @@ class MicroAllocator {
  
    TfLiteBridgeBuiltinDataAllocator* GetBuiltinDataAllocator();
@@ -497,10 +497,10 @@ index 05dbf89..64d9df6 100644
    // A simple memory allocator that always allocate from the arena tail or head.
    INonPersistentBufferAllocator* non_persistent_buffer_allocator_;
    IPersistentBufferAllocator* persistent_buffer_allocator_;
-diff --git tensorflow/lite/micro/micro_context.cc tensorflow/lite/micro/micro_context.cc
+diff --git a/tensorflow/lite/micro/micro_context.cc b/tensorflow/lite/micro/micro_context.cc
 index b06252a..fe254ba 100644
---- tensorflow/lite/micro/micro_context.cc
-+++ tensorflow/lite/micro/micro_context.cc
+--- a/tensorflow/lite/micro/micro_context.cc
++++ b/tensorflow/lite/micro/micro_context.cc
 @@ -57,6 +57,12 @@ TfLiteTensor* MicroContext::AllocateTempTfLiteTensor(int tensor_idx) {
                                               graph_.GetCurrentSubgraphIndex());
  }
@@ -536,10 +536,10 @@ index b06252a..fe254ba 100644
                  state_ == InterpreterState::kInvoke);
    if (external_context_payload == nullptr ||
        external_context_payload_ != nullptr) {
-diff --git tensorflow/lite/micro/micro_context.h tensorflow/lite/micro/micro_context.h
+diff --git a/tensorflow/lite/micro/micro_context.h b/tensorflow/lite/micro/micro_context.h
 index 63b4b7d..6b467a8 100644
---- tensorflow/lite/micro/micro_context.h
-+++ tensorflow/lite/micro/micro_context.h
+--- a/tensorflow/lite/micro/micro_context.h
++++ b/tensorflow/lite/micro/micro_context.h
 @@ -20,6 +20,25 @@ limitations under the License.
  #include "tensorflow/lite/micro/micro_allocator.h"
  #include "tensorflow/lite/micro/micro_graph.h"
@@ -608,10 +608,10 @@ index 63b4b7d..6b467a8 100644
 +#endif  // NO_INTERPRETER
 +
  #endif  // TENSORFLOW_LITE_MICRO_MICRO_CONTEXT_H_
-diff --git tensorflow/lite/micro/micro_graph.h tensorflow/lite/micro/micro_graph.h
+diff --git a/tensorflow/lite/micro/micro_graph.h b/tensorflow/lite/micro/micro_graph.h
 index ce93d33..1719074 100644
---- tensorflow/lite/micro/micro_graph.h
-+++ tensorflow/lite/micro/micro_graph.h
+--- a/tensorflow/lite/micro/micro_graph.h
++++ b/tensorflow/lite/micro/micro_graph.h
 @@ -21,6 +21,21 @@ limitations under the License.
  #include "tensorflow/lite/micro/micro_resource_variable.h"
  #include "tensorflow/lite/schema/schema_generated.h"
@@ -641,10 +641,10 @@ index ce93d33..1719074 100644
 +#endif  // NO_INTERPRETER
 +
  #endif  // TENSORFLOW_LITE_MICRO_MICRO_GRAPH_H_
-diff --git tensorflow/lite/micro/micro_interpreter.h tensorflow/lite/micro/micro_interpreter.h
+diff --git a/tensorflow/lite/micro/micro_interpreter.h b/tensorflow/lite/micro/micro_interpreter.h
 index a77b0e0..14456b5 100644
---- tensorflow/lite/micro/micro_interpreter.h
-+++ tensorflow/lite/micro/micro_interpreter.h
+--- a/tensorflow/lite/micro/micro_interpreter.h
++++ b/tensorflow/lite/micro/micro_interpreter.h
 @@ -135,6 +135,13 @@ class MicroInterpreter {
    // arena_used_bytes() + 16.
    size_t arena_used_bytes() const { return allocator_.used_bytes(); }
@@ -659,10 +659,10 @@ index a77b0e0..14456b5 100644
   protected:
    const MicroAllocator& allocator() const { return allocator_; }
    const TfLiteContext& context() const { return context_; }
-diff --git tensorflow/lite/micro/test_helpers.cc tensorflow/lite/micro/test_helpers.cc
+diff --git a/tensorflow/lite/micro/test_helpers.cc b/tensorflow/lite/micro/test_helpers.cc
 index 8a7e1cb..8eaa3ff 100644
---- tensorflow/lite/micro/test_helpers.cc
-+++ tensorflow/lite/micro/test_helpers.cc
+--- a/tensorflow/lite/micro/test_helpers.cc
++++ b/tensorflow/lite/micro/test_helpers.cc
 @@ -443,11 +443,19 @@ const Model* BuildModelWithUnusedOperatorOutputs() {
            *builder, builder->CreateVector(tensor_shape, tensor_shape_size),
            TensorType_INT8, 0,
@@ -683,10 +683,10 @@ index 8a7e1cb..8eaa3ff 100644
    const int32_t operator_inputs[operator_inputs_size] = {};
    constexpr size_t operator_outputs_size = 2;
    const int32_t operator_outputs[operator_outputs_size] = {0, 1};
-diff --git tensorflow/lite/micro/tflite_bridge/micro_error_reporter.h tensorflow/lite/micro/tflite_bridge/micro_error_reporter.h
+diff --git a/tensorflow/lite/micro/tflite_bridge/micro_error_reporter.h b/tensorflow/lite/micro/tflite_bridge/micro_error_reporter.h
 index d3702f4..186a226 100644
---- tensorflow/lite/micro/tflite_bridge/micro_error_reporter.h
-+++ tensorflow/lite/micro/tflite_bridge/micro_error_reporter.h
+--- a/tensorflow/lite/micro/tflite_bridge/micro_error_reporter.h
++++ b/tensorflow/lite/micro/tflite_bridge/micro_error_reporter.h
 @@ -28,7 +28,6 @@ class MicroErrorReporter : public ErrorReporter {
    ~MicroErrorReporter() override {}
    int Report(const char* format, va_list args) override;

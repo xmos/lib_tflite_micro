@@ -204,64 +204,72 @@ bool tflmc::Compiler::init(const void *modelData) {
   DEBUG_LOG(("\n\nTFLMC Allocated offsets:\n"));
   for(int g=0; g<subgraphs->size(); g++) {
     auto sg = (*subgraphs)[g];
-  for (size_t i = 0; i < sg->tensors()->size(); i++) {
-    auto tensor = tensors_[g][i].tensor;
-    if (tensor->allocation_type == kTfLiteMmapRo) {
-      memMap_.recordROM(romOffset, tensor->bytes, getTensorName(i, g));
-      DEBUG_LOG(("-1,"));
-      romOffset += tensor->bytes;
-    } else {
-      auto t = GetEvalTensor(interpreter_.get(), i, g);
-      ptrdiff_t offset = (uint8_t *)t->data.data - arena_buf_.data();
-      DEBUG_LOG(("%d,", offset));
-      // double word align tensor bytes
-      int aligned_bytes = ((tensor->bytes + 7) / 8) * 8;
-      ptrdiff_t highSize = offset + aligned_bytes;
-      ramTensorBufferSize = std::max(ramTensorBufferSize, highSize);
-      memMap_.recordRAM(offset, tensor->bytes, getTensorName(i, g));
-    }
-    // determine whether we need to individually set these properties for each
-    // tensor
-    if ((!has_quantization) &&
-        tensor->quantization.type != kTfLiteNoQuantization) {
-      has_quantization = true;
-    }
-  }
-  DEBUG_LOG(("\n\n"));
-
-  for (size_t i = 0; i < interpreter_->operators_size(g); i++) {
-    auto nodeAndReg = interpreter_->node_and_registration(i, g);
-    auto node = &nodeAndReg.node;
-    auto reg = nodeAndReg.registration;
-    auto code = tflite::EnumValuesBuiltinOperator()[reg->builtin_code];
-
-    if (debugPrint_) {
-      printf("operation %lu: %s\n", i,
-             tflite::EnumNamesBuiltinOperator()[code]);
-    }
-
-    RegistrationInfo regInfo;
-    regInfo.reg = reg;
-    regInfo.code = code;
-    if (code == tflite::BuiltinOperator_CUSTOM) {
-      regInfo.custom_name = reg->custom_name;
-      if (regInfo.custom_name == "TFLite_Detection_PostProcess") {
-        has_tflite_custom_ops = true;
-      } else if (regInfo.custom_name == "XC_conv2d_v2") {
-        has_xc_conv_ops = true;
+    for (size_t i = 0; i < sg->tensors()->size(); i++) {
+      auto tensor = tensors_[g][i].tensor;
+      if (tensor->is_variable) {
+        varTensors_count++;
+        continue;
       }
-      has_custom_ops = true;
-    }
-    auto itOp =
-        std::find(registrations_.begin(), registrations_.end(), regInfo);
-    if (itOp == registrations_.end()) {
-      itOp = registrations_.insert(registrations_.end(), regInfo);
-    }
+      if (tensor->bytes == 0) {
+        continue;
+      }
 
-    // There doesn't seem to be a way to get the node pointer, so copy it.
-    nodes_[g].push_back(NodeInfo{*node, itOp - registrations_.begin()});
+      if (tensor->allocation_type == kTfLiteMmapRo) {
+        memMap_.recordROM(romOffset, tensor->bytes, getTensorName(i, g));
+        DEBUG_LOG(("-1,"));
+        romOffset += tensor->bytes;
+      } else {
+        auto t = GetEvalTensor(interpreter_.get(), i, g);
+        ptrdiff_t offset = (uint8_t *)t->data.data - arena_buf_.data();
+        DEBUG_LOG(("%d,", offset));
+        // double word align tensor bytes
+        int aligned_bytes = ((tensor->bytes + 7) / 8) * 8;
+        ptrdiff_t highSize = offset + aligned_bytes;
+        ramTensorBufferSize = std::max(ramTensorBufferSize, highSize);
+        memMap_.recordRAM(offset, tensor->bytes, getTensorName(i, g));
+      }
+      // determine whether we need to individually set these properties for each
+      // tensor
+      if ((!has_quantization) &&
+          tensor->quantization.type != kTfLiteNoQuantization) {
+        has_quantization = true;
+      }
+    }
+    DEBUG_LOG(("\n\n"));
+
+    for (size_t i = 0; i < interpreter_->operators_size(g); i++) {
+      auto nodeAndReg = interpreter_->node_and_registration(i, g);
+      auto node = &nodeAndReg.node;
+      auto reg = nodeAndReg.registration;
+      auto code = tflite::EnumValuesBuiltinOperator()[reg->builtin_code];
+
+      if (debugPrint_) {
+        printf("operation %lu: %s\n", i,
+              tflite::EnumNamesBuiltinOperator()[code]);
+      }
+
+      RegistrationInfo regInfo;
+      regInfo.reg = reg;
+      regInfo.code = code;
+      if (code == tflite::BuiltinOperator_CUSTOM) {
+        regInfo.custom_name = reg->custom_name;
+        if (regInfo.custom_name == "TFLite_Detection_PostProcess") {
+          has_tflite_custom_ops = true;
+        } else if (regInfo.custom_name == "XC_conv2d_v2") {
+          has_xc_conv_ops = true;
+        }
+        has_custom_ops = true;
+      }
+      auto itOp =
+          std::find(registrations_.begin(), registrations_.end(), regInfo);
+      if (itOp == registrations_.end()) {
+        itOp = registrations_.insert(registrations_.end(), regInfo);
+      }
+
+      // There doesn't seem to be a way to get the node pointer, so copy it.
+      nodes_[g].push_back(NodeInfo{*node, itOp - registrations_.begin()});
+    }
   }
-}
 
   // scratch buffers
   for (size_t k = 0; k < interpreter_->allocator_.GetScratchBufferRequestCount();
@@ -296,11 +304,31 @@ bool tflmc::Compiler::init(const void *modelData) {
                       "PersistentBuf" + std::to_string(alloc.nodeIndex));
   }
 
+  // Variable tensors
+  // We need to add space in the tensor arena for variable tensors which 
+  // are allocated as persistent buffers.
+  // The allocation is not done through ctx->AllocatePersistentBuffer() API,
+  // so it has not been logged yet.
+  size_t varTensorsSize = 0;
+  for(int g=0; g<subgraphs->size(); g++) {
+    auto sg = (*subgraphs)[g];
+    for (size_t i = 0; i < sg->tensors()->size(); i++) {
+      auto tensor = tensors_[g][i].tensor;
+      if (tensor->is_variable) {
+        int doubleAlignedSize = ((tensor->bytes + 7) / 8) * 8;
+        memMap_.recordRAM(ramTensorBufferSize + totalRuntimeAllocSize + varTensorsSize, doubleAlignedSize,
+              "VarTensor" + getTensorName(i, g));
+        varTensorsSize += doubleAlignedSize;
+      }
+    }
+  }
+
   // This includes:
   // - Tensors
   // - Scratch buffers
   // - Persistent buffers
-  arenaBufferSize_ = ramTensorBufferSize + totalRuntimeAllocSize;
+  // - Variable tensors (which are allocated as persistent buffers separately)
+  arenaBufferSize_ = ramTensorBufferSize + totalRuntimeAllocSize + varTensorsSize;
 
   if (debugPrint_) {
     interpreter_->allocator_.memory_planner()->PrintMemoryPlan();
@@ -330,7 +358,6 @@ void tflmc::Compiler::writeSource(std::ostream &out) {
 // #define TFLMC_XCORE_PROFILE
 // #define TFLMC_PRINT_TENSORS
 // #define TFLMC_PRINT_INPUT_TENSORS
-// #define SHARED_MEMORY_ARENA
 
 #if defined __GNUC__
 #define ALIGN(X) __attribute__((aligned(X)))
@@ -417,7 +444,7 @@ namespace xcore {
 
 constexpr int kTensorArenaSize = )"
      << arenaBufferSize_ << R"(;
-#ifndef SHARED_MEMORY_ARENA
+#ifndef SHARED_TENSOR_ARENA
 namespace {
 uint8_t tensor_arena[kTensorArenaSize] ALIGN(8);
 }
@@ -624,6 +651,21 @@ for(size_t g = 0; g < tensors_.size(); g++) {
 }
 wr << "};\n";
 
+wr << "\n// Variable tensors";
+wr << "\nsize_t varTensors_index[] = {";
+index = 0;
+for(size_t g = 0; g < tensors_.size(); g++) {
+  for (size_t i = 0; i < tensors_[g].size(); i++) {
+    auto &t = tensors_[g][i].tensor;
+    if(t->is_variable) {
+      wr << index << ", ";
+    }
+    index += 1;
+  }
+}
+wr << "};\n";
+
+wr << "\n// Input/output tensors\n";
 wr << R"(static const int inTensorIndices[] = {
   )";
   for(size_t g = 0; g < tensors_.size(); g++) {
@@ -725,10 +767,16 @@ static void *GetScratchBuffer(struct TfLiteContext *context,
 }
 
 static TfLiteTensor* mc_AllocateTempInputTensor(const TfLiteNode* node, int index) {
+      if (node->inputs->data[index] < 0) {
+        return nullptr;
+      }
       return &ctx.tensors[tflTensors_subgraph_index[currentSubgraphIndex] + node->inputs->data[index]];
 }
 
 static TfLiteTensor* mc_AllocateTempOutputTensor(const TfLiteNode* node, int index) {
+      if (node->outputs->data[index] < 0) {
+        return nullptr;
+      }
       return &ctx.tensors[tflTensors_subgraph_index[currentSubgraphIndex] + node->outputs->data[index]];
 }
 
@@ -915,6 +963,11 @@ TfLiteStatus )"
   }
   wr << "\n";
   wr << R"(
+  // Allocate persistent buffers for variable tensors
+  for (int i = 0; i < )" << varTensors_count << R"(; i++) {
+    tflTensors[varTensors_index[i]].data.data = AllocatePersistentBuffer(&ctx, tflTensors[varTensors_index[i]].bytes);
+  }
+
 #ifdef TFLMC_XCORE_PROFILE
   printf("\nProfiling init()...");
   memset(op_times, 0, sizeof(op_times));
@@ -1058,6 +1111,14 @@ TfLiteStatus )"
 
   return kTfLiteOk;
 }
+
+TfLiteStatus )"
+      << prefix_ << R"(reset() {
+  // Reset variable tensors
+  for (int i = 0; i < )" << varTensors_count << R"(; i++) {
+    memset(tflTensors[varTensors_index[i]].data.data, tflTensors[varTensors_index[i]].params.zero_point, tflTensors[varTensors_index[i]].bytes);
+  }
+}
 )";
 }
 
@@ -1070,6 +1131,14 @@ void tflmc::Compiler::writeHeader(std::ostream &out) {
 
 #include "tensorflow/lite/c/common.h"
 
+#ifdef SHARED_TENSOR_ARENA
+  #ifndef LARGEST_TENSOR_ARENA_SIZE
+    #define LARGEST_TENSOR_ARENA_SIZE )" + std::to_string(arenaBufferSize_) + R"(
+  #elif LARGEST_TENSOR_ARENA_SIZE < )" + std::to_string(arenaBufferSize_) + R"(
+    #define LARGEST_TENSOR_ARENA_SIZE )" + std::to_string(arenaBufferSize_) + R"(
+  #endif
+#endif
+
 // Sets up the model with init and prepare steps.
 TfLiteStatus %PREFIX%init(void *flash_data = nullptr);
 // Returns the input tensor with the given index.
@@ -1078,6 +1147,9 @@ TfLiteTensor *%PREFIX%input(int index);
 TfLiteTensor *%PREFIX%output(int index);
 // Runs inference for the model.
 TfLiteStatus %PREFIX%invoke();
+// Resets variable tensors in the model.
+// This should be called after invoking a model with stateful ops such as LSTM.
+TfLiteStatus %PREFIX%reset();
 
 // Returns the number of input tensors.
 inline size_t %PREFIX%inputs() {
@@ -1114,6 +1186,14 @@ inline int %PREFIX%output_dims_len(int index) {
 }
 inline int *%PREFIX%output_dims(int index) {
   return &%PREFIX%output(index)->dims->data[1];
+}
+// Only returns valid value if output is quantized
+inline int32_t %PREFIX%output_zeropoint(int index) {
+  return %PREFIX%output(index)->params.zero_point;
+}
+// Only returns valid value if output is quantized
+inline float %PREFIX%output_scale(int index) {
+  return %PREFIX%output(index)->params.scale;
 }
 
 #endif

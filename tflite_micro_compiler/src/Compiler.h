@@ -103,6 +103,7 @@ class Compiler {
   MemMap memMap_;
 
   size_t arenaBufferSize_ = 0;
+  size_t varTensors_count = 0;
   // Vector of vector is for subgraphs
   std::vector<std::vector<TensorInfo>> tensors_;
   std::vector<std::vector<NodeInfo>> nodes_;

@@ -200,6 +200,11 @@ int inference_engine_load_model(inference_engine_t *UNSAFE ie,
     int interp_invoke(inference_engine_t *ie);
     TfLiteStatus interp_invoke_internal(inference_engine_t *ie);
 
+    /** Function that resets variable tensors.
+     * This should be called after invoking a model with stateful ops such as LSTM.
+     */
+    int interp_reset(inference_engine_t *ie);
+
     /** Function that prints a summary of the time each operator took. This
      * function uses printf - you may want to avoid calling it.
      *

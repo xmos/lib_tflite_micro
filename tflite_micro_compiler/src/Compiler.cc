@@ -31,6 +31,7 @@ static std::vector<tflmc::Allocation> g_loggedAllocations;
 static int g_currentNodeIndex = -1;
 static uint8_t *g_arenaPtr = nullptr;
 static ptrdiff_t g_arena_size = 0;
+static std::vector<uint8_t> dummy_arena;
 
 static void *LoggingAllocatePersistentBuffer(struct TfLiteContext *ctx,
                                              size_t bytes) {
@@ -185,7 +186,6 @@ bool tflmc::Compiler::init(const void *modelData) {
   // Get all tensors using dummy interpreter.
   // Calling GetTensor() allocates temp TfLiteTensor and trashes 
   // the arena as it is not meant to be called after AllocateTensors().
-  std::vector<uint8_t> dummy_arena;
   dummy_arena.resize(SUFFICIENT_ARENA_SIZE);
   auto dummy_interpreter = std::unique_ptr<tflite::MicroInterpreter>(
       new tflite::MicroInterpreter(model_, resolver_, dummy_arena.data(),
@@ -514,7 +514,7 @@ wr << R"(
 struct {
 )";
   for (size_t i = 0; i < tensors_[g].size(); i++) {
-    auto &t = tensors_[g][i].tensor;
+    auto t = tensors_[g][i].tensor;
     if (t->allocation_type == kTfLiteMmapRo) {
       wr.writeTensor(*t, "tensor_data" + std::to_string(i));
     }
@@ -550,7 +550,7 @@ TfLiteTensor tflTensors[] =
 {)";
 for(size_t g = 0; g < tensors_.size(); g++) {
   for (size_t i = 0; i < tensors_[g].size(); i++) {
-    auto &t = tensors_[g][i].tensor;
+    auto t = tensors_[g][i].tensor;
     auto tEval = GetEvalTensor(interpreter_.get(), i, g);
     wr << "{ ";
 
@@ -656,7 +656,7 @@ wr << "\nsize_t varTensors_index[] = {";
 index = 0;
 for(size_t g = 0; g < tensors_.size(); g++) {
   for (size_t i = 0; i < tensors_[g].size(); i++) {
-    auto &t = tensors_[g][i].tensor;
+    auto t = tensors_[g][i].tensor;
     if(t->is_variable) {
       wr << index << ", ";
     }

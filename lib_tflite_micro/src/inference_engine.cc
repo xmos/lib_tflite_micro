@@ -209,6 +209,16 @@ int inference_engine_load_model(inference_engine *ie, uint32_t model_bytes,
   return 0;
 }
 
+int interp_reset(inference_engine *ie) {
+  TfLiteStatus reset_status = ie->xtflm->interpreter->Reset();
+  if (reset_status != kTfLiteOk) {
+    TF_LITE_REPORT_ERROR(&ie->xtflm->error_reporter,
+                         "Reset() failed");
+    return 2;
+  }
+  return 0;
+}
+
 int interp_invoke_par_5(inference_engine *ie) {
   if (ie->num_threads > 5) {
     printf("Thread count (5) does not match model thread count\n");

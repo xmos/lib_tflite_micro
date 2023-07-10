@@ -498,10 +498,35 @@ index 05dbf89..64d9df6 100644
    INonPersistentBufferAllocator* non_persistent_buffer_allocator_;
    IPersistentBufferAllocator* persistent_buffer_allocator_;
 diff --git tensorflow/lite/micro/micro_context.cc tensorflow/lite/micro/micro_context.cc
-index b06252a..9b3ca46 100644
+index b06252a..fe254ba 100644
 --- tensorflow/lite/micro/micro_context.cc
 +++ tensorflow/lite/micro/micro_context.cc
-@@ -124,7 +124,8 @@ void MicroContext::SetScratchBufferHandles(
+@@ -57,6 +57,12 @@ TfLiteTensor* MicroContext::AllocateTempTfLiteTensor(int tensor_idx) {
+                                              graph_.GetCurrentSubgraphIndex());
+ }
+ 
++TfLiteTensor* MicroContext::AllocateTempTfLiteTensor(int tensor_idx, int sg) {
++  return allocator_.AllocateTempTfLiteTensor(model_, graph_.GetAllocations(),
++                                             tensor_idx,
++                                             sg);
++}
++
+ int MicroContext::GetTensorIndex(int index, int max_size,
+                                  const int* tensor_indices) {
+   if (index >= 0 && index < max_size) {
+@@ -117,6 +123,11 @@ TfLiteEvalTensor* MicroContext::GetEvalTensor(int tensor_idx) {
+               .tensors[tensor_idx];
+ }
+ 
++TfLiteEvalTensor* MicroContext::GetEvalTensor(int tensor_idx, int sg) {
++  return &graph_.GetAllocations()[sg]
++              .tensors[tensor_idx];
++}
++
+ void MicroContext::SetScratchBufferHandles(
+     ScratchBufferHandle* scratch_buffer_handles) {
+   scratch_buffer_handles_ = scratch_buffer_handles;
+@@ -124,7 +135,8 @@ void MicroContext::SetScratchBufferHandles(
  
  TfLiteStatus MicroContext::set_external_context(
      void* external_context_payload) {
@@ -512,10 +537,10 @@ index b06252a..9b3ca46 100644
    if (external_context_payload == nullptr ||
        external_context_payload_ != nullptr) {
 diff --git tensorflow/lite/micro/micro_context.h tensorflow/lite/micro/micro_context.h
-index 63b4b7d..169ddb8 100644
+index 63b4b7d..6b467a8 100644
 --- tensorflow/lite/micro/micro_context.h
 +++ tensorflow/lite/micro/micro_context.h
-@@ -20,6 +20,24 @@ limitations under the License.
+@@ -20,6 +20,25 @@ limitations under the License.
  #include "tensorflow/lite/micro/micro_allocator.h"
  #include "tensorflow/lite/micro/micro_graph.h"
  
@@ -529,6 +554,7 @@ index 63b4b7d..169ddb8 100644
 +      TfLiteTensor* (*AllocateTempOutputTensor)(const TfLiteNode* node, int index);
 +      void (*DeallocateTempTfLiteTensor)(TfLiteTensor* tensor);
 +      void* (*external_context)();
++      MicroGraph& (*graph)();
 +  };
 +  static inline MicroContext* GetMicroContext(const struct TfLiteContext* context){
 +      return reinterpret_cast<MicroContext*>(context->impl_);
@@ -540,26 +566,94 @@ index 63b4b7d..169ddb8 100644
  namespace tflite {
  // MicroContext is eventually going to become the API between TFLM and the
  // kernels, replacing all the functions in TfLiteContext. The end state is code
-@@ -184,4 +202,6 @@ void MicroContextReportOpError(struct TfLiteContext* context,
+@@ -67,6 +86,7 @@ class MicroContext {
+   // Returns a temporary TfLiteTensor struct for a given index.
+   // Virtual so that it can be faked for kernel tests.
+   virtual TfLiteTensor* AllocateTempTfLiteTensor(int tensor_idx);
++  TfLiteTensor* AllocateTempTfLiteTensor(int tensor_idx, int sg);
+ 
+   // Returns a temporary TfLiteTensor struct for the specified input tensor of a
+   // given mode. This is the recommended API over the deprecated
+@@ -106,6 +126,7 @@ class MicroContext {
+   // Returns a TfLiteEvalTensor struct for a given index.
+   // Virtual so that it can be faked for kernel tests.
+   virtual TfLiteEvalTensor* GetEvalTensor(int tensor_idx);
++  TfLiteEvalTensor* GetEvalTensor(int tensor_idx, int sg);
+ 
+   // Sets the State of MemoryPlanning MicroContext
+   void SetInterpreterState(MicroContext::InterpreterState state);
+@@ -168,10 +189,18 @@ inline TfLiteTensor* MicroContextGetTensor(const struct TfLiteContext* context,
+                                            int tensor_idx) {
+   return GetMicroContext(context)->AllocateTempTfLiteTensor(tensor_idx);
+ }
++inline TfLiteTensor* MicroContextGetTensor(const struct TfLiteContext* context,
++                                           int tensor_idx, int sg) {
++  return GetMicroContext(context)->AllocateTempTfLiteTensor(tensor_idx, sg);
++}
+ inline TfLiteEvalTensor* MicroContextGetEvalTensor(
+     const struct TfLiteContext* context, int tensor_idx) {
+   return GetMicroContext(context)->GetEvalTensor(tensor_idx);
+ }
++inline TfLiteEvalTensor* MicroContextGetEvalTensor(
++    const struct TfLiteContext* context, int tensor_idx, int sg) {
++  return GetMicroContext(context)->GetEvalTensor(tensor_idx, sg);
++}
+ inline TfLiteExternalContext* MicroContextGetExternalContext(
+     TfLiteContext* context, TfLiteExternalContextType unused) {
+   return reinterpret_cast<TfLiteExternalContext*>(
+@@ -184,4 +213,6 @@ void MicroContextReportOpError(struct TfLiteContext* context,
  
  }  // namespace tflite
  
 +#endif  // NO_INTERPRETER
 +
  #endif  // TENSORFLOW_LITE_MICRO_MICRO_CONTEXT_H_
+diff --git tensorflow/lite/micro/micro_graph.h tensorflow/lite/micro/micro_graph.h
+index ce93d33..1719074 100644
+--- tensorflow/lite/micro/micro_graph.h
++++ tensorflow/lite/micro/micro_graph.h
+@@ -21,6 +21,21 @@ limitations under the License.
+ #include "tensorflow/lite/micro/micro_resource_variable.h"
+ #include "tensorflow/lite/schema/schema_generated.h"
+ 
++#ifdef NO_INTERPRETER
++
++namespace tflite {
++  struct MicroGraph{
++      int (*NumSubgraphs)();
++      size_t (*NumSubgraphInputs)(int subgraph_idx);
++      size_t (*NumSubgraphOutputs)(int subgraph_idx);
++      TfLiteEvalTensor* (*GetSubgraphInput)(int subgraph_idx, int i);
++      TfLiteEvalTensor* (*GetSubgraphOutput)(int subgraph_idx, int i);
++      TfLiteStatus (*InvokeSubgraph)(int subgraph_idx);
++  };
++}
++
++#else
++
+ namespace tflite {
+ 
+ // Abstracts the details of interacting with the tflite::Model.
+@@ -101,4 +116,6 @@ class MicroGraph {
+ 
+ }  // namespace tflite
+ 
++#endif  // NO_INTERPRETER
++
+ #endif  // TENSORFLOW_LITE_MICRO_MICRO_GRAPH_H_
 diff --git tensorflow/lite/micro/micro_interpreter.h tensorflow/lite/micro/micro_interpreter.h
-index a77b0e0..b8aeb49 100644
+index a77b0e0..14456b5 100644
 --- tensorflow/lite/micro/micro_interpreter.h
 +++ tensorflow/lite/micro/micro_interpreter.h
 @@ -135,6 +135,13 @@ class MicroInterpreter {
    // arena_used_bytes() + 16.
    size_t arena_used_bytes() const { return allocator_.used_bytes(); }
  
-+  size_t operators_size() const { return model_->subgraphs()->Get(0)->operators()->size(); }
++  size_t operators_size(int sg) const { return model_->subgraphs()->Get(sg)->operators()->size(); }
 +
 +  // For debugging only.
-+  const NodeAndRegistration node_and_registration(int node_index)  {
-+    return graph_.GetAllocations()[0].node_and_registrations[node_index];
++  const NodeAndRegistration node_and_registration(int node_index, int sg)  {
++    return graph_.GetAllocations()[sg].node_and_registrations[node_index];
 +  }
 +
   protected:

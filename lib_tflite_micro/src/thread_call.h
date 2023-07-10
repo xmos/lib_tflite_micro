@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-#define XCORE_MAX_NUM_THREADS 8
+#define XCORE_MAX_NUM_THREADS 5
 
 #ifdef __XC__
     #define UNSAFE unsafe
@@ -83,9 +83,10 @@ void thread_init_1(thread_info_t *ptr);
 void thread_destroy(thread_info_t *ptr);
 
 /** Function that sets up parameters for one of the client threads
- * This particular one passes three arguments to the thread.
+ * This particular one passes the second and third arguments to the thread.
  * When the thread function is actually called (through thread_call)
- * the thread function will be called with these three arguments.
+ * the thread function will be called with those two arguments, 
+ * and the first shared argument provided by thread_call.
  * Note - we can make versions with more or fewer parameters.
  * Note - we could pass this function the thread-function itself
  *
@@ -100,7 +101,7 @@ void thread_variable_setup(void * arg1, void * arg2, uint32_t thread_id);
  * by thread_variable_setup.
  * This thread will also invoke the function with the given variable arguments.
  *
- * \param arg0      First argument for the master thread function
+ * \param arg0      First argument shared among all threads (usually the output pointer)
  * \param arg1      Second argument for the master thread function
  * \param arg2      Third argument for the master thread function
  * \param fp        thread function to call on all threads.

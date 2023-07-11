@@ -1,8 +1,8 @@
 // Copyright (c) 2021, XMOS Ltd, All rights reserved
-#include "lib_tflite_micro/api/inference_engine.h"
 #include "lib_nn/api/version.h"
-#include "lib_tflite_micro/api/version.h"
-#include "lib_tflite_micro/api/xcore_shared_config.h"
+#include "inference_engine.h"
+#include "version.h"
+#include "xcore_shared_config.h"
 #include "thread_call.h"
 #include <cstddef>
 #include <cstdint>

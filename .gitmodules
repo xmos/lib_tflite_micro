@@ -10,3 +10,6 @@
 [submodule "lib_tflite_micro/submodules/ruy"]
 	path = lib_tflite_micro/submodules/ruy
 	url = https://github.com/google/ruy.git
+[submodule "lib_tflite_micro/submodules/xmos_cmake_toolchain"]
+	path = lib_tflite_micro/submodules/xmos_cmake_toolchain
+	url = git@github.com:xmos/xmos_cmake_toolchain.git

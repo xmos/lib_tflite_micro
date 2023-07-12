@@ -11,8 +11,9 @@ namespace xcore {
 namespace strided_slice {
 
 enum MemcpyType {
-  PixelCpy_t,
   SliceCpy_t,
+  VpuCpy_t,
+  MemCpy_t,
 };
 
 // This is the struct that contains the data required by the operator
@@ -68,17 +69,27 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   void *in_data = const_cast<void *>(tflite::micro::GetTensorData<void>(input));
   void *out_data = tflite::micro::GetTensorData<void>(output);
 
-  if (op_data->memcpy_type == PixelCpy_t) {
-  op_data->memcpy->memcopy_fn((int8_t *)out_data, (int8_t *)in_data,
-                              op_data->begin_y, op_data->begin_x, 0);
-  }
-  else if(op_data->memcpy_type == SliceCpy_t){
-    size_t input_offset = Offset(tflite::micro::GetTensorShape(input), 0, op_data->begin_y, op_data->begin_x, 0);
-    size_t num_bytes = (op_data->mf_params->input_height + 1) * op_data->mf_params->bytes_per_h_line;
+  if (op_data->memcpy_type == SliceCpy_t) {
+    size_t input_offset = Offset(tflite::micro::GetTensorShape(input), 0,
+                                 op_data->begin_y, op_data->begin_x, 0);
+    size_t num_bytes = (op_data->mf_params->input_height + 1) *
+                       op_data->mf_params->bytes_per_h_line;
     memcpy((int8_t *)out_data, (int8_t *)in_data + input_offset, num_bytes);
+  } else if (op_data->memcpy_type == VpuCpy_t) {
+    op_data->memcpy->memcopy_fn((int8_t *)out_data, (int8_t *)in_data,
+                                op_data->begin_y, op_data->begin_x, 0);
+  } else if (op_data->memcpy_type == MemCpy_t) {
+    int num_in_bytes = input->dims->data[3];
+    int num_out_bytes = output->dims->data[3];
+    int num_of_pixels = output->dims->data[1] * output->dims->data[2];
+    for (int i = 0; i < num_of_pixels; i++) {
+      memcpy((int8_t *)out_data + (i * num_out_bytes),
+             (int8_t *)in_data + (i * num_in_bytes), num_out_bytes);
+    }
   } else {
     return kTfLiteError;
   }
+
   return kTfLiteOk;
 }
 
@@ -86,7 +97,8 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
 
 TfLiteRegistration_V1 *Register_XC_strided_slice() {
   static TfLiteRegistration_V1 r = {strided_slice::Init, nullptr,
-                                 strided_slice::Prepare, strided_slice::Eval};
+                                    strided_slice::Prepare,
+                                    strided_slice::Eval};
   return &r;
 }
 

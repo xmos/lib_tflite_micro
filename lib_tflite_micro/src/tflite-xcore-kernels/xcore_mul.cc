@@ -75,7 +75,7 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
     if (in2_index == input2_size) {
       in2_index = 0;
     }
-    out_data[i] =
+    int result =
         (((((op_data->S * (op_data->rhsZeroPoint * in1_val[i] +
                            op_data->lhsZeroPoint * in2_val[in2_index] +
                            in1_val[i] * in2_val[in2_index])) +
@@ -84,6 +84,7 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
           op_data->B) +
          (1 << 5)) >>
         6;
+    out_data[i] = std::min(std::max(result, -128), 127);
     in2_index++;
   }
 

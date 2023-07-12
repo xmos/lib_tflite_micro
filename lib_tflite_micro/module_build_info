@@ -74,7 +74,6 @@ EXCLUDE_FILES += micro_interpreter.cc
 #lite/micro/kernels
 EXCLUDE_FILES += read_variable.cc
 EXCLUDE_FILES += var_handle.cc
-EXCLUDE_FILES += while.cc
 endif
 
 #lite/micro
@@ -277,7 +276,6 @@ bidirectional_sequence_lstm_test.cc \
 bidirectional_sequence_rnn.cc \
 bidirectional_sequence_rnn_test.cc \
 broadcast_to_test.cc \
-call_once.cc \
 call_once_test.cc \
 lite/kernels/cast.cc \
 lite/kernels/cast_test.cc \
@@ -329,7 +327,6 @@ gather_nd_test.cc \
 gather_test.cc \
 hashtable_lookup.cc \
 hashtable_lookup_test.cc \
-if.cc \
 if_test.cc \
 kernel_util_test.cc \
 kernel_runner.cc \
@@ -342,8 +339,6 @@ lite/kernels/logical.cc \
 logical_test.cc \
 lsh_projection.cc \
 lsh_projection_test.cc \
-lstm.cc \
-lstm_eval.cc \
 lstm_eval_test.cc \
 lstm_test.cc \
 matrix_diag.cc \
@@ -463,7 +458,6 @@ lite/kernels/unpack_test.cc \
 lite/kernels/variable_ops_test.cc \
 lite/kernels/where.cc \
 lite/kernels/where_test.cc \
-lite/kernels/while.cc \
 lite/kernels/while_test.cc \
 lite/kernels/zeros_like.cc \
 lite/kernels/zeros_like_test.cc

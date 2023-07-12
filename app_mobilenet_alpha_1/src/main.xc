@@ -62,6 +62,7 @@ int main(void) {
 
     on tile[1] : {
       unsafe {
+        c_flash[0] <: FLASH_SERVER_INIT;
         model1_init(c_flash[0]);
 
         printf("\nStart inferencing1");

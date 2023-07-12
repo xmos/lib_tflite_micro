@@ -5,18 +5,6 @@
 
 #include "xcore_optimised_mobilenetV2_input_160x160x3_alpha_1.tflite.h"
 
-#if defined __GNUC__
-#define ALIGN(X) __attribute__((aligned(X)))
-#elif defined _MSC_VER
-#define ALIGN(X) __declspec(align(X))
-#elif defined __TASKING__
-#define ALIGN(X) __align(X)
-#endif
-
-#ifdef SHARED_MEMORY_ARENA
-uint8_t tensor_arena[162192] ALIGN(8);
-#endif
-
 unsigned char checksum_calc(char *data, unsigned int length) {
   static char sum;
   static char *end;

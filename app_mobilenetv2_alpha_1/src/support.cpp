@@ -25,15 +25,17 @@ void init1(unsigned flash_data) {
 
 void run1() {
   printf("\nModel1 input");
-  int8_t *p = model_input(0)->data.int8;
-  // input is simply filled with -128 to 127 repeatedly
-  int k = -128;
-  for (int i = 0; i < model_input_size(0); ++i) {
-    if (k == 128) {
-      k = -128;
+  for (int n = 0; n < model_inputs(); ++n) {
+    int8_t *p = model_input(n)->data.int8;
+    // input is simply filled with -128 to 127 repeatedly
+    int k = -128;
+    for (int i = 0; i < model_input_size(n); ++i) {
+      if (k >= 128) {
+        k = -128;
+      }
+      p[i] = k;
+      k = k + 3;
     }
-    p[i] = k;
-    k++;
   }
   printf("\nModel1 input done");
 

@@ -1,5 +1,5 @@
 TARGET=XCORE-AI-EXPLORER
-APP_NAME=app
+APP_NAME=app_mobilenetv2_alpha_1
 
 APP_SHARED_FLAGS  = -report \
 -Os -fcomment-asm -mcmodel=large -fxscope -Wno-xcore-fptrgroup -save-temps \

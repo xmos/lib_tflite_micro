@@ -80,9 +80,22 @@ target_include_directories(xtflitemicro
 install(TARGETS xtflitemicro DESTINATION "${CMAKE_BINARY_DIR}/lib"
     FILE_SET HEADERS DESTINATION "${CMAKE_BINARY_DIR}/include")
 
+# Move headers to clean up include directory
 add_custom_target(project-install DEPENDS xtflitemicro
-    COMMAND "${CMAKE_COMMAND}" --build "${PROJECT_BINARY_DIR}" --target install)
+    COMMAND "${CMAKE_COMMAND}" --build "${PROJECT_BINARY_DIR}" --target install
+    COMMAND mv "${CMAKE_BINARY_DIR}/include/lib_tflite_micro/lib_tflite_micro/submodules/tflite-micro/tensorflow" "${CMAKE_BINARY_DIR}/include"
+    COMMAND mv "${CMAKE_BINARY_DIR}/include/lib_tflite_micro/lib_tflite_micro/submodules/flatbuffers/include/flatbuffers" "${CMAKE_BINARY_DIR}/include"
+    COMMAND rm -rf "${CMAKE_BINARY_DIR}/include/lib_tflite_micro/lib_tflite_micro/submodules"
+    COMMAND mv "${CMAKE_BINARY_DIR}/include/lib_tflite_micro/lib_tflite_micro" "${CMAKE_BINARY_DIR}/include/temp_ltm"
+    COMMAND rm -rf "${CMAKE_BINARY_DIR}/include/lib_tflite_micro"
+    COMMAND mv "${CMAKE_BINARY_DIR}/include/temp_ltm" "${CMAKE_BINARY_DIR}/include/lib_tflite_micro"
+    COMMAND mv "${CMAKE_BINARY_DIR}/include/lib_nn/lib_nn" "${CMAKE_BINARY_DIR}/include/temp_lnn"
+    COMMAND rm -rf "${CMAKE_BINARY_DIR}/include/lib_nn"
+    COMMAND mv "${CMAKE_BINARY_DIR}/include/temp_lnn" "${CMAKE_BINARY_DIR}/include/lib_nn"
+    COMMAND mv "${CMAKE_BINARY_DIR}/include/lib_tflite_micro/api/flash_server.h" "${CMAKE_BINARY_DIR}/include"
+    )
 
+# Create zip of lib and headers
 add_custom_target(create_zip DEPENDS project-install COMMAND
     ${CMAKE_COMMAND} -E tar "cfv" "release_archive.zip" --format=zip
     "${CMAKE_BINARY_DIR}/lib" "${CMAKE_BINARY_DIR}/include")

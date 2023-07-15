@@ -343,7 +343,7 @@ void tflmc::Compiler::writeSource(std::ostream &out) {
 
   wr << R"(
 
-#include "../../api/xcore_config.h"
+#include "lib_tflite_micro/api/xcore_config.h"
 #include "lib_nn/api/version.h"
 #include "lib_tflite_micro/api/version.h"
 #include "tensorflow/lite/c/builtin_op_data.h"

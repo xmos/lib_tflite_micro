@@ -17,7 +17,9 @@ set(NN_SRC_DIR
   "${TOP_DIR}/../lib_nn/lib_nn/src")
 
 file(GLOB_RECURSE NN_SOURCES "${NN_SRC_DIR}/c/*.c")
+file(GLOB_RECURSE NN_ASM_SOURCES "${NN_SRC_DIR}/asm/*.S")
 
+list(APPEND NN_SOURCES ${NN_ASM_SOURCES})
 list(APPEND NN_SOURCES  "${NN_SRC_DIR}/cpp/AggregateFn.cpp")
 list(APPEND NN_SOURCES  "${NN_SRC_DIR}/cpp/AggregateFn_DW.cpp")
 list(APPEND NN_SOURCES  "${NN_SRC_DIR}/cpp/Filter2D.cpp")

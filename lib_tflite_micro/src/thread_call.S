@@ -1,6 +1,8 @@
 #if defined(__XS3A__) || defined(__XS2A__)
 #include <xs1.h>
 
+#ifndef NO_INTERPRETER
+
 #define NSTACKWORDS 4
 
     .globl  thread_invoke_5
@@ -289,6 +291,8 @@ thread_invoke_1:
 .Ltmp_thread_invoke_1:
     .size   thread_invoke_1, .Ltmp_thread_invoke_1-thread_invoke_1
 
+
+#endif //NO_INTERPRETER
 
     .globl  thread_destroy
     .type   thread_destroy,@function

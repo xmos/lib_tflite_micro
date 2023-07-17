@@ -1141,7 +1141,7 @@ void tflmc::Compiler::writeHeader(std::ostream &out) {
 #endif
 
 // Sets up the model with init and prepare steps.
-TfLiteStatus %PREFIX%init(void *flash_data = nullptr);
+TfLiteStatus %PREFIX%init(void *flash_data);
 // Returns the input tensor with the given index.
 TfLiteTensor *%PREFIX%input(int index);
 // Returns the output tensor with the given index.

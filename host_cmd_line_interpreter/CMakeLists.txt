@@ -51,6 +51,8 @@ target_sources(xtflm_interpreter_cmdline
   PRIVATE ${ALL_SOURCES}
 )
 
+list(APPEND ALL_INCLUDES "${CMAKE_CURRENT_SOURCE_DIR}/src")
+
 target_include_directories(xtflm_interpreter_cmdline
   PRIVATE ${ALL_INCLUDES}
 )

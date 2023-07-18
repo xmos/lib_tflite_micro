@@ -64,7 +64,10 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
       reinterpret_cast<intptr_t>(op_data->flash_data));
   chan_out_word(c_flash, 0); // TODO: share with aiserver.
   chan_out_word(c_flash, op_data->addr);
-    
+
+  // Any latency with flash might cause dropping of words.
+  // We initialize the data_ptrs here so that they are ready
+  // before we enter the flash data read loop.
 #define MAX_OUTPUTS 4
   int8_t *data_ptrs[MAX_OUTPUTS];
   assert(node->outputs->size < MAX_OUTPUTS);

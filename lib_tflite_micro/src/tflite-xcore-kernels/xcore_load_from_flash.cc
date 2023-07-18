@@ -70,6 +70,7 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   // before we enter the flash data read loop.
 #define MAX_OUTPUTS 4
   int8_t *data_ptrs[MAX_OUTPUTS];
+  int8_t *data_ptr;
   assert(node->outputs->size < MAX_OUTPUTS);
   for (int i = 0; i < node->outputs->size; ++i) {
     TfLiteEvalTensor *output = tflite::micro::GetEvalOutput(context, node, i);

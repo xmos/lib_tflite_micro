@@ -65,6 +65,17 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   chan_out_word(c_flash, 0); // TODO: share with aiserver.
   chan_out_word(c_flash, op_data->addr);
 
+  // Any latency with flash might cause dropping of words.
+  // We initialize the data_ptrs here so that they are ready
+  // before we enter the flash data read loop.
+#define MAX_OUTPUTS 4
+  int8_t *data_ptrs[MAX_OUTPUTS];
+  assert(node->outputs->size < MAX_OUTPUTS);
+  for (int i = 0; i < node->outputs->size; ++i) {
+    TfLiteEvalTensor *output = tflite::micro::GetEvalOutput(context, node, i);
+    data_ptrs[i] = tflite::micro::GetTensorData<int8_t>(output);
+  }
+    
   int32_t total_size = 0;
   for (int i = 0; i < node->outputs->size; ++i) {
     total_size += op_data->sizes[i];
@@ -72,8 +83,7 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   chan_out_word(c_flash, total_size);
 
   for (int i = 0; i < node->outputs->size; ++i) {
-    TfLiteEvalTensor *output = tflite::micro::GetEvalOutput(context, node, i);
-    int8_t *data_ptr = tflite::micro::GetTensorData<int8_t>(output);
+    data_ptr = data_ptrs[i];
 
     // The sizes are in bytes and we read from flash in words
     for (int j = 0; j < op_data->sizes[i]/4; j++) {

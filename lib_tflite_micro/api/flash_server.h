@@ -1,5 +1,5 @@
-#ifndef _flash_h_
-#define _flash_h_
+#ifndef _flash_server_h_
+#define _flash_server_h_
 
 #include <quadflash.h>
 
@@ -60,8 +60,14 @@ typedef enum flash_command {
  * specificiations of flash devices, as per the libquadflash documentation
  * \param n_flash_spec    Number of elements in the spec array.
  */
+#ifdef __XC__
 void flash_server(chanend c_flash_clients[], flash_t headers[],
                   int n_flash_clients, fl_QSPIPorts &qspi,
                   fl_QuadDeviceSpec flash_spec[], int n_flash_spec);
+#else
+void flash_server(chanend_t *c_flash_clients, flash_t *headers,
+                  int n_flash_clients, fl_QSPIPorts *qspi,
+                  fl_QuadDeviceSpec *flash_spec, int n_flash_spec);
+#endif
 
 #endif

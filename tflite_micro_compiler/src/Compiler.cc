@@ -343,7 +343,7 @@ void tflmc::Compiler::writeSource(std::ostream &out) {
 
   wr << R"(
 
-#include "../../api/xcore_config.h"
+#include "lib_tflite_micro/api/xcore_config.h"
 #include "lib_nn/api/version.h"
 #include "lib_tflite_micro/api/version.h"
 #include "tensorflow/lite/c/builtin_op_data.h"
@@ -1141,7 +1141,7 @@ void tflmc::Compiler::writeHeader(std::ostream &out) {
 #endif
 
 // Sets up the model with init and prepare steps.
-TfLiteStatus %PREFIX%init(void *flash_data = nullptr);
+TfLiteStatus %PREFIX%init(void *flash_data);
 // Returns the input tensor with the given index.
 TfLiteTensor *%PREFIX%input(int index);
 // Returns the output tensor with the given index.

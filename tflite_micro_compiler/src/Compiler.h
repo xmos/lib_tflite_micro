@@ -3,6 +3,9 @@
 
 #include <iostream>
 #include <sstream>
+#include <unordered_map>
+
+#include "llvm/ADT/StringMap.h"
 
 #include "MemMap.h"
 #include "tensorflow/lite/micro/all_ops_resolver.h"
@@ -111,6 +114,15 @@ class Compiler {
   std::vector<std::vector<int32_t>> outputTensorIndices_;
   std::vector<RegistrationInfo> registrations_;
   std::vector<int32_t> scratchBufferOffsets;
+
+  std::vector<llvm::StringMap<int>> opdataHashMap_;
+  std::vector<std::unordered_map<int, int>> opdataMap_;
+
+  std::vector<llvm::StringMap<int>> tensorDimHashMap_;
+  std::vector<std::unordered_map<int, int>> tensorDimMap_;
+
+  std::vector<llvm::StringMap<int>> quantHashMap_;
+  std::vector<std::unordered_map<int, int>> quantMap_;
 
   bool has_custom_ops = false;
   bool has_xc_conv_ops = false;

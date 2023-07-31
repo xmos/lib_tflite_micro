@@ -5,6 +5,11 @@
 #include <regex>
 #include <vector>
 
+#include "llvm/ADT/ArrayRef.h"
+#include "llvm/ADT/SmallString.h"
+#include "llvm/Support/MD5.h"
+
+
 #include "CodeWriter.h"
 #include "TypeToString.h"
 #include "lib_nn/api/version.h"
@@ -132,6 +137,12 @@ bool tflmc::Compiler::init(const void *modelData) {
   nodes_.resize(subgraphs->size());
   inputTensorIndices_.resize(subgraphs->size());
   outputTensorIndices_.resize(subgraphs->size());
+  opdataHashMap_.resize(subgraphs->size());
+  opdataMap_.resize(subgraphs->size());
+  tensorDimHashMap_.resize(subgraphs->size());
+  tensorDimMap_.resize(subgraphs->size());
+  quantHashMap_.resize(subgraphs->size());
+  quantMap_.resize(subgraphs->size());
 
   mainGraph_ = (*subgraphs)[0];
   if (mainGraph_->inputs()->size() == 0 || mainGraph_->outputs()->size() == 0) {
@@ -303,6 +314,7 @@ bool tflmc::Compiler::init(const void *modelData) {
     memMap_.recordRAM(offset, doubleAlignedSize,
                       "PersistentBuf" + std::to_string(alloc.nodeIndex));
   }
+  DEBUG_LOG(("Size of persistent buffers  = %d\n\n", totalRuntimeAllocSize));
 
   // Variable tensors
   // We need to add space in the tensor arena for variable tensors which 
@@ -334,6 +346,75 @@ bool tflmc::Compiler::init(const void *modelData) {
     interpreter_->allocator_.memory_planner()->PrintMemoryPlan();
     memMap_.report();
   }
+
+  auto getHash = [&] (std::vector<llvm::ArrayRef<uint8_t>> data) {
+    llvm::MD5 hash;
+    for (auto &i : data) {
+      hash.update(i);
+    }
+    llvm::MD5::MD5Result md5Res;
+    hash.final(md5Res);
+    llvm::SmallString<32> dataHash;
+    llvm::MD5::stringifyResult(md5Res, dataHash);
+    return dataHash;
+  };
+
+
+  // Identify duplicate op_data
+  for(size_t g = 0; g < tensors_.size(); g++) {
+    for (size_t i = 0; i < tensors_[g].size(); i++) {
+      auto t = tensors_[g][i].tensor;
+      const TfLiteIntArray& arr = *t->dims;
+      llvm::ArrayRef<uint8_t> tensorDimData((uint8_t const *)arr.data, arr.size * sizeof(int));
+      std::vector<llvm::ArrayRef<uint8_t>> data;
+      data.push_back(tensorDimData);
+      auto tensorHashStr = getHash(data);
+      //wr.writeIntArray(*t->dims, "tensor_dimension" + std::to_string(i));
+      if (tensorDimHashMap_[g].count(tensorHashStr)) {
+        tensorDimMap_[g][i] = tensorDimHashMap_[g][tensorHashStr];
+        printf("\ntensor %d is duplicate of tensor %d with %d bytes", i, tensorDimHashMap_[g][tensorHashStr], arr.size);
+      } else {
+        tensorDimHashMap_[g][tensorHashStr] = i;
+      }
+
+      if (t->quantization.type == kTfLiteAffineQuantization) {
+        auto aq = (TfLiteAffineQuantization const*)t->quantization.params;
+        llvm::ArrayRef<uint8_t> quantScale((uint8_t const *)aq->scale->data, aq->scale->size * sizeof(float));
+        llvm::ArrayRef<uint8_t> quantZP((uint8_t const *)aq->zero_point->data, aq->zero_point->size * sizeof(int));
+        llvm::ArrayRef<uint8_t> quantDim((uint8_t const *)&aq->quantized_dimension, sizeof(aq->quantized_dimension));
+        std::vector<llvm::ArrayRef<uint8_t>> data;
+        data.push_back(quantScale);
+        data.push_back(quantZP);
+        data.push_back(quantDim);
+        auto quantHashStr = getHash(data);
+        if (quantHashMap_[g].count(quantHashStr)) {
+          quantMap_[g][i] = quantHashMap_[g][quantHashStr];
+          printf("\nquant %d is duplicate of quant %d with %d bytes", i, quantHashMap_[g][quantHashStr], aq->scale->size);
+        } else {
+          quantHashMap_[g][quantHashStr] = i;
+        }
+      }
+    }
+
+    for (size_t i = 0; i < nodes_[g].size(); i++) {
+      auto &node = nodes_[g][i].node;
+      auto &regInfo = registrations_[nodes_[g][i].regIndex];
+      if (regInfo.code == tflite::BuiltinOperator_CUSTOM) {
+        llvm::ArrayRef<uint8_t> in((uint8_t const *)node.custom_initial_data, node.custom_initial_data_size);
+        std::vector<llvm::ArrayRef<uint8_t>> data;
+        data.push_back(in);
+        auto hash = getHash(data);
+
+        if (opdataHashMap_[g].count(hash)) {
+          opdataMap_[g][i] = opdataHashMap_[g][hash];
+          printf("\nopdata node %d is duplicate of node %d with %d bytes", i, opdataHashMap_[g][hash], node.custom_initial_data_size);
+        } else {
+          opdataHashMap_[g][hash] = i;
+        }
+      }
+    }
+  }
+
 
   return true;
 }
@@ -518,8 +599,14 @@ struct {
     if (t->allocation_type == kTfLiteMmapRo) {
       wr.writeTensor(*t, "tensor_data" + std::to_string(i));
     }
-    wr.writeIntArray(*t->dims, "tensor_dimension" + std::to_string(i));
-    wr.writeQuantization(t->quantization, "quant" + std::to_string(i));
+    // if duplicate, don't write
+    if (!tensorDimMap_[g].count(i)) {
+      wr.writeIntArray(*t->dims, "tensor_dimension" + std::to_string(i));
+    }
+    // if duplicate, don't write
+    if (!quantMap_[g].count(i)) {
+      wr.writeQuantization(t->quantization, "quant" + std::to_string(i));
+    }
 #if TF_LITE_PACKED_QUANTIZED_DATA_VERSION
     wr.writeQuantizationDetails(t->quantization,
                                 "quant_details" + std::to_string(i));
@@ -529,11 +616,14 @@ struct {
     auto &node = nodes_[g][i].node;
     auto &regInfo = registrations_[nodes_[g][i].regIndex];
     if (regInfo.code == tflite::BuiltinOperator_CUSTOM) {
-      wr << "uint8_t ALIGN(4) opdata" + std::to_string(i) << "["
-         << node.custom_initial_data_size << "] = { ";
-      for (int j = 0; j < node.custom_initial_data_size; ++j)
-        wr << int(((uint8_t const *)node.custom_initial_data)[j]) << ", ";
-      wr << " }; /* custom_initial_data */\n";
+      // if duplicate, don't write
+      if (!opdataMap_[g].count(i)) {
+        wr << "uint8_t ALIGN(4) opdata" + std::to_string(i) << "["
+          << node.custom_initial_data_size << "] = { ";
+        for (int j = 0; j < node.custom_initial_data_size; ++j)
+          wr << int(((uint8_t const *)node.custom_initial_data)[j]) << ", ";
+        wr << " }; /* custom_initial_data */\n";
+      }
     } else {
       wr.writeBuiltin(regInfo.code, node.builtin_data,
                       "opdata" + std::to_string(i));
@@ -560,16 +650,29 @@ for(size_t g = 0; g < tensors_.size(); g++) {
       wr << "{(int32_t*)(tensor_arena + "
          << ((uintptr_t)tEval->data.data - (uintptr_t)arena_buf_.data()) << ")},";
     }
-    wr << "(TfLiteIntArray*)&g"<<g<<".tensor_dimension" << i << ", ";
+    // if duplicate, point to same tensor dim
+    if (tensorDimMap_[g].count(i)) {
+      wr << "(TfLiteIntArray*)&g"<<g<<".tensor_dimension" << tensorDimMap_[g][i] << ", ";
+    } else {
+      wr << "(TfLiteIntArray*)&g"<<g<<".tensor_dimension" << i << ", ";
+    }
 
     wr << tflmc::to_string(t->type) << ", ";
 
     if (has_quantization) {
       if (t->quantization.type == kTfLiteAffineQuantization) {
+        // if duplicate, point to same quant
+        if (quantMap_[g].count(i)) {
         wr << "{kTfLiteAffineQuantization, "
+              "const_cast<void*>(static_cast<const void*>(&g"<<g<<".quant"
+           << quantMap_[g][i] << ")) }, {g"<<g<<".quant" << quantMap_[g][i] << ".scale->data[0], g"<<g<<".quant" << quantMap_[g][i]
+           << ".zero_point->data[0] ";
+        } else {
+          wr << "{kTfLiteAffineQuantization, "
               "const_cast<void*>(static_cast<const void*>(&g"<<g<<".quant"
            << i << ")) }, {g"<<g<<".quant" << i << ".scale->data[0], g"<<g<<".quant" << i
            << ".zero_point->data[0] ";
+        }
       } else {
         wr << "{kTfLiteNoQuantization, nullptr }, {0,0";
       }
@@ -596,17 +699,20 @@ for(size_t g = 0; g < tensors_.size(); g++) {
     wr << "{ (TfLiteIntArray*)&g"<<g<<".inputs" << i << ", ";
     wr << "(TfLiteIntArray*)&g"<<g<<".outputs" << i << ", ";
     wr << "(TfLiteIntArray*)&g"<<g<<".inputs" << i << ", ";
-    wr << "nullptr, ";
     // TODO: Is this cast safe or does the data need to be non-const?
     // CP: I think so (as it typically just carries the trained operator
     // parameters) CP: Also if it were written to, we would see a segfault
     // (write to text segment)
     if (nodes_[g][i].node.builtin_data || nodes_[g][i].node.custom_initial_data) {
-      wr << "const_cast<void*>(static_cast<const void*>(&g"<<g<<".opdata" << i << ")), ";
+      // if duplicate, point to same opdata
+      if (opdataMap_[g].count(i)) {
+        wr << "const_cast<void*>(static_cast<const void*>(&g"<<g<<".opdata" << opdataMap_[g][i] << ")), ";
+      } else {
+        wr << "const_cast<void*>(static_cast<const void*>(&g"<<g<<".opdata" << i << ")), ";
+      }
     } else {
       wr << "nullptr, ";
     }
-    wr << "nullptr, ";
     auto regI = nodes_[g][i].regIndex;
     if (registrations_[regI].code == tflite::BuiltinOperator_CUSTOM) {
       wr << nodes_[g][i].node.custom_initial_data_size << ", ";

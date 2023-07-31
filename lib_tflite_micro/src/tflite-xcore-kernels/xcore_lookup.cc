@@ -1,14 +1,42 @@
 // Copyright (c) 2023, XMOS Ltd, All rights reserved
 
-#include "MemCpyFn.hpp"
+#include "../thread_call.h"
+#include "xcore_config.h"
 #include "xcore_custom_options.h"
 #include "xcore_utils.h"
+extern "C" {
+#include "lib_nn/api/nn_operator.h"
+}
 
 namespace tflite {
 namespace ops {
 namespace micro {
 namespace xcore {
 namespace lookup {
+
+// -------------------------------------------------------------------- //
+// thread data type and worker functions
+// -------------------------------------------------------------------- //
+
+struct LookupShared {
+  uint8_t *X;
+  uint8_t *Y;
+  uint8_t *table;
+};
+
+int s[] = {0, 392, 784, 1176};
+int c[] = {392, 392, 392, 392};
+
+extern "C" {
+// TODO
+//#pragma stackfunction 1000
+void lookup_thread_worker(void *shared, void *start, void *count) {
+  int *s = static_cast<int *>(start);
+  int *c = static_cast<int *>(count);
+  auto sd = static_cast<LookupShared *>(shared);
+  lookup8(sd->Y, sd->X, sd->table, *s, *c);
+}
+}
 
 // This is the struct that contains the data required by the operator
 struct LookupOpData
@@ -40,14 +68,36 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   TfLiteEvalTensor *output = tflite::micro::GetEvalOutput(context, node, 0);
 
   // Pointers to data in In/Out Tensors
-  void *table_vals =
-      const_cast<void *>(tflite::micro::GetTensorData<void>(table));
-  void *out_data = tflite::micro::GetTensorData<void>(output);
-  const int8_t *in_val = tflite::micro::GetTensorData<int8_t>(input);
+  uint8_t *table_vals =
+      const_cast<uint8_t *>(tflite::micro::GetTensorData<uint8_t>(table));
+  uint8_t *out_data = tflite::micro::GetTensorData<uint8_t>(output);
+  uint8_t *in_data = const_cast<uint8_t *>(tflite::micro::GetTensorData<uint8_t>(input));
 
-  for (int i = 0; i < input_size; i++) {
-    ((int8_t *)out_data)[i] = ((int8_t *)table_vals)[((uint8_t *)in_val)[i]];
+  MicroContext *micro_context = GetMicroContext(context);
+  xc_context_config_t *xc_config = reinterpret_cast<xc_context_config_t *>(
+      micro_context->external_context());
+
+  // for (int i = 0; i < input_size; i++) {
+  //   ((int8_t *)out_data)[i] = ((int8_t *)table_vals)[((uint8_t *)in_val)[i]];
+  // }
+
+  //lookup8((uint8_t *)out_data, (uint8_t *)in_data, (uint8_t *)table_vals, 0, input_size);
+
+  // todo - this second for-loop is unpleasant
+  for (int t = 0; t < 4 - 1; ++t) {
+    thread_variable_setup(&s[t], &c[t],
+                          xc_config->thread_info.thread_ids.id[t]);
   }
+
+  LookupShared shared_data;
+  shared_data.Y = out_data;
+  shared_data.X = in_data;
+  shared_data.table = table_vals;
+
+  // Now set up shared data, shared function pointer, and data for final thread.
+  thread_call((void *)&shared_data, &s[3], &c[3],
+              (thread_function_pointer_t)lookup_thread_worker,
+              &xc_config->thread_info);
 
   return kTfLiteOk;
 }

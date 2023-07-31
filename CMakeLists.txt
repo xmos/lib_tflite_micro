@@ -48,7 +48,7 @@ else()
 
     list(APPEND DEFINTIONS "NN_USE_REF")
 
-    target_compile_features(xtflitemicro PUBLIC cxx_std_11)
+    target_compile_features(xtflitemicro PUBLIC cxx_std_17)
 endif()
 
 target_compile_options(xtflitemicro PRIVATE ${BUILD_FLAGS})
@@ -98,3 +98,4 @@ add_custom_target(project-install DEPENDS xtflitemicro
 add_custom_target(create_zip DEPENDS project-install COMMAND
     ${CMAKE_COMMAND} -E tar "cfv" "release_archive.zip" --format=zip
     "${CMAKE_BINARY_DIR}/lib" "${CMAKE_BINARY_DIR}/include")
+

@@ -5,21 +5,22 @@
 #include <regex>
 #include <vector>
 
-#include "llvm/ADT/ArrayRef.h"
-#include "llvm/ADT/SmallString.h"
-#include "llvm/Support/MD5.h"
-
-
 #include "CodeWriter.h"
 #include "TypeToString.h"
 #include "lib_nn/api/version.h"
 #include "lib_tflite_micro/api/version.h"
+#include "llvm/ADT/ArrayRef.h"
+#include "llvm/ADT/SmallString.h"
+#include "llvm/Support/MD5.h"
 #include "xcore_config.h"
 #include "xtflm_conf.h"
 
 bool debugPrint_ = false;
 
-#define DEBUG_LOG(x) if(debugPrint_){printf x;}
+#define DEBUG_LOG(x) \
+  if (debugPrint_) { \
+    printf x;        \
+  }
 
 #ifndef SUFFICIENT_ARENA_SIZE
 #define SUFFICIENT_ARENA_SIZE (128 * 1024 * 1024)
@@ -47,12 +48,14 @@ static void *LoggingAllocatePersistentBuffer(struct TfLiteContext *ctx,
   return ptr;
 }
 
-TfLiteTensor *tflmc::GetTensor(tflite::MicroInterpreter *interpreter, int i, int sg) {
+TfLiteTensor *tflmc::GetTensor(tflite::MicroInterpreter *interpreter, int i,
+                               int sg) {
   auto ctx = &interpreter->context_;
   return tflite::MicroContextGetTensor(ctx, i, sg);
 }
 
-TfLiteEvalTensor *tflmc::GetEvalTensor(tflite::MicroInterpreter *interpreter, int i, int sg) {
+TfLiteEvalTensor *tflmc::GetEvalTensor(tflite::MicroInterpreter *interpreter,
+                                       int i, int sg) {
   auto ctx = &interpreter->context_;
   return tflite::MicroContextGetEvalTensor(ctx, i, sg);
 }
@@ -149,7 +152,7 @@ bool tflmc::Compiler::init(const void *modelData) {
     std::cerr << "No inputs or no outputs found in model\n";
     return false;
   }
-  for(int g = 0; g < subgraphs->size(); g++) {
+  for (int g = 0; g < subgraphs->size(); g++) {
     auto sg = (*subgraphs)[g];
     for (auto inIndex : *sg->inputs()) {
       inputTensorIndices_[g].push_back(inIndex);
@@ -173,9 +176,9 @@ bool tflmc::Compiler::init(const void *modelData) {
   std::vector<uint8_t> arena_buf(g_arena_size);
   g_arenaPtr = arena_buf_.data();
 
-  interpreter_ = std::unique_ptr<tflite::MicroInterpreter>(
-      new tflite::MicroInterpreter(model_, resolver_, arena_buf_.data(),
-                                   arena_buf_.size()));
+  interpreter_ =
+      std::unique_ptr<tflite::MicroInterpreter>(new tflite::MicroInterpreter(
+          model_, resolver_, arena_buf_.data(), arena_buf_.size()));
 
   TfLiteStatus set_external_context_status =
       interpreter_->SetMicroExternalContext((void *)&g_xc_config);
@@ -185,7 +188,7 @@ bool tflmc::Compiler::init(const void *modelData) {
   }
 
   interpreter_->context_.AllocatePersistentBuffer =
-       &LoggingAllocatePersistentBuffer;
+      &LoggingAllocatePersistentBuffer;
 
   // Allocate memory from the tensor_arena for the model's tensors.
   TfLiteStatus allocate_status = interpreter_->AllocateTensors();
@@ -195,15 +198,15 @@ bool tflmc::Compiler::init(const void *modelData) {
   }
 
   // Get all tensors using dummy interpreter.
-  // Calling GetTensor() allocates temp TfLiteTensor and trashes 
+  // Calling GetTensor() allocates temp TfLiteTensor and trashes
   // the arena as it is not meant to be called after AllocateTensors().
   dummy_arena.resize(SUFFICIENT_ARENA_SIZE);
-  auto dummy_interpreter = std::unique_ptr<tflite::MicroInterpreter>(
-      new tflite::MicroInterpreter(model_, resolver_, dummy_arena.data(),
-                                   dummy_arena.size()));
-  for(int g = 0; g < subgraphs->size(); g++) {
+  auto dummy_interpreter =
+      std::unique_ptr<tflite::MicroInterpreter>(new tflite::MicroInterpreter(
+          model_, resolver_, dummy_arena.data(), dummy_arena.size()));
+  for (int g = 0; g < subgraphs->size(); g++) {
     auto sg = (*subgraphs)[g];
-    for(int i = 0; i < sg->tensors()->size(); i++) {
+    for (int i = 0; i < sg->tensors()->size(); i++) {
       auto tensor = GetTensor(dummy_interpreter.get(), i, g);
       tensors_[g].push_back(tensor);
     }
@@ -213,7 +216,7 @@ bool tflmc::Compiler::init(const void *modelData) {
   ptrdiff_t ramTensorBufferSize = 0;
   ptrdiff_t romOffset = 0;
   DEBUG_LOG(("\n\nTFLMC Allocated offsets:\n"));
-  for(int g=0; g<subgraphs->size(); g++) {
+  for (int g = 0; g < subgraphs->size(); g++) {
     auto sg = (*subgraphs)[g];
     for (size_t i = 0; i < sg->tensors()->size(); i++) {
       auto tensor = tensors_[g][i].tensor;
@@ -256,7 +259,7 @@ bool tflmc::Compiler::init(const void *modelData) {
 
       if (debugPrint_) {
         printf("operation %lu: %s\n", i,
-              tflite::EnumNamesBuiltinOperator()[code]);
+               tflite::EnumNamesBuiltinOperator()[code]);
       }
 
       RegistrationInfo regInfo;
@@ -283,8 +286,8 @@ bool tflmc::Compiler::init(const void *modelData) {
   }
 
   // scratch buffers
-  for (size_t k = 0; k < interpreter_->allocator_.GetScratchBufferRequestCount();
-       k++) {
+  for (size_t k = 0;
+       k < interpreter_->allocator_.GetScratchBufferRequestCount(); k++) {
     void *data = interpreter_->micro_context_.GetScratchBuffer(k);
     ptrdiff_t offset = (uint8_t *)data - arena_buf_.data();
     tflite::internal::ScratchBufferRequest *requests =
@@ -317,19 +320,20 @@ bool tflmc::Compiler::init(const void *modelData) {
   DEBUG_LOG(("Size of persistent buffers  = %d\n\n", totalRuntimeAllocSize));
 
   // Variable tensors
-  // We need to add space in the tensor arena for variable tensors which 
+  // We need to add space in the tensor arena for variable tensors which
   // are allocated as persistent buffers.
   // The allocation is not done through ctx->AllocatePersistentBuffer() API,
   // so it has not been logged yet.
   size_t varTensorsSize = 0;
-  for(int g=0; g<subgraphs->size(); g++) {
+  for (int g = 0; g < subgraphs->size(); g++) {
     auto sg = (*subgraphs)[g];
     for (size_t i = 0; i < sg->tensors()->size(); i++) {
       auto tensor = tensors_[g][i].tensor;
       if (tensor->is_variable) {
         int doubleAlignedSize = ((tensor->bytes + 7) / 8) * 8;
-        memMap_.recordRAM(ramTensorBufferSize + totalRuntimeAllocSize + varTensorsSize, doubleAlignedSize,
-              "VarTensor" + getTensorName(i, g));
+        memMap_.recordRAM(
+            ramTensorBufferSize + totalRuntimeAllocSize + varTensorsSize,
+            doubleAlignedSize, "VarTensor" + getTensorName(i, g));
         varTensorsSize += doubleAlignedSize;
       }
     }
@@ -340,14 +344,15 @@ bool tflmc::Compiler::init(const void *modelData) {
   // - Scratch buffers
   // - Persistent buffers
   // - Variable tensors (which are allocated as persistent buffers separately)
-  arenaBufferSize_ = ramTensorBufferSize + totalRuntimeAllocSize + varTensorsSize;
+  arenaBufferSize_ =
+      ramTensorBufferSize + totalRuntimeAllocSize + varTensorsSize;
 
   if (debugPrint_) {
     interpreter_->allocator_.memory_planner()->PrintMemoryPlan();
     memMap_.report();
   }
 
-  auto getHash = [&] (std::vector<llvm::ArrayRef<uint8_t>> data) {
+  auto getHash = [&](std::vector<llvm::ArrayRef<uint8_t>> data) {
     llvm::MD5 hash;
     for (auto &i : data) {
       hash.update(i);
@@ -359,29 +364,32 @@ bool tflmc::Compiler::init(const void *modelData) {
     return dataHash;
   };
 
-
   // Identify duplicate op_data
-  for(size_t g = 0; g < tensors_.size(); g++) {
+  for (size_t g = 0; g < tensors_.size(); g++) {
     for (size_t i = 0; i < tensors_[g].size(); i++) {
       auto t = tensors_[g][i].tensor;
-      const TfLiteIntArray& arr = *t->dims;
-      llvm::ArrayRef<uint8_t> tensorDimData((uint8_t const *)arr.data, arr.size * sizeof(int));
+      const TfLiteIntArray &arr = *t->dims;
+      llvm::ArrayRef<uint8_t> tensorDimData((uint8_t const *)arr.data,
+                                            arr.size * sizeof(int));
       std::vector<llvm::ArrayRef<uint8_t>> data;
       data.push_back(tensorDimData);
       auto tensorHashStr = getHash(data);
-      //wr.writeIntArray(*t->dims, "tensor_dimension" + std::to_string(i));
+      // wr.writeIntArray(*t->dims, "tensor_dimension" + std::to_string(i));
       if (tensorDimHashMap_[g].count(tensorHashStr)) {
         tensorDimMap_[g][i] = tensorDimHashMap_[g][tensorHashStr];
-        printf("\ntensor %d is duplicate of tensor %d with %d bytes", i, tensorDimHashMap_[g][tensorHashStr], arr.size);
       } else {
         tensorDimHashMap_[g][tensorHashStr] = i;
       }
 
       if (t->quantization.type == kTfLiteAffineQuantization) {
-        auto aq = (TfLiteAffineQuantization const*)t->quantization.params;
-        llvm::ArrayRef<uint8_t> quantScale((uint8_t const *)aq->scale->data, aq->scale->size * sizeof(float));
-        llvm::ArrayRef<uint8_t> quantZP((uint8_t const *)aq->zero_point->data, aq->zero_point->size * sizeof(int));
-        llvm::ArrayRef<uint8_t> quantDim((uint8_t const *)&aq->quantized_dimension, sizeof(aq->quantized_dimension));
+        auto aq = (TfLiteAffineQuantization const *)t->quantization.params;
+        llvm::ArrayRef<uint8_t> quantScale((uint8_t const *)aq->scale->data,
+                                           aq->scale->size * sizeof(float));
+        llvm::ArrayRef<uint8_t> quantZP((uint8_t const *)aq->zero_point->data,
+                                        aq->zero_point->size * sizeof(int));
+        llvm::ArrayRef<uint8_t> quantDim(
+            (uint8_t const *)&aq->quantized_dimension,
+            sizeof(aq->quantized_dimension));
         std::vector<llvm::ArrayRef<uint8_t>> data;
         data.push_back(quantScale);
         data.push_back(quantZP);
@@ -389,7 +397,6 @@ bool tflmc::Compiler::init(const void *modelData) {
         auto quantHashStr = getHash(data);
         if (quantHashMap_[g].count(quantHashStr)) {
           quantMap_[g][i] = quantHashMap_[g][quantHashStr];
-          printf("\nquant %d is duplicate of quant %d with %d bytes", i, quantHashMap_[g][quantHashStr], aq->scale->size);
         } else {
           quantHashMap_[g][quantHashStr] = i;
         }
@@ -400,21 +407,20 @@ bool tflmc::Compiler::init(const void *modelData) {
       auto &node = nodes_[g][i].node;
       auto &regInfo = registrations_[nodes_[g][i].regIndex];
       if (regInfo.code == tflite::BuiltinOperator_CUSTOM) {
-        llvm::ArrayRef<uint8_t> in((uint8_t const *)node.custom_initial_data, node.custom_initial_data_size);
+        llvm::ArrayRef<uint8_t> in((uint8_t const *)node.custom_initial_data,
+                                   node.custom_initial_data_size);
         std::vector<llvm::ArrayRef<uint8_t>> data;
         data.push_back(in);
         auto hash = getHash(data);
 
         if (opdataHashMap_[g].count(hash)) {
           opdataMap_[g][i] = opdataHashMap_[g][hash];
-          printf("\nopdata node %d is duplicate of node %d with %d bytes", i, opdataHashMap_[g][hash], node.custom_initial_data_size);
         } else {
           opdataHashMap_[g][hash] = i;
         }
       }
     }
   }
-
 
   return true;
 }
@@ -590,191 +596,199 @@ TfLiteContext ctx{};
 
 TfLiteRegistration_V1 registrations[OP_LAST];
 )";
-for(size_t g = 0; g < tensors_.size(); g++) {
-wr << R"(
+  for (size_t g = 0; g < tensors_.size(); g++) {
+    wr << R"(
 struct {
 )";
-  for (size_t i = 0; i < tensors_[g].size(); i++) {
-    auto t = tensors_[g][i].tensor;
-    if (t->allocation_type == kTfLiteMmapRo) {
-      wr.writeTensor(*t, "tensor_data" + std::to_string(i));
-    }
-    // if duplicate, don't write
-    if (!tensorDimMap_[g].count(i)) {
-      wr.writeIntArray(*t->dims, "tensor_dimension" + std::to_string(i));
-    }
-    // if duplicate, don't write
-    if (!quantMap_[g].count(i)) {
-      wr.writeQuantization(t->quantization, "quant" + std::to_string(i));
-    }
-#if TF_LITE_PACKED_QUANTIZED_DATA_VERSION
-    wr.writeQuantizationDetails(t->quantization,
-                                "quant_details" + std::to_string(i));
-#endif
-  }
-  for (size_t i = 0; i < nodes_[g].size(); i++) {
-    auto &node = nodes_[g][i].node;
-    auto &regInfo = registrations_[nodes_[g][i].regIndex];
-    if (regInfo.code == tflite::BuiltinOperator_CUSTOM) {
-      // if duplicate, don't write
-      if (!opdataMap_[g].count(i)) {
-        wr << "uint8_t ALIGN(4) opdata" + std::to_string(i) << "["
-          << node.custom_initial_data_size << "] = { ";
-        for (int j = 0; j < node.custom_initial_data_size; ++j)
-          wr << int(((uint8_t const *)node.custom_initial_data)[j]) << ", ";
-        wr << " }; /* custom_initial_data */\n";
+    for (size_t i = 0; i < tensors_[g].size(); i++) {
+      auto t = tensors_[g][i].tensor;
+      if (t->allocation_type == kTfLiteMmapRo) {
+        wr.writeTensor(*t, "tensor_data" + std::to_string(i));
       }
-    } else {
-      wr.writeBuiltin(regInfo.code, node.builtin_data,
-                      "opdata" + std::to_string(i));
+      // if duplicate, don't write
+      if (!tensorDimMap_[g].count(i)) {
+        wr.writeIntArray(*t->dims, "tensor_dimension" + std::to_string(i));
+      }
+      // if duplicate, don't write
+      if (!quantMap_[g].count(i)) {
+        wr.writeQuantization(t->quantization, "quant" + std::to_string(i));
+      }
+#if TF_LITE_PACKED_QUANTIZED_DATA_VERSION
+      wr.writeQuantizationDetails(t->quantization,
+                                  "quant_details" + std::to_string(i));
+#endif
     }
-    wr.writeIntArray(*node.inputs, "inputs" + std::to_string(i));
-    wr.writeIntArray(*node.outputs, "outputs" + std::to_string(i));
-  }
-wr << R"(} g)"<< g <<R"(;
+    for (size_t i = 0; i < nodes_[g].size(); i++) {
+      auto &node = nodes_[g][i].node;
+      auto &regInfo = registrations_[nodes_[g][i].regIndex];
+      if (regInfo.code == tflite::BuiltinOperator_CUSTOM) {
+        // if duplicate, don't write
+        if (!opdataMap_[g].count(i)) {
+          wr << "uint8_t ALIGN(4) opdata" + std::to_string(i) << "["
+             << node.custom_initial_data_size << "] = { ";
+          for (int j = 0; j < node.custom_initial_data_size; ++j)
+            wr << int(((uint8_t const *)node.custom_initial_data)[j]) << ", ";
+          wr << " }; /* custom_initial_data */\n";
+        }
+      } else {
+        wr.writeBuiltin(regInfo.code, node.builtin_data,
+                        "opdata" + std::to_string(i));
+      }
+      wr.writeIntArray(*node.inputs, "inputs" + std::to_string(i));
+      wr.writeIntArray(*node.outputs, "outputs" + std::to_string(i));
+    }
+    wr << R"(} g)" << g << R"(;
 )";
-}
+  }
 
   wr << R"(
 TfLiteTensor tflTensors[] = 
 {)";
-for(size_t g = 0; g < tensors_.size(); g++) {
-  for (size_t i = 0; i < tensors_[g].size(); i++) {
-    auto t = tensors_[g][i].tensor;
-    auto tEval = GetEvalTensor(interpreter_.get(), i, g);
-    wr << "{ ";
+  for (size_t g = 0; g < tensors_.size(); g++) {
+    for (size_t i = 0; i < tensors_[g].size(); i++) {
+      auto t = tensors_[g][i].tensor;
+      auto tEval = GetEvalTensor(interpreter_.get(), i, g);
+      wr << "{ ";
 
-    if (t->allocation_type == kTfLiteMmapRo) {
-      wr << "{(int32_t*)g"<<g<<".tensor_data" << i << "},";
-    } else {
-      wr << "{(int32_t*)(tensor_arena + "
-         << ((uintptr_t)tEval->data.data - (uintptr_t)arena_buf_.data()) << ")},";
-    }
-    // if duplicate, point to same tensor dim
-    if (tensorDimMap_[g].count(i)) {
-      wr << "(TfLiteIntArray*)&g"<<g<<".tensor_dimension" << tensorDimMap_[g][i] << ", ";
-    } else {
-      wr << "(TfLiteIntArray*)&g"<<g<<".tensor_dimension" << i << ", ";
-    }
-
-    wr << tflmc::to_string(t->type) << ", ";
-
-    if (has_quantization) {
-      if (t->quantization.type == kTfLiteAffineQuantization) {
-        // if duplicate, point to same quant
-        if (quantMap_[g].count(i)) {
-        wr << "{kTfLiteAffineQuantization, "
-              "const_cast<void*>(static_cast<const void*>(&g"<<g<<".quant"
-           << quantMap_[g][i] << ")) }, {g"<<g<<".quant" << quantMap_[g][i] << ".scale->data[0], g"<<g<<".quant" << quantMap_[g][i]
-           << ".zero_point->data[0] ";
-        } else {
-          wr << "{kTfLiteAffineQuantization, "
-              "const_cast<void*>(static_cast<const void*>(&g"<<g<<".quant"
-           << i << ")) }, {g"<<g<<".quant" << i << ".scale->data[0], g"<<g<<".quant" << i
-           << ".zero_point->data[0] ";
-        }
+      if (t->allocation_type == kTfLiteMmapRo) {
+        wr << "{(int32_t*)g" << g << ".tensor_data" << i << "},";
       } else {
-        wr << "{kTfLiteNoQuantization, nullptr }, {0,0";
+        wr << "{(int32_t*)(tensor_arena + "
+           << ((uintptr_t)tEval->data.data - (uintptr_t)arena_buf_.data())
+           << ")},";
       }
-      wr << "},";
-    } else {
-      wr << "{kTfLiteNoQuantization, nullptr }, {0,0},";
+      // if duplicate, point to same tensor dim
+      if (tensorDimMap_[g].count(i)) {
+        wr << "(TfLiteIntArray*)&g" << g << ".tensor_dimension"
+           << tensorDimMap_[g][i] << ", ";
+      } else {
+        wr << "(TfLiteIntArray*)&g" << g << ".tensor_dimension" << i << ", ";
+      }
+
+      wr << tflmc::to_string(t->type) << ", ";
+
+      if (has_quantization) {
+        if (t->quantization.type == kTfLiteAffineQuantization) {
+          // if duplicate, point to same quant
+          if (quantMap_[g].count(i)) {
+            wr << "{kTfLiteAffineQuantization, "
+                  "const_cast<void*>(static_cast<const void*>(&g"
+               << g << ".quant" << quantMap_[g][i] << ")) }, {g" << g
+               << ".quant" << quantMap_[g][i] << ".scale->data[0], g" << g
+               << ".quant" << quantMap_[g][i] << ".zero_point->data[0] ";
+          } else {
+            wr << "{kTfLiteAffineQuantization, "
+                  "const_cast<void*>(static_cast<const void*>(&g"
+               << g << ".quant" << i << ")) }, {g" << g << ".quant" << i
+               << ".scale->data[0], g" << g << ".quant" << i
+               << ".zero_point->data[0] ";
+          }
+        } else {
+          wr << "{kTfLiteNoQuantization, nullptr }, {0,0";
+        }
+        wr << "},";
+      } else {
+        wr << "{kTfLiteNoQuantization, nullptr }, {0,0},";
+      }
+
+      wr << t->bytes << ", ";
+
+      wr << tflmc::to_string(t->allocation_type) << ", ";
+      wr << t->is_variable << ", ";
+
+      wr << "},\n";
     }
-
-    wr << t->bytes << ", ";
-
-    wr << tflmc::to_string(t->allocation_type) << ", ";
-    wr << t->is_variable << ", ";
-
-    wr << "},\n";
   }
-}
   wr << "};\n";
 
   wr << R"(
 TfLiteNode tflNodes[] = 
 {)";
-for(size_t g = 0; g < tensors_.size(); g++) {
-  for (size_t i = 0; i < nodes_[g].size(); i++) {
-    wr << "{ (TfLiteIntArray*)&g"<<g<<".inputs" << i << ", ";
-    wr << "(TfLiteIntArray*)&g"<<g<<".outputs" << i << ", ";
-    wr << "(TfLiteIntArray*)&g"<<g<<".inputs" << i << ", ";
-    // TODO: Is this cast safe or does the data need to be non-const?
-    // CP: I think so (as it typically just carries the trained operator
-    // parameters) CP: Also if it were written to, we would see a segfault
-    // (write to text segment)
-    if (nodes_[g][i].node.builtin_data || nodes_[g][i].node.custom_initial_data) {
-      // if duplicate, point to same opdata
-      if (opdataMap_[g].count(i)) {
-        wr << "const_cast<void*>(static_cast<const void*>(&g"<<g<<".opdata" << opdataMap_[g][i] << ")), ";
+  for (size_t g = 0; g < tensors_.size(); g++) {
+    for (size_t i = 0; i < nodes_[g].size(); i++) {
+      wr << "{ (TfLiteIntArray*)&g" << g << ".inputs" << i << ", ";
+      wr << "(TfLiteIntArray*)&g" << g << ".outputs" << i << ", ";
+      wr << "(TfLiteIntArray*)&g" << g << ".inputs" << i << ", ";
+      // TODO: Is this cast safe or does the data need to be non-const?
+      // CP: I think so (as it typically just carries the trained operator
+      // parameters) CP: Also if it were written to, we would see a segfault
+      // (write to text segment)
+      if (nodes_[g][i].node.builtin_data ||
+          nodes_[g][i].node.custom_initial_data) {
+        // if duplicate, point to same opdata
+        if (opdataMap_[g].count(i)) {
+          wr << "const_cast<void*>(static_cast<const void*>(&g" << g
+             << ".opdata" << opdataMap_[g][i] << ")), ";
+        } else {
+          wr << "const_cast<void*>(static_cast<const void*>(&g" << g
+             << ".opdata" << i << ")), ";
+        }
       } else {
-        wr << "const_cast<void*>(static_cast<const void*>(&g"<<g<<".opdata" << i << ")), ";
+        wr << "nullptr, ";
       }
-    } else {
-      wr << "nullptr, ";
+      auto regI = nodes_[g][i].regIndex;
+      if (registrations_[regI].code == tflite::BuiltinOperator_CUSTOM) {
+        wr << nodes_[g][i].node.custom_initial_data_size << ", ";
+      } else {
+        wr << "0, ";
+      }
+      wr << "},\n";
     }
-    auto regI = nodes_[g][i].regIndex;
-    if (registrations_[regI].code == tflite::BuiltinOperator_CUSTOM) {
-      wr << nodes_[g][i].node.custom_initial_data_size << ", ";
-    } else {
-      wr << "0, ";
-    }
-    wr << "},\n";
   }
-}
-wr << "};\n";
+  wr << "};\n";
 
-wr << R"(
+  wr << R"(
 used_operators_e used_ops[] =
 {)";
-for(size_t g = 0; g < tensors_.size(); g++) {
-  for (size_t i = 0; i < nodes_[g].size(); i++) {
-    auto regI = nodes_[g][i].regIndex;
-    if (registrations_[regI].code == tflite::BuiltinOperator_CUSTOM) {
-      wr << "OP_" << registrations_[regI].custom_name << ", ";
-    } else {
-      wr << "OP_" << tflite::EnumNameBuiltinOperator(registrations_[regI].code)
-         << ", ";
+  for (size_t g = 0; g < tensors_.size(); g++) {
+    for (size_t i = 0; i < nodes_[g].size(); i++) {
+      auto regI = nodes_[g][i].regIndex;
+      if (registrations_[regI].code == tflite::BuiltinOperator_CUSTOM) {
+        wr << "OP_" << registrations_[regI].custom_name << ", ";
+      } else {
+        wr << "OP_"
+           << tflite::EnumNameBuiltinOperator(registrations_[regI].code)
+           << ", ";
+      }
     }
   }
-}
   wr << "};\n\n";
 
-wr << "\n// Indices into tflTensors and tflNodes for subgraphs";
-wr << "\nsize_t tflTensors_subgraph_index[] = {0, ";
-int index = 0;
-for(size_t g = 0; g < tensors_.size(); g++) {
-  index += tensors_[g].size();
-  wr << index << ", ";
-}
-wr << "};";
-
-wr << "\nsize_t tflNodes_subgraph_index[] = {0, ";
-index = 0;
-for(size_t g = 0; g < tensors_.size(); g++) {
-  index += nodes_[g].size();
-  wr << index << ", ";
-}
-wr << "};\n";
-
-wr << "\n// Variable tensors";
-wr << "\nsize_t varTensors_index[] = {";
-index = 0;
-for(size_t g = 0; g < tensors_.size(); g++) {
-  for (size_t i = 0; i < tensors_[g].size(); i++) {
-    auto t = tensors_[g][i].tensor;
-    if(t->is_variable) {
-      wr << index << ", ";
-    }
-    index += 1;
+  wr << "\n// Indices into tflTensors and tflNodes for subgraphs";
+  wr << "\nsize_t tflTensors_subgraph_index[] = {0, ";
+  int index = 0;
+  for (size_t g = 0; g < tensors_.size(); g++) {
+    index += tensors_[g].size();
+    wr << index << ", ";
   }
-}
-wr << "};\n";
+  wr << "};";
 
-wr << "\n// Input/output tensors\n";
-wr << R"(static const int inTensorIndices[] = {
+  wr << "\nsize_t tflNodes_subgraph_index[] = {0, ";
+  index = 0;
+  for (size_t g = 0; g < tensors_.size(); g++) {
+    index += nodes_[g].size();
+    wr << index << ", ";
+  }
+  wr << "};\n";
+
+  wr << "\n// Variable tensors";
+  wr << "\nsize_t varTensors_index[] = {";
+  index = 0;
+  for (size_t g = 0; g < tensors_.size(); g++) {
+    for (size_t i = 0; i < tensors_[g].size(); i++) {
+      auto t = tensors_[g][i].tensor;
+      if (t->is_variable) {
+        wr << index << ", ";
+      }
+      index += 1;
+    }
+  }
+  wr << "};\n";
+
+  wr << "\n// Input/output tensors\n";
+  wr << R"(static const int inTensorIndices[] = {
   )";
-  for(size_t g = 0; g < tensors_.size(); g++) {
+  for (size_t g = 0; g < tensors_.size(); g++) {
     for (auto inIndex : inputTensorIndices_[g]) {
       wr << inIndex << ", ";
     }
@@ -784,7 +798,7 @@ wr << R"(static const int inTensorIndices[] = {
 
 static const int outTensorIndices[] = {
   )";  // TODO: perhaps use a smaller type than int?
-  for(size_t g = 0; g < tensors_.size(); g++) {
+  for (size_t g = 0; g < tensors_.size(); g++) {
     for (auto outIndex : outputTensorIndices_[g]) {
       wr << outIndex << ", ";
     }
@@ -793,22 +807,22 @@ static const int outTensorIndices[] = {
 };
 )";
 
-wr << "\n// Indices into inTensors and outTensors for subgraphs";
-wr << "\nsize_t inTensors_subgraph_index[] = {0, ";
-index = 0;
-for(size_t g = 0; g < tensors_.size(); g++) {
-  index += inputTensorIndices_[g].size();
-  wr << index << ", ";
-}
-wr << "};";
+  wr << "\n// Indices into inTensors and outTensors for subgraphs";
+  wr << "\nsize_t inTensors_subgraph_index[] = {0, ";
+  index = 0;
+  for (size_t g = 0; g < tensors_.size(); g++) {
+    index += inputTensorIndices_[g].size();
+    wr << index << ", ";
+  }
+  wr << "};";
 
-wr << "\nsize_t outTensors_subgraph_index[] = {0, ";
-index = 0;
-for(size_t g = 0; g < tensors_.size(); g++) {
-  index += outputTensorIndices_[g].size();
-  wr << index << ", ";
-}
-wr << "};";
+  wr << "\nsize_t outTensors_subgraph_index[] = {0, ";
+  index = 0;
+  for (size_t g = 0; g < tensors_.size(); g++) {
+    index += outputTensorIndices_[g].size();
+    wr << index << ", ";
+  }
+  wr << "};";
 
   // TODO: This code assumes that persistent allocations are made from the end
   // (which is true for the current implementation)
@@ -834,8 +848,7 @@ xc_context_config_t xc_config;
 // When using USE_DDR_FIX for enabling LPDDR support, only one thread can be used
 #ifdef USE_DDR_FIX
 static_assert(()"
-       << numXCThreads_
-       << R"( == 1),
+     << numXCThreads_ << R"( == 1),
              "Only one thread can be used when using USE_DDR_FIX! Please recompile with one thread!");
 #endif
 constexpr int kStackWordsPerThread = 256;
@@ -1000,12 +1013,12 @@ printf("\n]");
 } // namespace
 
 TfLiteTensor* )"
-      << prefix_ << R"(input(int index) {
+     << prefix_ << R"(input(int index) {
   return &ctx.tensors[inTensorIndices[index]];
 }
 
 TfLiteTensor* )"
-      << prefix_ << R"(output(int index) {
+     << prefix_ << R"(output(int index) {
   return &ctx.tensors[outTensorIndices[index]];
 }
 
@@ -1070,7 +1083,8 @@ TfLiteStatus )"
   wr << "\n";
   wr << R"(
   // Allocate persistent buffers for variable tensors
-  for (int i = 0; i < )" << varTensors_count << R"(; i++) {
+  for (int i = 0; i < )"
+     << varTensors_count << R"(; i++) {
     tflTensors[varTensors_index[i]].data.data = AllocatePersistentBuffer(&ctx, tflTensors[varTensors_index[i]].bytes);
   }
 
@@ -1166,11 +1180,11 @@ printf("\n\nCumulative times for prepare()...");
 }
 
 TfLiteStatus )"
-      << prefix_ << R"(invoke() {
+     << prefix_ << R"(invoke() {
   xc_config.thread_info.nstackwords = kStackWordsPerThread;
   xc_config.thread_info.stacks = &xcThreadsStack[threadsStackSizeInUint64 - 1];
   thread_init_)"
-      << numXCThreads_ << R"((&xc_config.thread_info);
+     << numXCThreads_ << R"((&xc_config.thread_info);
 
 #ifdef TFLMC_XCORE_PROFILE
   printf("\nProfiling invoke()...");
@@ -1194,7 +1208,8 @@ TfLiteStatus )"
   if (has_xc_conv_ops) {
     wr << R"(int conv_times1 = 0, conv_times2 = 0;
     printf("\n\nConv()...");
-    for(size_t g = 0; g < )" << nodes_.size() << R"(; ++g) {
+    for(size_t g = 0; g < )"
+       << nodes_.size() << R"(; ++g) {
       for(size_t i = tflNodes_subgraph_index[g]; i < tflNodes_subgraph_index[g+1]; ++i) {
         if(used_ops[i] == OP_XC_conv2d_v2) {
           auto *op_data = reinterpret_cast<convopdata *>(tflNodes[i].user_data);
@@ -1219,9 +1234,10 @@ TfLiteStatus )"
 }
 
 TfLiteStatus )"
-      << prefix_ << R"(reset() {
+     << prefix_ << R"(reset() {
   // Reset variable tensors
-  for (int i = 0; i < )" << varTensors_count << R"(; i++) {
+  for (int i = 0; i < )"
+     << varTensors_count << R"(; i++) {
     memset(tflTensors[varTensors_index[i]].data.data, tflTensors[varTensors_index[i]].params.zero_point, tflTensors[varTensors_index[i]].bytes);
   }
   return kTfLiteOk;
@@ -1240,9 +1256,12 @@ void tflmc::Compiler::writeHeader(std::ostream &out) {
 
 #ifdef SHARED_TENSOR_ARENA
   #ifndef LARGEST_TENSOR_ARENA_SIZE
-    #define LARGEST_TENSOR_ARENA_SIZE )" + std::to_string(arenaBufferSize_) + R"(
-  #elif LARGEST_TENSOR_ARENA_SIZE < )" + std::to_string(arenaBufferSize_) + R"(
-    #define LARGEST_TENSOR_ARENA_SIZE )" + std::to_string(arenaBufferSize_) + R"(
+    #define LARGEST_TENSOR_ARENA_SIZE )" +
+                     std::to_string(arenaBufferSize_) + R"(
+  #elif LARGEST_TENSOR_ARENA_SIZE < )" +
+                     std::to_string(arenaBufferSize_) + R"(
+    #define LARGEST_TENSOR_ARENA_SIZE )" +
+                     std::to_string(arenaBufferSize_) + R"(
   #endif
 #endif
 
@@ -1318,14 +1337,14 @@ std::string tflmc::Compiler::getTensorName(int tensorIndex, int sg) const {
   std::stringstream ss;
   ss << (tensor->allocation_type == kTfLiteMmapRo ? "ROM" : "RAM") << "Tensor_";
 
-  for(size_t g = 0; g < tensors_.size(); g++){
+  for (size_t g = 0; g < tensors_.size(); g++) {
     auto nOps = interpreter_->operators_size(g);
     for (size_t i = 0; i < nOps; i++) {
       auto nodeAndReg = interpreter_->node_and_registration(i, g);
       auto node = &nodeAndReg.node;
 
       auto checkAndAdd = [&](const TfLiteIntArray *indices,
-                            const std::string &tag) {
+                             const std::string &tag) {
         if (indices) {
           for (int k = 0; k < indices->size; k++) {
             if (indices->data[k] == tensorIndex) {

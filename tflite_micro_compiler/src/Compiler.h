@@ -5,9 +5,8 @@
 #include <sstream>
 #include <unordered_map>
 
-#include "llvm/ADT/StringMap.h"
-
 #include "MemMap.h"
+#include "llvm/ADT/StringMap.h"
 #include "tensorflow/lite/micro/all_ops_resolver.h"
 #define private public
 #include "tensorflow/lite/micro/micro_interpreter.h"
@@ -27,7 +26,8 @@ struct Allocation {
 TfLiteStatus AllocateTensors(
     std::unique_ptr<tflite::MicroInterpreter> &interpreter);
 TfLiteTensor *GetTensor(tflite::MicroInterpreter *interpreter, int i, int sg);
-TfLiteEvalTensor *GetEvalTensor(tflite::MicroInterpreter *interpreter, int i, int sg);
+TfLiteEvalTensor *GetEvalTensor(tflite::MicroInterpreter *interpreter, int i,
+                                int sg);
 
 bool CompileFile(const std::string &modelFileName,
                  const std::string &outFileName,

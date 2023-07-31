@@ -81,23 +81,23 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   //   ((int8_t *)out_data)[i] = ((int8_t *)table_vals)[((uint8_t *)in_val)[i]];
   // }
 
-  //lookup8((uint8_t *)out_data, (uint8_t *)in_data, (uint8_t *)table_vals, 0, input_size);
+  lookup8((uint8_t *)out_data, (uint8_t *)in_data, (uint8_t *)table_vals, 0, input_size);
 
   // todo - this second for-loop is unpleasant
-  for (int t = 0; t < 4 - 1; ++t) {
-    thread_variable_setup(&s[t], &c[t],
-                          xc_config->thread_info.thread_ids.id[t]);
-  }
+  // for (int t = 0; t < 4 - 1; ++t) {
+  //   thread_variable_setup(&s[t], &c[t],
+  //                         xc_config->thread_info.thread_ids.id[t]);
+  // }
 
-  LookupShared shared_data;
-  shared_data.Y = out_data;
-  shared_data.X = in_data;
-  shared_data.table = table_vals;
+  // LookupShared shared_data;
+  // shared_data.Y = out_data;
+  // shared_data.X = in_data;
+  // shared_data.table = table_vals;
 
-  // Now set up shared data, shared function pointer, and data for final thread.
-  thread_call((void *)&shared_data, &s[3], &c[3],
-              (thread_function_pointer_t)lookup_thread_worker,
-              &xc_config->thread_info);
+  // // Now set up shared data, shared function pointer, and data for final thread.
+  // thread_call((void *)&shared_data, &s[3], &c[3],
+  //             (thread_function_pointer_t)lookup_thread_worker,
+  //             &xc_config->thread_info);
 
   return kTfLiteOk;
 }

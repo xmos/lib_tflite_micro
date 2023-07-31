@@ -97,11 +97,11 @@ struct Conv2DOpData
 
 template <typename T>
 T *getDeserializedParams(TfLiteContext *context, const uint8_t *data) {
-  char *allocated_memory;
-  int allocationByteCount = sizeof(T);
-  allocated_memory =
-      (char *)context->AllocatePersistentBuffer(context, allocationByteCount);
-  T *param = T::template deserialise<T>(allocated_memory, (const char *)data);
+  // The flexbuffer data passed along from the compiler for xc_conv2d is
+  // carefully aligned to four bytes so that we can directly access it.
+  // This is done in TranslateToCustomOp.cpp in the compiler.
+  assert(((uintptr_t)data & 0x3) == 0);
+  T *param = (T*)data;
   return param;
 }
 
@@ -178,16 +178,16 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   auto op_data = construct_persistent_object<Conv2DOpData>(context);
   auto parser = CustomOptionParser(buffer, length);
 
-  KernelType kt = (KernelType)parser.parseNamedCustomOption("kt").AsInt32();
+  KernelType kt = (KernelType)parser.parseNamedCustomOption("k").AsInt32();
   const uint8_t *memcpy_fn_data =
       parser.parseNamedCustomOption("mp").AsBlob().data();
   const uint8_t *agg_fn_data =
-      parser.parseNamedCustomOption("aggp").AsBlob().data();
+      parser.parseNamedCustomOption("a").AsBlob().data();
   const uint8_t *ot_fn_data =
-      parser.parseNamedCustomOption("otp").AsBlob().data();
-  int32_t scratch_size = parser.parseNamedCustomOption("scratch").AsInt32();
-  int32_t ot_type = parser.parseNamedCustomOption("ott").AsInt32();
-  auto ak_params_vec = parser.parseNamedCustomOption("akp").AsVector();
+      parser.parseNamedCustomOption("o").AsBlob().data();
+  int32_t scratch_size = parser.parseNamedCustomOption("s").AsInt32();
+  int32_t ot_type = parser.parseNamedCustomOption("t").AsInt32();
+  auto ak_params_vec = parser.parseNamedCustomOption("p").AsVector();
 
   auto thread_count = ak_params_vec.size();
   op_data->kt = kt;

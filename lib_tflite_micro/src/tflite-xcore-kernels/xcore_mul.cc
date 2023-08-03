@@ -1,5 +1,7 @@
 // Copyright (c) 2023, XMOS Ltd, All rights reserved
 
+#include "tensorflow/lite/kernels/internal/reference/broadcast_to.h"
+
 #include "MemCpyFn.hpp"
 #include "xcore_custom_options.h"
 #include "xcore_utils.h"
@@ -55,37 +57,50 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   // Get Input/Output Tensors
   const TfLiteEvalTensor *input1 =
       tflite::micro::GetEvalInput(context, node, 0);
-  int input1_size = 1;
-  for (int i = 0; i < input1->dims->size; i++)
-    input1_size *= input1->dims->data[i];
   const TfLiteEvalTensor *input2 =
       tflite::micro::GetEvalInput(context, node, 1);
-  int input2_size = 1;
-  for (int i = 0; i < input2->dims->size; i++)
-    input2_size *= input2->dims->data[i];
   TfLiteEvalTensor *output = tflite::micro::GetEvalOutput(context, node, 0);
 
   // Pointers to data in In/Out Tensors
   int8_t *out_data = tflite::micro::GetTensorData<int8_t>(output);
-  const int8_t *in1_val = tflite::micro::GetTensorData<int8_t>(input1);
-  const int8_t *in2_val = tflite::micro::GetTensorData<int8_t>(input2);
+  const int8_t *in1_data = tflite::micro::GetTensorData<int8_t>(input1);
+  const int8_t *in2_data = tflite::micro::GetTensorData<int8_t>(input2);
 
-  int in2_index = 0;
-  for (int i = 0; i < input1_size; i++) {
-    if (in2_index == input2_size) {
-      in2_index = 0;
-    }
+  int output_size = tflite::micro::GetTensorShape(output).FlatSize();
+  int x1_size = tflite::micro::GetTensorShape(input1).FlatSize();
+  int x2_size = tflite::micro::GetTensorShape(input2).FlatSize();
+
+  if (x2_size < x1_size) {
+    // Broadcast input2 into the output
+    // We can then mul input1 and output to get actual output
+    assert(x1_size == output_size);
+    tflite::reference_ops::BroadcastTo<5>(
+      tflite::micro::GetTensorShape(input2), input2->data.raw,
+      tflite::micro::GetTensorShape(output), output->data.raw, input2->type);
+
+    in2_data = out_data;
+  } else if (x1_size < x2_size) {
+    // Broadcast input1 into the output
+    // We can then mul input2 and output to get actual output
+    assert(x2_size == output_size);
+    tflite::reference_ops::BroadcastTo<5>(
+      tflite::micro::GetTensorShape(input1), input1->data.raw,
+      tflite::micro::GetTensorShape(output), output->data.raw, input1->type);
+
+    in1_data = out_data;
+  }
+
+  for (int i = 0; i < output_size; i++) {
     int result =
-        (((((op_data->S * (op_data->rhsZeroPoint * in1_val[i] +
-                           op_data->lhsZeroPoint * in2_val[in2_index] +
-                           in1_val[i] * in2_val[in2_index])) +
+        (((((op_data->S * (op_data->rhsZeroPoint * in1_data[i] +
+                           op_data->lhsZeroPoint * in2_data[i] +
+                           in1_data[i] * in2_data[i])) +
             (1 << 13)) >>
            14) +
           op_data->B) +
          (1 << 5)) >>
         6;
     out_data[i] = std::min(std::max(result, -128), 127);
-    in2_index++;
   }
 
   return kTfLiteOk;

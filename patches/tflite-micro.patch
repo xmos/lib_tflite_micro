@@ -14,7 +14,7 @@ index e3e8001..0e48581 100644
 +
  #endif  // TENSORFLOW_LITE_C_COMMON_H_
 diff --git tensorflow/lite/core/c/common.h tensorflow/lite/core/c/common.h
-index dcee532..afe98b5 100644
+index dcee532..e16f846 100644
 --- tensorflow/lite/core/c/common.h
 +++ tensorflow/lite/core/c/common.h
 @@ -531,13 +531,6 @@ typedef struct TfLiteNode {
@@ -59,6 +59,25 @@ index dcee532..afe98b5 100644
    // How memory is mapped
    //  kTfLiteMmapRo: Memory mapped read only.
    //  i.e. weights
+@@ -582,10 +582,6 @@ typedef struct TfLiteNode {
+   // Outputs to this node expressed as indices into the simulator's tensors.
+   TfLiteIntArray* outputs;
+ 
+-  // intermediate tensors to this node expressed as indices into the simulator's
+-  // tensors.
+-  TfLiteIntArray* intermediates;
+-
+   // Opaque data provided by the node implementer through `Registration.init`.
+   void* user_data;
+ 
+@@ -595,7 +591,6 @@ typedef struct TfLiteNode {
+ 
+   // Custom initial data. This is the opaque data provided in the flatbuffer.
+   // WARNING: This is an experimental interface that is subject to change.
+-  const void* custom_initial_data;
+   int custom_initial_data_size;
+ } TfLiteNode;
+ #endif  // TF_LITE_STATIC_MEMORY
 diff --git tensorflow/lite/kernels/internal/common.h tensorflow/lite/kernels/internal/common.h
 index 00fe01f..65e248d 100644
 --- tensorflow/lite/kernels/internal/common.h

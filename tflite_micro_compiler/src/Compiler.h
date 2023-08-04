@@ -3,8 +3,10 @@
 
 #include <iostream>
 #include <sstream>
+#include <unordered_map>
 
 #include "MemMap.h"
+#include "llvm/ADT/StringMap.h"
 #include "tensorflow/lite/micro/all_ops_resolver.h"
 #define private public
 #include "tensorflow/lite/micro/micro_interpreter.h"
@@ -24,7 +26,8 @@ struct Allocation {
 TfLiteStatus AllocateTensors(
     std::unique_ptr<tflite::MicroInterpreter> &interpreter);
 TfLiteTensor *GetTensor(tflite::MicroInterpreter *interpreter, int i, int sg);
-TfLiteEvalTensor *GetEvalTensor(tflite::MicroInterpreter *interpreter, int i, int sg);
+TfLiteEvalTensor *GetEvalTensor(tflite::MicroInterpreter *interpreter, int i,
+                                int sg);
 
 bool CompileFile(const std::string &modelFileName,
                  const std::string &outFileName,
@@ -111,6 +114,15 @@ class Compiler {
   std::vector<std::vector<int32_t>> outputTensorIndices_;
   std::vector<RegistrationInfo> registrations_;
   std::vector<int32_t> scratchBufferOffsets;
+
+  std::vector<llvm::StringMap<int>> opdataHashMap_;
+  std::vector<std::unordered_map<int, int>> opdataMap_;
+
+  std::vector<llvm::StringMap<int>> tensorDimHashMap_;
+  std::vector<std::unordered_map<int, int>> tensorDimMap_;
+
+  std::vector<llvm::StringMap<int>> quantHashMap_;
+  std::vector<std::unordered_map<int, int>> quantMap_;
 
   bool has_custom_ops = false;
   bool has_xc_conv_ops = false;

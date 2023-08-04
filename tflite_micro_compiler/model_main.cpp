@@ -1,4 +1,4 @@
-#include "model.cpp.h"
+#include "model.tflite.h"
 #include<stdio.h>
 
 #include <xtensor/xarray.hpp>
@@ -6,7 +6,7 @@
 
 int main(int argc, char *argv[])
 {
-  if(model_init()){
+  if(model_init(NULL)){
     printf("Error!\n");
   }
 

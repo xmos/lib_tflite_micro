@@ -1,8 +1,12 @@
 // Copyright (c) 2023, XMOS Ltd, All rights reserved
 
-#include "MemCpyFn.hpp"
+#include "../thread_call.h"
+#include "xcore_config.h"
 #include "xcore_custom_options.h"
 #include "xcore_utils.h"
+extern "C" {
+#include "lib_nn/api/nn_operator.h"
+}
 
 namespace tflite {
 namespace ops {
@@ -10,14 +14,32 @@ namespace micro {
 namespace xcore {
 namespace lookup {
 
+struct LookupShared {
+  uint8_t *X;
+  uint8_t *Y;
+  uint8_t *table;
+};
+
+extern "C" {
+void lookup_thread_worker(void *shared, void *start, void *count) {
+  int *s = static_cast<int *>(start);
+  int *c = static_cast<int *>(count);
+  auto sd = static_cast<LookupShared *>(shared);
+  lookup8(sd->Y, sd->X, sd->table, *s, *c);
+}
+}
 // This is the struct that contains the data required by the operator
 struct LookupOpData
     : XCoreOpData { // Inherits the operator name field from XCoreOpData
+  int thread_count;
 };
 
 void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   auto op_data = construct_persistent_object<LookupOpData>(context);
   op_data->name = "XC_lookup";
+  auto parser = CustomOptionParser(buffer, length);
+  op_data->thread_count =
+      parser.parseNamedCustomOption("thread_count").AsInt32();
 
   return op_data;
 }
@@ -40,15 +62,35 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   TfLiteEvalTensor *output = tflite::micro::GetEvalOutput(context, node, 0);
 
   // Pointers to data in In/Out Tensors
-  void *table_vals =
-      const_cast<void *>(tflite::micro::GetTensorData<void>(table));
-  void *out_data = tflite::micro::GetTensorData<void>(output);
-  const int8_t *in_val = tflite::micro::GetTensorData<int8_t>(input);
-
-  for (int i = 0; i < input_size; i++) {
-    ((int8_t *)out_data)[i] = ((int8_t *)table_vals)[((uint8_t *)in_val)[i]];
+  const uint8_t *table_vals = tflite::micro::GetTensorData<uint8_t>(table);
+  uint8_t *out_data = tflite::micro::GetTensorData<uint8_t>(output);
+  const uint8_t *in_data = tflite::micro::GetTensorData<uint8_t>(input);
+  MicroContext *micro_context = GetMicroContext(context);
+  xc_context_config_t *xc_config = reinterpret_cast<xc_context_config_t *>(
+      micro_context->external_context());
+  const int tc = op_data->thread_count;
+  const int base_count = input_size / tc;
+  const int extra = input_size % tc;
+  int *s = new int[tc];
+  int *c = new int[tc];
+  LookupShared shared_data;
+  shared_data.Y = out_data;
+  shared_data.X = const_cast<uint8_t *>(in_data);
+  shared_data.table = const_cast<uint8_t *>(table_vals);
+  for (int t = 0; t < tc; t++) {
+    s[t] = t * base_count + (t < extra ? t : extra);
+    c[t] = base_count + (t < extra);
+    if (t != tc - 1) {
+      thread_variable_setup((void *)&s[t], (void *)&c[t],
+                            xc_config->thread_info.thread_ids.id[t]);
+    } else {
+      thread_call((void *)&shared_data, &s[t], &c[t],
+                  (thread_function_pointer_t)lookup_thread_worker,
+                  &xc_config->thread_info);
+    }
   }
-
+  delete[] s;
+  delete[] c;
   return kTfLiteOk;
 }
 
@@ -56,7 +98,7 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
 
 TfLiteRegistration_V1 *Register_XC_lookup() {
   static TfLiteRegistration_V1 r = {lookup::Init, nullptr, lookup::Prepare,
-                                 lookup::Eval};
+                                    lookup::Eval};
   return &r;
 }
 

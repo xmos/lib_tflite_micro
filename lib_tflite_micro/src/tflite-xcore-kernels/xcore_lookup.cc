@@ -38,8 +38,7 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   auto op_data = construct_persistent_object<LookupOpData>(context);
   op_data->name = "XC_lookup";
   auto parser = CustomOptionParser(buffer, length);
-  op_data->thread_count =
-      parser.parseNamedCustomOption("thread_count").AsInt32();
+  op_data->thread_count = parser.parseNamedCustomOption("tc").AsInt32();
 
   return op_data;
 }
@@ -65,14 +64,16 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   const uint8_t *table_vals = tflite::micro::GetTensorData<uint8_t>(table);
   uint8_t *out_data = tflite::micro::GetTensorData<uint8_t>(output);
   const uint8_t *in_data = tflite::micro::GetTensorData<uint8_t>(input);
+  // lookup8(out_data, in_data, table_vals, 0, input_size);
   MicroContext *micro_context = GetMicroContext(context);
   xc_context_config_t *xc_config = reinterpret_cast<xc_context_config_t *>(
       micro_context->external_context());
   const int tc = op_data->thread_count;
+  printf("threa_count: %d\n", op_data->thread_count);
   const int base_count = input_size / tc;
   const int extra = input_size % tc;
-  int *s = new int[tc];
-  int *c = new int[tc];
+  int s[tc];
+  int c[tc];
   LookupShared shared_data;
   shared_data.Y = out_data;
   shared_data.X = const_cast<uint8_t *>(in_data);
@@ -80,17 +81,14 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   for (int t = 0; t < tc; t++) {
     s[t] = t * base_count + (t < extra ? t : extra);
     c[t] = base_count + (t < extra);
-    if (t != tc - 1) {
-      thread_variable_setup((void *)&s[t], (void *)&c[t],
-                            xc_config->thread_info.thread_ids.id[t]);
-    } else {
-      thread_call((void *)&shared_data, &s[t], &c[t],
-                  (thread_function_pointer_t)lookup_thread_worker,
-                  &xc_config->thread_info);
-    }
   }
-  delete[] s;
-  delete[] c;
+  for (int t = 0; t < tc - 1; t++) {
+    thread_variable_setup((void *)&s[t], (void *)&c[t],
+                          xc_config->thread_info.thread_ids.id[t]);
+  }
+  thread_call((void *)&shared_data, &s[tc - 1], &c[tc - 1],
+              (thread_function_pointer_t)lookup_thread_worker,
+              &xc_config->thread_info);
   return kTfLiteOk;
 }
 

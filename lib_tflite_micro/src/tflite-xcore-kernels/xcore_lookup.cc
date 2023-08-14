@@ -32,19 +32,33 @@ void lookup_thread_worker(void *shared, void *start, void *count) {
 struct LookupOpData
     : XCoreOpData { // Inherits the operator name field from XCoreOpData
   int thread_count;
+  int s[5];
+  int c[5];
 };
 
 void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   auto op_data = construct_persistent_object<LookupOpData>(context);
   op_data->name = "XC_lookup";
   auto parser = CustomOptionParser(buffer, length);
-  op_data->thread_count = parser.parseNamedCustomOption("tc").AsInt32();
-
+  const int tc = parser.parseNamedCustomOption("tc").AsInt32();
+  op_data->thread_count = tc;
   return op_data;
 }
 
 // Does all the requests for scratches
 TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
+  auto op_data = static_cast<LookupOpData *>(node->user_data);
+  const int tc = op_data->thread_count;
+  const TfLiteEvalTensor *input = tflite::micro::GetEvalInput(context, node, 0);
+  int input_size = 1;
+  for (int i = 0; i < input->dims->size; i++)
+    input_size *= input->dims->data[i];
+  const int base_count = input_size / tc;
+  const int extra = input_size % tc;
+  for (int t = 0; t < tc; t++) {
+    op_data->s[t] = t * base_count + (t < extra ? t : extra);
+    op_data->c[t] = base_count + (t < extra);
+  }
   return kTfLiteOk;
 }
 
@@ -54,9 +68,6 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
 
   // Get Input/Output Tensors
   const TfLiteEvalTensor *input = tflite::micro::GetEvalInput(context, node, 0);
-  int input_size = 1;
-  for (int i = 0; i < input->dims->size; i++)
-    input_size *= input->dims->data[i];
   const TfLiteEvalTensor *table = tflite::micro::GetEvalInput(context, node, 1);
   TfLiteEvalTensor *output = tflite::micro::GetEvalOutput(context, node, 0);
 
@@ -69,24 +80,15 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   xc_context_config_t *xc_config = reinterpret_cast<xc_context_config_t *>(
       micro_context->external_context());
   const int tc = op_data->thread_count;
-  printf("threa_count: %d\n", op_data->thread_count);
-  const int base_count = input_size / tc;
-  const int extra = input_size % tc;
-  int s[tc];
-  int c[tc];
   LookupShared shared_data;
   shared_data.Y = out_data;
   shared_data.X = const_cast<uint8_t *>(in_data);
   shared_data.table = const_cast<uint8_t *>(table_vals);
-  for (int t = 0; t < tc; t++) {
-    s[t] = t * base_count + (t < extra ? t : extra);
-    c[t] = base_count + (t < extra);
-  }
   for (int t = 0; t < tc - 1; t++) {
-    thread_variable_setup((void *)&s[t], (void *)&c[t],
+    thread_variable_setup((void *)&op_data->s[t], (void *)&op_data->c[t],
                           xc_config->thread_info.thread_ids.id[t]);
   }
-  thread_call((void *)&shared_data, &s[tc - 1], &c[tc - 1],
+  thread_call((void *)&shared_data, &op_data->s[tc - 1], &op_data->c[tc - 1],
               (thread_function_pointer_t)lookup_thread_worker,
               &xc_config->thread_info);
   return kTfLiteOk;

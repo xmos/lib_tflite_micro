@@ -31,17 +31,17 @@ void flash_server(chanend c_flash[], flash_t headers[], int n_flash,
     int res;
     if ((res = fl_connectToDevice(qspi, flash_spec, n_flash_spec)) != 0) {
         printstr("fl_connect err");printintln(res);    // TODO; these errors needs to be reported through AI server
-        asm("waiteu");
+        asm("clre; waiteu");
     }
 
     if ((res = fast_flash_init(qspi)) != 0) {
         printstr("fast flash init err ");printintln(res);
-        asm("waiteu");
+        asm("clre; waiteu");
     }
 
     if ((res = flash_version_check(qspi)) != 0) {
         printstr("version check error");printintln(res);
-        asm("waiteu");
+        asm("clre; waiteu");
     }    
     fast_flash_read(qspi, /*unsigned addr*/36, /*unsigned word_count*/(n_flash * sizeof(flash_t))/4, /*unsigned read_data[]*/(headers, unsigned[]), /*chanend ?c_data_out*/NULL);
 

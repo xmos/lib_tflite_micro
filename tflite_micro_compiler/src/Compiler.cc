@@ -120,6 +120,12 @@ tflmc::Compiler::Compiler(const void *modelData,
   if (sharedCfg_) {
     numXCThreads_ = sharedCfg_->required_thread_count;
   }
+  g_loggedAllocations.clear();
+  g_currentNodeIndex = -1;
+  g_arenaPtr = nullptr;
+  g_arena_size = 0;
+  dummy_arena.clear();
+
   if (!init(modelData)) {
     throw std::runtime_error("Could not set up compiler");
   }
@@ -286,21 +292,23 @@ bool tflmc::Compiler::init(const void *modelData) {
   }
 
   // scratch buffers
+  DEBUG_LOG(("\n\nTFLMC Allocated scratch buffer offsets:\n"));
+  tflite::internal::ScratchBufferRequest *requests =
+    interpreter_->allocator_.GetScratchBufferRequests();
   for (size_t k = 0;
        k < interpreter_->allocator_.GetScratchBufferRequestCount(); k++) {
     void *data = interpreter_->micro_context_.GetScratchBuffer(k);
     ptrdiff_t offset = (uint8_t *)data - arena_buf_.data();
-    tflite::internal::ScratchBufferRequest *requests =
-        interpreter_->allocator_.GetScratchBufferRequests();
     int bytes = requests[k].bytes;
     // double word align scratch buffer bytes
     bytes = ((bytes + 7) / 8) * 8;
+    DEBUG_LOG(("%d,", offset));
     ptrdiff_t highSize = offset + bytes;
     ramTensorBufferSize = std::max(ramTensorBufferSize, highSize);
     memMap_.recordRAM(offset, bytes,
                       "Scratch_idx" + std::to_string((int)k) + "_op" +
                           std::to_string((int)requests[k].node_idx));
-    scratchBufferOffsets.push_back(offset);
+    scratchBufferOffsets_.push_back(offset);
   }
 
   // g_loggedAllocations for persistent buffers
@@ -352,6 +360,10 @@ bool tflmc::Compiler::init(const void *modelData) {
     memMap_.report();
   }
 
+  return true;
+}
+
+void tflmc::Compiler::deDuplicateData() {
   auto getHash = [&](std::vector<llvm::ArrayRef<uint8_t>> data) {
     llvm::MD5 hash;
     for (auto &i : data) {
@@ -421,11 +433,12 @@ bool tflmc::Compiler::init(const void *modelData) {
       }
     }
   }
-
-  return true;
 }
 
 void tflmc::Compiler::writeSource(std::ostream &out) {
+  // run md5 hashing and deduplicate data to be written
+  deDuplicateData();
+
   CodeWriter wr(out, mainGraph_);
 
   wr << R"(
@@ -831,11 +844,11 @@ static const int outTensorIndices[] = {
 // Scratch buffer variables
 int scratch_buffer_idx;
 const int scratch_buffer_offsets[)"
-     << scratchBufferOffsets.size() << R"(] = { )";
-  if (scratchBufferOffsets.size() > 0) {
-    wr << scratchBufferOffsets[0];
-    for (int i = 1; i < scratchBufferOffsets.size(); i++) {
-      wr << ", " << scratchBufferOffsets[i];
+     << scratchBufferOffsets_.size() << R"(] = { )";
+  if (scratchBufferOffsets_.size() > 0) {
+    wr << scratchBufferOffsets_[0];
+    for (int i = 1; i < scratchBufferOffsets_.size(); i++) {
+      wr << ", " << scratchBufferOffsets_[i];
     }
   }
   wr << R"( };

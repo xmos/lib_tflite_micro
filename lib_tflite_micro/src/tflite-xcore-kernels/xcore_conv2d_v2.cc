@@ -309,9 +309,11 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
 TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
   auto *op_data = reinterpret_cast<Conv2DOpData *>(node->user_data);
   for (int t = 0; t < op_data->thread_count; ++t) {
-    TF_LITE_ENSURE_STATUS(context->RequestScratchBufferInArena(
-        context, op_data->threads[t].scratch_size,
-        &op_data->threads[t].stack_scratch_index));
+    if(op_data->threads[t].scratch_size) {
+      TF_LITE_ENSURE_STATUS(context->RequestScratchBufferInArena(
+          context, op_data->threads[t].scratch_size,
+          &op_data->threads[t].stack_scratch_index));
+    }
   }
   return kTfLiteOk;
 }

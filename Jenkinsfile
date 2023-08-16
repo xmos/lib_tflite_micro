@@ -1,4 +1,4 @@
-@Library('xmos_jenkins_shared_library@v0.18.0') _
+@Library('xmos_jenkins_shared_library@v0.27.0') _
 
 getApproval()
 
@@ -9,7 +9,7 @@ pipeline {
     options {
 
         // skipDefaultCheckout()
-        buildDiscarder(logRotator(numToKeepStr: '10'))
+        buildDiscarder(xmosDiscardBuildSettings(onlyArtifacts=false))
         timestamps()
     }
     environment {

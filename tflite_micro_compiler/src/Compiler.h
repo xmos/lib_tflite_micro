@@ -23,8 +23,6 @@ struct Allocation {
   int nodeIndex;
 };
 
-TfLiteStatus AllocateTensors(
-    std::unique_ptr<tflite::MicroInterpreter> &interpreter);
 TfLiteTensor *GetTensor(tflite::MicroInterpreter *interpreter, int i, int sg);
 TfLiteEvalTensor *GetEvalTensor(tflite::MicroInterpreter *interpreter, int i,
                                 int sg);
@@ -55,6 +53,8 @@ class Compiler {
 
  private:
   bool init(const void *modelData);
+
+  void deDuplicateData();
 
  private:
   struct TensorInfo {
@@ -113,7 +113,7 @@ class Compiler {
   std::vector<std::vector<int32_t>> inputTensorIndices_;
   std::vector<std::vector<int32_t>> outputTensorIndices_;
   std::vector<RegistrationInfo> registrations_;
-  std::vector<int32_t> scratchBufferOffsets;
+  std::vector<int32_t> scratchBufferOffsets_;
 
   std::vector<llvm::StringMap<int>> opdataHashMap_;
   std::vector<std::unordered_map<int, int>> opdataMap_;

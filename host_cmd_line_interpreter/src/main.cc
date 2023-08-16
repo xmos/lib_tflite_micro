@@ -18,8 +18,8 @@ struct tflite_micro_objects s0;
 
 void inference_engine_initialize(inference_engine_t *ie) {
   s0.interpreter = nullptr;
-  auto *resolver = inference_engine_initialize(
-      ie, arena, MAX_ARENA_SIZE, nullptr, 0, &s0);
+  auto *resolver =
+      inference_engine_initialize(ie, arena, MAX_ARENA_SIZE, nullptr, 0, &s0);
   resolver->AddDequantize();
   resolver->AddSoftmax();
   resolver->AddMean();
@@ -32,6 +32,8 @@ void inference_engine_initialize(inference_engine_t *ie) {
   resolver->AddQuantize();
   resolver->AddDepthwiseConv2D();
   resolver->AddStridedSlice();
+  resolver->AddShape();
+  resolver->AddPack();
   tflite::ops::micro::xcore::RegisterXCOps(resolver);
 }
 
@@ -99,8 +101,8 @@ int main(int argc, char *argv[]) {
   inference_engine_initialize(&ie);
 
   // load model
-  size_t model_size = load_binary_file(model_filename, model_content,
-                                       MAX_MODEL_CONTENT_SIZE);
+  size_t model_size =
+      load_binary_file(model_filename, model_content, MAX_MODEL_CONTENT_SIZE);
 
   char *params_filename = argv[2];
   (void)load_binary_file(params_filename, params_content, MAX_PARAMS_SIZE);
@@ -112,16 +114,18 @@ int main(int argc, char *argv[]) {
   if (strcmp(argv[carg], "-i") == 0) {
 
     int tensor_num = 0;
-    while(strcmp(argv[++carg], "-o") != 0 && carg < argc) {
-        load_input(argv[carg], ie.input_buffers[tensor_num], ie.input_sizes[tensor_num]);
-        tensor_num++;
+    while (strcmp(argv[++carg], "-o") != 0 && carg < argc) {
+      load_input(argv[carg], ie.input_buffers[tensor_num],
+                 ie.input_sizes[tensor_num]);
+      tensor_num++;
     }
     interp_invoke_par_5(&ie);
     printf("%d\n", ie.arena_needed_bytes);
     tensor_num = 0;
-    while(++carg < argc) {
-        save_output(argv[carg], ie.output_buffers[tensor_num], ie.output_sizes[tensor_num]);
-        tensor_num++;
+    while (++carg < argc) {
+      save_output(argv[carg], ie.output_buffers[tensor_num],
+                  ie.output_sizes[tensor_num]);
+      tensor_num++;
     }
   } else {
     char *input_filename = argv[carg];

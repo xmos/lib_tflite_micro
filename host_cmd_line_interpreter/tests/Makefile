@@ -1,2 +1,2 @@
 test:
-	(cd test_smoke && make test)
+	(cd test_mobnet && make test)

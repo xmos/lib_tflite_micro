@@ -1326,6 +1326,14 @@ inline int %PREFIX%output_dims_len(int index) {
 inline int *%PREFIX%output_dims(int index) {
   return &%PREFIX%output(index)->dims->data[1];
 }
+// Only returns valid value if input is quantized
+inline int32_t %PREFIX%input_zeropoint(int index) {
+  return %PREFIX%input(index)->params.zero_point;
+}
+// Only returns valid value if input is quantized
+inline float %PREFIX%input_scale(int index) {
+  return %PREFIX%input(index)->params.scale;
+}
 // Only returns valid value if output is quantized
 inline int32_t %PREFIX%output_zeropoint(int index) {
   return %PREFIX%output(index)->params.zero_point;

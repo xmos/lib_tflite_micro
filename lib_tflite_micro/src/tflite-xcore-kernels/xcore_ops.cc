@@ -20,6 +20,11 @@ namespace xcore {
 void RegisterXCOps(MicroOpResolver *res) {
   auto *resolver =
       reinterpret_cast<MicroMutableOpResolver<XTFLM_OPERATORS> *>(res);
+
+  resolver->AddCustom(XC_beta_convf32_OpCode, Register_XC_beta_convf32());
+  resolver->AddCustom(XC_beta_transposeconvf32_OpCode, Register_XC_beta_transposeconvf32());
+  resolver->AddCustom(XC_beta_fcf32_OpCode, Register_XC_beta_fcf32());
+
   resolver->AddCustom(XC_conv2d_v2_OpCode, Register_XC_conv2d_v2());
   resolver->AddCustom(tflite::ops::micro::xcore::XC_add_OpCode,
                       tflite::ops::micro::xcore::Register_XC_add());

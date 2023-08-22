@@ -349,8 +349,10 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   shared_data.Y = (int8_t *)tflite::micro::GetTensorData<int8_t>(output);
   shared_data.f = op_data->filter2D;
   for (int t = 0; t < n_threads; ++t) {
-    thread_scratch[t] = (int8_t *)context->GetScratchBuffer(
-        context, op_data->threads[t].stack_scratch_index);
+    if(op_data->threads[t].scratch_size) {
+      thread_scratch[t] = (int8_t *)context->GetScratchBuffer(
+          context, op_data->threads[t].stack_scratch_index);
+    }
   }
 
   switch (op_data->kt) {

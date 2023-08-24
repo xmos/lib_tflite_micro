@@ -81,6 +81,7 @@ install(TARGETS xtflitemicro DESTINATION "${CMAKE_BINARY_DIR}/lib"
 
 # Move headers to clean up include directory
 add_custom_target(project-install DEPENDS xtflitemicro
+    COMMAND rm -rf "${CMAKE_BINARY_DIR}/include" "${CMAKE_BINARY_DIR}/lib"
     COMMAND "${CMAKE_COMMAND}" --build "${PROJECT_BINARY_DIR}" --target install
     COMMAND mv "${CMAKE_BINARY_DIR}/include/lib_tflite_micro/lib_tflite_micro/submodules/tflite-micro/tensorflow" "${CMAKE_BINARY_DIR}/include"
     COMMAND mv "${CMAKE_BINARY_DIR}/include/lib_tflite_micro/lib_tflite_micro/submodules/flatbuffers/include/flatbuffers" "${CMAKE_BINARY_DIR}/include"

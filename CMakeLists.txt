@@ -32,7 +32,6 @@ if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL XCORE_XS3A)
 
     set(BUILD_FLAGS
         "-g"
-        "-O3"
         "-fcomment-asm"
         "-mcmodel=large"
         "-fxscope"
@@ -40,6 +39,12 @@ if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL XCORE_XS3A)
         "-Wno-unknown-pragmas"
         "-Wno-bidirectional-buffered-port"
     )
+
+    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+        list(APPEND BUILD_FLAGS "-00")
+    else()
+        list(APPEND BUILD_FLAGS "-O3")
+    endif()
 else()
     set(BUILD_FLAGS
         "-g"

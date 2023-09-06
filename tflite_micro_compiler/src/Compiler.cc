@@ -294,7 +294,7 @@ bool tflmc::Compiler::init(const void *modelData) {
   // scratch buffers
   DEBUG_LOG(("\n\nTFLMC Allocated scratch buffer offsets:\n"));
   tflite::internal::ScratchBufferRequest *requests =
-    interpreter_->allocator_.GetScratchBufferRequests();
+      interpreter_->allocator_.GetScratchBufferRequests();
   for (size_t k = 0;
        k < interpreter_->allocator_.GetScratchBufferRequestCount(); k++) {
     void *data = interpreter_->micro_context_.GetScratchBuffer(k);
@@ -456,6 +456,7 @@ void tflmc::Compiler::writeSource(std::ostream &out) {
 #include "tensorflow/lite/micro/micro_context.h"
 
 // #define TFLMC_XCORE_PROFILE
+// #define TFLMC_CONV2D_PROFILE
 // #define TFLMC_PRINT_TENSORS
 // #define TFLMC_PRINT_INPUT_TENSORS
 
@@ -1210,7 +1211,7 @@ TfLiteStatus )"
 
   thread_destroy(&xc_config.thread_info);
 
-#ifdef TFLMC_XCORE_PROFILE
+#ifdef TFLMC_CONV2D_PROFILE
   struct convopdata{
     const char * name;
     size_t thread_count;

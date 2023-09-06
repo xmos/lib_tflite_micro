@@ -570,7 +570,7 @@ enum used_operators_e {
   wr << R"( OP_LAST
 };
 
-#if defined(TFLMC_XCORE_PROFILE) || defined(TFLMC_PRINT_TENSORS) || defined(TFLMC_PRINT_INPUT_TENSORS)
+#if defined(TFLMC_XCORE_PROFILE) || defined(TFLMC_PRINT_TENSORS) || defined(TFLMC_PRINT_INPUT_TENSORS) || defined(TFLMC_CONV2D_PROFILE)
 const char *op_strs[] = {
 )";
   for (size_t i = 0; i < registrations_.size(); i++) {
@@ -583,6 +583,8 @@ const char *op_strs[] = {
   }
   wr << R"(};
 
+#endif
+#if defined(TFLMC_XCORE_PROFILE) || defined(TFLMC_PRINT_TENSORS) || defined(TFLMC_PRINT_INPUT_TENSORS)
 unsigned char checksum(char *data, unsigned int length)
 {
   static char sum;
@@ -1220,23 +1222,27 @@ TfLiteStatus )"
     int threadsDoneTime;
   };)";
   if (has_xc_conv_ops) {
-    wr << R"(int conv_times1 = 0, conv_times2 = 0;
-    printf("\n\nConv()...");
-    for(size_t g = 0; g < )"
+    wr << R"(
+  int conv_times1 = 0, conv_times2 = 0;
+  printf("\n\nConv()...");
+  for(size_t g = 0; g < )"
        << nodes_.size() << R"(; ++g) {
-      for(size_t i = tflNodes_subgraph_index[g]; i < tflNodes_subgraph_index[g+1]; ++i) {
-        if(used_ops[i] == OP_XC_conv2d_v2) {
-          auto *op_data = reinterpret_cast<convopdata *>(tflNodes[i].user_data);
-          conv_times1 += op_data->threadsStartTime - op_data->evalStartTime;
-          conv_times2 += op_data->threadsDoneTime - op_data->threadsStartTime;
-          printf("\nnode %-5d %-25s %-25s %-6d %-6d %-12d", i, op_strs[used_ops[i]], op_data->name, op_data->thread_count, op_data->threadsStartTime - op_data->evalStartTime, op_data->threadsDoneTime - op_data->threadsStartTime);
-        }
+    for(size_t i = tflNodes_subgraph_index[g]; i < tflNodes_subgraph_index[g+1]; ++i) {
+      if(used_ops[i] == OP_XC_conv2d_v2) {
+        auto *op_data = reinterpret_cast<convopdata *>(tflNodes[i].user_data);
+        conv_times1 += op_data->threadsStartTime - op_data->evalStartTime;
+        conv_times2 += op_data->threadsDoneTime - op_data->threadsStartTime;
+        printf("\nnode %-5d %-25s %-25s %-6d %-6d %-12d", i, op_strs[used_ops[i]], op_data->name, op_data->thread_count, op_data->threadsStartTime - op_data->evalStartTime, op_data->threadsDoneTime - op_data->threadsStartTime);
       }
     }
-    printf("\nSummed - %-10d %-10d", conv_times1, conv_times2);
+  }
+  printf("\nSummed - %-10d %-10d", conv_times1, conv_times2);
+#endif
     )";
   }
-  wr << R"(printf("\n\nCumulative times for invoke()...");
+  wr << R"(
+#ifdef TFLMC_XCORE_PROFILE
+  printf("\n\nCumulative times for invoke()...");
   for(int i=0; i<OP_LAST; i++){
     op_times_summed += op_times[i];
     printf("\n%-5d %-32s %-12d %.2fms", op_counts[i], op_strs[i], op_times[i], op_times[i]/100000.0);

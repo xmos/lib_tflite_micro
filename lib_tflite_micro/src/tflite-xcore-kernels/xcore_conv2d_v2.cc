@@ -80,7 +80,7 @@ struct Conv2DThreadInfo {
 struct Conv2DOpData
     : XCoreOpData { // Inherits the operator name field from XCoreOpData
   size_t thread_count;
-#ifdef TFLMC_XCORE_PROFILE
+#ifdef TFLMC_CONV2D_PROFILE
   int evalStartTime;
   int threadsStartTime;
   int threadsDoneTime;
@@ -101,7 +101,7 @@ T *getDeserializedParams(TfLiteContext *context, const uint8_t *data) {
   // carefully aligned to four bytes so that we can directly access it.
   // This is done in TranslateToCustomOp.cpp in the compiler.
   assert(((uintptr_t)data & 0x3) == 0);
-  T *param = (T*)data;
+  T *param = (T *)data;
   return param;
 }
 
@@ -309,7 +309,7 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
 TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
   auto *op_data = reinterpret_cast<Conv2DOpData *>(node->user_data);
   for (int t = 0; t < op_data->thread_count; ++t) {
-    if(op_data->threads[t].scratch_size) {
+    if (op_data->threads[t].scratch_size) {
       TF_LITE_ENSURE_STATUS(context->RequestScratchBufferInArena(
           context, op_data->threads[t].scratch_size,
           &op_data->threads[t].stack_scratch_index));
@@ -333,8 +333,8 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   auto *op_data = reinterpret_cast<Conv2DOpData *>(node->user_data);
   int n_threads = op_data->thread_count;
 
-#ifdef TFLMC_XCORE_PROFILE
-  asm volatile ("gettime %0" : "=r" (op_data->evalStartTime));
+#ifdef TFLMC_CONV2D_PROFILE
+  asm volatile("gettime %0" : "=r"(op_data->evalStartTime));
 #endif
 
   int8_t *weights =
@@ -349,7 +349,7 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   shared_data.Y = (int8_t *)tflite::micro::GetTensorData<int8_t>(output);
   shared_data.f = op_data->filter2D;
   for (int t = 0; t < n_threads; ++t) {
-    if(op_data->threads[t].scratch_size) {
+    if (op_data->threads[t].scratch_size) {
       thread_scratch[t] = (int8_t *)context->GetScratchBuffer(
           context, op_data->threads[t].stack_scratch_index);
     }
@@ -433,8 +433,8 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
                           xc_config->thread_info.thread_ids.id[t]);
   }
 
-#ifdef TFLMC_XCORE_PROFILE
-  asm volatile ("gettime %0" : "=r" (op_data->threadsStartTime));
+#ifdef TFLMC_CONV2D_PROFILE
+  asm volatile("gettime %0" : "=r"(op_data->threadsStartTime));
 #endif
 
   // Now set up shared data, shared function pointer, and data for final thread.
@@ -443,8 +443,8 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
               (thread_function_pointer_t)conv2d_v2_thread_worker,
               &xc_config->thread_info);
 
-#ifdef TFLMC_XCORE_PROFILE
-  asm volatile ("gettime %0" : "=r" (op_data->threadsDoneTime));
+#ifdef TFLMC_CONV2D_PROFILE
+  asm volatile("gettime %0" : "=r"(op_data->threadsDoneTime));
 #endif
 
   return kTfLiteOk;
@@ -454,7 +454,7 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
 
 TfLiteRegistration_V1 *Register_XC_conv2d_v2() {
   static TfLiteRegistration_V1 r = {conv_v2::Init, nullptr, conv_v2::Prepare,
-                                 conv_v2::Eval};
+                                    conv_v2::Eval};
   return &r;
 }
 

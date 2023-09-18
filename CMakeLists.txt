@@ -51,7 +51,7 @@ else()
         "-O0"
     )
 
-    list(APPEND DEFINTIONS "NN_USE_REF")
+    list(APPEND DEFINTIONS "NN_USE_REF" "FLATBUFFERS_LOCALE_INDEPENDENT=0")
 
     target_compile_features(xtflitemicro PUBLIC cxx_std_17)
 endif()

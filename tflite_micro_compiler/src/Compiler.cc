@@ -1212,17 +1212,17 @@ TfLiteStatus )"
   mg_InvokeSubgraph(0);
 
   thread_destroy(&xc_config.thread_info);
-
-#ifdef TFLMC_CONV2D_PROFILE
+)";
+  if (has_xc_conv_ops) {
+    wr << R"(
+  #ifdef TFLMC_CONV2D_PROFILE
   struct convopdata{
     const char * name;
     size_t thread_count;
     int evalStartTime;
     int threadsStartTime;
     int threadsDoneTime;
-  };)";
-  if (has_xc_conv_ops) {
-    wr << R"(
+  };
   int conv_times1 = 0, conv_times2 = 0;
   printf("\n\nConv()...");
   for(size_t g = 0; g < )"

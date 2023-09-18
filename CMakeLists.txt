@@ -7,6 +7,8 @@ if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
     message(FATAL_ERROR "In-source build is not allowed! Please specify a build folder.\n\tex:cmake -B build")
 endif()
 
+set(LIB_NAME "xtflitemicro" CACHE STRING "Name of the library to be built")
+
 # **********************
 # Targets
 # **********************
@@ -14,7 +16,7 @@ set(TOP_DIR
     "${CMAKE_CURRENT_SOURCE_DIR}")
 include(${TOP_DIR}/cmakefiles/xtflm.cmake)
 
-add_library(xtflitemicro)
+add_library(${LIB_NAME})
 
 set(DEFINTIONS
     "__xtflm_conf_h_exists__"
@@ -53,12 +55,12 @@ else()
 
     list(APPEND DEFINTIONS "NN_USE_REF" "FLATBUFFERS_LOCALE_INDEPENDENT=0")
 
-    target_compile_features(xtflitemicro PUBLIC cxx_std_17)
+    target_compile_features(${LIB_NAME} PUBLIC cxx_std_17)
 endif()
 
-target_compile_options(xtflitemicro PRIVATE ${BUILD_FLAGS})
-target_link_options(xtflitemicro PRIVATE ${BUILD_FLAGS})
-target_compile_definitions(xtflitemicro PUBLIC
+target_compile_options(${LIB_NAME} PRIVATE ${BUILD_FLAGS})
+target_link_options(${LIB_NAME} PRIVATE ${BUILD_FLAGS})
+target_compile_definitions(${LIB_NAME} PUBLIC
     ${DEFINTIONS}
 )
 
@@ -68,7 +70,7 @@ foreach(DIR ${ALL_INCLUDES})
     list(APPEND header_list ${headers})
 endforeach()
 
-target_sources(xtflitemicro
+target_sources(${LIB_NAME}
     PRIVATE ${TFLM_KERNEL_SOURCES}
     PRIVATE ${TFLITE_SOURCES}
     PRIVATE ${NN_SOURCES}
@@ -78,14 +80,14 @@ target_sources(xtflitemicro
     BASE_DIRS "${TOP_DIR}/.."
     FILES ${header_list}
 )
-target_include_directories(xtflitemicro
+target_include_directories(${LIB_NAME}
     PRIVATE ${ALL_INCLUDES}
 )
-install(TARGETS xtflitemicro DESTINATION "${CMAKE_BINARY_DIR}/lib"
+install(TARGETS ${LIB_NAME} DESTINATION "${CMAKE_BINARY_DIR}/lib"
     FILE_SET HEADERS DESTINATION "${CMAKE_BINARY_DIR}/include")
 
 # Move headers to clean up include directory
-add_custom_target(project-install DEPENDS xtflitemicro
+add_custom_target(project-install DEPENDS ${LIB_NAME}
     COMMAND rm -rf "${CMAKE_BINARY_DIR}/include" "${CMAKE_BINARY_DIR}/lib"
     COMMAND "${CMAKE_COMMAND}" --build "${PROJECT_BINARY_DIR}" --target install
     COMMAND mv "${CMAKE_BINARY_DIR}/include/lib_tflite_micro/lib_tflite_micro/submodules/tflite-micro/tensorflow" "${CMAKE_BINARY_DIR}/include"
@@ -104,4 +106,3 @@ add_custom_target(project-install DEPENDS xtflitemicro
 add_custom_target(create_zip DEPENDS project-install COMMAND
     ${CMAKE_COMMAND} -E tar "cfv" "release_archive.zip" --format=zip
     "${CMAKE_BINARY_DIR}/lib" "${CMAKE_BINARY_DIR}/include")
-

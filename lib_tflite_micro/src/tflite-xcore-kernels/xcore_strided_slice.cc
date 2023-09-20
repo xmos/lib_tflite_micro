@@ -1,6 +1,7 @@
 // Copyright (c) 2023, XMOS Ltd, All rights reserved
 
-#include "MemCpyFn.hpp"
+#include "lib_nn/api/AbstractKernel.hpp"
+#include "lib_nn/api/MemCpyFn.hpp"
 #include "xcore_custom_options.h"
 #include "xcore_utils.h"
 
@@ -21,18 +22,16 @@ struct StridedSliceOpData
     : XCoreOpData { // Inherits the operator name field from XCoreOpData
   int32_t begin_x;
   int32_t begin_y;
-  nn::ImToColValid::Params *mf_params;
-  nn::ImToColValid *memcpy;
+  nn::memcpyfn_imtocol_valid_params_t *mf_params;
+  nn::MemFnType memcpy_fn;
   int32_t memcpy_type;
 };
 
 template <typename T>
 T *getDeserializedParams(TfLiteContext *context, const uint8_t *data) {
-  char *allocated_memory;
-  int allocationByteCount = sizeof(T);
-  allocated_memory =
-      (char *)context->AllocatePersistentBuffer(context, allocationByteCount);
-  T *param = T::template deserialise<T>(allocated_memory, (const char *)data);
+
+  assert(((uintptr_t)data & 0x3) == 0);
+  T *param = (T *)data;
   return param;
 }
 
@@ -41,15 +40,12 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   op_data->name = "XC_Strided_Slice";
 
   auto parser = CustomOptionParser(buffer, length);
-  const uint8_t *memcpy_fn_data =
-      parser.parseNamedCustomOption("mp").AsBlob().data();
-  op_data->mf_params =
-      getDeserializedParams<nn::ImToColValid::Params>(context, memcpy_fn_data);
+
+  assert(((uintptr_t)parser.parseNamedCustomOption("mp").AsBlob().data() & 0x3) == 0);
+  op_data->mf_params = (nn::memcpyfn_imtocol_valid_params_t *)parser.parseNamedCustomOption("mp").AsBlob().data();
   op_data->begin_x = parser.parseNamedCustomOption("begin_x").AsInt32();
   op_data->begin_y = parser.parseNamedCustomOption("begin_y").AsInt32();
-  op_data->memcpy = new (context->AllocatePersistentBuffer(
-      context, sizeof(nn::ImToColValid::Params)))
-      nn::ImToColValid(op_data->mf_params);
+  op_data->memcpy_fn = (nn::MemFnType) nn::memcpyfn_imtocol_valid;
   op_data->memcpy_type = parser.parseNamedCustomOption("type").AsInt32();
   return op_data;
 }
@@ -76,7 +72,7 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
                        op_data->mf_params->bytes_per_h_line;
     memcpy((int8_t *)out_data, (int8_t *)in_data + input_offset, num_bytes);
   } else if (op_data->memcpy_type == VpuCpy_t) {
-    op_data->memcpy->memcopy_fn((int8_t *)out_data, (int8_t *)in_data,
+    op_data->memcpy_fn(op_data->mf_params, (int8_t *)out_data, (int8_t *)in_data,
                                 op_data->begin_y, op_data->begin_x, 0);
   } else if (op_data->memcpy_type == MemCpy_t) {
     int num_in_bytes = input->dims->data[3];

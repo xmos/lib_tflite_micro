@@ -1,7 +1,10 @@
 // Copyright (c) 2023, XMOS Ltd, All rights reserved
 
 #include "../thread_call.h"
-#include "lib_nn/api/Conv2d.hpp"
+#include "lib_nn/api/AbstractKernel.hpp"
+#include "lib_nn/api/AggregateFn.hpp"
+#include "lib_nn/api/MemCpyFn.hpp"
+#include "lib_nn/api/OutputTransformFn.hpp"
 #include "tensorflow/lite/c/common.h"
 #include "tensorflow/lite/kernels/internal/tensor_ctypes.h"
 #include "tensorflow/lite/kernels/kernel_util.h"
@@ -26,17 +29,21 @@ namespace conv_v2 {
 struct Conv2DShared {
   int8_t *X;
   int8_t *Y;
-  nn::AbstractKernel *f;
+  nn::conv_params_t *conv_params;
+  int8_t *weights;
+  int16_t *muls_and_biases;
+  bool isDepthwise;
 };
 
 extern "C" {
 // TODO
 #pragma stackfunction 1000
 void conv2d_v2_thread_worker(void *shard, void *scrtch, void *kp) {
-  nn::AbstractKernel::Params *kparams = (nn::AbstractKernel::Params *)kp;
+  nn::abstract_kernel_params_t *akparams = (nn::abstract_kernel_params_t *)kp;
   auto scratch = static_cast<int8_t *>(scrtch);
   auto shared = static_cast<Conv2DShared *>(shard);
-  execute(shared->Y, shared->X, shared->f, kparams, scratch);
+  execute(shared->Y, shared->X, shared->conv_params, akparams, shared->weights,
+          shared->muls_and_biases, /*isConv=*/!shared->isDepthwise, scratch);
 }
 }
 
@@ -67,9 +74,7 @@ struct Conv2DThreadInfo {
   size_t scratch_size;     // Each thread needs a scratch
   int stack_scratch_index; // All threads stack and scratch consolidated into a
                            // single scratch buffer
-  // TODO: Clean up
-  // Using AbstractKernel to be able to assign Filter2D or Filter2D_DW
-  nn::AbstractKernel::Params *kparams;
+  nn::abstract_kernel_params_t *kparams;
 };
 
 // This is the struct that contains the data required to fully describe the work
@@ -85,10 +90,9 @@ struct Conv2DOpData
   int threadsStartTime;
   int threadsDoneTime;
 #endif
-  int ot_type;
   Conv2DThreadInfo *threads;
+  nn::conv_params_t conv_params; // The job to be done by this thread
   KernelType kt;
-  nn::AbstractKernel *filter2D; // The job to be done by this thread
 };
 
 // -------------------------------------------------------------------- //
@@ -106,71 +110,112 @@ T *getDeserializedParams(TfLiteContext *context, const uint8_t *data) {
 }
 
 // Construct Filter2D threads
-template <typename Conv2DType, typename MfType, typename AggType,
-          typename OtType, typename AkType>
+template <typename MfStructType>
 void ConstructFilter2DsImpl(Conv2DOpData *op_data, TfLiteContext *context,
                             const int scratch_size,
                             const uint8_t *memcpy_fn_data,
-                            const uint8_t *agg_fn_data, OtType *ot,
+                            const uint8_t *agg_fn_data,
                             flexbuffers::Vector &ak_params_vec) {
-  typename MfType::Params *mf_params =
-      getDeserializedParams<typename MfType::Params>(context, memcpy_fn_data);
-  typename AggType::Params *af_params =
-      getDeserializedParams<typename AggType::Params>(context, agg_fn_data);
-  auto memcpy = new (context->AllocatePersistentBuffer(context, sizeof(MfType)))
-      MfType(mf_params);
-  auto aggregator =
-      new (context->AllocatePersistentBuffer(context, sizeof(AggType)))
-          AggType(af_params);
+  if (std::is_same<MfStructType, nn::memcpyfn_deref_params_t>::value) {
+    op_data->conv_params.memcopy_fn = (nn::MemFnType)nn::memcpyfn_deref;
+  } else if (std::is_same<MfStructType,
+                          nn::memcpyfn_imtocol_valid_params_t>::value) {
+    op_data->conv_params.memcopy_fn = (nn::MemFnType)nn::memcpyfn_imtocol_valid;
+  } else if (std::is_same<MfStructType,
+                          nn::memcpyfn_imtocol_padded_params_t>::value) {
+    op_data->conv_params.memcopy_fn =
+        (nn::MemFnType)nn::memcpyfn_imtocol_padded;
+  } else {
+    assert(false);
+  }
+
+  op_data->conv_params.mem_p =
+      getDeserializedParams<MfStructType>(context, memcpy_fn_data);
 
   // For each thread, we have a different set of abstract kernel params which we
   // extract here
   // We reuse the other params
-  auto conv2d =
-      new (context->AllocatePersistentBuffer(context, sizeof(Conv2DType)))
-          Conv2DType(memcpy, aggregator, ot);
-  op_data->filter2D = conv2d;
   for (int t = 0; t < op_data->thread_count; ++t) {
     op_data->threads[t].scratch_size = scratch_size;
-    typename AkType::Params *ak_params =
-        getDeserializedParams<typename AkType::Params>(
+    op_data->threads[t].kparams =
+        getDeserializedParams<nn::abstract_kernel_params_t>(
             context, ak_params_vec[t].AsBlob().data());
-    op_data->threads[t].kparams = ak_params;
+    ;
   }
 }
 
 // Specialised for the binary output cases
 // Forwards into the ConstructFilter2DsImpl implementation function
-template <typename Conv2DType, typename MfType, typename AggType,
-          typename OtType, typename AkType, bool binaryOutput>
+template <typename MfStructType, typename AggStructType, typename OtStructType,
+          bool binaryOutput>
 void ConstructFilter2Ds(Conv2DOpData *op_data, TfLiteContext *context,
                         const int scratch_size, const uint8_t *memcpy_fn_data,
                         const uint8_t *agg_fn_data, const uint8_t *ot_fn_data,
                         flexbuffers::Vector &ak_params_vec) {
-  // For binary output, we don't have output transform function params
-  auto ot =
-      new (context->AllocatePersistentBuffer(context, sizeof(OtType))) OtType();
-  ConstructFilter2DsImpl<Conv2DType, MfType, AggType, OtType, AkType>(
-      op_data, context, scratch_size, memcpy_fn_data, agg_fn_data, ot,
-      ak_params_vec);
+  if (std::is_same<OtStructType, nn::otfn_int8_clamped_params_t>::value) {
+    op_data->conv_params.output_transform_fn =
+        (nn::OtFnType)nn::otfn_int8_clamped;
+    op_data->conv_params.ot_p =
+        getDeserializedParams<OtStructType>(context, ot_fn_data);
+  } else if (std::is_same<OtStructType, std::nullptr_t>::value) {
+    op_data->conv_params.output_transform_fn = (nn::OtFnType)nn::otfn_binary;
+  } else {
+    assert(false);
+  }
+
+  if (std::is_same<AggStructType, nn::mat_mul_direct_params_t>::value) {
+    op_data->conv_params.aggregate_fn =
+        (nn::AggFnType)nn::mat_mul_direct_binary;
+  } else if (std::is_same<AggStructType, nn::mat_mul_generic_params_t>::value) {
+    op_data->conv_params.aggregate_fn =
+        (nn::AggFnType)nn::mat_mul_generic_binary;
+  } else {
+    assert(false);
+  }
+
+  op_data->conv_params.agg_p =
+      getDeserializedParams<AggStructType>(context, agg_fn_data);
+
+  ConstructFilter2DsImpl<MfStructType>(op_data, context, scratch_size,
+                                       memcpy_fn_data, agg_fn_data,
+                                       ak_params_vec);
 }
 
 // Forwards into the ConstructFilter2DsImpl implementation function
-// For binary output, we don't have output transform params, and so we need to
-// specialise that case separately
-template <typename Conv2DType, typename MfType, typename AggType,
-          typename OtType, typename AkType>
+// For binary output, we specialise that case separately
+template <typename MfStructType, typename AggStructType, typename OtStructType>
 void ConstructFilter2Ds(Conv2DOpData *op_data, TfLiteContext *context,
                         const int scratch_size, const uint8_t *memcpy_fn_data,
                         const uint8_t *agg_fn_data, const uint8_t *ot_fn_data,
                         flexbuffers::Vector &ak_params_vec) {
-  typename OtType::Params *ot_params =
-      getDeserializedParams<typename OtType::Params>(context, ot_fn_data);
-  auto ot = new (context->AllocatePersistentBuffer(context, sizeof(OtType)))
-      OtType(ot_params);
-  ConstructFilter2DsImpl<Conv2DType, MfType, AggType, OtType, AkType>(
-      op_data, context, scratch_size, memcpy_fn_data, agg_fn_data, ot,
-      ak_params_vec);
+  if (std::is_same<OtStructType, nn::otfn_int8_channelwise_params_t>::value) {
+    op_data->conv_params.output_transform_fn =
+        (nn::OtFnType)nn::otfn_int8_channelwise;
+  } else if (std::is_same<OtStructType, nn::otfn_int8_params_t>::value) {
+    op_data->conv_params.output_transform_fn = (nn::OtFnType)nn::otfn_int8;
+  } else {
+    assert(false);
+  }
+
+  if (std::is_same<AggStructType, nn::mat_mul_direct_params_t>::value) {
+    op_data->conv_params.aggregate_fn = (nn::AggFnType)nn::mat_mul_direct_int8;
+  } else if (std::is_same<AggStructType, nn::mat_mul_generic_params_t>::value) {
+    op_data->conv_params.aggregate_fn = (nn::AggFnType)nn::mat_mul_generic_int8;
+  } else if (std::is_same<AggStructType,
+                          nn::mat_mul_dw_direct_params_t>::value) {
+    op_data->conv_params.aggregate_fn = (nn::AggFnType)nn::mat_mul_dw_direct;
+  } else {
+    assert(false);
+  }
+
+  op_data->conv_params.ot_p =
+      getDeserializedParams<OtStructType>(context, ot_fn_data);
+  op_data->conv_params.agg_p =
+      getDeserializedParams<AggStructType>(context, agg_fn_data);
+
+  ConstructFilter2DsImpl<MfStructType>(op_data, context, scratch_size,
+                                       memcpy_fn_data, agg_fn_data,
+                                       ak_params_vec);
 }
 
 void *Init(TfLiteContext *context, const char *buffer, size_t length) {
@@ -179,6 +224,7 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   auto parser = CustomOptionParser(buffer, length);
 
   KernelType kt = (KernelType)parser.parseNamedCustomOption("k").AsInt32();
+  op_data->kt = kt;
   const uint8_t *memcpy_fn_data =
       parser.parseNamedCustomOption("mp").AsBlob().data();
   const uint8_t *agg_fn_data =
@@ -190,8 +236,6 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   auto ak_params_vec = parser.parseNamedCustomOption("p").AsVector();
 
   auto thread_count = ak_params_vec.size();
-  op_data->kt = kt;
-  op_data->ot_type = ot_type;
   op_data->thread_count = thread_count;
   op_data->threads =
       static_cast<Conv2DThreadInfo *>(context->AllocatePersistentBuffer(
@@ -200,14 +244,14 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   switch (kt) {
   case Conv2DValidDirect_t: {
     if (ot_type == Channelwise) {
-      ConstructFilter2Ds<nn::Conv2dValidDirect, nn::DerefInputFn,
-                         nn::MatMulDirectFn, nn::OT_int8_channelwise,
-                         nn::Filter2D>(op_data, context, scratch_size,
-                                       memcpy_fn_data, agg_fn_data, ot_fn_data,
-                                       ak_params_vec);
+      ConstructFilter2Ds<nn::memcpyfn_deref_params_t,
+                         nn::mat_mul_direct_params_t,
+                         nn::otfn_int8_channelwise_params_t>(
+          op_data, context, scratch_size, memcpy_fn_data, agg_fn_data,
+          ot_fn_data, ak_params_vec);
     } else {
-      ConstructFilter2Ds<nn::Conv2dValidDirect, nn::DerefInputFn,
-                         nn::MatMulDirectFn, nn::OT_int8, nn::Filter2D>(
+      ConstructFilter2Ds<nn::memcpyfn_deref_params_t,
+                         nn::mat_mul_direct_params_t, nn::otfn_int8_params_t>(
           op_data, context, scratch_size, memcpy_fn_data, agg_fn_data,
           ot_fn_data, ak_params_vec);
     }
@@ -215,13 +259,14 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   } break;
   case Conv2DValidIndirect_t: {
     if (ot_type == Channelwise) {
-      ConstructFilter2Ds<nn::Conv2dValidIndirect, nn::ImToColValid,
-                         nn::MatMulInt8, nn::OT_int8_channelwise, nn::Filter2D>(
+      ConstructFilter2Ds<nn::memcpyfn_imtocol_valid_params_t,
+                         nn::mat_mul_generic_params_t,
+                         nn::otfn_int8_channelwise_params_t>(
           op_data, context, scratch_size, memcpy_fn_data, agg_fn_data,
           ot_fn_data, ak_params_vec);
     } else {
-      ConstructFilter2Ds<nn::Conv2dValidIndirect, nn::ImToColValid,
-                         nn::MatMulInt8, nn::OT_int8, nn::Filter2D>(
+      ConstructFilter2Ds<nn::memcpyfn_imtocol_valid_params_t,
+                         nn::mat_mul_generic_params_t, nn::otfn_int8_params_t>(
           op_data, context, scratch_size, memcpy_fn_data, agg_fn_data,
           ot_fn_data, ak_params_vec);
     }
@@ -229,13 +274,14 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   } break;
   case Conv2DPaddedIndirect_t: {
     if (ot_type == Channelwise) {
-      ConstructFilter2Ds<nn::Conv2dPaddedInDirect, nn::ImToColPadded,
-                         nn::MatMulInt8, nn::OT_int8_channelwise, nn::Filter2D>(
+      ConstructFilter2Ds<nn::memcpyfn_imtocol_padded_params_t,
+                         nn::mat_mul_generic_params_t,
+                         nn::otfn_int8_channelwise_params_t>(
           op_data, context, scratch_size, memcpy_fn_data, agg_fn_data,
           ot_fn_data, ak_params_vec);
     } else {
-      ConstructFilter2Ds<nn::Conv2dPaddedInDirect, nn::ImToColPadded,
-                         nn::MatMulInt8, nn::OT_int8, nn::Filter2D>(
+      ConstructFilter2Ds<nn::memcpyfn_imtocol_padded_params_t,
+                         nn::mat_mul_generic_params_t, nn::otfn_int8_params_t>(
           op_data, context, scratch_size, memcpy_fn_data, agg_fn_data,
           ot_fn_data, ak_params_vec);
     }
@@ -243,61 +289,62 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   } break;
   case DepthwiseConv2DValidDirect_t: {
     if (ot_type == Channelwise) {
-      ConstructFilter2Ds<nn::Conv2dDepthwiseValidDirect, nn::DerefInputFn,
-                         nn::MatMulDirectFn_DW, nn::OT_int8_channelwise,
-                         nn::Filter2D_DW>(op_data, context, scratch_size,
-                                          memcpy_fn_data, agg_fn_data,
-                                          ot_fn_data, ak_params_vec);
-    } else {
-      ConstructFilter2Ds<nn::Conv2dDepthwiseValidDirect, nn::DerefInputFn,
-                         nn::MatMulDirectFn_DW, nn::OT_int8, nn::Filter2D_DW>(
+      ConstructFilter2Ds<nn::memcpyfn_deref_params_t,
+                         nn::mat_mul_dw_direct_params_t,
+                         nn::otfn_int8_channelwise_params_t>(
           op_data, context, scratch_size, memcpy_fn_data, agg_fn_data,
           ot_fn_data, ak_params_vec);
+    } else {
+      ConstructFilter2Ds<nn::memcpyfn_deref_params_t,
+                         nn::mat_mul_dw_direct_params_t,
+                         nn::otfn_int8_params_t>(op_data, context, scratch_size,
+                                                 memcpy_fn_data, agg_fn_data,
+                                                 ot_fn_data, ak_params_vec);
     }
     op_data->name = "XC_DWConv2DValidInd";
   } break;
   case DepthwiseConv2DPaddedIndirect_t: {
     if (ot_type == Channelwise) {
-      ConstructFilter2Ds<nn::Conv2dDepthwisePaddedIndirect, nn::ImToColPadded,
-                         nn::MatMulDirectFn_DW, nn::OT_int8_channelwise,
-                         nn::Filter2D_DW>(op_data, context, scratch_size,
-                                          memcpy_fn_data, agg_fn_data,
-                                          ot_fn_data, ak_params_vec);
-    } else {
-      ConstructFilter2Ds<nn::Conv2dDepthwisePaddedIndirect, nn::ImToColPadded,
-                         nn::MatMulDirectFn_DW, nn::OT_int8, nn::Filter2D_DW>(
+      ConstructFilter2Ds<nn::memcpyfn_imtocol_padded_params_t,
+                         nn::mat_mul_dw_direct_params_t,
+                         nn::otfn_int8_channelwise_params_t>(
           op_data, context, scratch_size, memcpy_fn_data, agg_fn_data,
           ot_fn_data, ak_params_vec);
+    } else {
+      ConstructFilter2Ds<nn::memcpyfn_imtocol_padded_params_t,
+                         nn::mat_mul_dw_direct_params_t,
+                         nn::otfn_int8_params_t>(op_data, context, scratch_size,
+                                                 memcpy_fn_data, agg_fn_data,
+                                                 ot_fn_data, ak_params_vec);
     }
     op_data->name = "XC_DWConv2DPadInd";
   } break;
   case BNNConv2DValidDirectBinary_t: {
-    ConstructFilter2Ds<nn::BNNConv2dValidDirectBinary, nn::DerefInputFn,
-                       nn::MatMulBinaryDirectFn, nn::OT_binary, nn::Filter2D,
-                       /*binaryOutput=*/true>(op_data, context, scratch_size,
-                                              memcpy_fn_data, agg_fn_data,
-                                              ot_fn_data, ak_params_vec);
+    ConstructFilter2Ds<nn::memcpyfn_deref_params_t, nn::mat_mul_direct_params_t,
+                       std::nullptr_t, /*binaryOutput=*/true>(
+        op_data, context, scratch_size, memcpy_fn_data, agg_fn_data, ot_fn_data,
+        ak_params_vec);
     op_data->name = "XC_BNNValidDirBin";
   } break;
   case BNNConv2DValidIndirectBinary_t: {
-    ConstructFilter2Ds<nn::BNNConv2dValidIndirectBinary, nn::ImToColValid,
-                       nn::MatMulBinary, nn::OT_binary, nn::Filter2D,
+    ConstructFilter2Ds<nn::memcpyfn_imtocol_valid_params_t,
+                       nn::mat_mul_generic_params_t, std::nullptr_t,
                        /*binaryOutput=*/true>(op_data, context, scratch_size,
                                               memcpy_fn_data, agg_fn_data,
                                               ot_fn_data, ak_params_vec);
     op_data->name = "XC_BNNValidIndBin";
   } break;
   case BNNConv2DValidDirectInt8_t: {
-    ConstructFilter2Ds<nn::BNNConv2dValidDirectInt8, nn::DerefInputFn,
-                       nn::MatMulBinaryDirectFn, nn::OT_int8_clamped,
-                       nn::Filter2D>(op_data, context, scratch_size,
-                                     memcpy_fn_data, agg_fn_data, ot_fn_data,
-                                     ak_params_vec);
+    ConstructFilter2Ds<nn::memcpyfn_deref_params_t, nn::mat_mul_direct_params_t,
+                       nn::otfn_int8_clamped_params_t, /*binaryOutput=*/true>(
+        op_data, context, scratch_size, memcpy_fn_data, agg_fn_data, ot_fn_data,
+        ak_params_vec);
     op_data->name = "XC_BNNValidDirInt8";
   } break;
   case BNNConv2DValidIndirectInt8_t: {
-    ConstructFilter2Ds<nn::BNNConv2dValidIndirectInt8, nn::ImToColValid,
-                       nn::MatMulBinary, nn::OT_int8_clamped, nn::Filter2D>(
+    ConstructFilter2Ds<nn::memcpyfn_imtocol_valid_params_t,
+                       nn::mat_mul_generic_params_t,
+                       nn::otfn_int8_clamped_params_t, /*binaryOutput=*/true>(
         op_data, context, scratch_size, memcpy_fn_data, agg_fn_data, ot_fn_data,
         ak_params_vec);
     op_data->name = "XC_BNNValidIndInt8";
@@ -347,84 +394,20 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   Conv2DShared shared_data;
   shared_data.X = (int8_t *)tflite::micro::GetTensorData<int8_t>(input);
   shared_data.Y = (int8_t *)tflite::micro::GetTensorData<int8_t>(output);
-  shared_data.f = op_data->filter2D;
+  shared_data.conv_params = &op_data->conv_params;
+  if (op_data->kt == DepthwiseConv2DValidDirect_t ||
+      op_data->kt == DepthwiseConv2DPaddedIndirect_t) {
+    shared_data.isDepthwise = true;
+  } else {
+    shared_data.isDepthwise = false;
+  }
+  shared_data.weights = weights;
+  shared_data.muls_and_biases = multipliers_and_biases;
   for (int t = 0; t < n_threads; ++t) {
     if (op_data->threads[t].scratch_size) {
       thread_scratch[t] = (int8_t *)context->GetScratchBuffer(
           context, op_data->threads[t].stack_scratch_index);
     }
-  }
-
-  switch (op_data->kt) {
-  case Conv2DValidDirect_t: {
-    nn::Filter2D *f = (nn::Filter2D *)op_data->filter2D;
-    nn::MatMulDirectFn *aggr = (nn::MatMulDirectFn *)(f->aggregate_handler);
-    aggr->setWeights(weights);
-    if (op_data->ot_type == Channelwise) {
-      nn::OT_int8_channelwise *ot = (nn::OT_int8_channelwise *)(f->ot_handler);
-      ot->setMultipliersAndBiases(multipliers_and_biases);
-    } else {
-      nn::OT_int8 *ot = (nn::OT_int8 *)(f->ot_handler);
-      ot->setMultipliersAndBiases(multipliers_and_biases);
-    }
-  } break;
-  case Conv2DValidIndirect_t:
-  case Conv2DPaddedIndirect_t: {
-    nn::Filter2D *f = (nn::Filter2D *)op_data->filter2D;
-    nn::MatMulInt8 *aggr = (nn::MatMulInt8 *)(f->aggregate_handler);
-    aggr->setWeights(weights);
-    if (op_data->ot_type == Channelwise) {
-      nn::OT_int8_channelwise *ot = (nn::OT_int8_channelwise *)(f->ot_handler);
-      ot->setMultipliersAndBiases(multipliers_and_biases);
-    } else {
-      nn::OT_int8 *ot = (nn::OT_int8 *)(f->ot_handler);
-      ot->setMultipliersAndBiases(multipliers_and_biases);
-    }
-  } break;
-  case DepthwiseConv2DPaddedIndirect_t:
-  case DepthwiseConv2DValidDirect_t: {
-    nn::Filter2D_DW *f = (nn::Filter2D_DW *)op_data->filter2D;
-    nn::MatMulDirectFn_DW *aggr =
-        (nn::MatMulDirectFn_DW *)(f->aggregate_handler);
-    aggr->setWeights(weights);
-    if (op_data->ot_type == Channelwise) {
-      nn::OT_int8_channelwise *ot = (nn::OT_int8_channelwise *)(f->ot_handler);
-      ot->setMultipliersAndBiases(multipliers_and_biases);
-    } else {
-      nn::OT_int8 *ot = (nn::OT_int8 *)(f->ot_handler);
-      ot->setMultipliersAndBiases(multipliers_and_biases);
-    }
-  } break;
-  case BNNConv2DValidDirectBinary_t: {
-    nn::Filter2D *f = (nn::Filter2D *)op_data->filter2D;
-    nn::MatMulBinaryDirectFn *aggr =
-        (nn::MatMulBinaryDirectFn *)(f->aggregate_handler);
-    aggr->setWeights(weights);
-    nn::OT_binary *ot = (nn::OT_binary *)(f->ot_handler);
-    ot->setThresholds(multipliers_and_biases);
-  } break;
-  case BNNConv2DValidIndirectBinary_t: {
-    nn::Filter2D *f = (nn::Filter2D *)op_data->filter2D;
-    nn::MatMulBinary *aggr = (nn::MatMulBinary *)(f->aggregate_handler);
-    aggr->setWeights(weights);
-    nn::OT_binary *ot = (nn::OT_binary *)(f->ot_handler);
-    ot->setThresholds(multipliers_and_biases);
-  } break;
-  case BNNConv2DValidDirectInt8_t: {
-    nn::Filter2D *f = (nn::Filter2D *)op_data->filter2D;
-    nn::MatMulBinaryDirectFn *aggr =
-        (nn::MatMulBinaryDirectFn *)(f->aggregate_handler);
-    aggr->setWeights(weights);
-    nn::OT_int8_clamped *ot = (nn::OT_int8_clamped *)(f->ot_handler);
-    ot->setOffsetsMultipliersAndBiases(multipliers_and_biases);
-  } break;
-  case BNNConv2DValidIndirectInt8_t: {
-    nn::Filter2D *f = (nn::Filter2D *)op_data->filter2D;
-    nn::MatMulBinary *aggr = (nn::MatMulBinary *)(f->aggregate_handler);
-    aggr->setWeights(weights);
-    nn::OT_int8_clamped *ot = (nn::OT_int8_clamped *)(f->ot_handler);
-    ot->setOffsetsMultipliersAndBiases(multipliers_and_biases);
-  } break;
   }
 
   // todo - this second for-loop is unpleasant

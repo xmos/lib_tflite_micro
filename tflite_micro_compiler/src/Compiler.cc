@@ -1265,7 +1265,7 @@ TfLiteStatus )"
   return kTfLiteOk;
 }
 
-#ifdef __xcore__
+#if defined(__xcore__) && defined(USB_TILE)
 #include "ioserver.h"
 
 void )"
@@ -1305,7 +1305,8 @@ void )"
 }
 #else 
 
-void model_ioserver(void *io_channel) {}
+void )"
+     << prefix_ << R"(ioserver(void *io_channel) {}
 
 #endif // __xcore__
 

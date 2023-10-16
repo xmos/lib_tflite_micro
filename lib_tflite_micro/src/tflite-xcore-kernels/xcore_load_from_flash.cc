@@ -87,7 +87,9 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
     data_ptr = data_ptrs[i];
 
     // The sizes are in bytes and we read from flash in words
-    for (int j = 0; j < op_data->sizes[i]/4; j++) {
+    int op_data_size_in_words = op_data->sizes[i]/4;
+    //#pragma clang loop unroll_count(4)
+    for (int j = 0; j < op_data_size_in_words; j++) {
       // We are reading directly from flash chanend here.
       // We use chanend_in_word() instead of chan_in_word() to
       // avoid handshake.

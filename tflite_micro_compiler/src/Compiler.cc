@@ -1038,6 +1038,7 @@ TfLiteTensor* )"
   return &ctx.tensors[outTensorIndices[index]];
 }
 
+#pragma stackfunction 1000
 TfLiteStatus )"
      << prefix_ << R"(init(void *flash_data) {
   // Clear and initialize
@@ -1195,6 +1196,7 @@ printf("\n\nCumulative times for prepare()...");
   return kTfLiteOk;
 }
 
+#pragma stackfunction 1000
 TfLiteStatus )"
      << prefix_ << R"(invoke() {
   xc_config.thread_info.nstackwords = kStackWordsPerThread;
@@ -1262,6 +1264,52 @@ TfLiteStatus )"
   }
   return kTfLiteOk;
 }
+
+#if defined(__xcore__) && defined(USB_TILE)
+#include "ioserver.h"
+
+void )"
+     << prefix_ << R"(ioserver(chanend_t c) {
+    unsigned tensor_num = 0;
+    while(1) {
+        int cmd = ioserver_command_receive(c, &tensor_num);
+        switch(cmd) {
+        case IOSERVER_TENSOR_RECV_INPUT: {
+            ioserver_tensor_recv_input(
+                c, (unsigned int *) )"
+     << prefix_ << R"(input(tensor_num)->data.u32,
+                ()"
+     << prefix_ << R"(input(tensor_num)->bytes + 3) / sizeof(int));
+            break;
+        }
+        case IOSERVER_TENSOR_SEND_OUTPUT: {
+            ioserver_tensor_send_output(
+                c, (unsigned int*) )"
+     << prefix_ << R"(output(tensor_num)->data.u32, 
+                ()"
+     << prefix_ << R"(output(tensor_num)->bytes + 3) / sizeof(int));
+            break;
+        }
+        case IOSERVER_INVOKE: {
+            )"
+     << prefix_ << R"(invoke();
+            ioserver_command_acknowledge(c, IOSERVER_ACK);
+            break;
+        }
+        default: {
+            ioserver_command_acknowledge(c, IOSERVER_NACK);
+            break;
+        }
+        }
+    }
+}
+#else 
+
+void )"
+     << prefix_ << R"(ioserver(void *io_channel) {}
+
+#endif // __xcore__
+
 )";
 }
 
@@ -1349,6 +1397,12 @@ inline int32_t %PREFIX%output_zeropoint(int index) {
 inline float %PREFIX%output_scale(int index) {
   return %PREFIX%output(index)->params.scale;
 }
+
+// Sets up the model part of ioserver to communicate 
+// with this model from host.
+// Requires that ioserver() has been setup and running.
+// This is an infinite loop and does not exit.
+TfLiteStatus model_ioserver(unsigned io_channel);
 
 #endif
 )";

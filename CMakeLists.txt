@@ -18,6 +18,22 @@ include(${TOP_DIR}/cmakefiles/xtflm.cmake)
 
 add_library(${LIB_NAME})
 
+set(header_list "")
+foreach(DIR ${ALL_INCLUDES})
+    file(GLOB_RECURSE headers "${DIR}/*.h")
+    list(APPEND header_list ${headers})
+endforeach()
+
+target_sources(${LIB_NAME}
+    PRIVATE ${TFLM_KERNEL_SOURCES}
+    PRIVATE ${TFLITE_SOURCES}
+    PRIVATE ${NN_SOURCES}
+    PRIVATE ${XTFLIB_KERNEL_SOURCES}
+    PUBLIC FILE_SET HEADERS
+    BASE_DIRS "${TOP_DIR}/.."
+    FILES ${header_list}
+)
+
 set(DEFINTIONS
     "__xtflm_conf_h_exists__"
     "NO_INTERPRETER"
@@ -31,6 +47,10 @@ if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL XCORE_XS3A)
     set(XCORE_TARGET "XCORE-AI-EXPLORER")
 
     enable_language(CXX C ASM)
+
+    target_sources(${LIB_NAME}
+        PRIVATE ${XTFLIB_XCORE_SOURCES}
+    )
 
     set(BUILD_FLAGS
         "-g"
@@ -64,22 +84,6 @@ target_compile_definitions(${LIB_NAME} PUBLIC
     ${DEFINTIONS}
 )
 
-set(header_list "")
-foreach(DIR ${ALL_INCLUDES})
-    file(GLOB_RECURSE headers "${DIR}/*.h")
-    list(APPEND header_list ${headers})
-endforeach()
-
-target_sources(${LIB_NAME}
-    PRIVATE ${TFLM_KERNEL_SOURCES}
-    PRIVATE ${TFLITE_SOURCES}
-    PRIVATE ${NN_SOURCES}
-    PRIVATE ${XTFLIB_KERNEL_SOURCES}
-    PRIVATE ${XTFLIB_XCORE_SOURCES}
-    PUBLIC FILE_SET HEADERS
-    BASE_DIRS "${TOP_DIR}/.."
-    FILES ${header_list}
-)
 target_include_directories(${LIB_NAME}
     PRIVATE ${ALL_INCLUDES}
 )
@@ -100,6 +104,7 @@ add_custom_target(project-install DEPENDS ${LIB_NAME}
     COMMAND rm -rf "${CMAKE_BINARY_DIR}/include/lib_nn"
     COMMAND mv "${CMAKE_BINARY_DIR}/include/temp_lnn" "${CMAKE_BINARY_DIR}/include/lib_nn"
     COMMAND mv "${CMAKE_BINARY_DIR}/include/lib_tflite_micro/api/flash_server.h" "${CMAKE_BINARY_DIR}/include"
+    COMMAND mv "${CMAKE_BINARY_DIR}/include/lib_tflite_micro/api/ioserver.h" "${CMAKE_BINARY_DIR}/include"
     )
 
 # Create zip of lib and headers

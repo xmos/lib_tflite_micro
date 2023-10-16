@@ -57,6 +57,7 @@ list(APPEND XTFLIB_XCORE_SOURCES "${XTFLIB_SRC_DIR}/../fast_flash.xc")
 list(APPEND XTFLIB_XCORE_SOURCES "${XTFLIB_SRC_DIR}/../flash_server.xc")
 list(APPEND XTFLIB_XCORE_SOURCES "${XTFLIB_SRC_DIR}/../ioserver.c")
 list(APPEND XTFLIB_XCORE_SOURCES "${XTFLIB_SRC_DIR}/../thread_call.S")
+list(APPEND XTFLIB_XCORE_SOURCES "${XTFLIB_SRC_DIR}/../tile_ram_server.c")
 
 list(APPEND XTFLIB_KERNEL_SOURCES  "${XTFLIB_SRC_DIR}/xcore_common.cc")
 list(APPEND XTFLIB_KERNEL_SOURCES  "${XTFLIB_SRC_DIR}/xcore_custom_options.cc")

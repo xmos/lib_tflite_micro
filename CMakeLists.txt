@@ -105,6 +105,7 @@ add_custom_target(project-install DEPENDS ${LIB_NAME}
     COMMAND mv "${CMAKE_BINARY_DIR}/include/temp_lnn" "${CMAKE_BINARY_DIR}/include/lib_nn"
     COMMAND mv "${CMAKE_BINARY_DIR}/include/lib_tflite_micro/api/flash_server.h" "${CMAKE_BINARY_DIR}/include"
     COMMAND mv "${CMAKE_BINARY_DIR}/include/lib_tflite_micro/api/ioserver.h" "${CMAKE_BINARY_DIR}/include"
+    COMMAND mv "${CMAKE_BINARY_DIR}/include/lib_tflite_micro/api/tile_ram_server.h" "${CMAKE_BINARY_DIR}/include"
     )
 
 # Create zip of lib and headers

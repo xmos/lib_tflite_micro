@@ -58,7 +58,10 @@ TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
 
 TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   auto *op_data = reinterpret_cast<FlashOpData *>(node->user_data);
-
+  MicroContext *micro_context = GetMicroContext(context);
+  xc_context_config_t *xc_config = reinterpret_cast<xc_context_config_t *>(
+      micro_context->external_context());
+  thread_info_t *tif = &xc_config->thread_info;
 #ifdef __xcore__
   chanend_t c_flash = (chanend_t) static_cast<int>(
       reinterpret_cast<intptr_t>(op_data->flash_data));
@@ -86,16 +89,21 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   for (int i = 0; i < node->outputs->size; ++i) {
     data_ptr = data_ptrs[i];
 
-    // The sizes are in bytes and we read from flash in words
-    int op_data_size_in_words = op_data->sizes[i]/4;
-    //#pragma clang loop unroll_count(4)
-    for (int j = 0; j < op_data_size_in_words; j++) {
-      // We are reading directly from flash chanend here.
-      // We use chanend_in_word() instead of chan_in_word() to
-      // avoid handshake.
-      // Adding something like a printf() within this loop
-      // might slow it down enough to corrupt the received data.
-      ((uint32_t *)data_ptr)[j] = chanend_in_word(c_flash);
+    int use_parallel_mode = chan_in_word(c_flash);
+    if (use_parallel_mode) {
+      memory_parallel_receive_thread_call(c_flash, data_ptr, op_data->sizes[i], tif);
+    } else {
+      // The sizes are in bytes and we read from flash in words
+      int op_data_size_in_words = op_data->sizes[i]/4;
+      //#pragma clang loop unroll_count(4)
+      for (int j = 0; j < op_data_size_in_words; j++) {
+        // We are reading directly from flash chanend here.
+        // We use chanend_in_word() instead of chan_in_word() to
+        // avoid handshake.
+        // Adding something like a printf() within this loop
+        // might slow it down enough to corrupt the received data.
+        ((uint32_t *)data_ptr)[j] = chanend_in_word(c_flash);
+      }
     }
   }
   // As there is no handshake, we have to accept the end token

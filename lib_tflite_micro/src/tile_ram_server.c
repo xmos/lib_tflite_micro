@@ -45,24 +45,8 @@ void tile_ram_server(chanend_t *c_tile_ram, flash_t *headers, int n_tile_ram,
             tile_ram_server_alive = 0;
         }
         if (tile_ram_server_alive && cmd != FLASH_SERVER_INIT) {
-            // if (cmd == FLASH_READ_PARAMETERS_COMPRESSED_FLOAT) {
-                //int number_compressed_bytes = number_bytes * 3 / 4;
-                #pragma clang loop unroll_count(4)
-                for(int k = 0; k < number_bytes; k+=4) {
-                    uint32_t result = 0;
-                    // result |= ((uint8_t *)tile_ram)[byte_address+k] << 0;
-                    // result |= ((uint8_t *)tile_ram)[byte_address+k+1] << 8;
-                    // result |= ((uint8_t *)tile_ram)[byte_address+k+2] << 16;
-                    // result |= ((uint8_t *)tile_ram)[byte_address+k+3] << 24;
-                    chanend_out_word(c_tile_ram[i], result);
-                }
-            // } else {
-            //     int number_floats = number_bytes / 4;
-            //     for(int k = 0; k < number_floats; k++) {
-            //         chanend_out_word(c_tile_ram[i], tile_ram[byte_address/4+k]);
-            //     }
-            // }
-            chanend_out_control_token(c_tile_ram[i], 1);
+            chanend_out_word(c_tile_ram[i], 1);
+            memory_parallel_send(c_tile_ram[i], &((uint8_t *)tile_ram)[byte_address], number_bytes);
         }
     }
 }

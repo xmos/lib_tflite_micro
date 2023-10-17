@@ -70,6 +70,7 @@ void flash_server(chanend c_flash[], flash_t headers[], int n_flash,
                     flash_server_alive = 0;
                 }
                 if (flash_server_alive && cmd != FLASH_SERVER_INIT) {
+                    c_flash[i] <: 0;
                     fast_flash_read(qspi, address, bytes/4, /*not using this arg*/(address, unsigned[]), c_flash[i]);
                 }
                 break;

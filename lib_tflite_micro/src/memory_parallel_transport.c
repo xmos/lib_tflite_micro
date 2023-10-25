@@ -82,9 +82,9 @@ extern void memory_parallel_receive_thread_call(chanend_t c, uint32_t *data,
         chanend_t other_side = chan_in_word(c);
         chanend_set_dest(other_c[i], other_side);
     }
-    thread_variable_setup((void*)other_c[1], (void*)1, thread_inf->thread_ids.id[1]);
-    thread_variable_setup((void*)other_c[2], (void*)2, thread_inf->thread_ids.id[2]);
-    thread_variable_setup((void*)c, (void*)3, thread_inf->thread_ids.id[3]);
+    thread_variable_setup((void*)other_c[1], (void*)1, thread_inf->thread_ids.id[0]);
+    thread_variable_setup((void*)other_c[2], (void*)2, thread_inf->thread_ids.id[1]);
+    thread_variable_setup((void*)c, (void*)3, thread_inf->thread_ids.id[2]);
     thread_call(&dest, (void*)other_c[0], (void*)0, receive_rx, thread_inf);
     for(int i = 0; i < 3; i++) {
         chanend_out_control_token(other_c[i], 1);

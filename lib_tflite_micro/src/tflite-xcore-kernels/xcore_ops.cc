@@ -21,6 +21,8 @@ void RegisterXCOps(MicroOpResolver *res) {
   auto *resolver =
       reinterpret_cast<MicroMutableOpResolver<XTFLM_OPERATORS> *>(res);
 
+  resolver->AddCustom(XC_beta_activationf32_OpCode, Register_XC_beta_activationf32());
+  resolver->AddCustom(XC_beta_concatf32_OpCode, Register_XC_beta_concatf32());
   resolver->AddCustom(XC_beta_convf32_OpCode, Register_XC_beta_convf32());
   resolver->AddCustom(XC_beta_transposeconvf32_OpCode, Register_XC_beta_transposeconvf32());
   resolver->AddCustom(XC_beta_fcf32_OpCode, Register_XC_beta_fcf32());

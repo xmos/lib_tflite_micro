@@ -235,8 +235,15 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   int32_t ot_type = parser.parseNamedCustomOption("t").AsInt32();
   auto ak_params_vec = parser.parseNamedCustomOption("p").AsVector();
 
+  // Unlike other ops, conv ops have their own individual thread count
+  // The work for each thread is calculated in the compiler
   auto thread_count = ak_params_vec.size();
   op_data->thread_count = thread_count;
+  MicroContext *micro_context = GetMicroContext(context);
+  xc_context_config_t *xc_config = reinterpret_cast<xc_context_config_t *>(
+      micro_context->external_context());
+  assert(op_data->thread_count <= xc_config->model_thread_count && "Not enough threads!");
+
   op_data->threads =
       static_cast<Conv2DThreadInfo *>(context->AllocatePersistentBuffer(
           context, op_data->thread_count * sizeof(Conv2DThreadInfo)));

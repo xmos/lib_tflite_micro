@@ -1,6 +1,7 @@
 // Copyright (c) 2023, XMOS Ltd, All rights reserved
 
 #include "../thread_call.h"
+#include "xcore_common.h"
 #include "xcore_config.h"
 #include "xcore_custom_options.h"
 #include "xcore_utils.h"
@@ -23,7 +24,9 @@ void interleaved_memcpy(int8_t *dst, int8_t *src1, int8_t* src2, int channels_by
 // This is the struct that contains the data required by the operator
 struct Beta_ConcatF32OpData
     : XCoreOpData { // Inherits the operator name field from XCoreOpData
-  int type;
+  int tc;
+  int s[XCORE_MAX_NUM_THREADS];
+  int e[XCORE_MAX_NUM_THREADS];
 };
 
 struct Beta_ConcatF32Shared {
@@ -50,6 +53,14 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
 
 // Does all the requests for scratches
 TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
+  auto op_data = static_cast<Beta_ConcatF32OpData *>(node->user_data);
+  MicroContext *micro_context = GetMicroContext(context);
+  xc_context_config_t *xc_config = reinterpret_cast<xc_context_config_t *>(
+      micro_context->external_context());
+  const TfLiteEvalTensor *input1 = tflite::micro::GetEvalInput(context, node, 0);
+  int samples = input1->dims->data[1];
+  op_data->tc = xc_config->model_thread_count;
+  calculateThreadSplit(op_data->tc, samples, op_data->s, op_data->e);
   return kTfLiteOk;
 }
 
@@ -61,7 +72,6 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   const TfLiteEvalTensor *input2 = tflite::micro::GetEvalInput(context, node, 1);
   TfLiteEvalTensor *output = tflite::micro::GetEvalOutput(context, node, 0);
 
-  int samples = input1->dims->data[1];
   int channels = input1->dims->data[input1->dims->size - 1];
 
   // Pointers to data in In/Out Tensors
@@ -71,40 +81,13 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   int8_t *in2_data =
       const_cast<int8_t *>(tflite::micro::GetTensorData<int8_t>(input2));
 
-  int tc = 5;
-  int split_start[5], split_end[5];
-  int split_size = samples;
-
-  // tc = 1;
-  // split_start[0] = 0;
-  // split_end[0] = split_size;
-
-  split_start[0] = 0;
-  for (int i = 0; i < tc; i++) {
-    auto split = (split_size + (tc - i) - 1) / (tc - i);
-    split_size -= split;
-    if (split > 0) {
-      split_end[i] = split_start[i] + split;
-      if (i != tc - 1)
-        split_start[i + 1] = split_end[i];
-    } else {
-      tc = i;
-      break;
-    }
-  }
-
-  // for(int i = 0; i < tc; i++) {
-  //   printf("\ns = %d, e = %d", out_d_start[i], out_d_end[i]);
-  // }
-  // printf("\n\n");
-
   MicroContext *micro_context = GetMicroContext(context);
   xc_context_config_t *xc_config = reinterpret_cast<xc_context_config_t *>(
       micro_context->external_context());
 
   // todo - this second for-loop is unpleasant
-  for (int t = 0; t < tc - 1; ++t) {
-    thread_variable_setup(&split_start[t], &split_end[t],
+  for (int t = 0; t < op_data->tc - 1; ++t) {
+    thread_variable_setup(&op_data->s[t], &op_data->e[t],
                           xc_config->thread_info.thread_ids.id[t]);
   }
 
@@ -115,7 +98,7 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   shared_data.channels_bytes = channels * 4;
 
   // Now set up shared data, shared function pointer, and data for final thread.
-  thread_call((void *)&shared_data, &split_start[tc - 1], &split_end[tc - 1],
+  thread_call((void *)&shared_data, &op_data->s[op_data->tc - 1], &op_data->e[op_data->tc - 1],
               (thread_function_pointer_t)beta_concatf32_thread_worker,
               &xc_config->thread_info);
 

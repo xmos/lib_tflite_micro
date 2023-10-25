@@ -52,6 +52,8 @@ void flash_server(chanend c_flash[], flash_t headers[], int n_flash,
         select {
             case (int i = 0; i < n_flash; i++) c_flash[i] :> cmd:
                 if (cmd == FLASH_READ_PARAMETERS) {
+                    // Set not parallel mode
+                    c_flash[i] <: 0;
                     c_flash[i] :> address;
                     c_flash[i] :> bytes;
                     address = headers[i].parameters_start + address;
@@ -70,7 +72,6 @@ void flash_server(chanend c_flash[], flash_t headers[], int n_flash,
                     flash_server_alive = 0;
                 }
                 if (flash_server_alive && cmd != FLASH_SERVER_INIT) {
-                    c_flash[i] <: 0;
                     fast_flash_read(qspi, address, bytes/4, /*not using this arg*/(address, unsigned[]), c_flash[i]);
                 }
                 break;

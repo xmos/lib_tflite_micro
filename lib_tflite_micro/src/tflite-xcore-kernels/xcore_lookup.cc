@@ -1,6 +1,7 @@
 // Copyright (c) 2023, XMOS Ltd, All rights reserved
 
 #include "../thread_call.h"
+#include "xcore_common.h"
 #include "xcore_config.h"
 #include "xcore_custom_options.h"
 #include "xcore_utils.h"
@@ -21,44 +22,38 @@ struct LookupShared {
 };
 
 extern "C" {
-void lookup_thread_worker(void *shared, void *start, void *count) {
+void lookup_thread_worker(void *shared, void *start, void *end) {
   int *s = static_cast<int *>(start);
-  int *c = static_cast<int *>(count);
+  int *e = static_cast<int *>(end);
   auto sd = static_cast<LookupShared *>(shared);
-  lookup8(sd->Y, sd->X, sd->table, *s, *c);
+  // lookup takes start and count instead of start and end
+  lookup8(sd->Y, sd->X, sd->table, *s, *e - *s);
 }
 }
 // This is the struct that contains the data required by the operator
 struct LookupOpData
     : XCoreOpData { // Inherits the operator name field from XCoreOpData
-  int thread_count;
-  int s[5];
-  int c[5];
+  int tc;
+  int s[XCORE_MAX_NUM_THREADS];
+  int e[XCORE_MAX_NUM_THREADS];
 };
 
 void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   auto op_data = construct_persistent_object<LookupOpData>(context);
   op_data->name = "XC_lookup";
-  auto parser = CustomOptionParser(buffer, length);
-  const int tc = parser.parseNamedCustomOption("tc").AsInt32();
-  op_data->thread_count = tc;
   return op_data;
 }
 
 // Does all the requests for scratches
 TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
   auto op_data = static_cast<LookupOpData *>(node->user_data);
-  const int tc = op_data->thread_count;
+  MicroContext *micro_context = GetMicroContext(context);
+  xc_context_config_t *xc_config = reinterpret_cast<xc_context_config_t *>(
+      micro_context->external_context());
   const TfLiteEvalTensor *input = tflite::micro::GetEvalInput(context, node, 0);
-  int input_size = 1;
-  for (int i = 0; i < input->dims->size; i++)
-    input_size *= input->dims->data[i];
-  const int base_count = input_size / tc;
-  const int extra = input_size % tc;
-  for (int t = 0; t < tc; t++) {
-    op_data->s[t] = t * base_count + (t < extra ? t : extra);
-    op_data->c[t] = base_count + (t < extra);
-  }
+  int input_size = tflite::micro::GetTensorShape(input).FlatSize();
+  op_data->tc = xc_config->model_thread_count;
+  calculateThreadSplit(op_data->tc, input_size, op_data->s, op_data->e);
   return kTfLiteOk;
 }
 
@@ -79,16 +74,16 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   MicroContext *micro_context = GetMicroContext(context);
   xc_context_config_t *xc_config = reinterpret_cast<xc_context_config_t *>(
       micro_context->external_context());
-  const int tc = op_data->thread_count;
+  const int tc = xc_config->model_thread_count;
   LookupShared shared_data;
   shared_data.Y = out_data;
   shared_data.X = const_cast<uint8_t *>(in_data);
   shared_data.table = const_cast<uint8_t *>(table_vals);
   for (int t = 0; t < tc - 1; t++) {
-    thread_variable_setup((void *)&op_data->s[t], (void *)&op_data->c[t],
+    thread_variable_setup((void *)&op_data->s[t], (void *)&op_data->e[t],
                           xc_config->thread_info.thread_ids.id[t]);
   }
-  thread_call((void *)&shared_data, &op_data->s[tc - 1], &op_data->c[tc - 1],
+  thread_call((void *)&shared_data, &op_data->s[tc - 1], &op_data->e[tc - 1],
               (thread_function_pointer_t)lookup_thread_worker,
               &xc_config->thread_info);
   return kTfLiteOk;

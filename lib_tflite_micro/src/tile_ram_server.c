@@ -7,6 +7,7 @@
 #include <xcore/channel.h>
 #include <xcore/chanend.h>
 #include "tile_ram_server.h"
+#include "memory_parallel_transport.h"
 
 #define TMP_BUF_SIZE_IN_BYTES  1024
 
@@ -34,6 +35,8 @@ void tile_ram_server(chanend_t *c_tile_ram, flash_t *headers, int n_tile_ram,
         cmd = chan_in_word(c_tile_ram[i]);
         //if (cmd == FLASH_READ_PARAMETERS || cmd == FLASH_READ_PARAMETERS_COMPRESSED_FLOAT) {
         if (cmd == FLASH_READ_PARAMETERS) {
+            // Set parallel mode
+            chan_out_word(c_tile_ram[i], 1);
             byte_address = chan_in_word(c_tile_ram[i]);
             number_bytes   = chan_in_word(c_tile_ram[i]);
             byte_address = headers[i].parameters_start + byte_address;
@@ -45,7 +48,6 @@ void tile_ram_server(chanend_t *c_tile_ram, flash_t *headers, int n_tile_ram,
             tile_ram_server_alive = 0;
         }
         if (tile_ram_server_alive && cmd != FLASH_SERVER_INIT) {
-            chanend_out_word(c_tile_ram[i], 1);
             memory_parallel_send(c_tile_ram[i], &((uint8_t *)tile_ram)[byte_address], number_bytes);
         }
     }

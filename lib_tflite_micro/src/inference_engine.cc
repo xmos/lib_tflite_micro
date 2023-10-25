@@ -144,6 +144,7 @@ int inference_engine_load_model(inference_engine *ie, uint32_t model_bytes,
   ie->xtflm->interpreter = tflite::micro::xcore::XCoreInterpreter::Create(
       (uint8_t *)ie->xtflm->interpreter_buffer, ie->xtflm->model,
       ie->xtflm->resolver, kTensorArena, kTensorArenaSize, true, &ie->xtflm->xcore_profiler);
+  ie->xc_config.model_thread_count = ie->num_threads;
   ie->xc_config.flash_data = flash_data;
   ie->xc_config.thread_info.nstackwords = stackWordsPerThread;
   ie->xc_config.thread_info.stacks = (void *)sp;

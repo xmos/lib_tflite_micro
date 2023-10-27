@@ -5,11 +5,11 @@ int xc_fc_float_ref(float *outputs, float *inputs, float *kernels,
                     int out_features, int input_features) {
   int cnt = 0;
   for (int f = 0; f < out_features; f++) {
-    int output_index = out_features + f;
+    int output_index = f;
     float acc = 0;
     for (int kf = 0; kf < input_features; kf++) {
-      int input_index = input_features + (f + kf);
-      int kernel_index = input_features + kf;
+      int input_index = kf;
+      int kernel_index = f * input_features + kf;
       acc += inputs[input_index] * kernels[kernel_index];
       cnt++;
     }
@@ -24,11 +24,13 @@ int xc_fc_float_opt(float *outputs, float *inputs, float *kernels,
                     int out_f_end) {
   int cnt = 0;
   for (int f = out_f_start; f < out_f_end; f++) {
-    int output_index = out_features + f;
+    int output_index = f;
     float acc = 0;
+    assert (input_features == 96);
+#pragma clang loop unroll_count(8)
     for (int kf = 0; kf < input_features; kf++) {
-      int input_index = input_features + (f + kf);
-      int kernel_index = input_features + kf;
+      int input_index = kf;
+      int kernel_index = f * input_features + kf;
       float in1 = inputs[input_index];
       float in2 = kernels[kernel_index];
       asm volatile("fmacc %0, %1, %2, %3"
@@ -42,9 +44,9 @@ int xc_fc_float_opt(float *outputs, float *inputs, float *kernels,
 }
 #endif
 
-#define KW 5
+#define KW 3
 #define KH 2
-#define H_STRIDE 3
+#define H_STRIDE 2
 
 int xc_conv2d_float_kw5xh2_stride_w3_ref(float *outputs, float *inputs,
                                          float *kernels, float *biases,
@@ -100,6 +102,24 @@ void xc_conv2d_float_kw5xh2_stride_w3_opt(float *outputs, float *inputs,
               asm volatile("fmacc %0, %1, %2, %3"
                            : "=r"(acc)
                            : "r"(acc), "r"(in1), "r"(in2));
+            }
+          }
+        } else if (input_depth == 2) {
+#pragma clang loop unroll(full)
+          for (int kx = 0; kx < KW; kx++) {
+#pragma clang loop unroll(full)
+            for (int ky = 0; ky < KH; ky++) {
+              for (int kd = 0; kd < 2; kd++) {
+                int input_index =
+                    ((x * H_STRIDE + kx) * input_h + (y + ky)) * input_depth +
+                    kd;
+                int kernel_index = ((d * KW + kx) * KH + ky) * input_depth + kd;
+                float in1 = inputs[input_index];
+                float in2 = kernels[kernel_index];
+                asm volatile("fmacc %0, %1, %2, %3"
+                             : "=r"(acc)
+                             : "r"(acc), "r"(in1), "r"(in2));
+              }
             }
           }
         } else if (input_depth == 4) {
@@ -163,7 +183,7 @@ void xc_conv2d_float_kw5xh2_stride_w3_opt(float *outputs, float *inputs,
 }
 #endif
 
-#define H_TR_STRIDE 3
+#define H_TR_STRIDE 2
 
 int xc_transpose_conv2d_float_kw5xh2_stride_h3_ref(
     float *outputs, float *inputs, float *kernels, float *biases, int out_w,
@@ -216,9 +236,36 @@ void xc_transpose_conv2d_float_kw5xh2_stride_h3_opt(
   for (int x = 0; x < input_w; x++) {
     for (int y = 0; y < input_h; y++) {
       for (int d = out_depth_start; d < out_depth_end; d++) {
-        if (input_depth == 8) {
+        if (input_depth == 4) {
           for (int kx = 0; kx < KW; kx++) {
             for (int ky = 0; ky < KH; ky++) {
+// Only compute if it is the middle frame
+              if (ky + y != 1) {
+                continue;
+              }
+              int output_index =
+                  ((x * H_TR_STRIDE + kx) * out_h + (y + ky)) * out_depth + d;
+              float acc = outputs[output_index];
+#pragma clang loop unroll_count(4)
+              for (int kd = 0; kd < 4; kd++) {
+                int input_index = ((x)*input_h + (y)) * input_depth + kd;
+                int kernel_index = ((d * KW + kx) * KH + ky) * input_depth + kd;
+                float in1 = inputs[input_index];
+                float in2 = kernels[kernel_index];
+                asm volatile("fmacc %0, %1, %2, %3"
+                             : "=r"(acc)
+                             : "r"(acc), "r"(in1), "r"(in2));
+              }
+              outputs[output_index] = acc;
+            }
+          }
+        } else if (input_depth == 8) {
+          for (int kx = 0; kx < KW; kx++) {
+            for (int ky = 0; ky < KH; ky++) {
+// Only compute if it is the middle frame
+              if (ky + y != 1) {
+                continue;
+              }
               int output_index =
                   ((x * H_TR_STRIDE + kx) * out_h + (y + ky)) * out_depth + d;
               float acc = outputs[output_index];
@@ -238,6 +285,10 @@ void xc_transpose_conv2d_float_kw5xh2_stride_h3_opt(
         } else if (input_depth == 16) {
           for (int kx = 0; kx < KW; kx++) {
             for (int ky = 0; ky < KH; ky++) {
+// Only compute if it is the middle frame
+              if (ky + y != 1) {
+                continue;
+              }
               int output_index =
                   ((x * H_TR_STRIDE + kx) * out_h + (y + ky)) * out_depth + d;
               float acc = outputs[output_index];
@@ -257,6 +308,10 @@ void xc_transpose_conv2d_float_kw5xh2_stride_h3_opt(
         } else if (input_depth == 32) {
           for (int kx = 0; kx < KW; kx++) {
             for (int ky = 0; ky < KH; ky++) {
+// Only compute if it is the middle frame
+              if (ky + y != 1) {
+                continue;
+              }
               int output_index =
                   ((x * H_TR_STRIDE + kx) * out_h + (y + ky)) * out_depth + d;
               float acc = outputs[output_index];
@@ -276,6 +331,10 @@ void xc_transpose_conv2d_float_kw5xh2_stride_h3_opt(
         } else if (input_depth == 64) {
           for (int kx = 0; kx < KW; kx++) {
             for (int ky = 0; ky < KH; ky++) {
+// Only compute if it is the middle frame
+              if (ky + y != 1) {
+                continue;
+              }
               int output_index =
                   ((x * H_TR_STRIDE + kx) * out_h + (y + ky)) * out_depth + d;
               float acc = outputs[output_index];

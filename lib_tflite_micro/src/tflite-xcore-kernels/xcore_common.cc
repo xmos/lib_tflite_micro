@@ -9,6 +9,32 @@
 #define ALIGN(X) __align(X)
 #endif
 
+namespace tflite {
+namespace ops {
+namespace micro {
+namespace xcore {
+
+void calculateThreadSplit(int tc, int split_size, int split_start[], int split_end[]) {
+  split_start[0] = 0;
+  for (int i = 0; i < tc; i++) {
+    auto split = (split_size + (tc - i) - 1) / (tc - i);
+    split_size -= split;
+    if (split > 0) {
+      split_end[i] = split_start[i] + split;
+      if (i != tc - 1)
+        split_start[i + 1] = split_end[i];
+    } else {
+      tc = i;
+      break;
+    }
+  }
+}
+
+} // namespace xcore
+} // namespace micro
+} // namespace ops
+} // namespace tflite
+
 #define MAX_DEBUG_LOG_LENGTH  256
 #define MAX_DEBUG_LOG_ENTRIES 3
 

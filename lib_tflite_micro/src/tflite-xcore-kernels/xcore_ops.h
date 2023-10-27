@@ -8,6 +8,8 @@ namespace ops {
 namespace micro {
 namespace xcore {
 
+constexpr const char *XC_beta_activationf32_OpCode = "XC_beta_activationf32";
+constexpr const char *XC_beta_concatf32_OpCode = "XC_beta_concatf32";
 constexpr const char *XC_beta_convf32_OpCode = "XC_beta_convf32";
 constexpr const char *XC_beta_transposeconvf32_OpCode = "XC_beta_transposeconvf32";
 constexpr const char *XC_beta_fcf32_OpCode = "XC_beta_fcf32";
@@ -23,6 +25,8 @@ constexpr const char *XC_mul_OpCode = "XC_mul";
 // Binarized ops
 constexpr const char *XC_bsign_8_OpCode = "XC_bsign_8";
 
+TfLiteRegistration_V1 *Register_XC_beta_activationf32();
+TfLiteRegistration_V1 *Register_XC_beta_concatf32();
 TfLiteRegistration_V1 *Register_XC_beta_convf32();
 TfLiteRegistration_V1 *Register_XC_beta_transposeconvf32();
 TfLiteRegistration_V1 *Register_XC_beta_fcf32();

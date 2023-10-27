@@ -33,6 +33,7 @@ typedef enum flash_command {
       3, ///< Read code to execute-in-place throught L2 cache - future extension
   FLASH_SERVER_QUIT = 4,
   FLASH_SERVER_INIT = 5, // Initialize flash server with fast flash pattern speed match setup
+  //FLASH_READ_PARAMETERS_COMPRESSED_FLOAT = 6, // Read a set of compressed parameters
 } flash_command_t;
 
 /**

@@ -52,6 +52,8 @@ void flash_server(chanend c_flash[], flash_t headers[], int n_flash,
         select {
             case (int i = 0; i < n_flash; i++) c_flash[i] :> cmd:
                 if (cmd == FLASH_READ_PARAMETERS) {
+                    // Set not parallel mode
+                    c_flash[i] <: 0;
                     c_flash[i] :> address;
                     c_flash[i] :> bytes;
                     address = headers[i].parameters_start + address;

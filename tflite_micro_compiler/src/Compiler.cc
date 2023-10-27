@@ -119,6 +119,7 @@ tflmc::Compiler::Compiler(const void *modelData,
   debugPrint_ = debugPrint;
   if (sharedCfg_) {
     numXCThreads_ = sharedCfg_->required_thread_count;
+    g_xc_config.model_thread_count = numXCThreads_;
   }
   g_loggedAllocations.clear();
   g_currentNodeIndex = -1;
@@ -1047,6 +1048,11 @@ TfLiteStatus )"
 
   // Set flash data in xcore context config
   xc_config.flash_data = flash_data;
+  // Set thread count specified in the compiler
+  xc_config.model_thread_count = )" << numXCThreads_ << R"(;
+  // Set thread info
+  xc_config.thread_info.nstackwords = kStackWordsPerThread;
+  xc_config.thread_info.stacks = &xcThreadsStack[threadsStackSizeInUint64 - 1];
 
   // Setup microcontext functions
   mc.AllocateTempInputTensor = &mc_AllocateTempInputTensor;
@@ -1199,8 +1205,6 @@ printf("\n\nCumulative times for prepare()...");
 #pragma stackfunction 1000
 TfLiteStatus )"
      << prefix_ << R"(invoke() {
-  xc_config.thread_info.nstackwords = kStackWordsPerThread;
-  xc_config.thread_info.stacks = &xcThreadsStack[threadsStackSizeInUint64 - 1];
   thread_init_)"
      << numXCThreads_ << R"((&xc_config.thread_info);
 

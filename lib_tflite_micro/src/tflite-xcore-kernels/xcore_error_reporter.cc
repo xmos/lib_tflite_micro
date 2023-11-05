@@ -12,7 +12,6 @@
 
 //#if !defined(TF_LITE_STRIP_ERROR_STRINGS)
 #include "tensorflow/lite/micro/debug_log.h"
-#include "tensorflow/lite/micro/micro_string.h"
 //#endif
 
 namespace tflite {
@@ -38,7 +37,7 @@ void XCoreErrorReporter::Log(const char *format, va_list args) {
     }
     len = new_len;
   }
-  MicroVsnprintf(buffer + len, kMaxLogLen, format, args);
+  vsprintf(buffer + len, format, args);
   len = strlen(buffer);
 #ifdef __xcore__
   printstr(buffer);

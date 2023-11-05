@@ -110,8 +110,8 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
 
 } // namespace beta_fcf32
 
-TfLiteRegistration_V1 *Register_XC_beta_fcf32() {
-  static TfLiteRegistration_V1 r = {beta_fcf32::Init, nullptr,
+TFLMRegistration *Register_XC_beta_fcf32() {
+  static TFLMRegistration r = {beta_fcf32::Init, nullptr,
                                     beta_fcf32::Prepare, beta_fcf32::Eval};
   return &r;
 }

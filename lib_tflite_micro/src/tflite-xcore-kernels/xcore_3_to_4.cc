@@ -62,8 +62,8 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
 
 }  // namespace pad
 
-TfLiteRegistration_V1 *Register_XC_pad_3_to_4() {
-  static TfLiteRegistration_V1 r = {pad_3_to_4::Init, nullptr, pad_3_to_4::Prepare, pad_3_to_4::Eval};
+TFLMRegistration *Register_XC_pad_3_to_4() {
+  static TFLMRegistration r = {pad_3_to_4::Init, nullptr, pad_3_to_4::Prepare, pad_3_to_4::Eval};
   return &r;
 }
 

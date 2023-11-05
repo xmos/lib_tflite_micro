@@ -795,15 +795,14 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
 }
 } // namespace
 
-TfLiteRegistration_V1 *Register_DETECTION_POSTPROCESS() {
-  static TfLiteRegistration_V1 r = {/*init=*/Init,
+TFLMRegistration *Register_DETECTION_POSTPROCESS() {
+  static TFLMRegistration r = {/*init=*/Init,
                                  /*free=*/Free,
                                  /*prepare=*/Prepare,
                                  /*invoke=*/Eval,
                                  /*profiling_string=*/nullptr,
                                  /*builtin_code=*/0,
-                                 /*custom_name=*/nullptr,
-                                 /*version=*/0};
+                                 /*custom_name=*/nullptr};
   return &r;
 }
 

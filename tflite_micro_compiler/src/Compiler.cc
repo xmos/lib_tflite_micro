@@ -169,9 +169,9 @@ bool tflmc::Compiler::init(const void *modelData) {
     }
   }
 
-  if (XTFLM_OPERATORS != 128) {
+  if (XTFLM_OPERATORS != 200) {
     std::cerr << "XTFLM_OPERATORS must match the magic number in the template "
-                 "parameter for AllOpsResolver!\n";
+                 "parameter for PythonOpsResolver!\n";
     return false;
   }
   tflite::ops::micro::xcore::RegisterXCOps(&resolver_);
@@ -517,7 +517,7 @@ namespace xcore {
     for (size_t i = 0; i < registrations_.size(); i++) {
       if (registrations_[i].code == tflite::BuiltinOperator_CUSTOM &&
           registrations_[i].custom_name != "TFLite_Detection_PostProcess") {
-        wr << "extern TfLiteRegistration_V1 *Register_"
+        wr << "extern TFLMRegistration *Register_"
            << registrations_[i].custom_name << "(void);\n";
       }
     }
@@ -534,7 +534,7 @@ namespace xcore {
     for (size_t i = 0; i < registrations_.size(); i++) {
       if (registrations_[i].code == tflite::BuiltinOperator_CUSTOM &&
           registrations_[i].custom_name == "TFLite_Detection_PostProcess") {
-        wr << "extern TfLiteRegistration_V1 "
+        wr << "extern TFLMRegistration "
               "*Register_DETECTION_POSTPROCESS(void);\n";
       }
     }
@@ -611,7 +611,7 @@ int time_t0, time_t1;
 
 TfLiteContext ctx{};
 
-TfLiteRegistration_V1 registrations[OP_LAST];
+TFLMRegistration registrations[OP_LAST];
 )";
   for (size_t g = 0; g < tensors_.size(); g++) {
     wr << R"(
@@ -1092,8 +1092,7 @@ TfLiteStatus )"
            << "] = *(tflite::ops::micro::xcore::Register_" << opName
            << "());\n";
       }
-    } else if ((registrations_[i].code == tflite::BuiltinOperator_RESHAPE) ||
-               (registrations_[i].code == tflite::BuiltinOperator_ROUND)) {
+    } else if ((registrations_[i].code == tflite::BuiltinOperator_ROUND)) {
       opName = tflite::EnumNameBuiltinOperator(registrations_[i].code);
       wr << "  registrations[OP_" << opName
          << "] = tflite::ops::micro::Register_" << opName << "();\n";

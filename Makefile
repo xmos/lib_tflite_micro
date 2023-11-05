@@ -1,5 +1,5 @@
 patch:
-	(cd lib_tflite_micro/submodules/tflite-micro && git reset --hard && git apply --directory tensorflow ../../../patches/tflite-micro.patch)
+	(cd lib_tflite_micro/submodules/tflite-micro && git reset --hard && git apply ../../../patches/tflite-micro.patch)
 
 build:
 	(cd lib_tflite_micro && ../version_check.sh)

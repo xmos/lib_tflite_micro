@@ -25,7 +25,7 @@ set(INSTALL_DIR "${PROJECT_SOURCE_DIR}/bin")
 # Build flags
 #**********************
 
-set(CMAKE_CXX_FLAGS "-std=c++11" CACHE STRING "C++ Compiler Base Flags" FORCE)
+set(CMAKE_CXX_FLAGS "-std=c++17" CACHE STRING "C++ Compiler Base Flags" FORCE)
 
 set(BUILD_FLAGS
   "-O3"

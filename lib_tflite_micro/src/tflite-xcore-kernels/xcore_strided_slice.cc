@@ -91,8 +91,8 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
 
 } // namespace strided_slice
 
-TfLiteRegistration_V1 *Register_XC_strided_slice() {
-  static TfLiteRegistration_V1 r = {strided_slice::Init, nullptr,
+TFLMRegistration *Register_XC_strided_slice() {
+  static TFLMRegistration r = {strided_slice::Init, nullptr,
                                     strided_slice::Prepare,
                                     strided_slice::Eval};
   return &r;

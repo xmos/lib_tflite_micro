@@ -25,22 +25,22 @@ constexpr const char *XC_mul_OpCode = "XC_mul";
 // Binarized ops
 constexpr const char *XC_bsign_8_OpCode = "XC_bsign_8";
 
-TfLiteRegistration_V1 *Register_XC_beta_activationf32();
-TfLiteRegistration_V1 *Register_XC_beta_concatf32();
-TfLiteRegistration_V1 *Register_XC_beta_convf32();
-TfLiteRegistration_V1 *Register_XC_beta_transposeconvf32();
-TfLiteRegistration_V1 *Register_XC_beta_fcf32();
+TFLMRegistration *Register_XC_beta_activationf32();
+TFLMRegistration *Register_XC_beta_concatf32();
+TFLMRegistration *Register_XC_beta_convf32();
+TFLMRegistration *Register_XC_beta_transposeconvf32();
+TFLMRegistration *Register_XC_beta_fcf32();
 
-TfLiteRegistration_V1 *Register_XC_conv2d_v2();
-TfLiteRegistration_V1 *Register_XC_ld_flash();
-TfLiteRegistration_V1 *Register_XC_add();
-TfLiteRegistration_V1 *Register_XC_strided_slice();
-TfLiteRegistration_V1 *Register_XC_lookup();
-TfLiteRegistration_V1 *Register_XC_pad();
-TfLiteRegistration_V1 *Register_XC_pad_3_to_4();
-TfLiteRegistration_V1 *Register_XC_mul();
+TFLMRegistration *Register_XC_conv2d_v2();
+TFLMRegistration *Register_XC_ld_flash();
+TFLMRegistration *Register_XC_add();
+TFLMRegistration *Register_XC_strided_slice();
+TFLMRegistration *Register_XC_lookup();
+TFLMRegistration *Register_XC_pad();
+TFLMRegistration *Register_XC_pad_3_to_4();
+TFLMRegistration *Register_XC_mul();
 // Binarized ops
-TfLiteRegistration_V1 *Register_XC_bsign_8();
+TFLMRegistration *Register_XC_bsign_8();
 
 void RegisterXCOps(tflite::MicroOpResolver *res);
 

@@ -7,7 +7,7 @@
 
 #include "MemMap.h"
 #include "llvm/ADT/StringMap.h"
-#include "tensorflow/lite/micro/all_ops_resolver.h"
+#include "python/tflite_micro/python_ops_resolver.h"
 #define private public
 #include "tensorflow/lite/micro/micro_interpreter.h"
 #undef private
@@ -62,7 +62,7 @@ class Compiler {
     const TfLiteTensor *tensor = nullptr;
   };
   struct RegistrationInfo {
-    const TfLiteRegistration_V1 *reg = nullptr;
+    const TFLMRegistration *reg = nullptr;
     tflite::BuiltinOperator code;
     std::string custom_name;
     bool operator==(const RegistrationInfo &other) {
@@ -100,7 +100,7 @@ class Compiler {
   int numXCThreads_ = 1;
   const tflite::Model *model_ = nullptr;
   const tflite::SubGraph *mainGraph_ = nullptr;
-  tflite::AllOpsResolver resolver_;
+  tflite::PythonOpsResolver resolver_;
   std::vector<uint8_t> arena_buf_;
   std::unique_ptr<tflite::MicroInterpreter> interpreter_;
   MemMap memMap_;

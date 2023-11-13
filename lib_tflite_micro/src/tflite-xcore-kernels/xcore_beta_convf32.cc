@@ -125,8 +125,8 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
 
 } // namespace beta_convf32
 
-TfLiteRegistration_V1 *Register_XC_beta_convf32() {
-  static TfLiteRegistration_V1 r = {beta_convf32::Init, nullptr,
+TFLMRegistration *Register_XC_beta_convf32() {
+  static TFLMRegistration r = {beta_convf32::Init, nullptr,
                                     beta_convf32::Prepare, beta_convf32::Eval};
   return &r;
 }

@@ -174,6 +174,104 @@ index 62045d67..5ad1e885 100644
  }
  
  void PreprocessLogSoftmaxScalingExp(double beta, double input_scale,
+diff --git a/tensorflow/lite/micro/kernels/activations.cc b/tensorflow/lite/micro/kernels/activations.cc
+index 1086325c..3425bb2a 100644
+--- a/tensorflow/lite/micro/kernels/activations.cc
++++ b/tensorflow/lite/micro/kernels/activations.cc
+@@ -28,6 +28,25 @@ limitations under the License.
+ #include "tensorflow/lite/micro/micro_utils.h"
+ 
+ namespace tflite {
++
++template <typename T>
++void ReluQuantized(const ReluOpData& data, const RuntimeShape& input_shape,
++                   const RuntimeShape& output_shape, const T* input_data,
++                   T* output_data) {
++  const int flat_size = MatchingFlatSize(input_shape, output_shape);
++  for (int i = 0; i < flat_size; ++i) {
++    const int32_t val = static_cast<int32_t>(input_data[i]);
++    int32_t clamped =
++        data.params.output_offset +
++        MultiplyByQuantizedMultiplier(val - data.params.input_offset,
++                                      data.params.output_multiplier,
++                                      data.params.output_shift);
++    clamped = std::max(data.params.quantized_activation_min, clamped);
++    clamped = std::min(data.params.quantized_activation_max, clamped);
++    output_data[i] = static_cast<T>(clamped);
++  }
++}
++
+ namespace {
+ 
+ void* ReluInit(TfLiteContext* context, const char* buffer, size_t length) {
+@@ -53,6 +72,13 @@ TfLiteStatus ReluEval(TfLiteContext* context, TfLiteNode* node) {
+ 
+       return kTfLiteOk;
+     }
++    case kTfLiteInt16: {
++      tflite::ReluQuantized<int16_t>(data, tflite::micro::GetTensorShape(input),
++                            tflite::micro::GetTensorShape(output),
++                            tflite::micro::GetTensorData<int16_t>(input),
++                            tflite::micro::GetTensorData<int16_t>(output));
++      return kTfLiteOk;
++    }
+     case kTfLiteInt8: {
+       tflite::ReluQuantized(data, tflite::micro::GetTensorShape(input),
+                             tflite::micro::GetTensorShape(output),
+diff --git a/tensorflow/lite/micro/kernels/activations.h b/tensorflow/lite/micro/kernels/activations.h
+index e953f0e0..8ad0a567 100644
+--- a/tensorflow/lite/micro/kernels/activations.h
++++ b/tensorflow/lite/micro/kernels/activations.h
+@@ -36,9 +36,10 @@ struct Relu6OpData {
+   int8_t zero_int8;
+ };
+ 
++template <typename T>
+ void ReluQuantized(const ReluOpData& data, const RuntimeShape& input_shape,
+-                   const RuntimeShape& output_shape, const int8_t* input_data,
+-                   int8_t* output_data);
++                   const RuntimeShape& output_shape, const T* input_data,
++                   T* output_data);
+ 
+ template <typename T>
+ void CalculateReluOpData(const TfLiteTensor* input, TfLiteTensor* output,
+diff --git a/tensorflow/lite/micro/kernels/activations_common.cc b/tensorflow/lite/micro/kernels/activations_common.cc
+index 2ec3a1bf..2a724f61 100644
+--- a/tensorflow/lite/micro/kernels/activations_common.cc
++++ b/tensorflow/lite/micro/kernels/activations_common.cc
+@@ -33,23 +33,6 @@ namespace tflite {
+ const int kActivationsInputTensor = 0;
+ const int kActivationsOutputTensor = 0;
+ 
+-void ReluQuantized(const ReluOpData& data, const RuntimeShape& input_shape,
+-                   const RuntimeShape& output_shape, const int8_t* input_data,
+-                   int8_t* output_data) {
+-  const int flat_size = MatchingFlatSize(input_shape, output_shape);
+-  for (int i = 0; i < flat_size; ++i) {
+-    const int32_t val = static_cast<int32_t>(input_data[i]);
+-    int32_t clamped =
+-        data.params.output_offset +
+-        MultiplyByQuantizedMultiplier(val - data.params.input_offset,
+-                                      data.params.output_multiplier,
+-                                      data.params.output_shift);
+-    clamped = std::max(data.params.quantized_activation_min, clamped);
+-    clamped = std::min(data.params.quantized_activation_max, clamped);
+-    output_data[i] = static_cast<int8_t>(clamped);
+-  }
+-}
+-
+ template <typename T>
+ void CalculateReluOpData(const TfLiteTensor* input, TfLiteTensor* output,
+                          ReluOpData* data) {
+@@ -127,6 +110,8 @@ TfLiteStatus ReluPrepare(TfLiteContext* context, TfLiteNode* node) {
+ 
+   if (input->type == kTfLiteInt8) {
+     CalculateReluOpData<int8_t>(input, output, data);
++  } else if (input->type == kTfLiteInt16) {
++    CalculateReluOpData<int16_t>(input, output, data);
+   }
+ 
+   micro_context->DeallocateTempTfLiteTensor(input);
 diff --git a/tensorflow/lite/micro/kernels/concatenation.cc b/tensorflow/lite/micro/kernels/concatenation.cc
 index b4a838f7..e9f0381e 100644
 --- a/tensorflow/lite/micro/kernels/concatenation.cc
@@ -187,6 +285,75 @@ index b4a838f7..e9f0381e 100644
  constexpr int kOutputTensor = 0;
  
  struct OpData {
+diff --git a/tensorflow/lite/micro/kernels/transpose.cc b/tensorflow/lite/micro/kernels/transpose.cc
+index 710bfca4..82f0d4ed 100644
+--- a/tensorflow/lite/micro/kernels/transpose.cc
++++ b/tensorflow/lite/micro/kernels/transpose.cc
+@@ -97,6 +97,12 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+                                tflite::micro::GetTensorShape(output),
+                                tflite::micro::GetTensorData<float>(output));
+       break;
++    case kTfLiteInt16:
++      reference_ops::Transpose(params, tflite::micro::GetTensorShape(input),
++                               tflite::micro::GetTensorData<int16_t>(input),
++                               tflite::micro::GetTensorShape(output),
++                               tflite::micro::GetTensorData<int16_t>(output));
++      break;
+     case kTfLiteInt8:
+       reference_ops::Transpose(params, tflite::micro::GetTensorShape(input),
+                                tflite::micro::GetTensorData<int8_t>(input),
+diff --git a/tensorflow/lite/micro/kernels/transpose_conv.cc b/tensorflow/lite/micro/kernels/transpose_conv.cc
+index a2ac2b46..e74692f8 100644
+--- a/tensorflow/lite/micro/kernels/transpose_conv.cc
++++ b/tensorflow/lite/micro/kernels/transpose_conv.cc
+@@ -123,7 +123,7 @@ TfLiteStatus CalculateOpData(TfLiteContext* context, TfLiteNode* node,
+     if (input->type == kTfLiteInt16) {
+       TFLITE_DCHECK(filter->type == kTfLiteInt8);
+       TFLITE_DCHECK(output->type == kTfLiteInt16);
+-      if (bias->type == kTfLiteInt16) {
++      if (bias->type == kTfLiteInt16 || bias->type == kTfLiteInt32) {
+         TFLITE_DCHECK(
+             context->RequestScratchBufferInArena(
+                 context, GetTensorShape(bias).FlatSize() * sizeof(std::int64_t),
+@@ -320,6 +320,24 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+             tflite::micro::GetTensorShape(output),
+             tflite::micro::GetTensorData<int16_t>(output),
+             tflite::micro::GetTensorShape(nullptr), nullptr, scratch_buffer);
++      } else if (bias != nullptr && bias->type == kTfLiteInt32) {
++        std::int64_t* bias_converted_buffer =
++            static_cast<int64_t*>(context->GetScratchBuffer(
++                context, data.bias_converted_buffer_index));
++        for (int i = 0; i < tflite::micro::GetTensorShape(bias).FlatSize();
++             i++) {
++          bias_converted_buffer[i] = bias->data.i32[i];
++        }
++        reference_integer_ops::TransposeConv(
++            data.params, data.per_channel_output_multiplier,
++            data.per_channel_output_shift, tflite::micro::GetTensorShape(input),
++            tflite::micro::GetTensorData<int16_t>(input),
++            tflite::micro::GetTensorShape(filter),
++            tflite::micro::GetTensorData<int8_t>(filter),
++            tflite::micro::GetTensorShape(bias), bias_converted_buffer,
++            tflite::micro::GetTensorShape(output),
++            tflite::micro::GetTensorData<int16_t>(output),
++            tflite::micro::GetTensorShape(nullptr), nullptr, scratch_buffer);
+       } else {
+         reference_integer_ops::TransposeConv(
+             data.params, data.per_channel_output_multiplier,
+diff --git a/tensorflow/lite/micro/kernels/unpack.cc b/tensorflow/lite/micro/kernels/unpack.cc
+index 3ce4c33f..aaa938b3 100644
+--- a/tensorflow/lite/micro/kernels/unpack.cc
++++ b/tensorflow/lite/micro/kernels/unpack.cc
+@@ -86,6 +86,9 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+     case kTfLiteInt32: {
+       return UnpackImpl<int32_t>(context, node, input, data->num, data->axis);
+     }
++    case kTfLiteInt16: {
++      return UnpackImpl<int16_t>(context, node, input, data->num, data->axis);
++    }
+     case kTfLiteInt8: {
+       return UnpackImpl<int8_t>(context, node, input, data->num, data->axis);
+     }
 diff --git a/tensorflow/lite/micro/memory_planner/greedy_memory_planner.h b/tensorflow/lite/micro/memory_planner/greedy_memory_planner.h
 index b2cdb617..a79e7974 100644
 --- a/tensorflow/lite/micro/memory_planner/greedy_memory_planner.h
@@ -424,7 +591,7 @@ index 5986dc37..53de3cc9 100644
    // Sets the State of MemoryPlanning MicroInterpreterContext
    void SetInterpreterState(InterpreterState state);
 diff --git a/tensorflow/lite/micro/test_helpers.cc b/tensorflow/lite/micro/test_helpers.cc
-index 3f0f5ec0..50e7aa67 100644
+index 3f0f5ec0..00b9541a 100644
 --- a/tensorflow/lite/micro/test_helpers.cc
 +++ b/tensorflow/lite/micro/test_helpers.cc
 @@ -442,11 +442,19 @@ const Model* BuildModelWithUnusedOperatorOutputs() {

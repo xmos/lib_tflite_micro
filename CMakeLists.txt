@@ -34,7 +34,7 @@ target_sources(${LIB_NAME}
     FILES ${header_list}
 )
 
-set(DEFINTIONS
+set(DEFINITIONS
     "__xtflm_conf_h_exists__"
     "NO_INTERPRETER"
     "TF_LITE_STATIC_MEMORY"
@@ -73,7 +73,7 @@ else()
         "-O0"
     )
 
-    list(APPEND DEFINTIONS "NN_USE_REF" "FLATBUFFERS_LOCALE_INDEPENDENT=0")
+    list(APPEND DEFINITIONS "NN_USE_REF" "FLATBUFFERS_LOCALE_INDEPENDENT=0")
 
     target_compile_features(${LIB_NAME} PUBLIC cxx_std_17)
 endif()
@@ -81,7 +81,7 @@ endif()
 target_compile_options(${LIB_NAME} PRIVATE ${BUILD_FLAGS})
 target_link_options(${LIB_NAME} PRIVATE ${BUILD_FLAGS})
 target_compile_definitions(${LIB_NAME} PUBLIC
-    ${DEFINTIONS}
+    ${DEFINITIONS}
 )
 
 target_include_directories(${LIB_NAME}
@@ -112,3 +112,8 @@ add_custom_target(project-install DEPENDS ${LIB_NAME}
 add_custom_target(create_zip DEPENDS project-install COMMAND
     ${CMAKE_COMMAND} -E tar "cfv" "release_archive.zip" --format=zip
     "${CMAKE_BINARY_DIR}/lib" "${CMAKE_BINARY_DIR}/include")
+
+if(EXISTS "${CMAKE_BINARY_DIR}/compile_commands.json")
+  file(COPY "${CMAKE_BINARY_DIR}/compile_commands.json"
+       DESTINATION "${CMAKE_SOURCE_DIR}")
+endif()

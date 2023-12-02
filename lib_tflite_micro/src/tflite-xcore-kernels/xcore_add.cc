@@ -95,8 +95,8 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
 
 } // namespace add
 
-TfLiteRegistration_V1 *Register_XC_add() {
-  static TfLiteRegistration_V1 r = {add::Init, nullptr, add::Prepare, add::Eval};
+TFLMRegistration *Register_XC_add() {
+  static TFLMRegistration r = {add::Init, nullptr, add::Prepare, add::Eval};
   return &r;
 }
 

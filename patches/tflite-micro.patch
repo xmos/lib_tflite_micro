@@ -1,23 +1,99 @@
-diff --git tensorflow/lite/c/common.h tensorflow/lite/c/common.h
-index e3e8001..0e48581 100644
---- tensorflow/lite/c/common.h
-+++ tensorflow/lite/c/common.h
-@@ -38,4 +38,10 @@ limitations under the License.
+diff --git a/python/tflite_micro/python_ops_resolver.cc b/python/tflite_micro/python_ops_resolver.cc
+index ab67bd4a..127c4ee9 100644
+--- a/python/tflite_micro/python_ops_resolver.cc
++++ b/python/tflite_micro/python_ops_resolver.cc
+@@ -39,28 +39,28 @@ PythonOpsResolver::PythonOpsResolver() {
+   AddConv2D();
+   AddCos();
+   AddCumSum();
+-  AddDelay();
++  //AddDelay();
+   AddDepthToSpace();
+   AddDepthwiseConv2D();
+   AddDequantize();
+   AddDetectionPostprocess();
+   AddDiv();
+-  AddEnergy();
++  //AddEnergy();
+   AddElu();
+   AddEqual();
+   AddEthosU();
+   AddExp();
+   AddExpandDims();
+-  AddFftAutoScale();
++  //AddFftAutoScale();
+   AddFill();
+-  AddFilterBank();
+-  AddFilterBankLog();
+-  AddFilterBankSquareRoot();
+-  AddFilterBankSpectralSubtraction();
++  // AddFilterBank();
++  // AddFilterBankLog();
++  // AddFilterBankSquareRoot();
++  // AddFilterBankSpectralSubtraction();
+   AddFloor();
+   AddFloorDiv();
+   AddFloorMod();
+-  AddFramer();
++  //AddFramer();
+   AddFullyConnected();
+   AddGather();
+   AddGatherNd();
+@@ -68,7 +68,7 @@ PythonOpsResolver::PythonOpsResolver() {
+   AddGreaterEqual();
+   AddHardSwish();
+   AddIf();
+-  AddIrfft();
++  //AddIrfft();
+   AddL2Normalization();
+   AddL2Pool2D();
+   AddLeakyRelu();
+@@ -88,11 +88,11 @@ PythonOpsResolver::PythonOpsResolver() {
+   AddMul();
+   AddNeg();
+   AddNotEqual();
+-  AddOverlapAdd();
++  //AddOverlapAdd();
+   AddPack();
+   AddPad();
+   AddPadV2();
+-  AddPCAN();
++  //AddPCAN();
+   AddPrelu();
+   AddQuantize();
+   AddReadVariable();
+@@ -102,7 +102,7 @@ PythonOpsResolver::PythonOpsResolver() {
+   AddReshape();
+   AddResizeBilinear();
+   AddResizeNearestNeighbor();
+-  AddRfft();
++  //AddRfft();
+   AddRound();
+   AddRsqrt();
+   AddSelectV2();
+@@ -119,7 +119,7 @@ PythonOpsResolver::PythonOpsResolver() {
+   AddSquaredDifference();
+   AddSqueeze();
+   AddStridedSlice();
+-  AddStacker();
++  //AddStacker();
+   AddSub();
+   AddSum();
+   AddSvdf();
+@@ -130,7 +130,7 @@ PythonOpsResolver::PythonOpsResolver() {
+   AddUnpack();
+   AddVarHandle();
+   AddWhile();
+-  AddWindow();
++  //AddWindow();
+   AddZerosLike();
+ }
  
- #include "tensorflow/lite/core/c/common.h"
- 
-+// TfLiteOpaqueDelegate: allows delegation of nodes to alternative backends.
-+// TfLiteOpaqueDelegate is an abstract type that is intended to have the same
-+// role as TfLiteDelegate, but without necessarily exposing the implementation
-+// details of how delegates are implemented.
-+typedef TfLiteDelegate TfLiteOpaqueDelegate;
-+
- #endif  // TENSORFLOW_LITE_C_COMMON_H_
-diff --git tensorflow/lite/core/c/common.h tensorflow/lite/core/c/common.h
-index dcee532..e16f846 100644
---- tensorflow/lite/core/c/common.h
-+++ tensorflow/lite/core/c/common.h
-@@ -531,13 +531,6 @@ typedef struct TfLiteNode {
+diff --git a/tensorflow/lite/core/c/common.h b/tensorflow/lite/core/c/common.h
+index d9abf9ea..b7a85d32 100644
+--- a/tensorflow/lite/core/c/common.h
++++ b/tensorflow/lite/core/c/common.h
+@@ -570,13 +570,6 @@ typedef struct TfLiteNode {
  // - name
  // - sparsity
  typedef struct TfLiteTensor {
@@ -31,7 +107,7 @@ index dcee532..e16f846 100644
    // A union of data pointers. The appropriate type should be used for a typed
    // tensor based on `type`.
    TfLitePtrUnion data;
-@@ -547,16 +540,23 @@ typedef struct TfLiteTensor {
+@@ -586,16 +579,23 @@ typedef struct TfLiteTensor {
    // and the element datatype size should be equal to `bytes` below.
    TfLiteIntArray* dims;
  
@@ -59,7 +135,7 @@ index dcee532..e16f846 100644
    // How memory is mapped
    //  kTfLiteMmapRo: Memory mapped read only.
    //  i.e. weights
-@@ -582,10 +582,6 @@ typedef struct TfLiteNode {
+@@ -621,10 +621,6 @@ typedef struct TfLiteNode {
    // Outputs to this node expressed as indices into the simulator's tensors.
    TfLiteIntArray* outputs;
  
@@ -70,7 +146,7 @@ index dcee532..e16f846 100644
    // Opaque data provided by the node implementer through `Registration.init`.
    void* user_data;
  
-@@ -595,7 +591,6 @@ typedef struct TfLiteNode {
+@@ -634,7 +630,6 @@ typedef struct TfLiteNode {
  
    // Custom initial data. This is the opaque data provided in the flatbuffer.
    // WARNING: This is an experimental interface that is subject to change.
@@ -78,406 +154,220 @@ index dcee532..e16f846 100644
    int custom_initial_data_size;
  } TfLiteNode;
  #endif  // TF_LITE_STATIC_MEMORY
-diff --git tensorflow/lite/kernels/internal/common.h tensorflow/lite/kernels/internal/common.h
-index 00fe01f..65e248d 100644
---- tensorflow/lite/kernels/internal/common.h
-+++ tensorflow/lite/kernels/internal/common.h
-@@ -328,16 +328,14 @@ template <typename T>
- int CountLeadingZeros(T integer_input) {
-   static_assert(std::is_unsigned<T>::value,
-                 "Only unsigned integer types handled.");
-+#if defined(__GNUC__)
-+  return integer_input ? __builtin_clz(integer_input)
-+                       : std::numeric_limits<T>::digits;
-+#else
-   if (integer_input == 0) {
-     return std::numeric_limits<T>::digits;
-   }
--#if defined(__GNUC__)
--  if (std::is_same<T, uint32_t>::value) {
--    return __builtin_clz(integer_input);
--  } else if (std::is_same<T, uint64_t>::value) {
--    return __builtin_clzll(integer_input);
--  }
--#endif
-+
-   const T one_in_leading_positive = static_cast<T>(1)
-                                     << (std::numeric_limits<T>::digits - 1);
-   int leading_zeros = 0;
-@@ -346,6 +344,7 @@ int CountLeadingZeros(T integer_input) {
-     ++leading_zeros;
-   }
-   return leading_zeros;
-+#endif
- }
- 
- template <typename T>
-diff --git tensorflow/lite/kernels/internal/quantization_util.cc tensorflow/lite/kernels/internal/quantization_util.cc
-index 62045d6..4b8cfba 100644
---- tensorflow/lite/kernels/internal/quantization_util.cc
-+++ tensorflow/lite/kernels/internal/quantization_util.cc
+diff --git a/tensorflow/lite/kernels/internal/quantization_util.cc b/tensorflow/lite/kernels/internal/quantization_util.cc
+index 62045d67..5ad1e885 100644
+--- a/tensorflow/lite/kernels/internal/quantization_util.cc
++++ b/tensorflow/lite/kernels/internal/quantization_util.cc
 @@ -314,8 +314,13 @@ void PreprocessSoftmaxScaling(double beta, double input_scale,
                         max_real_multiplier);
  #endif  // TFLITE_EMULATE_FLOAT
  
-+if(input_beta_real_multiplier > 1.) {
-   QuantizeMultiplierGreaterThanOne(input_beta_real_multiplier,
-                                    quantized_multiplier, left_shift);
-+} else {
-+  QuantizeMultiplierSmallerThanOneExp(input_beta_real_multiplier,
-+                                   quantized_multiplier, left_shift);
-+}
+-  QuantizeMultiplierGreaterThanOne(input_beta_real_multiplier,
+-                                   quantized_multiplier, left_shift);
++  if(input_beta_real_multiplier > 1.) {
++    QuantizeMultiplierGreaterThanOne(input_beta_real_multiplier,
++                                    quantized_multiplier, left_shift);
++  } else {
++    QuantizeMultiplierSmallerThanOneExp(input_beta_real_multiplier,
++                                    quantized_multiplier, left_shift);
++  }
  }
  
  void PreprocessLogSoftmaxScalingExp(double beta, double input_scale,
-diff --git tensorflow/lite/kernels/internal/reference/integer_ops/add.h tensorflow/lite/kernels/internal/reference/integer_ops/add.h
-index 579964d..bd50617 100644
---- tensorflow/lite/kernels/internal/reference/integer_ops/add.h
-+++ tensorflow/lite/kernels/internal/reference/integer_ops/add.h
-@@ -35,23 +35,24 @@ inline void CheckArithmeticParams(const ArithmeticParams& params) {
-   TFLITE_DCHECK_LE(-params.input2_offset, std::numeric_limits<int8_t>::max());
- }
+diff --git a/tensorflow/lite/micro/kernels/activations.cc b/tensorflow/lite/micro/kernels/activations.cc
+index 1086325c..3425bb2a 100644
+--- a/tensorflow/lite/micro/kernels/activations.cc
++++ b/tensorflow/lite/micro/kernels/activations.cc
+@@ -28,6 +28,25 @@ limitations under the License.
+ #include "tensorflow/lite/micro/micro_utils.h"
  
--// TODO(b/270589088): move to a more appropriate file (b/270589088#comment2)
- template <typename T>
--void ElementWise(int size, const ArithmeticParams& params, const T* input1_data,
--                 const T* input2_data, T* output_data,
--                 void (*check_arithmetic_params)(const ArithmeticParams&),
--                 T (*binary_func)(T, T, const ArithmeticParams&)) {
-+inline void ElementWise(
-+    int size, const ArithmeticParams& params, const T* input1_data,
-+    const T* input2_data, T* output_data,
-+    void (*check_arithmetic_params)(const ArithmeticParams&),
-+    T (*binary_func)(T, T, const ArithmeticParams&)) {
-   CheckArithmeticParams(params);
-   for (int i = 0; i < size; ++i) {
-     output_data[i] = binary_func(input1_data[i], input2_data[i], params);
-   }
- }
--// TODO(b/270589088): move to a more appropriate file. (b/270589088#comment2)
+ namespace tflite {
 +
- template <typename T>
--void BroadcastBinaryFunction6DSlow(
-+inline void BroadcastBinaryFunction6DSlow(
-     const ArithmeticParams& params, const RuntimeShape& input1_shape,
-     const T* input1_data, const RuntimeShape& input2_shape,
--    const T* input2_data, const RuntimeShape& output_shape, T* output_data,
-+    const T* input2_data, const RuntimeShape& output_shape,
-+    T* output_data,
-     void (*check_arithmetic_params)(const ArithmeticParams&),
-     T (*binary_func)(T, T, const ArithmeticParams&)) {
-   NdArrayDesc<6> desc1;
-diff --git tensorflow/lite/kernels/internal/reference/integer_ops/mean.h tensorflow/lite/kernels/internal/reference/integer_ops/mean.h
-index 7e3f690..09d37b7 100644
---- tensorflow/lite/kernels/internal/reference/integer_ops/mean.h
-+++ tensorflow/lite/kernels/internal/reference/integer_ops/mean.h
-@@ -1,10 +1,10 @@
--/* Copyright 2023 The TensorFlow Authors. All Rights Reserved.
-+/* Copyright 2019 The TensorFlow Authors. All Rights Reserved.
- 
- Licensed under the Apache License, Version 2.0 (the "License");
- you may not use this file except in compliance with the License.
- You may obtain a copy of the License at
- 
--http://www.apache.org/licenses/LICENSE-2.0
-+    http://www.apache.org/licenses/LICENSE-2.0
- 
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
-@@ -15,4 +15,65 @@ limitations under the License.
- #ifndef TENSORFLOW_LITE_KERNELS_INTERNAL_REFERENCE_INTEGER_OPS_MEAN_H_
- #define TENSORFLOW_LITE_KERNELS_INTERNAL_REFERENCE_INTEGER_OPS_MEAN_H_
- 
-+#include <algorithm>
-+
-+#include "tensorflow/lite/kernels/internal/common.h"
-+
-+namespace tflite {
-+namespace reference_integer_ops {
-+
-+template <typename integer_type>
-+inline void Mean(const tflite::MeanParams& op_params, int32_t multiplier,
-+                 int32_t shift, const RuntimeShape& unextended_input_shape,
-+                 const integer_type* input_data, int32_t input_zero_point,
-+                 const RuntimeShape& unextended_output_shape,
-+                 integer_type* output_data, int32_t output_zero_point) {
-+  // Current implementation only supports dimension equals 4 and simultaneous
-+  // reduction over width and height.
-+  TFLITE_CHECK_EQ(unextended_input_shape.DimensionsCount(), 4);
-+  TFLITE_CHECK_LE(unextended_output_shape.DimensionsCount(), 4);
-+  const RuntimeShape input_shape =
-+      RuntimeShape::ExtendedShape(4, unextended_input_shape);
-+  const RuntimeShape output_shape =
-+      RuntimeShape::ExtendedShape(4, unextended_output_shape);
-+  const int output_batch = output_shape.Dims(0);
-+  const int output_height = output_shape.Dims(1);
-+  const int output_width = output_shape.Dims(2);
-+  const int output_depth = output_shape.Dims(3);
-+  const int input_height = input_shape.Dims(1);
-+  const int input_width = input_shape.Dims(2);
-+  const int num_elements_in_axis = input_width * input_height;
-+
-+  TFLITE_CHECK_EQ(op_params.axis_count, 2);
-+  TFLITE_CHECK((op_params.axis[0] == 1 && op_params.axis[1] == 2) ||
-+               (op_params.axis[0] == 2 && op_params.axis[1] == 1));
-+  TFLITE_CHECK_EQ(output_height, 1);
-+  TFLITE_CHECK_EQ(output_width, 1);
-+
-+  static constexpr int32_t kMinInt = std::numeric_limits<integer_type>::min();
-+  static constexpr int32_t kMaxInt = std::numeric_limits<integer_type>::max();
-+
-+  for (int out_b = 0; out_b < output_batch; ++out_b) {
-+    for (int out_d = 0; out_d < output_depth; ++out_d) {
-+      int32_t acc = 0;
-+      for (int in_h = 0; in_h < input_height; ++in_h) {
-+        for (int in_w = 0; in_w < input_width; ++in_w) {
-+          acc += input_data[Offset(input_shape, out_b, in_h, in_w, out_d)] -
-+                 input_zero_point;
-+        }
-+      }
-+      acc = MultiplyByQuantizedMultiplier(acc, multiplier, shift);
-+      acc = acc > 0 ? (acc + num_elements_in_axis / 2) / num_elements_in_axis
-+                    : (acc - num_elements_in_axis / 2) / num_elements_in_axis;
-+      acc += output_zero_point;
-+      acc = std::min(std::max(acc, kMinInt), kMaxInt);
-+      output_data[Offset(output_shape, out_b, 0, 0, out_d)] =
-+          static_cast<integer_type>(acc);
-+    }
++template <typename T>
++void ReluQuantized(const ReluOpData& data, const RuntimeShape& input_shape,
++                   const RuntimeShape& output_shape, const T* input_data,
++                   T* output_data) {
++  const int flat_size = MatchingFlatSize(input_shape, output_shape);
++  for (int i = 0; i < flat_size; ++i) {
++    const int32_t val = static_cast<int32_t>(input_data[i]);
++    int32_t clamped =
++        data.params.output_offset +
++        MultiplyByQuantizedMultiplier(val - data.params.input_offset,
++                                      data.params.output_multiplier,
++                                      data.params.output_shift);
++    clamped = std::max(data.params.quantized_activation_min, clamped);
++    clamped = std::min(data.params.quantized_activation_max, clamped);
++    output_data[i] = static_cast<T>(clamped);
 +  }
 +}
 +
-+}  // namespace reference_integer_ops
-+}  // namespace tflite
-+
- #endif  // TENSORFLOW_LITE_KERNELS_INTERNAL_REFERENCE_INTEGER_OPS_MEAN_H_
-diff --git tensorflow/lite/kernels/internal/reference/reduce.h tensorflow/lite/kernels/internal/reference/reduce.h
-index 5b795ea..adc435f 100644
---- tensorflow/lite/kernels/internal/reference/reduce.h
-+++ tensorflow/lite/kernels/internal/reference/reduce.h
-@@ -268,11 +268,11 @@ inline bool Mean(const T* input_data, const int* input_dims,
-   return true;
- }
+ namespace {
+ 
+ void* ReluInit(TfLiteContext* context, const char* buffer, size_t length) {
+@@ -53,6 +72,13 @@ TfLiteStatus ReluEval(TfLiteContext* context, TfLiteNode* node) {
+ 
+       return kTfLiteOk;
+     }
++    case kTfLiteInt16: {
++      tflite::ReluQuantized<int16_t>(data, tflite::micro::GetTensorShape(input),
++                            tflite::micro::GetTensorShape(output),
++                            tflite::micro::GetTensorData<int16_t>(input),
++                            tflite::micro::GetTensorData<int16_t>(output));
++      return kTfLiteOk;
++    }
+     case kTfLiteInt8: {
+       tflite::ReluQuantized(data, tflite::micro::GetTensorShape(input),
+                             tflite::micro::GetTensorShape(output),
+diff --git a/tensorflow/lite/micro/kernels/activations.h b/tensorflow/lite/micro/kernels/activations.h
+index e953f0e0..8ad0a567 100644
+--- a/tensorflow/lite/micro/kernels/activations.h
++++ b/tensorflow/lite/micro/kernels/activations.h
+@@ -36,9 +36,10 @@ struct Relu6OpData {
+   int8_t zero_int8;
+ };
  
 +template <typename T>
- inline void Mean(const tflite::MeanParams& op_params,
-                  const RuntimeShape& unextended_input_shape,
--                 const float* input_data,
--                 const RuntimeShape& unextended_output_shape,
--                 float* output_data) {
-+                 const T* input_data,
-+                 const RuntimeShape& unextended_output_shape, T* output_data) {
-   ruy::profiler::ScopeLabel label("Mean4D");
+ void ReluQuantized(const ReluOpData& data, const RuntimeShape& input_shape,
+-                   const RuntimeShape& output_shape, const int8_t* input_data,
+-                   int8_t* output_data);
++                   const RuntimeShape& output_shape, const T* input_data,
++                   T* output_data);
  
-   // Current implementation only supports dimension equals 4 and simultaneous
-@@ -312,21 +312,78 @@ inline void Mean(const tflite::MeanParams& op_params,
-   }
- }
+ template <typename T>
+ void CalculateReluOpData(const TfLiteTensor* input, TfLiteTensor* output,
+diff --git a/tensorflow/lite/micro/kernels/activations_common.cc b/tensorflow/lite/micro/kernels/activations_common.cc
+index 2ec3a1bf..2a724f61 100644
+--- a/tensorflow/lite/micro/kernels/activations_common.cc
++++ b/tensorflow/lite/micro/kernels/activations_common.cc
+@@ -33,23 +33,6 @@ namespace tflite {
+ const int kActivationsInputTensor = 0;
+ const int kActivationsOutputTensor = 0;
  
-+inline void Mean(const tflite::MeanParams& op_params,
-+                 const RuntimeShape& unextended_input_shape,
-+                 const uint8_t* input_data, int32_t input_zero_point,
-+                 float input_scale, const RuntimeShape& unextended_output_shape,
-+                 uint8_t* output_data, int32_t output_zero_point,
-+                 float output_scale) {
-+  ruy::profiler::ScopeLabel label("Mean4D/Uint8");
-+
-+  // Current implementation only supports dimension equals 4 and simultaneous
-+  // reduction over width and height.
-+  TFLITE_CHECK_EQ(unextended_input_shape.DimensionsCount(), 4);
-+  TFLITE_CHECK_LE(unextended_output_shape.DimensionsCount(), 4);
-+  const RuntimeShape input_shape =
-+      RuntimeShape::ExtendedShape(4, unextended_input_shape);
-+  const RuntimeShape output_shape =
-+      RuntimeShape::ExtendedShape(4, unextended_output_shape);
-+  const int output_batch = output_shape.Dims(0);
-+  const int output_height = output_shape.Dims(1);
-+  const int output_width = output_shape.Dims(2);
-+  const int output_depth = output_shape.Dims(3);
-+  const int input_height = input_shape.Dims(1);
-+  const int input_width = input_shape.Dims(2);
-+  const float num_elements_in_axis = input_width * input_height;
-+
-+  TFLITE_CHECK_EQ(op_params.axis_count, 2);
-+  TFLITE_CHECK((op_params.axis[0] == 1 && op_params.axis[1] == 2) ||
-+               (op_params.axis[0] == 2 && op_params.axis[1] == 1));
-+  TFLITE_CHECK_EQ(output_height, 1);
-+  TFLITE_CHECK_EQ(output_width, 1);
-+
-+  constexpr int32_t kMinValue = std::numeric_limits<uint8_t>::min();
-+  constexpr int32_t kMaxValue = std::numeric_limits<uint8_t>::max();
-+
-+  float temp = input_zero_point * input_scale / output_scale;
-+  temp = temp > 0 ? temp + 0.5f : temp - 0.5f;
-+  int32_t bias = output_zero_point - static_cast<int32_t>(temp);
-+  double real_scale =
-+      static_cast<double>(input_scale / (num_elements_in_axis * output_scale));
-+
-+  int32_t multiplier;
-+  int shift;
-+  QuantizeMultiplier(real_scale, &multiplier, &shift);
-+  for (int out_b = 0; out_b < output_batch; ++out_b) {
-+    for (int out_d = 0; out_d < output_depth; ++out_d) {
-+      int32_t acc = 0;
-+      for (int in_h = 0; in_h < input_height; ++in_h) {
-+        for (int in_w = 0; in_w < input_width; ++in_w) {
-+          acc += input_data[Offset(input_shape, out_b, in_h, in_w, out_d)];
-+        }
-+      }
-+      acc = MultiplyByQuantizedMultiplier(acc, multiplier, shift);
-+      acc += bias;
-+      acc = std::min(std::max(acc, kMinValue), kMaxValue);
-+      output_data[Offset(output_shape, out_b, 0, 0, out_d)] =
-+          static_cast<uint8_t>(acc);
-+    }
-+  }
-+}
-+
- // Computes the mean of elements across dimensions given in axis.
- // It does so in two stages, first calculates the sum of elements along the axis
- // then divides it by the number of element in axis for quantized values.
- template <typename T, typename U>
- inline bool QuantizedMeanOrSum(const T* input_data, int32_t input_zero_point,
--                               const int* input_dims, const int input_num_dims,
--                               T* output_data, int32_t output_multiplier,
--                               int output_shift, int32_t output_zero_point,
-+                               float input_scale, const int* input_dims,
-+                               const int input_num_dims, T* output_data,
-+                               int32_t output_zero_point, float output_scale,
-                                const int* output_dims,
-                                const int output_num_dims, const int* axis,
-                                const int num_axis_dimensions, bool keep_dims,
-                                int* temp_index, int* resolved_axis, U* temp_sum,
-                                bool compute_sum) {
--  const int32_t kMinValue = std::numeric_limits<T>::min();
--  const int32_t kMaxValue = std::numeric_limits<T>::max();
-   const bool uint8_case = std::is_same<T, uint8_t>::value;
-   const bool int16_case = std::is_same<T, int16_t>::value;
-   if (uint8_case) {
-@@ -373,46 +430,40 @@ inline bool QuantizedMeanOrSum(const T* input_data, int32_t input_zero_point,
-   }
- 
-   // Calculate mean by dividing output_data by num of aggregated element.
--  int64_t num_elements_in_axis = 1;
-+  size_t num_elements_in_axis = 1;
-   for (int idx = 0; idx < num_resolved_axis; ++idx) {
-     size_t current = static_cast<size_t>(input_dims[resolved_axis[idx]]);
-     // Overflow prevention.
--    if (current > static_cast<size_t>(std::numeric_limits<int64_t>::max() /
--                                      num_elements_in_axis)) {
-+    if (current > (std::numeric_limits<size_t>::max() / num_elements_in_axis)) {
-       return false;
-     }
-     num_elements_in_axis *= current;
-   }
- 
--  if (num_elements_in_axis == 0) {
--    return true;
+-void ReluQuantized(const ReluOpData& data, const RuntimeShape& input_shape,
+-                   const RuntimeShape& output_shape, const int8_t* input_data,
+-                   int8_t* output_data) {
+-  const int flat_size = MatchingFlatSize(input_shape, output_shape);
+-  for (int i = 0; i < flat_size; ++i) {
+-    const int32_t val = static_cast<int32_t>(input_data[i]);
+-    int32_t clamped =
+-        data.params.output_offset +
+-        MultiplyByQuantizedMultiplier(val - data.params.input_offset,
+-                                      data.params.output_multiplier,
+-                                      data.params.output_shift);
+-    clamped = std::max(data.params.quantized_activation_min, clamped);
+-    clamped = std::min(data.params.quantized_activation_max, clamped);
+-    output_data[i] = static_cast<int8_t>(clamped);
 -  }
+-}
 -
--  // Readapt output rescaling when calculating the mean to integrate a
--  // 1/num_elements_in_axis multiplier.
--  if (!compute_sum) {
--    TFLITE_DCHECK_GE(num_elements_in_axis, 0);
--    int shift =
--        63 - CountLeadingZeros(static_cast<uint64_t>(num_elements_in_axis));
--    // To avoid any overflow risk 'shift' should be <= 32 and to satisfy
--    // 'MultiplyByQuantizedMultiplier' pre-conditions 'output_shift - shift'
--    // should be >= -31. Clamp the value at the price of some precision loss.
--    shift = std::min(shift, 32);
--    shift = std::min(shift, 31 + output_shift);
--    output_multiplier = static_cast<int32_t>(
--        (static_cast<int64_t>(output_multiplier) << shift) /
--        num_elements_in_axis);
--    output_shift = output_shift - shift;
--  }
--
--  for (size_t idx = 0; idx < num_outputs; ++idx) {
--    const U shifted_sum =
--        static_cast<U>(temp_sum[idx] - input_zero_point * num_elements_in_axis);
--    int32_t output = MultiplyByQuantizedMultiplier(
--                         shifted_sum, output_multiplier, output_shift) +
--                     output_zero_point;
--    output = std::min(std::max(output, kMinValue), kMaxValue);
--    output_data[idx] = static_cast<T>(output);
-+  if (num_elements_in_axis > 0) {
-+    const float scale = input_scale / output_scale;
-+    if (compute_sum) {
-+      // TODO(b/116341117): Eliminate float and do this completely in 8bit.
-+      const float bias = -input_zero_point * scale * num_elements_in_axis;
-+      for (size_t idx = 0; idx < num_outputs; ++idx) {
-+        const U value =
-+            static_cast<U>(TfLiteRound(temp_sum[idx] * scale + bias)) +
-+            output_zero_point;
-+        output_data[idx] = static_cast<T>(value);
-+      }
-+    } else {
-+      const float bias = -input_zero_point * scale;
-+      for (size_t idx = 0; idx < num_outputs; ++idx) {
-+        float float_mean = static_cast<float>(temp_sum[idx]) /
-+                           static_cast<float>(num_elements_in_axis);
-+        float result = TfLiteMin(
-+            TfLiteRound(float_mean * scale + bias) + output_zero_point,
-+            static_cast<float>(std::numeric_limits<T>::max()));
-+        result = TfLiteMax(result,
-+                           static_cast<float>(std::numeric_limits<T>::min()));
-+        output_data[idx] = static_cast<T>(result);
-+      }
-+    }
+ template <typename T>
+ void CalculateReluOpData(const TfLiteTensor* input, TfLiteTensor* output,
+                          ReluOpData* data) {
+@@ -127,6 +110,8 @@ TfLiteStatus ReluPrepare(TfLiteContext* context, TfLiteNode* node) {
+ 
+   if (input->type == kTfLiteInt8) {
+     CalculateReluOpData<int8_t>(input, output, data);
++  } else if (input->type == kTfLiteInt16) {
++    CalculateReluOpData<int16_t>(input, output, data);
    }
-   return true;
- }
-@@ -427,8 +478,8 @@ inline bool QuantizedMeanOrSumExtraArgs(
-     bool keep_dims, int* temp_index, int* resolved_axis, U* temp_sum,
-     bool compute_sum) {
-   return QuantizedMeanOrSum<T, U>(
--      input_data, input_zero_point, input_dims, input_num_dims, output_data,
--      output_multiplier, output_shift, output_zero_point, output_dims,
-+      input_data, input_zero_point, input_scale, input_dims, input_num_dims,
-+      output_data, output_zero_point, output_scale, output_dims,
-       output_num_dims, axis, num_axis_dimensions, keep_dims, temp_index,
-       resolved_axis, temp_sum, compute_sum);
- }
-diff --git tensorflow/lite/micro/kernels/concatenation.cc tensorflow/lite/micro/kernels/concatenation.cc
-index 9decf72..1cf987c 100644
---- tensorflow/lite/micro/kernels/concatenation.cc
-+++ tensorflow/lite/micro/kernels/concatenation.cc
-@@ -29,7 +29,7 @@ namespace tflite {
+ 
+   micro_context->DeallocateTempTfLiteTensor(input);
+diff --git a/tensorflow/lite/micro/kernels/concatenation.cc b/tensorflow/lite/micro/kernels/concatenation.cc
+index b4a838f7..e9f0381e 100644
+--- a/tensorflow/lite/micro/kernels/concatenation.cc
++++ b/tensorflow/lite/micro/kernels/concatenation.cc
+@@ -28,7 +28,7 @@ namespace tflite {
  
  namespace {
  
 -constexpr int kMaxInputNum = 10;  // Maximum number of input tensors
-+constexpr int kMaxInputNum = 20;  // Maximum number of input tensors
++constexpr int kMaxInputNum = 40;  // Maximum number of input tensors
  constexpr int kOutputTensor = 0;
  
  struct OpData {
-diff --git tensorflow/lite/micro/kernels/conv_common.cc tensorflow/lite/micro/kernels/conv_common.cc
-index c548c93..4ee3ee0 100644
---- tensorflow/lite/micro/kernels/conv_common.cc
-+++ tensorflow/lite/micro/kernels/conv_common.cc
-@@ -123,7 +123,8 @@ TfLiteStatus CalculateOpDataConv(TfLiteContext* context, TfLiteNode* node,
-   micro_context->DeallocateTempTfLiteTensor(input);
-   micro_context->DeallocateTempTfLiteTensor(filter);
-   micro_context->DeallocateTempTfLiteTensor(output);
--  micro_context->DeallocateTempTfLiteTensor(bias);
-+  if (bias)
-+    micro_context->DeallocateTempTfLiteTensor(bias);
- 
-   return kTfLiteOk;
- }
-diff --git tensorflow/lite/micro/memory_planner/greedy_memory_planner.h tensorflow/lite/micro/memory_planner/greedy_memory_planner.h
-index ae3705d..b9c9d85 100644
---- tensorflow/lite/micro/memory_planner/greedy_memory_planner.h
-+++ tensorflow/lite/micro/memory_planner/greedy_memory_planner.h
-@@ -107,6 +107,8 @@ class GreedyMemoryPlanner : public MicroMemoryPlanner {
-     return per_buffer_size;
-   }
+diff --git a/tensorflow/lite/micro/kernels/transpose.cc b/tensorflow/lite/micro/kernels/transpose.cc
+index 710bfca4..82f0d4ed 100644
+--- a/tensorflow/lite/micro/kernels/transpose.cc
++++ b/tensorflow/lite/micro/kernels/transpose.cc
+@@ -97,6 +97,12 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+                                tflite::micro::GetTensorShape(output),
+                                tflite::micro::GetTensorData<float>(output));
+       break;
++    case kTfLiteInt16:
++      reference_ops::Transpose(params, tflite::micro::GetTensorShape(input),
++                               tflite::micro::GetTensorData<int16_t>(input),
++                               tflite::micro::GetTensorShape(output),
++                               tflite::micro::GetTensorData<int16_t>(output));
++      break;
+     case kTfLiteInt8:
+       reference_ops::Transpose(params, tflite::micro::GetTensorShape(input),
+                                tflite::micro::GetTensorData<int8_t>(input),
+diff --git a/tensorflow/lite/micro/kernels/transpose_conv.cc b/tensorflow/lite/micro/kernels/transpose_conv.cc
+index a2ac2b46..e74692f8 100644
+--- a/tensorflow/lite/micro/kernels/transpose_conv.cc
++++ b/tensorflow/lite/micro/kernels/transpose_conv.cc
+@@ -123,7 +123,7 @@ TfLiteStatus CalculateOpData(TfLiteContext* context, TfLiteNode* node,
+     if (input->type == kTfLiteInt16) {
+       TFLITE_DCHECK(filter->type == kTfLiteInt8);
+       TFLITE_DCHECK(output->type == kTfLiteInt16);
+-      if (bias->type == kTfLiteInt16) {
++      if (bias->type == kTfLiteInt16 || bias->type == kTfLiteInt32) {
+         TFLITE_DCHECK(
+             context->RequestScratchBufferInArena(
+                 context, GetTensorShape(bias).FlatSize() * sizeof(std::int64_t),
+@@ -320,6 +320,24 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+             tflite::micro::GetTensorShape(output),
+             tflite::micro::GetTensorData<int16_t>(output),
+             tflite::micro::GetTensorShape(nullptr), nullptr, scratch_buffer);
++      } else if (bias != nullptr && bias->type == kTfLiteInt32) {
++        std::int64_t* bias_converted_buffer =
++            static_cast<int64_t*>(context->GetScratchBuffer(
++                context, data.bias_converted_buffer_index));
++        for (int i = 0; i < tflite::micro::GetTensorShape(bias).FlatSize();
++             i++) {
++          bias_converted_buffer[i] = bias->data.i32[i];
++        }
++        reference_integer_ops::TransposeConv(
++            data.params, data.per_channel_output_multiplier,
++            data.per_channel_output_shift, tflite::micro::GetTensorShape(input),
++            tflite::micro::GetTensorData<int16_t>(input),
++            tflite::micro::GetTensorShape(filter),
++            tflite::micro::GetTensorData<int8_t>(filter),
++            tflite::micro::GetTensorShape(bias), bias_converted_buffer,
++            tflite::micro::GetTensorShape(output),
++            tflite::micro::GetTensorData<int16_t>(output),
++            tflite::micro::GetTensorShape(nullptr), nullptr, scratch_buffer);
+       } else {
+         reference_integer_ops::TransposeConv(
+             data.params, data.per_channel_output_multiplier,
+diff --git a/tensorflow/lite/micro/kernels/unpack.cc b/tensorflow/lite/micro/kernels/unpack.cc
+index 3ce4c33f..aaa938b3 100644
+--- a/tensorflow/lite/micro/kernels/unpack.cc
++++ b/tensorflow/lite/micro/kernels/unpack.cc
+@@ -86,6 +86,9 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+     case kTfLiteInt32: {
+       return UnpackImpl<int32_t>(context, node, input, data->num, data->axis);
+     }
++    case kTfLiteInt16: {
++      return UnpackImpl<int16_t>(context, node, input, data->num, data->axis);
++    }
+     case kTfLiteInt8: {
+       return UnpackImpl<int8_t>(context, node, input, data->num, data->axis);
+     }
+diff --git a/tensorflow/lite/micro/memory_planner/greedy_memory_planner.h b/tensorflow/lite/micro/memory_planner/greedy_memory_planner.h
+index b2cdb617..a79e7974 100644
+--- a/tensorflow/lite/micro/memory_planner/greedy_memory_planner.h
++++ b/tensorflow/lite/micro/memory_planner/greedy_memory_planner.h
+@@ -112,6 +112,8 @@ class GreedyMemoryPlanner : public MicroMemoryPlanner {
+   // that aren't being used during a phase of invocation are overwritten.
+   bool preserves_all_tensors() const override { return false; }
  
 +  TF_LITE_REMOVE_VIRTUAL_DELETE
 +
   private:
    // Whether a buffer is active in a given time range.
    bool DoesEntryOverlapInTime(const ListEntry* entry, const int first_time_used,
-@@ -156,8 +158,6 @@ class GreedyMemoryPlanner : public MicroMemoryPlanner {
+@@ -161,8 +163,6 @@ class GreedyMemoryPlanner : public MicroMemoryPlanner {
  
    // Whether buffers have been added since the last plan was calculated.
    bool need_to_calculate_offsets_;
@@ -486,11 +376,11 @@ index ae3705d..b9c9d85 100644
  };
  
  }  // namespace tflite
-diff --git tensorflow/lite/micro/micro_allocator.h tensorflow/lite/micro/micro_allocator.h
-index 05dbf89..64d9df6 100644
---- tensorflow/lite/micro/micro_allocator.h
-+++ tensorflow/lite/micro/micro_allocator.h
-@@ -235,6 +235,14 @@ class MicroAllocator {
+diff --git a/tensorflow/lite/micro/micro_allocator.h b/tensorflow/lite/micro/micro_allocator.h
+index 4eff167d..a29d56ed 100644
+--- a/tensorflow/lite/micro/micro_allocator.h
++++ b/tensorflow/lite/micro/micro_allocator.h
+@@ -250,6 +250,14 @@ class MicroAllocator {
  
    TfLiteBridgeBuiltinDataAllocator* GetBuiltinDataAllocator();
  
@@ -505,7 +395,7 @@ index 05dbf89..64d9df6 100644
   protected:
    MicroAllocator(SingleArenaBufferAllocator* memory_allocator,
                   MicroMemoryPlanner* memory_planner);
-@@ -298,10 +306,6 @@ class MicroAllocator {
+@@ -313,10 +321,6 @@ class MicroAllocator {
    // preparing.
    TfLiteStatus InitScratchBufferData();
  
@@ -516,51 +406,12 @@ index 05dbf89..64d9df6 100644
    // A simple memory allocator that always allocate from the arena tail or head.
    INonPersistentBufferAllocator* non_persistent_buffer_allocator_;
    IPersistentBufferAllocator* persistent_buffer_allocator_;
-diff --git tensorflow/lite/micro/micro_context.cc tensorflow/lite/micro/micro_context.cc
-index b06252a..fe254ba 100644
---- tensorflow/lite/micro/micro_context.cc
-+++ tensorflow/lite/micro/micro_context.cc
-@@ -57,6 +57,12 @@ TfLiteTensor* MicroContext::AllocateTempTfLiteTensor(int tensor_idx) {
-                                              graph_.GetCurrentSubgraphIndex());
- }
- 
-+TfLiteTensor* MicroContext::AllocateTempTfLiteTensor(int tensor_idx, int sg) {
-+  return allocator_.AllocateTempTfLiteTensor(model_, graph_.GetAllocations(),
-+                                             tensor_idx,
-+                                             sg);
-+}
-+
- int MicroContext::GetTensorIndex(int index, int max_size,
-                                  const int* tensor_indices) {
-   if (index >= 0 && index < max_size) {
-@@ -117,6 +123,11 @@ TfLiteEvalTensor* MicroContext::GetEvalTensor(int tensor_idx) {
-               .tensors[tensor_idx];
- }
- 
-+TfLiteEvalTensor* MicroContext::GetEvalTensor(int tensor_idx, int sg) {
-+  return &graph_.GetAllocations()[sg]
-+              .tensors[tensor_idx];
-+}
-+
- void MicroContext::SetScratchBufferHandles(
-     ScratchBufferHandle* scratch_buffer_handles) {
-   scratch_buffer_handles_ = scratch_buffer_handles;
-@@ -124,7 +135,8 @@ void MicroContext::SetScratchBufferHandles(
- 
- TfLiteStatus MicroContext::set_external_context(
-     void* external_context_payload) {
--  TFLITE_DCHECK(state_ == InterpreterState::kPrepare ||
-+  TFLITE_DCHECK(state_ == InterpreterState::kInit ||
-+                state_ == InterpreterState::kPrepare ||
-                 state_ == InterpreterState::kInvoke);
-   if (external_context_payload == nullptr ||
-       external_context_payload_ != nullptr) {
-diff --git tensorflow/lite/micro/micro_context.h tensorflow/lite/micro/micro_context.h
-index 63b4b7d..6b467a8 100644
---- tensorflow/lite/micro/micro_context.h
-+++ tensorflow/lite/micro/micro_context.h
-@@ -20,6 +20,25 @@ limitations under the License.
- #include "tensorflow/lite/micro/micro_allocator.h"
+diff --git a/tensorflow/lite/micro/micro_context.h b/tensorflow/lite/micro/micro_context.h
+index 2dd3233a..d4b1eb5e 100644
+--- a/tensorflow/lite/micro/micro_context.h
++++ b/tensorflow/lite/micro/micro_context.h
+@@ -19,6 +19,27 @@ limitations under the License.
+ #include "tensorflow/lite/c/common.h"
  #include "tensorflow/lite/micro/micro_graph.h"
  
 +#define XCORE_TFLITE_MICRO_PATCHED
@@ -568,6 +419,8 @@ index 63b4b7d..6b467a8 100644
 +#ifdef NO_INTERPRETER
 +
 +namespace tflite {
++  const TfLiteStatus kTfLiteAbort = static_cast<TfLiteStatus>(15);
++
 +  struct MicroContext{
 +      TfLiteTensor* (*AllocateTempInputTensor)(const TfLiteNode* node, int index);
 +      TfLiteTensor* (*AllocateTempOutputTensor)(const TfLiteNode* node, int index);
@@ -583,25 +436,25 @@ index 63b4b7d..6b467a8 100644
 +#else
 +
  namespace tflite {
- // MicroContext is eventually going to become the API between TFLM and the
- // kernels, replacing all the functions in TfLiteContext. The end state is code
-@@ -67,6 +86,7 @@ class MicroContext {
+ // TODO(b/149795762): kTfLiteAbort cannot be part of the tflite TfLiteStatus.
+ const TfLiteStatus kTfLiteAbort = static_cast<TfLiteStatus>(15);
+@@ -52,6 +73,7 @@ class MicroContext {
+ 
    // Returns a temporary TfLiteTensor struct for a given index.
-   // Virtual so that it can be faked for kernel tests.
-   virtual TfLiteTensor* AllocateTempTfLiteTensor(int tensor_idx);
-+  TfLiteTensor* AllocateTempTfLiteTensor(int tensor_idx, int sg);
+   virtual TfLiteTensor* AllocateTempTfLiteTensor(int tensor_idx) = 0;
++  virtual TfLiteTensor* AllocateTempTfLiteTensor(int tensor_idx, int sg){return nullptr;}
  
    // Returns a temporary TfLiteTensor struct for the specified input tensor of a
    // given mode. This is the recommended API over the deprecated
-@@ -106,6 +126,7 @@ class MicroContext {
-   // Returns a TfLiteEvalTensor struct for a given index.
-   // Virtual so that it can be faked for kernel tests.
-   virtual TfLiteEvalTensor* GetEvalTensor(int tensor_idx);
-+  TfLiteEvalTensor* GetEvalTensor(int tensor_idx, int sg);
+@@ -85,6 +107,7 @@ class MicroContext {
  
-   // Sets the State of MemoryPlanning MicroContext
-   void SetInterpreterState(MicroContext::InterpreterState state);
-@@ -168,10 +189,18 @@ inline TfLiteTensor* MicroContextGetTensor(const struct TfLiteContext* context,
+   // Returns a TfLiteEvalTensor struct for a given index.
+   virtual TfLiteEvalTensor* GetEvalTensor(int tensor_idx) = 0;
++  virtual TfLiteEvalTensor* GetEvalTensor(int tensor_idx, int sg){return nullptr;}
+ 
+   // Does not take ownership of the pointer and the pointer must refer to valid
+   // an object that outlive this class instance.
+@@ -124,10 +147,18 @@ inline TfLiteTensor* MicroContextGetTensor(const struct TfLiteContext* context,
                                             int tensor_idx) {
    return GetMicroContext(context)->AllocateTempTfLiteTensor(tensor_idx);
  }
@@ -620,20 +473,20 @@ index 63b4b7d..6b467a8 100644
  inline TfLiteExternalContext* MicroContextGetExternalContext(
      TfLiteContext* context, TfLiteExternalContextType unused) {
    return reinterpret_cast<TfLiteExternalContext*>(
-@@ -184,4 +213,6 @@ void MicroContextReportOpError(struct TfLiteContext* context,
+@@ -140,4 +171,6 @@ void MicroContextReportOpError(struct TfLiteContext* context,
  
  }  // namespace tflite
  
 +#endif  // NO_INTERPRETER
 +
  #endif  // TENSORFLOW_LITE_MICRO_MICRO_CONTEXT_H_
-diff --git tensorflow/lite/micro/micro_graph.h tensorflow/lite/micro/micro_graph.h
-index ce93d33..1719074 100644
---- tensorflow/lite/micro/micro_graph.h
-+++ tensorflow/lite/micro/micro_graph.h
-@@ -21,6 +21,21 @@ limitations under the License.
+diff --git a/tensorflow/lite/micro/micro_graph.h b/tensorflow/lite/micro/micro_graph.h
+index 79b36496..3b880252 100644
+--- a/tensorflow/lite/micro/micro_graph.h
++++ b/tensorflow/lite/micro/micro_graph.h
+@@ -20,6 +20,21 @@ limitations under the License.
+ #include "tensorflow/lite/micro/micro_common.h"
  #include "tensorflow/lite/micro/micro_resource_variable.h"
- #include "tensorflow/lite/schema/schema_generated.h"
  
 +#ifdef NO_INTERPRETER
 +
@@ -652,21 +505,21 @@ index ce93d33..1719074 100644
 +
  namespace tflite {
  
- // Abstracts the details of interacting with the tflite::Model.
-@@ -101,4 +116,6 @@ class MicroGraph {
+ // Abstracts the details of interacting with the graph from the kernels
+@@ -59,4 +74,6 @@ class MicroGraph {
  
  }  // namespace tflite
  
 +#endif  // NO_INTERPRETER
 +
  #endif  // TENSORFLOW_LITE_MICRO_MICRO_GRAPH_H_
-diff --git tensorflow/lite/micro/micro_interpreter.h tensorflow/lite/micro/micro_interpreter.h
-index a77b0e0..14456b5 100644
---- tensorflow/lite/micro/micro_interpreter.h
-+++ tensorflow/lite/micro/micro_interpreter.h
-@@ -135,6 +135,13 @@ class MicroInterpreter {
-   // arena_used_bytes() + 16.
-   size_t arena_used_bytes() const { return allocator_.used_bytes(); }
+diff --git a/tensorflow/lite/micro/micro_interpreter.h b/tensorflow/lite/micro/micro_interpreter.h
+index 1c419962..a74d4d0f 100644
+--- a/tensorflow/lite/micro/micro_interpreter.h
++++ b/tensorflow/lite/micro/micro_interpreter.h
+@@ -146,6 +146,13 @@ class MicroInterpreter {
+     return allocator_.preserves_all_tensor();
+   }
  
 +  size_t operators_size(int sg) const { return model_->subgraphs()->Get(sg)->operators()->size(); }
 +
@@ -678,11 +531,70 @@ index a77b0e0..14456b5 100644
   protected:
    const MicroAllocator& allocator() const { return allocator_; }
    const TfLiteContext& context() const { return context_; }
-diff --git tensorflow/lite/micro/test_helpers.cc tensorflow/lite/micro/test_helpers.cc
-index 8a7e1cb..8eaa3ff 100644
---- tensorflow/lite/micro/test_helpers.cc
-+++ tensorflow/lite/micro/test_helpers.cc
-@@ -443,11 +443,19 @@ const Model* BuildModelWithUnusedOperatorOutputs() {
+diff --git a/tensorflow/lite/micro/micro_interpreter_context.cc b/tensorflow/lite/micro/micro_interpreter_context.cc
+index 098df15d..e702d494 100644
+--- a/tensorflow/lite/micro/micro_interpreter_context.cc
++++ b/tensorflow/lite/micro/micro_interpreter_context.cc
+@@ -56,6 +56,12 @@ TfLiteTensor* MicroInterpreterContext::AllocateTempTfLiteTensor(
+                                              graph_.GetCurrentSubgraphIndex());
+ }
+ 
++TfLiteTensor* MicroInterpreterContext::AllocateTempTfLiteTensor(int tensor_idx, int sg) {
++  return allocator_.AllocateTempTfLiteTensor(model_, graph_.GetAllocations(),
++                                             tensor_idx,
++                                             sg);
++}
++
+ void MicroInterpreterContext::DeallocateTempTfLiteTensor(TfLiteTensor* tensor) {
+   return allocator_.DeallocateTempTfLiteTensor(tensor);
+ }
+@@ -76,6 +82,11 @@ TfLiteEvalTensor* MicroInterpreterContext::GetEvalTensor(int tensor_idx) {
+               .tensors[tensor_idx];
+ }
+ 
++TfLiteEvalTensor* MicroInterpreterContext::GetEvalTensor(int tensor_idx, int sg) {
++  return &graph_.GetAllocations()[sg]
++              .tensors[tensor_idx];
++}
++
+ void MicroInterpreterContext::SetScratchBufferHandles(
+     ScratchBufferHandle* scratch_buffer_handles) {
+   scratch_buffer_handles_ = scratch_buffer_handles;
+@@ -83,7 +94,8 @@ void MicroInterpreterContext::SetScratchBufferHandles(
+ 
+ TfLiteStatus MicroInterpreterContext::set_external_context(
+     void* external_context_payload) {
+-  TFLITE_DCHECK(state_ == InterpreterState::kPrepare ||
++  TFLITE_DCHECK(state_ == InterpreterState::kInit ||
++                state_ == InterpreterState::kPrepare ||
+                 state_ == InterpreterState::kInvoke);
+   if (external_context_payload == nullptr ||
+       external_context_payload_ != nullptr) {
+diff --git a/tensorflow/lite/micro/micro_interpreter_context.h b/tensorflow/lite/micro/micro_interpreter_context.h
+index 5986dc37..53de3cc9 100644
+--- a/tensorflow/lite/micro/micro_interpreter_context.h
++++ b/tensorflow/lite/micro/micro_interpreter_context.h
+@@ -67,6 +67,7 @@ class MicroInterpreterContext : public MicroContext {
+   // Returns a temporary TfLiteTensor struct for a given index.
+   // Virtual so that it can be faked for kernel tests.
+   virtual TfLiteTensor* AllocateTempTfLiteTensor(int tensor_idx) override;
++  virtual TfLiteTensor* AllocateTempTfLiteTensor(int tensor_idx, int sg) override;
+ 
+   // Deallocates a temp TfLiteTensor.
+   // Virtual so that it can be faked for kernel tests.
+@@ -85,6 +86,7 @@ class MicroInterpreterContext : public MicroContext {
+   // Returns a TfLiteEvalTensor struct for a given index.
+   // Virtual so that it can be faked for kernel tests.
+   virtual TfLiteEvalTensor* GetEvalTensor(int tensor_idx) override;
++  virtual TfLiteEvalTensor* GetEvalTensor(int tensor_idx, int sg) override;
+ 
+   // Sets the State of MemoryPlanning MicroInterpreterContext
+   void SetInterpreterState(InterpreterState state);
+diff --git a/tensorflow/lite/micro/test_helpers.cc b/tensorflow/lite/micro/test_helpers.cc
+index 3f0f5ec0..00b9541a 100644
+--- a/tensorflow/lite/micro/test_helpers.cc
++++ b/tensorflow/lite/micro/test_helpers.cc
+@@ -442,11 +442,19 @@ const Model* BuildModelWithUnusedOperatorOutputs() {
            *builder, builder->CreateVector(tensor_shape, tensor_shape_size),
            TensorType_INT8, 0,
            builder->CreateString("test_unused_output_tensor"), 0, false)};
@@ -694,18 +606,19 @@ index 8a7e1cb..8eaa3ff 100644
    const int32_t inputs[inputs_size] = {};
    constexpr size_t outputs_size = 1;
    const int32_t outputs[outputs_size] = {0};
+-  constexpr size_t operator_inputs_size = 0;
 +#ifdef _MSC_VER
 +  constexpr size_t operator_inputs_size = 1;
 +#else
-   constexpr size_t operator_inputs_size = 0;
++   constexpr size_t operator_inputs_size = 0;
 +#endif
    const int32_t operator_inputs[operator_inputs_size] = {};
    constexpr size_t operator_outputs_size = 2;
    const int32_t operator_outputs[operator_outputs_size] = {0, 1};
-diff --git tensorflow/lite/micro/tflite_bridge/micro_error_reporter.h tensorflow/lite/micro/tflite_bridge/micro_error_reporter.h
-index d3702f4..186a226 100644
---- tensorflow/lite/micro/tflite_bridge/micro_error_reporter.h
-+++ tensorflow/lite/micro/tflite_bridge/micro_error_reporter.h
+diff --git a/tensorflow/lite/micro/tflite_bridge/micro_error_reporter.h b/tensorflow/lite/micro/tflite_bridge/micro_error_reporter.h
+index d3702f46..186a226e 100644
+--- a/tensorflow/lite/micro/tflite_bridge/micro_error_reporter.h
++++ b/tensorflow/lite/micro/tflite_bridge/micro_error_reporter.h
 @@ -28,7 +28,6 @@ class MicroErrorReporter : public ErrorReporter {
    ~MicroErrorReporter() override {}
    int Report(const char* format, va_list args) override;

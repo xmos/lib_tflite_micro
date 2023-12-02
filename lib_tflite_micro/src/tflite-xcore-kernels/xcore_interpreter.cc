@@ -53,7 +53,7 @@ const char *XCoreInterpreter::node_name(int sub_idx, int i) {
   auto ctx = context();
   TfLiteIntArray *arg = NULL;
   ctx.GetExecutionPlan(&ctx, &arg);
-  MicroGraph *graph = (MicroGraph *)arg;
+  MicroInterpreterGraph *graph = (MicroInterpreterGraph *)arg;
   void *user_data =
       graph->GetAllocations()[sub_idx].node_and_registrations[i].node.user_data;
 

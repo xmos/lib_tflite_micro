@@ -91,8 +91,8 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
 
 } // namespace lookup
 
-TfLiteRegistration_V1 *Register_XC_lookup() {
-  static TfLiteRegistration_V1 r = {lookup::Init, nullptr, lookup::Prepare,
+TFLMRegistration *Register_XC_lookup() {
+  static TFLMRegistration r = {lookup::Init, nullptr, lookup::Prepare,
                                     lookup::Eval};
   return &r;
 }

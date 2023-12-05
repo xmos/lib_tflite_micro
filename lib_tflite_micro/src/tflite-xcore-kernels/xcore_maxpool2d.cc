@@ -38,17 +38,6 @@ void maxpool2d_thread_worker(void *shard, void *scrtch, void *kp) {
 }
 }
 
-// -------------------------------------------------------------------- //
-// op data types
-// -------------------------------------------------------------------- //
-
-enum KernelType {
-  Maxpool2DValidDirect_t,
-  Maxpool2DPaddedIndirect_t,
-};
-
-enum OT_Type { Group, Channelwise };
-
 /**
  * @brief This describes the memory requirements of a worker thread. It also
  * includes an array of the work to be done by said worker.

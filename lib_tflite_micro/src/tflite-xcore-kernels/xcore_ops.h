@@ -43,7 +43,7 @@ TFLMRegistration *Register_XC_pad();
 TFLMRegistration *Register_XC_pad_3_to_4();
 TFLMRegistration *Register_XC_mul();
 // Binarized ops
-TfLiteRegistration_V1 *Register_XC_bsign_8();
+TFLMRegistration *Register_XC_bsign_8();
 
 void RegisterXCOps(tflite::MicroOpResolver *res);
 

@@ -69,6 +69,7 @@ struct MaxPool2DOpData
 void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   TFLITE_DCHECK(buffer != nullptr);
   auto op_data = construct_persistent_object<MaxPool2DOpData>(context);
+  op_data->name = "XC_MaxPool2D";
   auto parser = CustomOptionParser(buffer, length);
 
   const uint8_t *memcpy_fn_data =
@@ -78,13 +79,15 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   const uint8_t *ot_fn_data =
       parser.parseNamedCustomOption("o").AsBlob().data();
   int32_t scratch_size = parser.parseNamedCustomOption("s").AsInt32();
-  int32_t ot_type = parser.parseNamedCustomOption("t").AsInt32();
   auto ak_params_vec = parser.parseNamedCustomOption("p").AsVector();
 
-  // Unlike other ops, conv ops have their own individual thread count
-  // The work for each thread is calculated in the compiler
   auto thread_count = ak_params_vec.size();
   op_data->thread_count = thread_count;
+  for (int t = 0; t < thread_count; ++t) {
+    op_data->threads[t].scratch_size = scratch_size;
+    op_data->threads[t].kparams =
+        (nn::abstract_kernel_params_t *)ak_params_vec[t].AsBlob().data();
+  }
   MicroContext *micro_context = GetMicroContext(context);
   xc_context_config_t *xc_config = reinterpret_cast<xc_context_config_t *>(
       micro_context->external_context());

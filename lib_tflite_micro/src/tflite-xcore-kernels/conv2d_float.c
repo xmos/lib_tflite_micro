@@ -412,27 +412,44 @@ int xc_fc_float_packed_ref(float *outputs, float *inputs, float *kernels,
 int xc_fc_float_packed_opt(float *outputs, float *inputs, float *kernels,
                     int out_features, int input_features, int out_f_start,
                     int out_f_end) {
-  int cnt = 0;
   float f0, f1, f2;
   for (int f = out_f_start; f < out_f_end; f++) {
     int output_index = f;
     float acc = 0;
     assert (input_features == 96);
-#pragma clang loop unroll_count(8)
-    for (int kf = 0; kf < input_features; kf++) {
+    for (int kf = 0, kf2 = 0; kf < input_features; kf+=4, kf2 += 3) {
       int input_index = kf;
-      int kernel_index = f * input_features + kf;
+      int kernel_index = f * input_features*3/4 + kf2;
       float in1 = inputs[input_index];
-      float in2 = 0; extract3(in2, kernels ,kernel_index);
+      float in2 = 0;
+      f0 = kernels[(kernel_index>>0)];                 
+      asm volatile("lextract %0, %1, %2, %3, 32" : "=r" (in2) : "r" (f0), "r" (f0), "r" (24)); 
       asm volatile("fmacc %0, %1, %2, %3"
                    : "=r"(acc)
                    : "r"(acc), "r"(in1), "r"(in2));
-      cnt++;
+      in1 = inputs[input_index+1];
+      f1 = kernels[((kernel_index)>>0)+1]; 
+      asm volatile("lextract %0, %1, %2, %3, 32" : "=r" (in2) : "r" (f1), "r" (f0), "r" (16)); 
+      asm volatile("fmacc %0, %1, %2, %3"
+                   : "=r"(acc)
+                   : "r"(acc), "r"(in1), "r"(in2));
+      in1 = inputs[input_index+2];
+      f2 = kernels[(kernel_index>>0)+2]; 
+      asm volatile("lextract %0, %1, %2, %3, 32" : "=r" (in2) : "r" (f2), "r" (f1), "r" (8)); 
+      asm volatile("fmacc %0, %1, %2, %3"
+                   : "=r"(acc)
+                   : "r"(acc), "r"(in1), "r"(in2));
+      in1 = inputs[input_index+3];
+      in2 = f2;
+      asm volatile("fmacc %0, %1, %2, %3"
+                   : "=r"(acc)
+                   : "r"(acc), "r"(in1), "r"(in2));
     }
     outputs[output_index] = acc;
   }
-  return cnt;
+  return 0;
 }
+
 #endif
 
 #ifdef LOCAL_MAIN

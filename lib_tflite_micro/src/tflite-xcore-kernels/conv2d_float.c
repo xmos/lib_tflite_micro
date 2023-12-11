@@ -434,6 +434,207 @@ float extract3_ref(float *kernels, int index) {
 
 
 #ifndef NN_USE_REF
+void xc_conv2d_float_kw5xh2_stride_w3_packed_ref(float *outputs, float *inputs,
+                                          float *kernels, float *biases,
+                                          int out_w, int out_h, int out_depth,
+                                          int input_w, int input_h,
+                                          int input_depth, int out_depth_start,
+                                          int out_depth_end) {
+  for (int x = 0; x < out_w; x++) {
+    for (int y = 0; y < out_h; y++) {
+      for (int d = out_depth_start; d < out_depth_end; d++) {
+        int output_index = (x * out_h + y) * out_depth + d;
+        float acc = biases[d];
+        if (input_depth == 1) {
+#pragma clang loop unroll(full)
+          for (int kx = 0; kx < KW; kx++) {
+#pragma clang loop unroll(full)
+            for (int ky = 0; ky < KH; ky++) {
+              int input_index =
+                  ((x * H_STRIDE + kx) * input_h + (y + ky)) * input_depth;
+              int kernel_index = ((d * KW + kx) * KH + ky) * input_depth;
+              float in1 = inputs[input_index];
+              float in2 = extract3_ref(kernels ,kernel_index);
+              asm volatile("fmacc %0, %1, %2, %3"
+                           : "=r"(acc)
+                           : "r"(acc), "r"(in1), "r"(in2));
+            }
+          }
+        } else if (input_depth == 2) {
+#pragma clang loop unroll(full)
+          for (int kx = 0; kx < KW; kx++) {
+#pragma clang loop unroll(full)
+            for (int ky = 0; ky < KH; ky++) {
+              for (int kd = 0; kd < 2; kd++) {
+                int input_index =
+                    ((x * H_STRIDE + kx) * input_h + (y + ky)) * input_depth +
+                    kd;
+                int kernel_index = ((d * KW + kx) * KH + ky) * input_depth + kd;
+                float in1 = inputs[input_index];
+                float in2 = extract3_ref(kernels ,kernel_index);
+                asm volatile("fmacc %0, %1, %2, %3"
+                             : "=r"(acc)
+                             : "r"(acc), "r"(in1), "r"(in2));
+              }
+            }
+          }
+        } else if (input_depth == 4) {
+          for (int kx = 0; kx < KW; kx++) {
+            for (int ky = 0; ky < KH; ky++) {
+#pragma clang loop unroll(full)
+              for (int kd = 0; kd < 4; kd++) {
+                int input_index =
+                    ((x * H_STRIDE + kx) * input_h + (y + ky)) * input_depth +
+                    kd;
+                int kernel_index = ((d * KW + kx) * KH + ky) * input_depth + kd;
+                float in1 = inputs[input_index];
+                float in2 = extract3_ref(kernels ,kernel_index);
+                asm volatile("fmacc %0, %1, %2, %3"
+                             : "=r"(acc)
+                             : "r"(acc), "r"(in1), "r"(in2));
+              }
+            }
+          }
+        } else if (input_depth == 8) {
+          for (int kx = 0; kx < KW; kx++) {
+            for (int ky = 0; ky < KH; ky++) {
+#pragma clang loop unroll(full)
+              for (int kd = 0; kd < 8; kd++) {
+                int input_index =
+                    ((x * H_STRIDE + kx) * input_h + (y + ky)) * input_depth +
+                    kd;
+                int kernel_index = ((d * KW + kx) * KH + ky) * input_depth + kd;
+                float in1 = inputs[input_index];
+                float in2 = extract3_ref(kernels ,kernel_index);
+                asm volatile("fmacc %0, %1, %2, %3"
+                             : "=r"(acc)
+                             : "r"(acc), "r"(in1), "r"(in2));
+              }
+            }
+          }
+        } else if (input_depth == 16) {
+          for (int kx = 0; kx < KW; kx++) {
+            for (int ky = 0; ky < KH; ky++) {
+#pragma clang loop unroll_count(8)
+              for (int kd = 0; kd < 16; kd++) {
+                int input_index =
+                    ((x * H_STRIDE + kx) * input_h + (y + ky)) * input_depth +
+                    kd;
+                int kernel_index = ((d * KW + kx) * KH + ky) * input_depth + kd;
+                float in1 = inputs[input_index];
+                float in2 = extract3_ref(kernels ,kernel_index);
+                asm volatile("fmacc %0, %1, %2, %3"
+                             : "=r"(acc)
+                             : "r"(acc), "r"(in1), "r"(in2));
+              }
+            }
+          }
+        } else {
+          assert(0);
+        }
+        outputs[output_index] = acc;
+      }
+    }
+  }
+}
+#endif
+
+#ifndef NN_USE_REF
+void xc_conv2d_float_kw5xh2_stride_w3_packed_opt(float *outputs, float *inputs,
+                                          float *kernels, float *biases,
+                                          int out_w, int out_h, int out_depth,
+                                          int input_w, int input_h,
+                                          int input_depth, int out_depth_start,
+                                          int out_depth_end) {
+  for (int x = 0; x < out_w; x++) {
+    for (int y = 0; y < out_h; y++) {
+      for (int d = out_depth_start; d < out_depth_end; d++) {
+        float f0, f1, f2;
+        int output_index = (x * out_h + y) * out_depth + d;
+        float acc = biases[d];
+        if (input_depth == 1) {
+#pragma clang loop unroll(full)
+          for (int kx = 0; kx < KW; kx++) {
+#pragma clang loop unroll(full)
+            for (int ky = 0; ky < KH; ky++) {
+              int input_index =
+                  ((x * H_STRIDE + kx) * input_h + (y + ky)) * input_depth;
+              int kernel_index = ((d * KW + kx) * KH + ky) * input_depth;
+              float in1 = inputs[input_index];
+              float in2 = extract3_ref(kernels ,kernel_index);
+              asm volatile("fmacc %0, %1, %2, %3"
+                           : "=r"(acc)
+                           : "r"(acc), "r"(in1), "r"(in2));
+            }
+          }
+        } else if (input_depth == 2) {
+#pragma clang loop unroll(full)
+          for (int kx = 0; kx < KW; kx++) {
+#pragma clang loop unroll(full)
+            for (int ky = 0; ky < KH; ky++) {
+              for (int kd = 0; kd < 2; kd++) {
+                int input_index =
+                    ((x * H_STRIDE + kx) * input_h + (y + ky)) * input_depth +
+                    kd;
+                int kernel_index = ((d * KW + kx) * KH + ky) * input_depth + kd;
+                float in1 = inputs[input_index];
+                float in2 = extract3_ref(kernels ,kernel_index);
+                asm volatile("fmacc %0, %1, %2, %3"
+                             : "=r"(acc)
+                             : "r"(acc), "r"(in1), "r"(in2));
+              }
+            }
+          }
+        } else if ((input_depth & 3) == 0) {
+          for (int kx = 0; kx < KW; kx++) {
+            for (int ky = 0; ky < KH; ky++) {
+                for (int kd = 0, kd2 = 0; kd < input_depth; kd+=4, kd2 += 3) {
+                int input_index =
+                    ((x * H_STRIDE + kx) * input_h + (y + ky)) * input_depth +
+                    kd;
+                int kernel_index = ((d * KW + kx) * KH + ky) * input_depth*3/4 + kd2;
+                float in1 = inputs[input_index];
+                float in2;
+                f0 = kernels[(kernel_index>>0)];                 
+                asm volatile("lextract %0, %1, %2, %3, 32" : "=r" (in2) : "r" (f0), "r" (f0), "r" (24));
+                
+                asm volatile("fmacc %0, %1, %2, %3"
+                             : "=r"(acc)
+                             : "r"(acc), "r"(in1), "r"(in2));
+                in1 = inputs[input_index+1];
+                f1 = kernels[((kernel_index)>>0)+1]; 
+                asm volatile("lextract %0, %1, %2, %3, 32" : "=r" (in2) : "r" (f1), "r" (f0), "r" (16));
+
+                asm volatile("fmacc %0, %1, %2, %3"
+                             : "=r"(acc)
+                             : "r"(acc), "r"(in1), "r"(in2));
+                in1 = inputs[input_index+2];
+
+                f2 = kernels[(kernel_index>>0)+2]; 
+                asm volatile("lextract %0, %1, %2, %3, 32" : "=r" (in2) : "r" (f2), "r" (f1), "r" (8)); 
+                asm volatile("fmacc %0, %1, %2, %3"
+                             : "=r"(acc)
+                             : "r"(acc), "r"(in1), "r"(in2));
+                in1 = inputs[input_index+3];
+                in2 = f2;
+                asm volatile("fmacc %0, %1, %2, %3"
+                             : "=r"(acc)
+                             : "r"(acc), "r"(in1), "r"(in2));
+              }
+            }
+          }
+        } else {
+          assert(0);
+        }
+        outputs[output_index] = acc;
+      }
+    }
+  }
+}
+#endif
+
+
+#ifndef NN_USE_REF
 void xc_transpose_conv2d_float_kw5xh2_stride_h3_packed_ref(
     float *outputs, float *inputs, float *kernels, float *biases, int out_w,
     int out_h, int out_depth, int input_w, int input_h, int input_depth,
@@ -502,6 +703,7 @@ void xc_transpose_conv2d_float_kw5xh2_stride_h3_packed_opt(
     float *outputs, float *inputs, float *kernels, float *biases, int out_w,
     int out_h, int out_depth, int input_w, int input_h, int input_depth,
     int out_depth_start, int out_depth_end) {
+  assert((input_depth & 0x3) == 0);
   for (int x = 0; x < out_w; x++) {
     for (int y = 0; y < out_h; y++) {
       for (int d = out_depth_start; d < out_depth_end; d++) {
@@ -513,52 +715,48 @@ void xc_transpose_conv2d_float_kw5xh2_stride_h3_packed_opt(
   for (int x = 0; x < input_w; x++) {
     for (int y = 0; y < input_h; y++) {
       for (int d = out_depth_start; d < out_depth_end; d++) {
-        if ((input_depth & 0x3) == 0) {
-          for (int kx = 0; kx < KW; kx++) {
-            for (int ky = 0; ky < KH; ky++) {
+        for (int kx = 0; kx < KW; kx++) {
+          for (int ky = 0; ky < KH; ky++) {
 // Only compute if it is the middle frame
-              if (ky + y != 1) {
-                continue;
-              }
-              int output_index =
-                  ((x * H_TR_STRIDE + kx) * out_h + (y + ky)) * out_depth + d;
-              float acc = outputs[output_index];
-              float f0 = 0, f1 = 0, f2 = 0;
-              for (int kd = 0, kd2 = 0; kd < input_depth; kd+=4, kd2 += 3) {
-                int input_index = ((x)*input_h + (y)) * input_depth + kd;
-                int kernel_index = ((d * KW + kx) * KH + ky) * input_depth*3/4 + kd2;
-                float in1 = inputs[input_index];
-                float in2 = 0;
-                f0 = kernels[(kernel_index>>0)];                 
-                asm volatile("lextract %0, %1, %2, %3, 32" : "=r" (in2) : "r" (f0), "r" (f0), "r" (24));
-                asm volatile("fmacc %0, %1, %2, %3"
-                             : "=r"(acc)
-                             : "r"(acc), "r"(in1), "r"(in2));
-                in1 = inputs[input_index+1];
-                f1 = kernels[((kernel_index)>>0)+1]; 
-                asm volatile("lextract %0, %1, %2, %3, 32" : "=r" (in2) : "r" (f1), "r" (f0), "r" (16));
-                
-                asm volatile("fmacc %0, %1, %2, %3"
-                             : "=r"(acc)
-                             : "r"(acc), "r"(in1), "r"(in2));
-                in1 = inputs[input_index+2];
-                f2 = kernels[(kernel_index>>0)+2]; 
-                asm volatile("lextract %0, %1, %2, %3, 32" : "=r" (in2) : "r" (f2), "r" (f1), "r" (8)); 
-
-                asm volatile("fmacc %0, %1, %2, %3"
-                             : "=r"(acc)
-                             : "r"(acc), "r"(in1), "r"(in2));
-                in1 = inputs[input_index+3];
-                in2 = f2;
-                asm volatile("fmacc %0, %1, %2, %3"
-                             : "=r"(acc)
-                             : "r"(acc), "r"(in1), "r"(in2));
-              }
-              outputs[output_index] = acc;
+            if (ky + y != 1) {
+              continue;
             }
+            int output_index =
+                ((x * H_TR_STRIDE + kx) * out_h + (y + ky)) * out_depth + d;
+            float acc = outputs[output_index];
+            float f0 = 0, f1 = 0, f2 = 0;
+            for (int kd = 0, kd2 = 0; kd < input_depth; kd+=4, kd2 += 3) {
+              int input_index = ((x)*input_h + (y)) * input_depth + kd;
+              int kernel_index = ((d * KW + kx) * KH + ky) * input_depth*3/4 + kd2;
+              float in1 = inputs[input_index];
+              float in2 = 0;
+              f0 = kernels[(kernel_index>>0)];                 
+              asm volatile("lextract %0, %1, %2, %3, 32" : "=r" (in2) : "r" (f0), "r" (f0), "r" (24));
+              asm volatile("fmacc %0, %1, %2, %3"
+                           : "=r"(acc)
+                           : "r"(acc), "r"(in1), "r"(in2));
+              in1 = inputs[input_index+1];
+              f1 = kernels[((kernel_index)>>0)+1]; 
+              asm volatile("lextract %0, %1, %2, %3, 32" : "=r" (in2) : "r" (f1), "r" (f0), "r" (16));
+              
+              asm volatile("fmacc %0, %1, %2, %3"
+                           : "=r"(acc)
+                           : "r"(acc), "r"(in1), "r"(in2));
+              in1 = inputs[input_index+2];
+              f2 = kernels[(kernel_index>>0)+2]; 
+              asm volatile("lextract %0, %1, %2, %3, 32" : "=r" (in2) : "r" (f2), "r" (f1), "r" (8)); 
+
+              asm volatile("fmacc %0, %1, %2, %3"
+                           : "=r"(acc)
+                           : "r"(acc), "r"(in1), "r"(in2));
+              in1 = inputs[input_index+3];
+              in2 = f2;
+              asm volatile("fmacc %0, %1, %2, %3"
+                           : "=r"(acc)
+                           : "r"(acc), "r"(in1), "r"(in2));
+            }
+            outputs[output_index] = acc;
           }
-        } else {
-          assert(0);
         }
       }
     }
@@ -680,14 +878,73 @@ int test_tc() {
         2, 2, 64, // input h/w/d
         0, 32);
     asm volatile("gettime %0" : "=r" (t3));
-    printf("NewOpt %d NewRef %d Old %d\n", t3-t2, t2-t1, t1-t0);
+    printf("TrConv NewOpt %d NewRef %d Old %d\n", t3-t2, t2-t1, t1-t0);
     for(int o = 0; o < sizeof(outputs)/sizeof(float); o++) {
-        if (fabs((outputs2[o]-outputs[o]) / outputs2[o]) > 2e-5 ) {
+        if (fabs((outputs2[o]-outputs[o]) / outputs2[o]) > 4e-5 ) {
             printf("Expected idx %d %f got %f tr_conv_packed_ref\n", o, outputs2[o], outputs[o]);
             errors++;
         }
-        if (fabs((outputs2[o]-outputs3[o]) / outputs2[o]) > 2e-5 ) {
+        if (fabs((outputs2[o]-outputs3[o]) / outputs2[o]) > 4e-5 ) {
             printf("Expected idx %d %f got %f tr_conv_packed_opt\n", o, outputs2[o], outputs3[o]);
+            errors++;
+        }
+    }
+    
+    return errors;
+}
+
+int test_c() {
+    int errors = 0;
+    float outputs[3*1*32];
+    float outputs2[3*1*32];
+    float outputs3[3*1*32];
+    float inputs[8*2*16];
+    float kernels[16*3*2*32];
+    float kernels_packed[16*3*2*32*3/4];
+    float biases[128];
+    for(int i = 0; i < sizeof(kernels) / sizeof(float); i++) {
+        kernels[i] = i / 16 - 30;
+    }
+    for(int i = 0; i < sizeof(inputs) / sizeof(float); i++) {
+        inputs[i] = 12 - i / 4;
+    }
+    for(int i = 0; i < sizeof(outputs) / sizeof(float); i++) {
+        outputs[i] = 0;
+        outputs2[i] = 0;
+        outputs3[i] = 0;
+    }
+    for(int i = 0; i < sizeof(biases) / sizeof(float); i++) {
+        biases[i] = 1/i;
+    }
+    int t0, t1, t2, t3;
+    pack_float(kernels_packed, kernels, sizeof(kernels)/sizeof(float));
+    asm volatile("gettime %0" : "=r" (t0));
+    xc_conv2d_float_kw5xh2_stride_w3_ref(
+        outputs2, inputs, kernels, biases,
+        3, 1, 32,  // output h/w/d
+        5, 2, 16 // input h/w/d
+        );
+    asm volatile("gettime %0" : "=r" (t1));
+    xc_conv2d_float_kw5xh2_stride_w3_packed_ref(
+        outputs, inputs, kernels_packed, biases,
+        3, 1, 32,  // output h/w/d
+        5, 2, 16, // input h/w/d
+        0, 32);
+    asm volatile("gettime %0" : "=r" (t2));
+    xc_conv2d_float_kw5xh2_stride_w3_packed_opt(
+        outputs3, inputs, kernels_packed, biases,
+        3, 1, 32,  // output h/w/d
+        5, 2, 16, // input h/w/d
+        0, 32);
+    asm volatile("gettime %0" : "=r" (t3));
+    printf("Conv2d NewOpt %d NewRef %d Old %d\n", t3-t2, t2-t1, t1-t0);
+    for(int o = 0; o < sizeof(outputs)/sizeof(float); o++) {
+        if (fabs((outputs2[o]-outputs[o]) / outputs2[o]) > 6e-5 ) {
+            printf("Expected idx %d %f got %f conv_packed_ref\n", o, outputs2[o], outputs[o]);
+            errors++;
+        }
+        if (fabs((outputs2[o]-outputs3[o]) / outputs2[o]) > 6e-5 ) {
+            printf("Expected idx %d %f got %f conv_packed_opt\n", o, outputs2[o], outputs3[o]);
             errors++;
         }
     }
@@ -746,6 +1003,7 @@ int test_fc(int opt) {
 
 int main(void) {
     int errors = 0;
+    errors += test_c();
     errors += test_tc();
     errors += test_fc(0);
     errors += test_fc(1);

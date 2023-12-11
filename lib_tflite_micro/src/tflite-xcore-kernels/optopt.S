@@ -469,25 +469,27 @@ xc_transpose_conv2d_float_kw5xh2_stride_h3_packed_opt_S:
 		ldw r0, r10[0]
 	}
 	lextract r3, r6, r6, r5, 32
-	fmacc r0, r2, r0, r3
+    
+	fmacc r2, r2, r0, r3
 	{
 		add r1, r1, 4
-		ldw r2, r1[0]
+		ldw r0, r1[0]
 	}
-	lextract r6, r2, r6, r7, 32
+	lextract r6, r0, r6, r7, 32
 	{
 	    ldc r4, 8
 		ldw r3, r10[1]
 	}
-	fmacc r0, r0, r3, r6
+	fmacc r2, r2, r3, r6
 	{
 		add r1, r1, 4
 		ldw r3, r1[0]
 	}
-	lextract r2, r3, r2, r4, 32
-		ldd r6, r4, r10[1]
-	fmacc r0, r0, r6, r2
-	fmacc r2, r0, r4, r3
+	lextract r0, r3, r0, r4, 32
+	ldd r6, r4, r10[1]
+	fmacc r2, r2, r6, r0
+	fmacc r2, r2, r4, r3
+    
     {
 		add r10, r10, r7
 	    bt r9, .LBB10_19

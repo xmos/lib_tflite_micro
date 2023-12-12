@@ -83,6 +83,9 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
 
   auto thread_count = ak_params_vec.size();
   op_data->thread_count = thread_count;
+  op_data->threads =
+      static_cast<MaxPool2DThreadInfo *>(context->AllocatePersistentBuffer(
+          context, thread_count * sizeof(MaxPool2DThreadInfo)));
   for (int t = 0; t < thread_count; ++t) {
     op_data->threads[t].scratch_size = scratch_size;
     op_data->threads[t].kparams =

@@ -26,6 +26,12 @@ struct MaxPool2DShared {
   nn::conv_params_t *conv_params;
 };
 
+template <typename T> T *getDeserializedParams(const uint8_t *data) {
+  assert(((uintptr_t)data & 0x3) == 0);
+  T *param = (T *)data;
+  return param;
+}
+
 extern "C" {
 // TODO
 #pragma stackfunction 1000
@@ -89,7 +95,8 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   for (int t = 0; t < thread_count; ++t) {
     op_data->threads[t].scratch_size = scratch_size;
     op_data->threads[t].kparams =
-        (nn::abstract_kernel_params_t *)ak_params_vec[t].AsBlob().data();
+        getDeserializedParams<nn::abstract_kernel_params_t>(
+            ak_params_vec[t].AsBlob().data());
   }
   MicroContext *micro_context = GetMicroContext(context);
   xc_context_config_t *xc_config = reinterpret_cast<xc_context_config_t *>(
@@ -97,10 +104,12 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   assert(op_data->thread_count <= xc_config->model_thread_count &&
          "Not enough threads!");
 
-  op_data->maxpool_params.mem_p = (nn::memcpyfn_deref_params_t *)memcpy_fn_data;
-  op_data->maxpool_params.agg_p = (nn::mat_mul_dw_direct_params_t *)agg_fn_data;
+  op_data->maxpool_params.mem_p =
+      getDeserializedParams<nn::memcpyfn_deref_params_t>(memcpy_fn_data);
+  op_data->maxpool_params.agg_p =
+      getDeserializedParams<nn::mat_mul_dw_direct_params_t>(agg_fn_data);
   op_data->maxpool_params.ot_p =
-      (nn::otfn_int8_channelwise_params_t *)ot_fn_data;
+      getDeserializedParams<nn::otfn_int8_channelwise_params_t>(ot_fn_data);
   op_data->maxpool_params.memcopy_fn = (nn::MemFnType)nn::memcpyfn_deref;
   op_data->maxpool_params.aggregate_fn = (nn::AggFnType)nn::maxpool_direct;
   op_data->maxpool_params.output_transform_fn =

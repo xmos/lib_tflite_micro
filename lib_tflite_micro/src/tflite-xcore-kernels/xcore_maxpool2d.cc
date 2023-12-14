@@ -101,9 +101,6 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   op_data->maxpool_params.agg_p = (nn::mat_mul_dw_direct_params_t *)agg_fn_data;
   op_data->maxpool_params.ot_p =
       (nn::otfn_int8_channelwise_params_t *)ot_fn_data;
-  op_data->threads =
-      static_cast<MaxPool2DThreadInfo *>(context->AllocatePersistentBuffer(
-          context, op_data->thread_count * sizeof(MaxPool2DThreadInfo)));
   op_data->maxpool_params.memcopy_fn = (nn::MemFnType)nn::memcpyfn_deref;
   op_data->maxpool_params.aggregate_fn = (nn::AggFnType)nn::maxpool_direct;
   op_data->maxpool_params.output_transform_fn =

@@ -140,7 +140,6 @@ void ConstructFilter2DsImpl(Conv2DOpData *op_data, TfLiteContext *context,
     op_data->threads[t].kparams =
         getDeserializedParams<nn::abstract_kernel_params_t>(
             context, ak_params_vec[t].AsBlob().data());
-    ;
   }
 }
 
@@ -242,7 +241,8 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   MicroContext *micro_context = GetMicroContext(context);
   xc_context_config_t *xc_config = reinterpret_cast<xc_context_config_t *>(
       micro_context->external_context());
-  assert(op_data->thread_count <= xc_config->model_thread_count && "Not enough threads!");
+  assert(op_data->thread_count <= xc_config->model_thread_count &&
+         "Not enough threads!");
 
   op_data->threads =
       static_cast<Conv2DThreadInfo *>(context->AllocatePersistentBuffer(
@@ -444,7 +444,7 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
 
 TFLMRegistration *Register_XC_conv2d_v2() {
   static TFLMRegistration r = {conv_v2::Init, nullptr, conv_v2::Prepare,
-                                    conv_v2::Eval};
+                               conv_v2::Eval};
   return &r;
 }
 

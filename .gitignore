@@ -14,3 +14,5 @@ flash_builder/.eggs/
 flash_builder/flash_builder.egg-info/
 *.pyc
 build/
+.cache
+compile_commands.json

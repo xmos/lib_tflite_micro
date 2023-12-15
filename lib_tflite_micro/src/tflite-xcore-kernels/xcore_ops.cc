@@ -9,7 +9,8 @@
 #endif
 
 #ifndef XCORE_TFLITE_MICRO_PATCHED
-#error "tflite-micro patch not applied! Fix by running 'make patch' in lib_tflite_micro!"
+#error                                                                         \
+    "tflite-micro patch not applied! Fix by running 'make patch' in lib_tflite_micro!"
 #endif
 
 namespace tflite {
@@ -21,13 +22,16 @@ void RegisterXCOps(MicroOpResolver *res) {
   auto *resolver =
       reinterpret_cast<MicroMutableOpResolver<XTFLM_OPERATORS> *>(res);
 
-  resolver->AddCustom(XC_beta_activationf32_OpCode, Register_XC_beta_activationf32());
+  resolver->AddCustom(XC_beta_activationf32_OpCode,
+                      Register_XC_beta_activationf32());
   resolver->AddCustom(XC_beta_concatf32_OpCode, Register_XC_beta_concatf32());
   resolver->AddCustom(XC_beta_convf32_OpCode, Register_XC_beta_convf32());
-  resolver->AddCustom(XC_beta_transposeconvf32_OpCode, Register_XC_beta_transposeconvf32());
+  resolver->AddCustom(XC_beta_transposeconvf32_OpCode,
+                      Register_XC_beta_transposeconvf32());
   resolver->AddCustom(XC_beta_fcf32_OpCode, Register_XC_beta_fcf32());
 
   resolver->AddCustom(XC_conv2d_v2_OpCode, Register_XC_conv2d_v2());
+  resolver->AddCustom(XC_maxpool2d_OpCode, Register_XC_maxpool2d());
   resolver->AddCustom(tflite::ops::micro::xcore::XC_add_OpCode,
                       tflite::ops::micro::xcore::Register_XC_add());
   resolver->AddCustom(tflite::ops::micro::xcore::XC_strided_slice_OpCode,

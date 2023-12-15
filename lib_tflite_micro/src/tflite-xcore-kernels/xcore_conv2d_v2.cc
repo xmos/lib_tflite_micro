@@ -99,8 +99,7 @@ struct Conv2DOpData
 // op function implementations
 // -------------------------------------------------------------------- //
 
-template <typename T>
-T *getDeserializedParams(TfLiteContext *context, const uint8_t *data) {
+template <typename T> T *getDeserializedParams(const uint8_t *data) {
   // The flexbuffer data passed along from the compiler for xc_conv2d is
   // carefully aligned to four bytes so that we can directly access it.
   // This is done in TranslateToCustomOp.cpp in the compiler.
@@ -130,7 +129,7 @@ void ConstructFilter2DsImpl(Conv2DOpData *op_data, TfLiteContext *context,
   }
 
   op_data->conv_params.mem_p =
-      getDeserializedParams<MfStructType>(context, memcpy_fn_data);
+      getDeserializedParams<MfStructType>(memcpy_fn_data);
 
   // For each thread, we have a different set of abstract kernel params which we
   // extract here
@@ -139,8 +138,7 @@ void ConstructFilter2DsImpl(Conv2DOpData *op_data, TfLiteContext *context,
     op_data->threads[t].scratch_size = scratch_size;
     op_data->threads[t].kparams =
         getDeserializedParams<nn::abstract_kernel_params_t>(
-            context, ak_params_vec[t].AsBlob().data());
-    ;
+            ak_params_vec[t].AsBlob().data());
   }
 }
 
@@ -155,8 +153,7 @@ void ConstructFilter2Ds(Conv2DOpData *op_data, TfLiteContext *context,
   if (std::is_same<OtStructType, nn::otfn_int8_clamped_params_t>::value) {
     op_data->conv_params.output_transform_fn =
         (nn::OtFnType)nn::otfn_int8_clamped;
-    op_data->conv_params.ot_p =
-        getDeserializedParams<OtStructType>(context, ot_fn_data);
+    op_data->conv_params.ot_p = getDeserializedParams<OtStructType>(ot_fn_data);
   } else if (std::is_same<OtStructType, std::nullptr_t>::value) {
     op_data->conv_params.output_transform_fn = (nn::OtFnType)nn::otfn_binary;
   } else {
@@ -174,7 +171,7 @@ void ConstructFilter2Ds(Conv2DOpData *op_data, TfLiteContext *context,
   }
 
   op_data->conv_params.agg_p =
-      getDeserializedParams<AggStructType>(context, agg_fn_data);
+      getDeserializedParams<AggStructType>(agg_fn_data);
 
   ConstructFilter2DsImpl<MfStructType>(op_data, context, scratch_size,
                                        memcpy_fn_data, agg_fn_data,
@@ -208,10 +205,9 @@ void ConstructFilter2Ds(Conv2DOpData *op_data, TfLiteContext *context,
     assert(false);
   }
 
-  op_data->conv_params.ot_p =
-      getDeserializedParams<OtStructType>(context, ot_fn_data);
+  op_data->conv_params.ot_p = getDeserializedParams<OtStructType>(ot_fn_data);
   op_data->conv_params.agg_p =
-      getDeserializedParams<AggStructType>(context, agg_fn_data);
+      getDeserializedParams<AggStructType>(agg_fn_data);
 
   ConstructFilter2DsImpl<MfStructType>(op_data, context, scratch_size,
                                        memcpy_fn_data, agg_fn_data,
@@ -242,7 +238,8 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   MicroContext *micro_context = GetMicroContext(context);
   xc_context_config_t *xc_config = reinterpret_cast<xc_context_config_t *>(
       micro_context->external_context());
-  assert(op_data->thread_count <= xc_config->model_thread_count && "Not enough threads!");
+  assert(op_data->thread_count <= xc_config->model_thread_count &&
+         "Not enough threads!");
 
   op_data->threads =
       static_cast<Conv2DThreadInfo *>(context->AllocatePersistentBuffer(
@@ -444,7 +441,7 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
 
 TFLMRegistration *Register_XC_conv2d_v2() {
   static TFLMRegistration r = {conv_v2::Init, nullptr, conv_v2::Prepare,
-                                    conv_v2::Eval};
+                               conv_v2::Eval};
   return &r;
 }
 

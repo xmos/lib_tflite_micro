@@ -11,10 +11,12 @@ namespace xcore {
 constexpr const char *XC_beta_activationf32_OpCode = "XC_beta_activationf32";
 constexpr const char *XC_beta_concatf32_OpCode = "XC_beta_concatf32";
 constexpr const char *XC_beta_convf32_OpCode = "XC_beta_convf32";
-constexpr const char *XC_beta_transposeconvf32_OpCode = "XC_beta_transposeconvf32";
+constexpr const char *XC_beta_transposeconvf32_OpCode =
+    "XC_beta_transposeconvf32";
 constexpr const char *XC_beta_fcf32_OpCode = "XC_beta_fcf32";
 
 constexpr const char *XC_conv2d_v2_OpCode = "XC_conv2d_v2";
+constexpr const char *XC_maxpool2d_OpCode = "XC_maxpool2d";
 constexpr const char *XC_ld_flash_OpCode = "XC_ld_flash";
 constexpr const char *XC_add_OpCode = "XC_add";
 constexpr const char *XC_strided_slice_OpCode = "XC_strided_slice";
@@ -32,6 +34,7 @@ TFLMRegistration *Register_XC_beta_transposeconvf32();
 TFLMRegistration *Register_XC_beta_fcf32();
 
 TFLMRegistration *Register_XC_conv2d_v2();
+TFLMRegistration *Register_XC_maxpool2d();
 TFLMRegistration *Register_XC_ld_flash();
 TFLMRegistration *Register_XC_add();
 TFLMRegistration *Register_XC_strided_slice();

@@ -42,8 +42,9 @@ void conv2d_v2_thread_worker(void *shard, void *scrtch, void *kp) {
   nn::abstract_kernel_params_t *akparams = (nn::abstract_kernel_params_t *)kp;
   auto scratch = static_cast<int8_t *>(scrtch);
   auto shared = static_cast<Conv2DShared *>(shard);
-  execute(shared->Y, shared->X, shared->conv_params, akparams, shared->weights,
-          shared->muls_and_biases, /*isConv=*/!shared->isDepthwise, scratch);
+  execute(shared->Y, shared->X + akparams->input_offset, shared->conv_params,
+          akparams, shared->weights, shared->muls_and_biases,
+          /*isConv=*/!shared->isDepthwise, scratch);
 }
 }
 
@@ -370,12 +371,23 @@ TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
 }
 
 TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
-  const TfLiteEvalTensor *input = tflite::micro::GetEvalInput(context, node, 0);
-  TfLiteEvalTensor *output = tflite::micro::GetEvalOutput(context, node, 0);
+  const TfLiteEvalTensor *input_tensor = tflite::micro::GetEvalInput(context, node, 0);
+  TfLiteEvalTensor *output_tensor = tflite::micro::GetEvalOutput(context, node, 0);
   const TfLiteEvalTensor *weights_tensor =
       tflite::micro::GetEvalInput(context, node, 1);
   const TfLiteEvalTensor *multipliers_and_biases_tensor =
       tflite::micro::GetEvalInput(context, node, 2);
+
+  int8_t *output = (int8_t *)tflite::micro::GetTensorData<int8_t>(output_tensor);
+  const TfLiteEvalTensor *partial_output_tensor = tflite::micro::GetEvalInput(context, node, 3);
+  // Copy the partial output into the output tensor only if it is not NULL
+  if(partial_output_tensor) {
+    int8_t *partial_output = (int8_t *)tflite::micro::GetTensorData<int8_t>(partial_output_tensor);
+    size_t sizeof_tensor_type;
+    GetSizeOfType(context, partial_output_tensor->type, &sizeof_tensor_type);
+    int size = tflite::micro::GetTensorShape(partial_output_tensor).FlatSize();
+    memcpy((int8_t *)output, (int8_t *)partial_output, size * sizeof_tensor_type);
+  }
 
   MicroContext *micro_context = GetMicroContext(context);
   xc_context_config_t *xc_config = reinterpret_cast<xc_context_config_t *>(
@@ -396,8 +408,8 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
 
   int8_t *thread_scratch[XCORE_MAX_NUM_THREADS];
   Conv2DShared shared_data;
-  shared_data.X = (int8_t *)tflite::micro::GetTensorData<int8_t>(input);
-  shared_data.Y = (int8_t *)tflite::micro::GetTensorData<int8_t>(output);
+  shared_data.X = (int8_t *)tflite::micro::GetTensorData<int8_t>(input_tensor);
+  shared_data.Y = output;
   shared_data.conv_params = &op_data->conv_params;
   if (op_data->kt == DepthwiseConv2DValidDirect_t ||
       op_data->kt == DepthwiseConv2DPaddedIndirect_t) {

@@ -1,7 +1,5 @@
 #include "xcore_utils.h"
 
-#include <complex>
-
 namespace tflite {
 namespace ops {
 namespace micro {
@@ -29,12 +27,6 @@ TfLiteStatus GetSizeOfType(TfLiteContext *context, const TfLiteType type,
     break;
   case kTfLiteBool:
     *bytes = sizeof(bool);
-    break;
-  case kTfLiteComplex64:
-    *bytes = sizeof(std::complex<float>);
-    break;
-  case kTfLiteComplex128:
-    *bytes = sizeof(std::complex<double>);
     break;
   case kTfLiteInt16:
     *bytes = sizeof(int16_t);

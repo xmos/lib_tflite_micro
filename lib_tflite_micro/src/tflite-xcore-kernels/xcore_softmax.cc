@@ -115,6 +115,13 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   return kTfLiteOk;
 }
 } // namespace softmax
+
+TFLMRegistration *Register_XC_softmax() {
+  static TFLMRegistration r = {softmax::Init, nullptr, softmax::Prepare,
+                               softmax::Eval};
+  return &r;
+}
+
 } // namespace xcore
 } // namespace micro
 } // namespace ops

@@ -34,12 +34,13 @@ void exp_sum_thread_worker(void *shared, void *idx, void *sum_ptr) {
   exp_sum(sum, sd->X, sd->table, s, e - s);
 }
 
-void exp_div_thread_worker(void *shared, void *start, void *end) {
-  const int *s = static_cast<int *>(start);
-  const int *e = static_cast<int *>(end);
+void exp_div_thread_worker(void *shared, void *idx, void *useless) {
+  const auto sidx = static_cast<SoftmaxIdx *>(idx);
+  const unsigned s = sidx->start;
+  const unsigned e = sidx->end;
   auto sd = static_cast<SoftmaxShared *>(shared);
   const float inv_sum_f = static_cast<float>(sd->inv_sum);
-  exp_div(sd->Y, sd->X, sd->table, inv_sum_f, *s, *e - *s);
+  exp_div(sd->Y, sd->X, sd->table, inv_sum_f, s, e - s);
 }
 }
 
@@ -47,8 +48,7 @@ void exp_div_thread_worker(void *shared, void *start, void *end) {
 struct SoftmaxOpData
     : XCoreOpData { // Inherits the operator name field from XCoreOpData
   int tc;
-  int s[XCORE_MAX_NUM_THREADS];
-  int e[XCORE_MAX_NUM_THREADS];
+  SoftmaxIdx idx[XCORE_MAX_NUM_THREADS];
 };
 
 void *Init(TfLiteContext *context, const char *buffer, size_t length) {
@@ -66,7 +66,12 @@ TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
   const TfLiteEvalTensor *input = tflite::micro::GetEvalInput(context, node, 0);
   int input_size = tflite::micro::GetTensorShape(input).FlatSize();
   op_data->tc = xc_config->model_thread_count;
-  calculateThreadSplit(op_data->tc, input_size, op_data->s, op_data->e);
+  int s[XCORE_MAX_NUM_THREADS];
+  int e[XCORE_MAX_NUM_THREADS];
+  calculateThreadSplit(op_data->tc, input_size, s, e);
+  for (int t = 0; t < op_data->tc; t++) {
+    op_data->idx[t] = {s[t], e[t]};
+  }
   return kTfLiteOk;
 }
 
@@ -92,24 +97,17 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   shared_data.Y = out_data;
   shared_data.X = const_cast<int8_t *>(in_data);
   shared_data.table = const_cast<float *>(table_vals);
-  // TODO: Handle multiple dimensions
   for (int t = 0; t < tc - 1; t++) {
-    const SoftmaxIdx idx = {op_data->s[t], op_data->e[t]};
-    thread_variable_setup((void *)&idx, (void *)&sums[t],
+    thread_variable_setup((void *)&op_data->idx[t], (void *)&sums[t],
                           xc_config->thread_info.thread_ids.id[t]);
   }
-  const SoftmaxIdx idx = {op_data->s[tc - 1], op_data->e[tc - 1]};
-  thread_call((void *)&shared_data, (void *)&idx, (void *)&sums[tc - 1],
+  thread_call((void *)&shared_data, (void *)&op_data->idx[tc - 1],
+              (void *)&sums[tc - 1],
               (thread_function_pointer_t)exp_sum_thread_worker,
               &xc_config->thread_info);
   shared_data.inv_sum =
       1.0f / (sums[0] + sums[1] + sums[2] + sums[3] + sums[4]);
-  for (int t = 0; t < tc - 1; t++) {
-    thread_variable_setup((void *)&op_data->s[t], (void *)&op_data->e[t],
-                          xc_config->thread_info.thread_ids.id[t]);
-  }
-  thread_call((void *)&shared_data, (void *)&op_data->s[tc - 1],
-              (void *)&op_data->e[tc - 1],
+  thread_call((void *)&shared_data, (void *)&op_data->idx[tc - 1], nullptr,
               (thread_function_pointer_t)exp_div_thread_worker,
               &xc_config->thread_info);
   return kTfLiteOk;

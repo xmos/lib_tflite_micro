@@ -107,6 +107,10 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
               &xc_config->thread_info);
   shared_data.inv_sum =
       1.0f / (sums[0] + sums[1] + sums[2] + sums[3] + sums[4]);
+  for (int t = 0; t < tc - 1; t++) {
+    thread_variable_setup((void *)&op_data->idx[t], (void *)&sums[t],
+                          xc_config->thread_info.thread_ids.id[t]);
+  }
   thread_call((void *)&shared_data, (void *)&op_data->idx[tc - 1], nullptr,
               (thread_function_pointer_t)exp_div_thread_worker,
               &xc_config->thread_info);

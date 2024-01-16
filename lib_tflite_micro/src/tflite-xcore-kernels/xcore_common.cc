@@ -39,7 +39,6 @@ void calculateThreadSplit(int tc, int split_size, int split_start[],
 #define MAX_DEBUG_LOG_LENGTH 256
 #define MAX_DEBUG_LOG_ENTRIES 3
 
-static int32_t max_thread_id = -1;
 int debug_log_index = 0;
 char ALIGN(4) debug_log_buffer[MAX_DEBUG_LOG_LENGTH * MAX_DEBUG_LOG_ENTRIES];
 
@@ -95,6 +94,7 @@ void thread_init_5(thread_info_t *ptr) {
 void thread_destroy(thread_info_t *ptr) {}
 
 static void *args[4][10];
+static int32_t max_thread_id = -1;
 void thread_variable_setup(void *arg1, void *arg2, uint32_t thread_id) {
   assert(thread_id != -1);
   args[thread_id][1] = arg1;

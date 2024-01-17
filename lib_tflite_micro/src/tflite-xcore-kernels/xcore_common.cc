@@ -110,6 +110,7 @@ void thread_call(void *arg0, void *arg1, void *arg2,
   for (int i = 0; i <= max_thread_id; i++) {
     (*fp)(arg0, args[i][1], args[i][2]);
   }
+  max_thread_id = -1;
 }
 
 #endif

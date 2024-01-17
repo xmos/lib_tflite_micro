@@ -106,6 +106,11 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
               (thread_function_pointer_t)exp_sum_thread_worker,
               &xc_config->thread_info);
   calculate_inv_sum(&shared_data.inv_sum, sums);
+  // TO BE DELETED ONCE HOST LIBRARY FIXED
+  if (tc > 1) {
+    thread_variable_setup((void *)&op_data->idx[tc - 2], (void *)&sums[tc - 2],
+                          xc_config->thread_info.thread_ids.id[tc - 2]);
+  }
   thread_call((void *)&shared_data, (void *)&op_data->idx[tc - 1],
               (void *)&sums[tc - 1],
               (thread_function_pointer_t)exp_div_thread_worker,

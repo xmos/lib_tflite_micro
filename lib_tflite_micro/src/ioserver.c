@@ -30,13 +30,6 @@ void XUD_Main2(chanend_t *a, int b,
 
 #define EP_COUNT_OUT 2
 #define EP_COUNT_IN 2
-
-extern XUD_EpType epTypeTableOut[];
-extern XUD_EpType epTypeTableIn[];
-
-XUD_EpType epTypeTableOut[EP_COUNT_OUT] = {XUD_EPTYPE_CTL | XUD_STATUS_ENABLE, XUD_EPTYPE_BUL};
-XUD_EpType epTypeTableIn[EP_COUNT_IN] =   {XUD_EPTYPE_CTL | XUD_STATUS_ENABLE, XUD_EPTYPE_BUL};
-
 #define BCD_DEVICE   0x1000
 #define VENDOR_ID    0x20B1
 #define PRODUCT_ID   0xa15e
@@ -169,6 +162,8 @@ void ioserver_usb_ep0(chanend_t c_ep0_out, chanend_t c_ep0_in, chanend_t c_data)
 void ioserver(chanend_t c_models[], unsigned n_models) {
     chanend_t c_ep_out[EP_COUNT_OUT], c_ep_in[EP_COUNT_IN];
     chanend_t c_ep_out_ends[EP_COUNT_OUT], c_ep_in_ends[EP_COUNT_IN];
+    XUD_EpType epTypeTableOut[EP_COUNT_OUT] = {XUD_EPTYPE_CTL | XUD_STATUS_ENABLE, XUD_EPTYPE_BUL};
+    XUD_EpType epTypeTableIn[EP_COUNT_IN] =   {XUD_EPTYPE_CTL | XUD_STATUS_ENABLE, XUD_EPTYPE_BUL};
     for(unsigned i = 0; i < EP_COUNT_OUT; i++) {
         channel_t c = chan_alloc();
         c_ep_out[i] = c.end_a;

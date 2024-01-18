@@ -9,7 +9,7 @@ namespace ops {
 namespace micro {
 namespace xcore {
 
-void calculateThreadSplit(int tc, int split_size, int split_start[], int split_end[]);
+void calculateThreadSplit(int &tc, int split_size, int split_start[], int split_end[]);
 
 } // namespace xcore
 } // namespace micro

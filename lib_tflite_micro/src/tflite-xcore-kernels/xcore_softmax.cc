@@ -31,7 +31,7 @@ void exp_sum_thread_worker(void *shared, void *idx, void *sum_ptr) {
   const unsigned e = sidx->end;
   float *sum = static_cast<float *>(sum_ptr);
   auto sd = static_cast<SoftmaxShared *>(shared);
-  exp_sum(sum, sd->X, sd->table, s, e - s);
+  softmax_exp_sum(sum, sd->X, sd->table, s, e - s);
 }
 
 void exp_div_thread_worker(void *shared, void *idx, void *useless) {
@@ -40,7 +40,7 @@ void exp_div_thread_worker(void *shared, void *idx, void *useless) {
   const unsigned e = sidx->end;
   auto sd = static_cast<SoftmaxShared *>(shared);
   const float inv_sum_f = static_cast<float>(sd->inv_sum);
-  exp_div(sd->Y, sd->X, sd->table, inv_sum_f, s, e - s);
+  softmax_exp_div(sd->Y, sd->X, sd->table, inv_sum_f, s, e - s);
 }
 }
 
@@ -105,7 +105,7 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
               (void *)&sums[tc - 1],
               (thread_function_pointer_t)exp_sum_thread_worker,
               &xc_config->thread_info);
-  calculate_inv_sum(&shared_data.inv_sum, sums);
+  softmax_calculate_inv_sum(&shared_data.inv_sum, sums);
   // TO BE DELETED ONCE HOST LIBRARY FIXED
   if (tc > 1) {
     thread_variable_setup((void *)&op_data->idx[tc - 2], (void *)&sums[tc - 2],

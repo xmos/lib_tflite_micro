@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <cstring>
+#include <algorithm>
 
 #if defined __GNUC__
 #define ALIGN(X) __attribute__((aligned(X)))
@@ -14,8 +15,14 @@ namespace ops {
 namespace micro {
 namespace xcore {
 
-void calculateThreadSplit(int tc, int split_size, int split_start[], int split_end[]) {
+void calculateThreadSplit(int &tc, int split_size, int split_start[], int split_end[]) {
   split_start[0] = 0;
+
+  // Alignment is to four
+  // Figure out min number of threads needed while keeping alignment
+  // By dividing split_size by four and ceil that
+  tc = std::min(tc, (split_size + 3) >> 2);
+
   for (int i = 0; i < tc; i++) {
     auto split = (split_size + (tc - i) - 1) / (tc - i);
     split_size -= split;
@@ -24,9 +31,22 @@ void calculateThreadSplit(int tc, int split_size, int split_start[], int split_e
       if (i != tc - 1)
         split_start[i + 1] = split_end[i];
     } else {
-      tc = i;
       break;
     }
+  }
+
+  // Align up or down split_starts to word length = 4 bytes,
+  // so that each thread begins work at an aligned address
+  // The last thread handles remaining items, so don't modify the end
+  for(int i = 1; i < tc; i++) {
+    if((split_start[i] & 3) >= 3) {
+      // Align up
+      split_start[i] = (split_start[i] + 3) & ~3;
+    } else {
+      // Align down
+      split_start[i] = split_start[i] & ~3;
+    }
+    split_end[i-1] = split_start[i];
   }
 }
 

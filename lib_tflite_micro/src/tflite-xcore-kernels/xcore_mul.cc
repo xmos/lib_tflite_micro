@@ -2,9 +2,11 @@
 
 #include "tensorflow/lite/kernels/internal/reference/broadcast_to.h"
 
-#include "MemCpyFn.hpp"
 #include "xcore_custom_options.h"
 #include "xcore_utils.h"
+extern "C" {
+#include "lib_nn/api/nn_layers.h"
+}
 
 namespace tflite {
 namespace ops {
@@ -15,10 +17,7 @@ namespace mul {
 // This is the struct that contains the data required by the operator
 struct MulOpData
     : XCoreOpData { // Inherits the operator name field from XCoreOpData
-  int B;
-  int S;
-  int lhsZeroPoint;
-  int rhsZeroPoint;
+  nn_mul_params_t *mp_params;
 };
 
 void *Init(TfLiteContext *context, const char *buffer, size_t length) {
@@ -26,27 +25,13 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   op_data->name = "XC_mul";
 
   auto parser = CustomOptionParser(buffer, length);
-  op_data->B = parser.parseNamedCustomOption("B").AsInt32();
-  op_data->S = parser.parseNamedCustomOption("S").AsInt32();
+  op_data->mp_params = (nn_mul_params_t *)parser.parseNamedCustomOption("mp").AsBlob().data();
 
   return op_data;
 }
 
 // Does all the requests for scratches
 TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
-  MicroContext *micro_context = GetMicroContext(context);
-  TfLiteTensor *input1 = micro_context->AllocateTempInputTensor(node, 0);
-  TfLiteTensor *input2 = micro_context->AllocateTempInputTensor(node, 1);
-
-  MulOpData *data = static_cast<MulOpData *>(node->user_data);
-  // Negating the zero points here, so that we don't have to use subtract in the
-  // final equation
-  // (((x0*x1) + (x1*-b0) + (x0*-b1)) * S + (1<<13) >> 14 + B) + (1<<5) >> 6
-  data->lhsZeroPoint = -input1->params.zero_point;
-  data->rhsZeroPoint = -input2->params.zero_point;
-
-  micro_context->DeallocateTempTfLiteTensor(input1);
-  micro_context->DeallocateTempTfLiteTensor(input2);
   return kTfLiteOk;
 }
 
@@ -90,18 +75,7 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
     in1_data = out_data;
   }
 
-  for (int i = 0; i < output_size; i++) {
-    int result =
-        (((((op_data->S * (op_data->rhsZeroPoint * in1_data[i] +
-                           op_data->lhsZeroPoint * in2_data[i] +
-                           in1_data[i] * in2_data[i])) +
-            (1 << 13)) >>
-           14) +
-          op_data->B) +
-         (1 << 5)) >>
-        6;
-    out_data[i] = std::min(std::max(result, -128), 127);
-  }
+  mul_elementwise(in1_data, in2_data, output_size, op_data->mp_params, out_data);
 
   return kTfLiteOk;
 }

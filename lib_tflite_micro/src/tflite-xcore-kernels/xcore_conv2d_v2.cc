@@ -14,6 +14,8 @@
 #include "xcore_utils.h"
 extern "C" {
 #include "lib_nn/api/nn_operator.h"
+#include "lib_nn/api/expand_8_to_16.h"
+#include "lib_nn/api/output_transform_fn_int16.h"
 }
 
 namespace tflite {
@@ -61,7 +63,9 @@ enum KernelType {
   BNNConv2DValidDirectBinary_t,
   BNNConv2DValidIndirectBinary_t,
   BNNConv2DValidDirectInt8_t,
-  BNNConv2DValidIndirectInt8_t
+  BNNConv2DValidIndirectInt8_t,
+  Conv2DValidDirectI16_t,
+  //DepthwiseConv2DValidDirectI16_t
 };
 
 enum OT_Type { Group, Channelwise };
@@ -94,6 +98,7 @@ struct Conv2DOpData
   Conv2DThreadInfo *threads;
   nn::conv_params_t conv_params; // The job to be done by this thread
   KernelType kt;
+  int i16_expanded_weights_scratch_index;
 };
 
 // -------------------------------------------------------------------- //
@@ -185,17 +190,21 @@ template <typename MfStructType, typename AggStructType, typename OtStructType>
 void ConstructFilter2Ds(Conv2DOpData *op_data, TfLiteContext *context,
                         const int scratch_size, const uint8_t *memcpy_fn_data,
                         const uint8_t *agg_fn_data, const uint8_t *ot_fn_data,
-                        flexbuffers::Vector &ak_params_vec) {
+                        flexbuffers::Vector &ak_params_vec, bool isI16Conv = false) {
   if (std::is_same<OtStructType, nn::otfn_int8_channelwise_params_t>::value) {
     op_data->conv_params.output_transform_fn =
         (nn::OtFnType)nn::otfn_int8_channelwise;
   } else if (std::is_same<OtStructType, nn::otfn_int8_params_t>::value) {
     op_data->conv_params.output_transform_fn = (nn::OtFnType)nn::otfn_int8;
+  } else if (std::is_same<OtStructType, otfn_int16_params_t>::value) {
+    op_data->conv_params.output_transform_fn = (nn::OtFnType)output_transform_fn_int16;
   } else {
     assert(false);
   }
 
-  if (std::is_same<AggStructType, nn::mat_mul_direct_params_t>::value) {
+  if (isI16Conv && std::is_same<AggStructType, nn::mat_mul_direct_params_t>::value) {
+    op_data->conv_params.aggregate_fn = (nn::AggFnType)nn::mat_mul_direct_int16;
+  } else if (std::is_same<AggStructType, nn::mat_mul_direct_params_t>::value) {
     op_data->conv_params.aggregate_fn = (nn::AggFnType)nn::mat_mul_direct_int8;
   } else if (std::is_same<AggStructType, nn::mat_mul_generic_params_t>::value) {
     op_data->conv_params.aggregate_fn = (nn::AggFnType)nn::mat_mul_generic_int8;
@@ -354,6 +363,13 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
         ak_params_vec);
     op_data->name = "XC_BNNValidIndInt8";
   } break;
+  case Conv2DValidDirectI16_t: {
+    ConstructFilter2Ds<nn::memcpyfn_deref_params_t,
+                        nn::mat_mul_direct_params_t, otfn_int16_params_t>(
+        op_data, context, scratch_size, memcpy_fn_data, agg_fn_data,
+        ot_fn_data, ak_params_vec, /*isI16Conv=*/true);
+    op_data->name = "XC_Conv2DValidDirI16";
+  } break;
   }
   return op_data;
 }
@@ -366,6 +382,15 @@ TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
           context, op_data->threads[t].scratch_size,
           &op_data->threads[t].stack_scratch_index));
     }
+  }
+  if (op_data->kt == Conv2DValidDirectI16_t) {
+    const TfLiteEvalTensor *weights_tensor = tflite::micro::GetEvalInput(context, node, 1);
+    assert(weights_tensor->type == kTfLiteInt8);
+    int weights_size = tflite::micro::GetTensorShape(weights_tensor).FlatSize();
+    // expand from 8 to 16
+    TF_LITE_ENSURE_STATUS(context->RequestScratchBufferInArena(
+          context, weights_size * 2,
+          &op_data->i16_expanded_weights_scratch_index));
   }
   return kTfLiteOk;
 }
@@ -417,7 +442,17 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   } else {
     shared_data.isDepthwise = false;
   }
-  shared_data.weights = weights;
+
+  // expand weights for int16
+  if(op_data->kt == Conv2DValidDirectI16_t){
+    int16_t *i16_expanded_weights_scratch = (int16_t *)context->GetScratchBuffer(
+            context, op_data->i16_expanded_weights_scratch_index);
+    expand_8_to_16(i16_expanded_weights_scratch, weights,
+          tflite::micro::GetTensorShape(weights_tensor).FlatSize());
+      shared_data.weights = (int8_t*)i16_expanded_weights_scratch;
+  } else {
+      shared_data.weights = weights;
+  }
   shared_data.muls_and_biases = multipliers_and_biases;
   for (int t = 0; t < n_threads; ++t) {
     if (op_data->threads[t].scratch_size) {

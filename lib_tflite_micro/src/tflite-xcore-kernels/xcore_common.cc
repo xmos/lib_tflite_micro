@@ -15,7 +15,7 @@ namespace ops {
 namespace micro {
 namespace xcore {
 
-void calculateThreadSplit(int tc, int split_size, int split_start[],
+void calculateThreadSplit(int &tc, int split_size, int split_start[],
                           int split_end[]) {
   split_start[0] = 0;
 
@@ -39,15 +39,15 @@ void calculateThreadSplit(int tc, int split_size, int split_start[],
   // Align up or down split_starts to word length = 4 bytes,
   // so that each thread begins work at an aligned address
   // The last thread handles remaining items, so don't modify the end
-  for(int i = 1; i < tc; i++) {
-    if((split_start[i] & 3) >= 3) {
+  for (int i = 1; i < tc; i++) {
+    if ((split_start[i] & 3) >= 3) {
       // Align up
       split_start[i] = (split_start[i] + 3) & ~3;
     } else {
       // Align down
       split_start[i] = split_start[i] & ~3;
     }
-    split_end[i-1] = split_start[i];
+    split_end[i - 1] = split_start[i];
   }
 }
 

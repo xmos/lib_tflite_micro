@@ -91,7 +91,7 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   MicroContext *micro_context = GetMicroContext(context);
   xc_context_config_t *xc_config = reinterpret_cast<xc_context_config_t *>(
       micro_context->external_context());
-  const int tc = xc_config->model_thread_count;
+  const int tc = op_data->tc;
   float sums[5] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
   SoftmaxShared shared_data;
   shared_data.Y = out_data;

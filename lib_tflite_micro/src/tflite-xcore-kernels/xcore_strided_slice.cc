@@ -41,11 +41,15 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
 
   auto parser = CustomOptionParser(buffer, length);
 
-  assert(((uintptr_t)parser.parseNamedCustomOption("mp").AsBlob().data() & 0x3) == 0);
-  op_data->mf_params = (nn::memcpyfn_imtocol_valid_params_t *)parser.parseNamedCustomOption("mp").AsBlob().data();
+  assert(((uintptr_t)parser.parseNamedCustomOption("mp").AsBlob().data() &
+          0x3) == 0);
+  op_data->mf_params =
+      (nn::memcpyfn_imtocol_valid_params_t *)parser.parseNamedCustomOption("mp")
+          .AsBlob()
+          .data();
   op_data->begin_x = parser.parseNamedCustomOption("begin_x").AsInt32();
   op_data->begin_y = parser.parseNamedCustomOption("begin_y").AsInt32();
-  op_data->memcpy_fn = (nn::MemFnType) nn::memcpyfn_imtocol_valid;
+  op_data->memcpy_fn = (nn::MemFnType)nn::memcpyfn_imtocol_valid;
   op_data->memcpy_type = parser.parseNamedCustomOption("type").AsInt32();
   return op_data;
 }
@@ -72,12 +76,16 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
                        op_data->mf_params->bytes_per_h_line;
     memcpy((int8_t *)out_data, (int8_t *)in_data + input_offset, num_bytes);
   } else if (op_data->memcpy_type == VpuCpy_t) {
-    op_data->memcpy_fn(op_data->mf_params, (int8_t *)out_data, (int8_t *)in_data,
-                                op_data->begin_y, op_data->begin_x, 0);
+    op_data->memcpy_fn(op_data->mf_params, (int8_t *)out_data,
+                       (int8_t *)in_data, op_data->begin_y, op_data->begin_x,
+                       0);
   } else if (op_data->memcpy_type == MemCpy_t) {
     int num_in_bytes = input->dims->data[3];
     int num_out_bytes = output->dims->data[3];
+    std::cout << "num_in_bytes: " << num_in_bytes << std::endl;
+    std::cout << "num_out_bytes: " << num_out_bytes << std::endl;
     int num_of_pixels = output->dims->data[1] * output->dims->data[2];
+    std::cout << "num_of_pixels: " << num_of_pixels << std::endl;
     for (int i = 0; i < num_of_pixels; i++) {
       memcpy((int8_t *)out_data + (i * num_out_bytes),
              (int8_t *)in_data + (i * num_in_bytes), num_out_bytes);
@@ -93,8 +101,7 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
 
 TFLMRegistration *Register_XC_strided_slice() {
   static TFLMRegistration r = {strided_slice::Init, nullptr,
-                                    strided_slice::Prepare,
-                                    strided_slice::Eval};
+                               strided_slice::Prepare, strided_slice::Eval};
   return &r;
 }
 

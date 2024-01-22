@@ -7,6 +7,7 @@
 #include "xcore_utils.h"
 extern "C" {
 #include "lib_nn/api/nn_operator.h"
+#include "lib_nn/api/quadratic_interpolation.h"
 }
 
 namespace tflite {
@@ -22,12 +23,20 @@ struct LookupShared {
 };
 
 extern "C" {
-void lookup_thread_worker(void *shared, void *start, void *end) {
+void lookup8_thread_worker(void *shared, void *start, void *end) {
   int *s = static_cast<int *>(start);
   int *e = static_cast<int *>(end);
   auto sd = static_cast<LookupShared *>(shared);
   // lookup takes start and count instead of start and end
   lookup8(sd->Y, sd->X, sd->table, *s, *e - *s);
+}
+
+void lookup16_thread_worker(void *shared, void *start, void *end) {
+  int *s = static_cast<int *>(start);
+  int *e = static_cast<int *>(end);
+  auto sd = static_cast<LookupShared *>(shared);
+  // output and input pointers are adjusted with thread start
+  quadratic_interpolation_128((int16_t*)sd->Y + *s, (int16_t*)sd->X + *s, sd->table, *e - *s);
 }
 }
 // This is the struct that contains the data required by the operator
@@ -70,7 +79,6 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   const uint8_t *table_vals = tflite::micro::GetTensorData<uint8_t>(table);
   uint8_t *out_data = tflite::micro::GetTensorData<uint8_t>(output);
   const uint8_t *in_data = tflite::micro::GetTensorData<uint8_t>(input);
-  // lookup8(out_data, in_data, table_vals, 0, input_size);
   MicroContext *micro_context = GetMicroContext(context);
   xc_context_config_t *xc_config = reinterpret_cast<xc_context_config_t *>(
       micro_context->external_context());
@@ -83,8 +91,24 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
     thread_variable_setup((void *)&op_data->s[t], (void *)&op_data->e[t],
                           xc_config->thread_info.thread_ids.id[t]);
   }
+
+  thread_function_pointer_t fn;
+  switch(input->type) {
+    case kTfLiteInt8: {
+      fn = lookup8_thread_worker;
+      break;
+    }
+    case kTfLiteInt16: {
+      fn = lookup16_thread_worker;
+      break;
+    }
+    default: {
+      return kTfLiteError;
+    }
+  }
+
   thread_call((void *)&shared_data, &op_data->s[tc - 1], &op_data->e[tc - 1],
-              (thread_function_pointer_t)lookup_thread_worker,
+              (thread_function_pointer_t)fn,
               &xc_config->thread_info);
   return kTfLiteOk;
 }

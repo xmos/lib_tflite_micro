@@ -204,7 +204,7 @@ template <class T, class printT>
 static void dump_tensor_contents(std::ostream& out_, const TfLiteTensor& t,
                                  const std::string& tname,
                                  const std::string& name) {
-  if (t.type == kTfLiteFloat32 || t.type == kTfLiteUInt8 || t.type == kTfLiteInt64 || t.type == kTfLiteFloat64) {
+  if (t.type == kTfLiteInt64 || t.type == kTfLiteFloat64) {
     std::cerr << "Warning : tensor type " << tname << " present in the compiled model!\n";
   }
 

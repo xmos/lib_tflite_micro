@@ -613,9 +613,9 @@ thread_client_loop:
     ldc     r10, 0
     ssync
     bf      r10, do_not_run
-    {add r4, r1, 0; add r5, r2, 0}
+    // {add r4, r1, 0; add r5, r2, 0}
     bla r11
-    {add r1, r4, 0; add r2, r5, 0}
+    // {add r1, r4, 0; add r2, r5, 0}
 do_not_run:
     ssync
     bu thread_client_loop

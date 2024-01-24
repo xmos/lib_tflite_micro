@@ -605,6 +605,7 @@ thread_init_1:
     .issue_mode dual
 
 thread_client:
+    dualentsp 0
     ldap    r11, _cp
     set     cp, r11
     ldap    r11, _dp                // It shouldn't need this...

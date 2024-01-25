@@ -9,7 +9,7 @@ namespace tflite {
 namespace ops {
 namespace micro {
 namespace xcore {
-namespace strided_slice {
+namespace slice {
 
 enum MemcpyType {
   SliceCpy_t,
@@ -18,7 +18,7 @@ enum MemcpyType {
 };
 
 // This is the struct that contains the data required by the operator
-struct StridedSliceOpData
+struct SliceOpData
     : XCoreOpData { // Inherits the operator name field from XCoreOpData
   int32_t begin_x;
   int32_t begin_y;
@@ -36,8 +36,8 @@ T *getDeserializedParams(TfLiteContext *context, const uint8_t *data) {
 }
 
 void *Init(TfLiteContext *context, const char *buffer, size_t length) {
-  auto op_data = construct_persistent_object<StridedSliceOpData>(context);
-  op_data->name = "XC_Strided_Slice";
+  auto op_data = construct_persistent_object<SliceOpData>(context);
+  op_data->name = "XC_Slice";
 
   auto parser = CustomOptionParser(buffer, length);
 
@@ -61,7 +61,7 @@ TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
 
 TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
 
-  auto *op_data = static_cast<StridedSliceOpData *>(node->user_data);
+  auto *op_data = static_cast<SliceOpData *>(node->user_data);
   // Get Input/Output Tensors
   const TfLiteEvalTensor *input = tflite::micro::GetEvalInput(context, node, 0);
   TfLiteEvalTensor *output = tflite::micro::GetEvalOutput(context, node, 0);
@@ -97,11 +97,11 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   return kTfLiteOk;
 }
 
-} // namespace strided_slice
+} // namespace slice
 
-TFLMRegistration *Register_XC_strided_slice() {
-  static TFLMRegistration r = {strided_slice::Init, nullptr,
-                               strided_slice::Prepare, strided_slice::Eval};
+TFLMRegistration *Register_XC_slice() {
+  static TFLMRegistration r = {slice::Init, nullptr, slice::Prepare,
+                               slice::Eval};
   return &r;
 }
 

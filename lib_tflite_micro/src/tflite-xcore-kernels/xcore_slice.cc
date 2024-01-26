@@ -82,10 +82,7 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   } else if (op_data->memcpy_type == MemCpy_t) {
     int num_in_bytes = input->dims->data[3];
     int num_out_bytes = output->dims->data[3];
-    std::cout << "num_in_bytes: " << num_in_bytes << std::endl;
-    std::cout << "num_out_bytes: " << num_out_bytes << std::endl;
     int num_of_pixels = output->dims->data[1] * output->dims->data[2];
-    std::cout << "num_of_pixels: " << num_of_pixels << std::endl;
     for (int i = 0; i < num_of_pixels; i++) {
       memcpy((int8_t *)out_data + (i * num_out_bytes),
              (int8_t *)in_data + (i * num_in_bytes), num_out_bytes);

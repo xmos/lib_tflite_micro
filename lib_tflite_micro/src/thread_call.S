@@ -602,9 +602,10 @@ thread_init_1:
     .align 4
 
     //    void thread_client...
-    .issue_mode single
+    .issue_mode dual
 
 thread_client:
+    dualentsp 0
     ldap    r11, _cp
     set     cp, r11
     ldap    r11, _dp                // It shouldn't need this...

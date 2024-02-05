@@ -1,6 +1,9 @@
 // Copyright (c) 2023, XMOS Ltd, All rights reserved
 
+extern "C" {
 #include "nn_op_utils.h"
+}
+
 #include "xcore_custom_options.h"
 #include "xcore_utils.h"
 
@@ -20,19 +23,21 @@ struct SliceOpData
   bool is_vpu;
 };
 
-void copy_blob(int32_t *dst, flexbuffers::Reference ref) {
-  auto blob = ref.AsBlob();
-  memcpy(dst, blob.data(), blob.size());
+void copy_vec(int32_t *dst, flexbuffers::Reference ref) {
+  auto vec = ref.AsVector();
+  for (int i = 0; i < vec.size(); i++) {
+    dst[i] = vec[i].AsInt32();
+  }
 }
 
 void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   auto op_data = construct_persistent_object<SliceOpData>(context);
   op_data->name = "XC_Slice";
   auto parser = CustomOptionParser(buffer, length);
-  copy_blob(op_data->begin, parser.parseNamedCustomOption("b"));
-  copy_blob(op_data->end, parser.parseNamedCustomOption("e"));
-  copy_blob(op_data->in_offsets, parser.parseNamedCustomOption("i"));
-  copy_blob(op_data->out_offsets, parser.parseNamedCustomOption("o"));
+  copy_vec(op_data->begin, parser.parseNamedCustomOption("b"));
+  copy_vec(op_data->end, parser.parseNamedCustomOption("e"));
+  copy_vec(op_data->in_offsets, parser.parseNamedCustomOption("i"));
+  copy_vec(op_data->out_offsets, parser.parseNamedCustomOption("o"));
   op_data->is_vpu = parser.parseNamedCustomOption("v").AsBool();
   return op_data;
 }

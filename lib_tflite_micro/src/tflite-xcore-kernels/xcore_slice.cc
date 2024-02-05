@@ -2,6 +2,7 @@
 
 extern "C" {
 #include "nn_op_utils.h"
+#include "nn_layers.h"
 }
 
 #include "xcore_custom_options.h"
@@ -42,6 +43,11 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   return op_data;
 }
 
+// This is needed because memcpy returns a void* which we need to discard
+void memcpy_wrapper(void *dst, const void *src, size_t size) {
+  memcpy(dst, src, size);
+}
+
 // Does all the requests for scratches
 TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
   return kTfLiteOk;
@@ -74,34 +80,9 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   // Pointers to data in In/Out Tensors
   const void *in_data = tflite::micro::GetTensorData<void>(input);
   void *out_data = tflite::micro::GetTensorData<void>(output);
-  for (int i0 = op_data->begin[0]; i0 < op_data->end[0]; i0++) {
-    const int32_t in_idx0 = i0 * op_data->in_offsets[0];
-    const int32_t out_idx0 = (i0 - op_data->begin[0]) * op_data->out_offsets[0];
-    for (int i1 = op_data->begin[1]; i1 < op_data->end[1]; i1++) {
-      const int32_t in_idx1 = in_idx0 + i1 * op_data->in_offsets[1];
-      const int32_t out_idx1 =
-          out_idx0 + (i1 - op_data->begin[1]) * op_data->out_offsets[1];
-      for (int i2 = op_data->begin[2]; i2 < op_data->end[2]; i2++) {
-        const int32_t in_idx2 = in_idx1 + i2 * op_data->in_offsets[2];
-        const int32_t out_idx2 =
-            out_idx1 + (i2 - op_data->begin[2]) * op_data->out_offsets[2];
-        for (int i3 = op_data->begin[3]; i3 < op_data->end[3]; i3++) {
-          const int32_t in_idx3 = in_idx2 + i3 * op_data->in_offsets[3];
-          const int32_t out_idx3 =
-              out_idx2 + (i3 - op_data->begin[3]) * op_data->out_offsets[3];
-          if (op_data->is_vpu) {
-            vpu_memcpy((int8_t *)out_data + out_idx3,
-                       (int8_t *)in_data + in_idx3 + op_data->begin[4],
-                       op_data->out_offsets[3]);
-          } else {
-            memcpy((int8_t *)out_data + out_idx3,
-                   (int8_t *)in_data + in_idx3 + op_data->begin[4],
-                   op_data->out_offsets[3]);
-          }
-        }
-      }
-    }
-  }
+  slice_memcpy((int8_t *)out_data, (int8_t *)in_data, op_data->in_offsets,
+               op_data->out_offsets, op_data->begin, op_data->end,
+               op_data->is_vpu ? memcpy_wrapper : vpu_memcpy);
   return kTfLiteOk;
 }
 

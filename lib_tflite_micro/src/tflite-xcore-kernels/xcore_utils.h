@@ -7,6 +7,7 @@
 
 #include "tensorflow/lite/c/common.h"
 #include "tensorflow/lite/micro/kernels/kernel_util.h"
+#include "tensorflow/lite/micro/memory_helpers.h"
 
 namespace tflite {
 namespace ops {
@@ -17,18 +18,6 @@ struct XCoreOpData {
 };
 
 namespace xcore {
-
-/* Get size (in bytes) given a TfLiteType enum
- *  This is useful because a tensor's type field is a TfLiteType
- *
- *  Returns kTfLiteError if the type is not supported
- *
- *  NOTE: This is cribbed from tensorflow/lite/util.h because TFLu does not
- * fully support the methods defined in tensorflow/lite/util.h
- */
-TfLiteStatus GetSizeOfType(TfLiteContext *context, const TfLiteType type,
-                           size_t *bytes);
-
 /* Unpack an integer data type from a byte array
  *  T  data type to unpack
  *
@@ -93,8 +82,7 @@ fetch_scratch_if_needed(TfLiteContext *context, T *&array,
     const RuntimeShape shape = tflite::micro::GetTensorShape(tensor);
 
     size_t sizeof_tensor_type;
-    GetSizeOfType(context, tensor->type, &sizeof_tensor_type);
-
+    TfLiteTypeSizeOf(tensor->type, &sizeof_tensor_type);
     FetchBuffer((int8_t **)&array, tflite::micro::GetTensorData<int8_t>(tensor),
                 shape.FlatSize() * sizeof_tensor_type);
   } else {

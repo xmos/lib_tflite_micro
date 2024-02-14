@@ -31,7 +31,7 @@ void inference_engine_initialize(inference_engine_t *ie) {
   resolver->AddConv2D();
   resolver->AddQuantize();
   resolver->AddDepthwiseConv2D();
-  resolver->AddStridedSlice();
+  resolver->AddSlice();
   resolver->AddShape();
   resolver->AddPack();
   tflite::ops::micro::xcore::RegisterXCOps(resolver);

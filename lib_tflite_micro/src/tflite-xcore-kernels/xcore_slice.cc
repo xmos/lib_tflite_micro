@@ -77,7 +77,7 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   void *out_data = tflite::micro::GetTensorData<void>(output);
   slice_memcpy((int8_t *)out_data, (int8_t *)in_data, op_data->in_offsets,
                op_data->out_offsets, op_data->begin, op_data->end,
-               op_data->is_vpu ? memcpy_wrapper : vpu_memcpy);
+               op_data->is_vpu ? memcpy_wrapper : vpu_memcpy_wrapper);
   return kTfLiteOk;
 }
 

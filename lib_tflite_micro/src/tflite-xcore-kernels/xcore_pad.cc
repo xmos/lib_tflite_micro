@@ -52,12 +52,6 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
 }
 
 TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
-  // MicroContext *micro_context = GetMicroContext(context);
-  // auto op_data = construct_persistent_object<PadOpData>(context);
-  // TfLiteTensor *input = micro_context->AllocateTempInputTensor(node, 0);
-  // TF_LITE_ENSURE(context, input != nullptr);
-  // op_data->zero_point = input->params.zero_point;
-  // micro_context->DeallocateTempTfLiteTensor(input);
   return kTfLiteOk;
 }
 
@@ -82,7 +76,6 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   slice_memcpy((int8_t *)in_data, (int8_t *)out_data, op_data->in_offsets,
                op_data->out_offsets, op_data->begin, op_data->end,
                op_data->is_vpu ? vpu_inv_memcpy_wrapper : inv_memcpy_wrapper);
-  // op_data->is_vpu ? memcpy_wrapper : vpu_memcpy);
   return kTfLiteOk;
 }
 

@@ -15,6 +15,9 @@ constexpr const char *XC_beta_transposeconvf32_OpCode =
     "XC_beta_transposeconvf32";
 constexpr const char *XC_beta_fcf32_OpCode = "XC_beta_fcf32";
 
+constexpr const char *XC_binaryi16_OpCode = "XC_binaryi16";
+constexpr const char *XC_unaryi16_OpCode = "XC_unaryi16";
+
 constexpr const char *XC_conv2d_v2_OpCode = "XC_conv2d_v2";
 constexpr const char *XC_maxpool2d_OpCode = "XC_maxpool2d";
 constexpr const char *XC_softmax_OpCode = "XC_softmax";
@@ -33,6 +36,9 @@ TFLMRegistration *Register_XC_beta_concatf32();
 TFLMRegistration *Register_XC_beta_convf32();
 TFLMRegistration *Register_XC_beta_transposeconvf32();
 TFLMRegistration *Register_XC_beta_fcf32();
+
+TFLMRegistration *Register_XC_binaryi16();
+TFLMRegistration *Register_XC_unaryi16();
 
 TFLMRegistration *Register_XC_conv2d_v2();
 TFLMRegistration *Register_XC_maxpool2d();

@@ -1,8 +1,8 @@
 #include "model.tflite.h"
 #include<stdio.h>
 
-#include <xtensor/xarray.hpp>
-#include <xtensor/xnpy.hpp>
+// #include <xtensor/xarray.hpp>
+// #include <xtensor/xnpy.hpp>
 
 unsigned char checksum_calc(char *data, unsigned int length)
 {
@@ -33,6 +33,7 @@ static int load_binary_file(const char *filename, uint32_t *content,
 }
 uint32_t params_content[MAX_MODEL_CONTENT_SIZE / sizeof(uint32_t)];
 
+#define I16
 
 int main(int argc, char *argv[])
 {
@@ -42,19 +43,33 @@ int main(int argc, char *argv[])
     printf("Error!\n");
   }
 
-  xt::xarray<int8_t> input = xt::load_npy<int8_t>("input.npy");
+  //xt::xarray<int8_t> input = xt::load_npy<int8_t>("input.npy");
   
   for(int n=0; n< model_inputs(); ++n) {
     //int32_t *in = model_input(n)->data.i32;
+    #ifdef I16
+    int16_t *in = model_input(n)->data.i16;
+    int size = model_input_size(n)/2;
+    int k = -32768;
+    for (int i=0;i<size;++i) {
+      if (k >= 32767) {
+        k = -32768;
+      }
+      in[i] = k;//input[i];
+      k = k + 5000;
+    }
+    #else
     int8_t *in = model_input(n)->data.int8;
+    int size = model_input_size(n);
     int k = -128;
-    for (int i=0;i<model_input_size(n);++i) {
+    for (int i=0;i<size;++i) {
       if (k >= 128) {
         k = -128;
       }
       in[i] = k;//input[i];
       k = k + 3;
     }
+    #endif
   }
   printf("\n");
 
@@ -62,8 +77,14 @@ int main(int argc, char *argv[])
 
   for(int n=0; n< model_outputs(); ++n) {
     //int32_t *out = model_output(n)->data.i32;
+    #ifdef I16
+    int16_t *out = model_output(n)->data.i16;
+    int size = model_output_size(n)/2;
+    #else
     int8_t *out = model_output(n)->data.int8;
-     for (int i=0;i<model_output_size(n);++i){
+    int size = model_output_size(n);
+    #endif
+     for (int i=0;i<size;++i){
        printf("%d,",(int)out[i]);
      }
     printf("\nchecksum : %d\n\n", (int)checksum_calc((char*)out, model_output_size(n)));

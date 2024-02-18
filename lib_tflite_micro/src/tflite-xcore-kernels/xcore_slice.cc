@@ -43,11 +43,6 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   return op_data;
 }
 
-// This is needed because memcpy returns a void* which we need to discard
-void memcpy_wrapper(void *dst, const void *src, size_t size) {
-  memcpy(dst, src, size);
-}
-
 // Does all the requests for scratches
 TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
   return kTfLiteOk;
@@ -82,7 +77,7 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   void *out_data = tflite::micro::GetTensorData<void>(output);
   slice_memcpy((int8_t *)out_data, (int8_t *)in_data, op_data->in_offsets,
                op_data->out_offsets, op_data->begin, op_data->end,
-               op_data->is_vpu ? memcpy_wrapper : vpu_memcpy);
+               op_data->is_vpu ? memcpy_wrapper : vpu_memcpy_wrapper);
   return kTfLiteOk;
 }
 

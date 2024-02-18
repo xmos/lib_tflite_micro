@@ -40,6 +40,7 @@ void RegisterXCOps(MicroOpResolver *res) {
   resolver->AddCustom(XC_bsign_8_OpCode, Register_XC_bsign_8());
   resolver->AddCustom(XC_lookup_OpCode, Register_XC_lookup());
   resolver->AddCustom(XC_pad_OpCode, Register_XC_pad());
+  resolver->AddCustom(XC_pad_v2_OpCode, Register_XC_pad_v2());
   resolver->AddCustom(XC_pad_3_to_4_OpCode, Register_XC_pad_3_to_4());
   resolver->AddCustom(XC_mul_OpCode, Register_XC_mul());
 }

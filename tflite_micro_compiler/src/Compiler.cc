@@ -1049,7 +1049,8 @@ TfLiteStatus )"
   // Set flash data in xcore context config
   xc_config.flash_data = flash_data;
   // Set thread count specified in the compiler
-  xc_config.model_thread_count = )" << numXCThreads_ << R"(;
+  xc_config.model_thread_count = )"
+     << numXCThreads_ << R"(;
   // Set thread info
   xc_config.thread_info.nstackwords = kStackWordsPerThread;
   xc_config.thread_info.stacks = &xcThreadsStack[threadsStackSizeInUint64 - 1];
@@ -1270,10 +1271,15 @@ TfLiteStatus )"
 
 #if defined(__xcore__) && defined(USB_TILE)
 #include "ioserver.h"
+extern "C" {
+extern int read_sswitch_reg(unsigned tile, unsigned reg, unsigned *data);
+extern int write_sswitch_reg(unsigned tile, unsigned reg, unsigned data);
+}
 
 void )"
      << prefix_ << R"(ioserver(chanend_t c) {
     unsigned tensor_num = 0;
+    extern unsigned tile[];
     while(1) {
         int cmd = ioserver_command_receive(c, &tensor_num);
         switch(cmd) {
@@ -1298,6 +1304,12 @@ void )"
      << prefix_ << R"(invoke();
             ioserver_command_acknowledge(c, IOSERVER_ACK);
             break;
+        }
+        case IOSERVER_EXIT: {
+          unsigned pll_ctrl;
+          read_sswitch_reg(tile[USB_TILE], XS1_SSWITCH_PLL_CTL_NUM, &pll_ctrl);
+          write_sswitch_reg(tile[USB_TILE], XS1_SSWITCH_PLL_CTL_NUM, pll_ctrl);
+          return;
         }
         default: {
             ioserver_command_acknowledge(c, IOSERVER_NACK);

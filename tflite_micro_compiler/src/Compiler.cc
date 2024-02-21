@@ -1306,8 +1306,11 @@ void )"
             break;
         }
         case IOSERVER_EXIT: {
+          ioserver_command_acknowledge(c, IOSERVER_ACK);
           unsigned pll_ctrl;
-          read_sswitch_reg(tile[USB_TILE], XS1_SSWITCH_PLL_CTL_NUM, &pll_ctrl);
+          for(int k = 0; k < 1000; k++) {
+            read_sswitch_reg(tile[USB_TILE], XS1_SSWITCH_PLL_CTL_NUM, &pll_ctrl);
+          }
           write_sswitch_reg(tile[USB_TILE], XS1_SSWITCH_PLL_CTL_NUM, pll_ctrl);
           return;
         }

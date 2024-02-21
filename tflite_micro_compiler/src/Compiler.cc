@@ -1271,6 +1271,7 @@ TfLiteStatus )"
 
 #if defined(__xcore__) && defined(USB_TILE)
 #include "ioserver.h"
+#include <unistd.h>
 extern "C" {
 extern int read_sswitch_reg(unsigned tile, unsigned reg, unsigned *data);
 extern int write_sswitch_reg(unsigned tile, unsigned reg, unsigned data);
@@ -1308,9 +1309,8 @@ void )"
         case IOSERVER_EXIT: {
           ioserver_command_acknowledge(c, IOSERVER_ACK);
           unsigned pll_ctrl;
-          for(int k = 0; k < 1000; k++) {
-            read_sswitch_reg(tile[USB_TILE], XS1_SSWITCH_PLL_CTL_NUM, &pll_ctrl);
-          }
+          usleep(1000);
+          read_sswitch_reg(tile[USB_TILE], XS1_SSWITCH_PLL_CTL_NUM, &pll_ctrl);
           write_sswitch_reg(tile[USB_TILE], XS1_SSWITCH_PLL_CTL_NUM, pll_ctrl);
           return;
         }

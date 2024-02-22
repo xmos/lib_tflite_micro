@@ -7,8 +7,8 @@ void ioserver(chanend c_model[], unsigned n_model);
 
 #else
 
-#include <xcore/channel.h>
 #include <xcore/chanend.h>
+#include <xcore/channel.h>
 
 #define CMD_LENGTH_BYTES (3) // CMD, Model, Tensor
 
@@ -18,6 +18,7 @@ void ioserver(chanend c_model[], unsigned n_model);
 #define IOSERVER_ACK 5
 #define IOSERVER_NACK 6
 #define IOSERVER_RESET 7
+#define IOSERVER_EXIT 8
 
 #define MAX_PACKET_SIZE (512)
 #define MAX_PACKET_SIZE_WORDS (MAX_PACKET_SIZE / 4)

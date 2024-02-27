@@ -21,7 +21,6 @@ struct PadOpData
   int32_t end[5];
   int32_t in_offsets[4];
   int32_t out_offsets[4];
-  bool is_vpu;
 };
 
 void copy_vec(int32_t *dst, flexbuffers::Reference ref) {
@@ -35,10 +34,6 @@ inline void inv_memcpy_wrapper(void *src, void *dst, size_t len) {
   memcpy(dst, src, len);
 }
 
-inline void vpu_inv_memcpy_wrapper(void *src, void *dst, size_t len) {
-  vpu_memcpy(dst, src, len);
-}
-
 void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   auto op_data = construct_persistent_object<PadOpData>(context);
   op_data->name = "XC_PadV2";
@@ -47,7 +42,6 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   copy_vec(op_data->end, parser.parseNamedCustomOption("e"));
   copy_vec(op_data->in_offsets, parser.parseNamedCustomOption("i"));
   copy_vec(op_data->out_offsets, parser.parseNamedCustomOption("o"));
-  op_data->is_vpu = parser.parseNamedCustomOption("v").AsBool();
   return op_data;
 }
 
@@ -75,7 +69,7 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   vpu_memset_32(out_data, 0, out_size / 4);
   slice_memcpy((int8_t *)in_data, (int8_t *)out_data, op_data->in_offsets,
                op_data->out_offsets, op_data->begin, op_data->end,
-               op_data->is_vpu ? vpu_inv_memcpy_wrapper : inv_memcpy_wrapper);
+               inv_memcpy_wrapper);
   return kTfLiteOk;
 }
 

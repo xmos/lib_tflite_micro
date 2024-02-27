@@ -1,8 +1,8 @@
 // Copyright (c) 2023, XMOS Ltd, All rights reserved
 
 extern "C" {
-#include "nn_op_utils.h"
 #include "nn_layers.h"
+#include "nn_op_utils.h"
 }
 
 #include "xcore_custom_options.h"
@@ -21,7 +21,6 @@ struct SliceOpData
   int32_t end[5];
   int32_t in_offsets[4];
   int32_t out_offsets[4];
-  bool is_vpu;
 };
 
 void copy_vec(int32_t *dst, flexbuffers::Reference ref) {
@@ -39,8 +38,11 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   copy_vec(op_data->end, parser.parseNamedCustomOption("e"));
   copy_vec(op_data->in_offsets, parser.parseNamedCustomOption("i"));
   copy_vec(op_data->out_offsets, parser.parseNamedCustomOption("o"));
-  op_data->is_vpu = parser.parseNamedCustomOption("v").AsBool();
   return op_data;
+}
+
+inline void memcpy_wrapper(void *dst, void *src, size_t size) {
+  memcpy(dst, src, size);
 }
 
 // Does all the requests for scratches
@@ -77,7 +79,7 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   void *out_data = tflite::micro::GetTensorData<void>(output);
   slice_memcpy((int8_t *)out_data, (int8_t *)in_data, op_data->in_offsets,
                op_data->out_offsets, op_data->begin, op_data->end,
-               op_data->is_vpu ? memcpy_wrapper : vpu_memcpy_wrapper);
+               memcpy_wrapper);
   return kTfLiteOk;
 }
 

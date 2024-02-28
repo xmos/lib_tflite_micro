@@ -106,14 +106,10 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
               (thread_function_pointer_t)exp_sum_thread_worker,
               &xc_config->thread_info);
   softmax_calculate_inv_sum(&shared_data.inv_sum, sums);
-  // TO BE DELETED ONCE HOST LIBRARY FIXED
-  // for (int t = 0; t < tc - 1; t++) {
-  //   thread_variable_setup((void *)&op_data->idx[t], (void *)&sums[t],
-  //                         xc_config->thread_info.thread_ids.id[t]);
-  // }
-  if (tc > 1) {
-    thread_variable_setup((void *)&op_data->idx[tc - 2], (void *)&sums[tc - 2],
-                          xc_config->thread_info.thread_ids.id[tc - 2]);
+
+  for (int t = 0; t < tc - 1; t++) {
+    thread_variable_setup((void *)&op_data->idx[t], (void *)&sums[t],
+                          xc_config->thread_info.thread_ids.id[t]);
   }
   thread_call((void *)&shared_data, (void *)&op_data->idx[tc - 1],
               (void *)&sums[tc - 1],

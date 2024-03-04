@@ -30,6 +30,9 @@ void RegisterXCOps(MicroOpResolver *res) {
                       Register_XC_beta_transposeconvf32());
   resolver->AddCustom(XC_beta_fcf32_OpCode, Register_XC_beta_fcf32());
   resolver->AddCustom(XC_binaryi16_OpCode, Register_XC_binaryi16());
+
+  resolver->AddCustom(XC_blob_unaryi16_OpCode, Register_XC_blob_unaryi16());
+
   resolver->AddCustom(XC_unaryi16_OpCode, Register_XC_unaryi16());
   resolver->AddCustom(XC_conv2d_v2_OpCode, Register_XC_conv2d_v2());
   resolver->AddCustom(XC_maxpool2d_OpCode, Register_XC_maxpool2d());

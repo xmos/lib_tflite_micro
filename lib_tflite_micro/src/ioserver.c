@@ -272,6 +272,7 @@ void ioserver_usb_ep(chanend_t c_ep_out, chanend_t c_ep_in,
         chan_out_word(c_model[model_num], tensor_num);
         switch(cmd) {
         case IOSERVER_INVOKE:
+        case IOSERVER_RESET:
             // TODO: remove this and friend in PY side
             XUD_GetBuffer(ep_out, (uint8_t*)data, &pktLength);
             

@@ -174,21 +174,6 @@ index 62045d67..5ad1e885 100644
  }
  
  void PreprocessLogSoftmaxScalingExp(double beta, double input_scale,
-diff --git a/tensorflow/lite/kernels/internal/runtime_shape.h b/tensorflow/lite/kernels/internal/runtime_shape.h
-index bc786bdb..bcc53470 100644
---- a/tensorflow/lite/kernels/internal/runtime_shape.h
-+++ b/tensorflow/lite/kernels/internal/runtime_shape.h
-@@ -120,9 +120,7 @@ class RuntimeShape {
-   }
- 
-   int32_t size_;
--  union {
--    int32_t dims_[kMaxSmallSize];
--  };
-+  int32_t dims_[kMaxSmallSize];
- };
- 
- // Since tensors with '0' in their shape are valid in TF, these offset functions
 diff --git a/tensorflow/lite/micro/kernels/activations.cc b/tensorflow/lite/micro/kernels/activations.cc
 index 1086325c..3425bb2a 100644
 --- a/tensorflow/lite/micro/kernels/activations.cc
@@ -301,83 +286,33 @@ index b4a838f7..e9f0381e 100644
  
  struct OpData {
 diff --git a/tensorflow/lite/micro/kernels/fully_connected.cc b/tensorflow/lite/micro/kernels/fully_connected.cc
-index 54576faf..9f6b9bf3 100644
+index 54576faf..e04a1906 100644
 --- a/tensorflow/lite/micro/kernels/fully_connected.cc
 +++ b/tensorflow/lite/micro/kernels/fully_connected.cc
-@@ -167,7 +167,19 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
-     case kTfLiteInt16: {
-       switch (filter->type) {
-         case kTfLiteInt8: {
-+          if(bias && bias->type == kTfLiteInt32) {
-           tflite::reference_integer_ops::FullyConnected(
-+              FullyConnectedParamsQuantized(data),
-+              tflite::micro::GetTensorShape(input),
-+              tflite::micro::GetTensorData<int16_t>(input),
-+              tflite::micro::GetTensorShape(filter),
-+              tflite::micro::GetTensorData<int8_t>(filter),
-+              tflite::micro::GetTensorShape(bias),
+@@ -174,7 +174,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+               tflite::micro::GetTensorShape(filter),
+               tflite::micro::GetTensorData<int8_t>(filter),
+               tflite::micro::GetTensorShape(bias),
+-              tflite::micro::GetOptionalTensorData<int64_t>(bias),
 +              tflite::micro::GetOptionalTensorData<int32_t>(bias),
-+              tflite::micro::GetTensorShape(output),
-+              tflite::micro::GetTensorData<int16_t>(output));
-+          } else {
-+            tflite::reference_integer_ops::FullyConnected(
-               FullyConnectedParamsQuantized(data),
-               tflite::micro::GetTensorShape(input),
-               tflite::micro::GetTensorData<int16_t>(input),
-@@ -177,6 +189,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
-               tflite::micro::GetOptionalTensorData<int64_t>(bias),
                tflite::micro::GetTensorShape(output),
                tflite::micro::GetTensorData<int16_t>(output));
-+          }
            break;
-         }
-         default: {
-diff --git a/tensorflow/lite/micro/kernels/strided_slice_common.cc b/tensorflow/lite/micro/kernels/strided_slice_common.cc
-index 165e1f39..35c2e822 100644
---- a/tensorflow/lite/micro/kernels/strided_slice_common.cc
-+++ b/tensorflow/lite/micro/kernels/strided_slice_common.cc
-@@ -94,9 +94,18 @@ TfLiteStatus CheckOutputSize(TfLiteContext* context,
-   using ::tflite::strided_slice::StartForAxis;
-   using ::tflite::strided_slice::StopForAxis;
-   TfLiteIntArray* output_shape = op_context->output->dims;
-+  printf("\nIn CheckOutputSize\n");
-+  printf("Output shape\n");
-+  for(int i=0; i<output_shape->size; i++) {
-+    printf("%d,", output_shape->data[i]);  
-+  }
-   int shape_size = 0;
-   auto op_params = BuildStridedSliceParams(op_context);
-   auto input_shape = GetTensorShape(op_context->input);
-+  printf("\nInput shape\n");
-+  for(int i=0; i<input_shape.DimensionsCount(); i++) {
-+    printf("%d,", input_shape.Dims(i));  
-+  }
-   for (int idx = 0; idx < op_context->dims; ++idx) {
-     int32_t stride = GetTensorData<int32_t>(op_context->strides)[idx];
-     TF_LITE_ENSURE_MSG(context, stride != 0, "stride value has to be non-zero");
-@@ -115,6 +124,9 @@ TfLiteStatus CheckOutputSize(TfLiteContext* context,
-     // This is valid for both positive and negative strides
-     int32_t dim_shape = std::ceil((end - begin) / static_cast<float>(stride));
-     dim_shape = dim_shape < 0 ? 0 : dim_shape;
-+
-+    printf("\nb=%d, e=%d, dim_shape=%d", begin, end, dim_shape);
-+
-     if (!shrink_axis) {
-       TF_LITE_ENSURE_EQ(context, output_shape->data[shape_size], dim_shape);
-       shape_size++;
-@@ -143,6 +155,12 @@ TfLiteStatus StridedSlicePrepare(TfLiteContext* context, TfLiteNode* node) {
-                      "input dim should not exceed 4");
-   auto params = BuildStridedSliceParams(&op_context);
-   memcpy(op_params, &params, sizeof(StridedSliceParams));
-+
-+  printf("\nIn StridedSlicePrepare\n");
-+  printf("op_params\n");
-+  for (int i = 0; i < op_context.dims; ++i) {
-+    printf("b=%d, e=%d, s=%d\n", op_params->start_indices[i], op_params->stop_indices[i], op_params->strides[i]);
-+  }
-   return CheckOutputSize(context, &op_context);
- }
- 
+diff --git a/tensorflow/lite/micro/kernels/pack.cc b/tensorflow/lite/micro/kernels/pack.cc
+index 7b4aeef2..3f1c874b 100644
+--- a/tensorflow/lite/micro/kernels/pack.cc
++++ b/tensorflow/lite/micro/kernels/pack.cc
+@@ -85,6 +85,10 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+       return PackImpl<int8_t>(context, node, output, data->values_count,
+                               data->axis);
+     }
++    case kTfLiteInt16: {
++      return PackImpl<int16_t>(context, node, output, data->values_count,
++                              data->axis);
++    }
+     case kTfLiteInt32: {
+       return PackImpl<int32_t>(context, node, output, data->values_count,
+                                data->axis);
 diff --git a/tensorflow/lite/micro/kernels/transpose.cc b/tensorflow/lite/micro/kernels/transpose.cc
 index 710bfca4..82f0d4ed 100644
 --- a/tensorflow/lite/micro/kernels/transpose.cc
@@ -396,7 +331,7 @@ index 710bfca4..82f0d4ed 100644
        reference_ops::Transpose(params, tflite::micro::GetTensorShape(input),
                                 tflite::micro::GetTensorData<int8_t>(input),
 diff --git a/tensorflow/lite/micro/kernels/transpose_conv.cc b/tensorflow/lite/micro/kernels/transpose_conv.cc
-index a2ac2b46..e74692f8 100644
+index a2ac2b46..89b4206a 100644
 --- a/tensorflow/lite/micro/kernels/transpose_conv.cc
 +++ b/tensorflow/lite/micro/kernels/transpose_conv.cc
 @@ -123,7 +123,7 @@ TfLiteStatus CalculateOpData(TfLiteContext* context, TfLiteNode* node,
@@ -404,7 +339,7 @@ index a2ac2b46..e74692f8 100644
        TFLITE_DCHECK(filter->type == kTfLiteInt8);
        TFLITE_DCHECK(output->type == kTfLiteInt16);
 -      if (bias->type == kTfLiteInt16) {
-+      if (bias->type == kTfLiteInt16 || bias->type == kTfLiteInt32) {
++      if (bias && (bias->type == kTfLiteInt16 || bias->type == kTfLiteInt32)) {
          TFLITE_DCHECK(
              context->RequestScratchBufferInArena(
                  context, GetTensorShape(bias).FlatSize() * sizeof(std::int64_t),

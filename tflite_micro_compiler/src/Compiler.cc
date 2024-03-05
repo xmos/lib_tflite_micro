@@ -1306,6 +1306,12 @@ void )"
             ioserver_command_acknowledge(c, IOSERVER_ACK);
             break;
         }
+        case IOSERVER_RESET: {
+            )"
+     << prefix_ << R"(reset();
+            ioserver_command_acknowledge(c, IOSERVER_ACK);
+            break;
+        }
         case IOSERVER_EXIT: {
           ioserver_command_acknowledge(c, IOSERVER_ACK);
           unsigned pll_ctrl;

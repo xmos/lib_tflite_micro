@@ -35,6 +35,24 @@ struct Blob_UnaryI16Shared {
 //fn_ptr(tensor_descriptor, parallel_descriptor, operation_descriptor)
 
 extern "C" {
+
+void xc_unaryi16_invoke(int32_t **tensor_descriptor, uint8_t *op_descriptor, int32_t *th_descriptor,
+                 int thread_num) {
+    int tc = th_descriptor[0];
+    if(thread_num >= tc)
+      return;
+
+    int16_t* in = (int16_t*)tensor_descriptor[0];
+    float* out = (float*)tensor_descriptor[1];
+    int *thread_data = (int*)(th_descriptor + 1);
+    op_descriptor = op_descriptor + 4;
+
+    int th_start = thread_data[thread_num];
+    int th_count = thread_data[thread_num + tc];
+
+    dequantize_int16_tensor(out + th_start, in + th_start, th_count, op_descriptor);
+}
+
 void blob_unaryi16_thread_worker(void *shared, void *start, void *count) {
   int *s = static_cast<int *>(start);
   int *c = static_cast<int *>(count);
@@ -67,7 +85,7 @@ TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
   return kTfLiteOk;
 }
 
-TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node, tensor_blob) {
+TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   // Get Input/Output Tensors
   const TfLiteEvalTensor *op_blob = tflite::micro::GetEvalInput(context, node, 0);
   const TfLiteEvalTensor *th_blob = tflite::micro::GetEvalInput(context, node, 1);
@@ -91,7 +109,7 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node, tensor_blob) {
   Blob_UnaryI16Shared shared_data;
   shared_data.Y = out_data;
   shared_data.X = const_cast<int16_t *>(in_data);
-  shared_data.op_blob = const_cast<uint8_t *>(op_blob_data + 1);
+  shared_data.op_blob = const_cast<uint8_t *>(op_blob_data + 4);
   shared_data.fn = fn_ptrs[op_type];
   shared_data.inputTypeMultiplier = op_type == Quantize_t ? 2 : 1;
   shared_data.outputTypeMultiplier = op_type == Dequantize_t ? 2 : 1;

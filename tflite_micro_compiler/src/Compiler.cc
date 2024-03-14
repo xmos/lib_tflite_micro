@@ -755,6 +755,68 @@ TfLiteNode tflNodes[] =
   wr << "};\n";
 
   wr << R"(
+int32_t* in_out_tensors[] = 
+{)";
+for (size_t g = 0; g < tensors_.size(); g++) {
+  for (size_t i = 0; i < nodes_[g].size(); i++) {
+    auto &node = nodes_[g][i].node;
+    const TfLiteIntArray& in_arr = *node.inputs;
+    for (int s = 0; s < in_arr.size; s++) {
+      int t = in_arr.data[s];
+      if(t >= 0) {
+        auto tFull = tensors_[g][t].tensor;
+        auto tEval = GetEvalTensor(interpreter_.get(), t, g);
+        if (tFull->allocation_type == kTfLiteMmapRo) {
+          wr << "(int32_t*)g" << g << ".tensor_data" << t << ",";
+        } else {
+          wr << "(int32_t*)(tensor_arena + "
+              << ((uintptr_t)tEval->data.data - (uintptr_t)arena_buf_.data())
+              << "),";
+        }
+      } else {
+        wr << "nullptr,";
+      }
+    }
+    
+    const TfLiteIntArray& out_arr = *node.outputs;
+    for (int s = 0; s < out_arr.size; s++) {
+      int t = out_arr.data[s];
+      if(t >= 0) {
+        auto tFull = tensors_[g][t].tensor;
+        auto tEval = GetEvalTensor(interpreter_.get(), t, g);
+        if (tFull->allocation_type == kTfLiteMmapRo) {
+          wr << "(int32_t*)g" << g << ".tensor_data" << t << ",";
+        } else {
+          wr << "(int32_t*)(tensor_arena + "
+              << ((uintptr_t)tEval->data.data - (uintptr_t)arena_buf_.data())
+              << "),";
+        }
+      } else {
+        wr << "nullptr,";
+      }
+    }
+  }
+   wr << "\n";
+}
+  wr << "};\n";
+
+  wr << R"(
+int32_t in_out_node_index[] = 
+{)";
+int in_out_index = 0;
+for (size_t g = 0; g < tensors_.size(); g++) {
+  for (size_t i = 0; i < nodes_[g].size(); i++) {
+    wr << in_out_index << ",";
+    auto &node = nodes_[g][i].node;
+    const TfLiteIntArray& in_arr = *node.inputs;
+    in_out_index += in_arr.size;
+    const TfLiteIntArray& out_arr = *node.outputs;
+    in_out_index += out_arr.size;
+  }
+}
+  wr << "};\n";
+
+  wr << R"(
 used_operators_e used_ops[] =
 {)";
   for (size_t g = 0; g < tensors_.size(); g++) {
@@ -947,6 +1009,70 @@ static TfLiteEvalTensor* mg_GetSubgraphOutput(int subgraph_idx, int i){
   return (TfLiteEvalTensor*)&tflTensors[tflTensors_subgraph_index[subgraph_idx] + outTensorIndices[outTensors_subgraph_index[subgraph_idx] + i]];
 }
 
+extern "C" void xc_unaryi16_invoke(int32_t **tensor_descriptor, uint8_t *op_descriptor, int32_t *th_descriptor,
+                 int thread_num);
+
+#ifdef __xcore__
+#include <stdio.h>
+#include <xcore/parallel.h>
+
+extern "C" {
+DECLARE_JOB(model_invoker, (int, int, int));
+
+void model_invoker(int op, int thread_number, int sync) {
+    int x;
+    asm volatile ("getr %0, 3":"=r"(x));
+    asm volatile ("freer res[%0]"::"r"(x));
+
+    for(int i = 0; i < 1; i++) {
+        //synchroniser_sync(sync);
+        if(sync == 0) {
+          asm volatile ("ssync");
+        } else {
+          asm volatile ("msync res[%0]"::"r"(x-0x100));
+        }
+
+        asm volatile ("gettime %0" : "=r" (time_t0));
+
+        int32_t **in_out_tensor = &in_out_tensors[in_out_node_index[op]];
+        uint8_t *op_blob = (uint8_t*)(in_out_tensor[0]);
+        int32_t *th_blob = (int32_t*)(in_out_tensor[1]);
+        int32_t **tr_blob = &in_out_tensor[2];
+        xc_unaryi16_invoke(tr_blob, op_blob, th_blob, thread_number);
+
+        if(sync == 0) {
+          asm volatile ("ssync");
+        } else {
+          asm volatile ("msync res[%0]"::"r"(x-0x100));
+        }
+        asm volatile ("gettime %0" : "=r" (time_t1));
+        printf("%d\n", time_t1-time_t0);
+
+
+    //     program[i].fp(
+    //         operator[i].parameter_descriptor,
+    //         operator[i].operator_descriptor,
+    //         operator[i].parallel_descriptor,
+    //         thread_number
+    //         );
+    }
+}
+}
+
+void test_invoke(int op) {
+    // init
+    // Add tensor_arena base to all params
+    // Do something special with parameters that refer to constant arrays.    
+    PAR_JOBS(
+        PJOB(model_invoker, (op, 4, 0x000)),
+        PJOB(model_invoker, (op, 3, 0x000)),
+        PJOB(model_invoker, (op, 2, 0x000)),
+        PJOB(model_invoker, (op, 1, 0x000)),
+        PJOB(model_invoker, (op, 0, 0x003))
+        );
+}
+#endif
+
 static TfLiteStatus mg_InvokeSubgraph(int g){
   int prevSubgraphIndex = currentSubgraphIndex;
   currentSubgraphIndex = g;
@@ -977,7 +1103,25 @@ printf("[\n");
 #endif
 #endif
 
-    TfLiteStatus status = registrations[used_ops[i]].invoke(&ctx, &tflNodes[i]);
+  TfLiteStatus status;
+  if(used_ops[i] == OP_XC_blob_unaryi16) {
+      #ifdef __xcore__
+      test_invoke(i);
+      #else
+        int32_t **in_out_tensor = &in_out_tensors[in_out_node_index[i]];
+        uint8_t *op_blob = (uint8_t*)(in_out_tensor[0]);
+        int32_t *th_blob = (int32_t*)(in_out_tensor[1]);
+        int32_t **tr_blob = &in_out_tensor[2];
+        for(int i = 0; i < 4; i++) {
+            xc_unaryi16_invoke(tr_blob, op_blob, th_blob,
+                            i);
+        }
+      #endif
+      //registrations[used_ops[i]].invoke(&ctx, &tflNodes[i]);
+      status = kTfLiteOk;
+  } else {
+      status = registrations[used_ops[i]].invoke(&ctx, &tflNodes[i]);
+  }
 
 #ifdef TFLMC_XCORE_PROFILE
 #ifdef __xcore__

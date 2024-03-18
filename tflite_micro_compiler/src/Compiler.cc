@@ -1064,11 +1064,11 @@ void test_invoke(int op) {
     // Add tensor_arena base to all params
     // Do something special with parameters that refer to constant arrays.    
     PAR_JOBS(
-        PJOB(model_invoker, (op, 4, 0x000)),
-        PJOB(model_invoker, (op, 3, 0x000)),
-        PJOB(model_invoker, (op, 2, 0x000)),
+        PJOB(model_invoker, (op, 0, 0x003)),
         PJOB(model_invoker, (op, 1, 0x000)),
-        PJOB(model_invoker, (op, 0, 0x003))
+        PJOB(model_invoker, (op, 2, 0x000)),
+        PJOB(model_invoker, (op, 3, 0x000)),
+        PJOB(model_invoker, (op, 4, 0x000))
         );
 }
 #endif

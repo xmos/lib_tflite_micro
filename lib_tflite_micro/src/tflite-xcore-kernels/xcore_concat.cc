@@ -16,16 +16,14 @@ namespace xcore {
 namespace concat {
 
 // TODO: [michael p] Optimise this, don't need all those params
-struct PadOpData
+struct ConcatOpData
     : XCoreOpData { // Inherits the operator name field from XCoreOpData
-  int32_t begin1[5];
   int32_t end1[5];
-  int32_t in_offsets1[4];
+  int32_t in_offsets[4];
   int32_t out_offsets1[4];
-  int32_t begin2[5];
   int32_t end2[5];
-  int32_t in_offsets2[4];
   int32_t out_offsets2[4];
+  int32_t begin;
 };
 
 void copy_vec(int32_t *dst, flexbuffers::Reference ref) {
@@ -40,16 +38,14 @@ inline void inv_memcpy_wrapper(void *src, void *dst, size_t len) {
 }
 
 void *Init(TfLiteContext *context, const char *buffer, size_t length) {
-  auto op_data = construct_persistent_object<PadOpData>(context);
+  auto op_data = construct_persistent_object<ConcatOpData>(context);
   op_data->name = "XC_Concat";
   auto parser = CustomOptionParser(buffer, length);
-  copy_vec(op_data->begin1, parser.parseNamedCustomOption("b1"));
+  op_data->begin = parser.parseNamedCustomOption("b").AsInt32();
   copy_vec(op_data->end1, parser.parseNamedCustomOption("e1"));
-  copy_vec(op_data->in_offsets1, parser.parseNamedCustomOption("i1"));
+  copy_vec(op_data->in_offsets, parser.parseNamedCustomOption("i"));
   copy_vec(op_data->out_offsets1, parser.parseNamedCustomOption("o1"));
-  copy_vec(op_data->begin2, parser.parseNamedCustomOption("b2"));
   copy_vec(op_data->end2, parser.parseNamedCustomOption("e2"));
-  copy_vec(op_data->in_offsets2, parser.parseNamedCustomOption("i2"));
   copy_vec(op_data->out_offsets2, parser.parseNamedCustomOption("o2"));
   return op_data;
 }
@@ -61,7 +57,7 @@ TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
 TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   TFLITE_DCHECK(node->user_data != nullptr);
 
-  auto *op_data = static_cast<PadOpData *>(node->user_data);
+  auto *op_data = static_cast<ConcatOpData *>(node->user_data);
   // Get Input/Output Tensors
   const TfLiteEvalTensor *input1 =
       tflite::micro::GetEvalInput(context, node, 0);
@@ -74,12 +70,12 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   void *out_data = tflite::micro::GetTensorData<void>(output);
   // TODO [michael p]: Make this cleaner
   // Get size of output buffer
-  slice_memcpy((int8_t *)in_data1, (int8_t *)out_data, op_data->in_offsets1,
-               op_data->out_offsets1, op_data->begin1, op_data->end1,
+  slice_memcpy((int8_t *)in_data1, (int8_t *)out_data, op_data->in_offsets,
+               op_data->out_offsets1, (int32_t[]){0, 0, 0, 0, 0}, op_data->end1,
                inv_memcpy_wrapper);
-  slice_memcpy((int8_t *)in_data2, (int8_t *)out_data, op_data->in_offsets2,
-               op_data->out_offsets2, op_data->begin2, op_data->end2,
-               inv_memcpy_wrapper);
+  slice_memcpy((int8_t *)in_data2, (int8_t *)out_data, op_data->in_offsets,
+               op_data->out_offsets2, (int32_t[]){0, 0, 0, 0, op_data->begin},
+               op_data->end2, inv_memcpy_wrapper);
   return kTfLiteOk;
 }
 

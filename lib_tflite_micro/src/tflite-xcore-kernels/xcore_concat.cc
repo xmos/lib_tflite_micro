@@ -79,11 +79,12 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   const int32_t out_offsets2[4] = {oo02, oo02, oo02, op_data->out_offsets2[1]};
   const int32_t end1[5] = {1, 1, 1, op_data->end1[0], op_data->end1[1]};
   const int32_t end2[5] = {1, 1, 1, op_data->end2[0], op_data->end2[1]};
+  const int32_t begin1[5] = {0, 0, 0, 0, 0};
+  const int32_t begin2[5] = {0, 0, 0, 0, op_data->begin};
   slice_memcpy((int8_t *)in_data1, (int8_t *)out_data, in_offsets, out_offsets1,
-               (const int32_t[]){0, 0, 0, 0, 0}, end1, inv_memcpy_wrapper);
+               begin1, end1, inv_memcpy_wrapper);
   slice_memcpy((int8_t *)in_data2, (int8_t *)out_data, in_offsets, out_offsets2,
-               (const int32_t[]){0, 0, 0, 0, op_data->begin}, end2,
-               inv_memcpy_wrapper);
+               begin2, end2, inv_memcpy_wrapper);
   return kTfLiteOk;
 }
 

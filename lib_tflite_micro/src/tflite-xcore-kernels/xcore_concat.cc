@@ -2,6 +2,7 @@
 
 #include "xcore_custom_options.h"
 #include "xcore_utils.h"
+#include <iostream>
 #include <string.h>
 
 extern "C" {
@@ -18,12 +19,12 @@ namespace concat {
 // TODO: [michael p] Optimise this, don't need all those params
 struct ConcatOpData
     : XCoreOpData { // Inherits the operator name field from XCoreOpData
-  int32_t end1[5];
-  int32_t in_offsets[4];
-  int32_t out_offsets1[4];
-  int32_t end2[5];
-  int32_t out_offsets2[4];
   int32_t begin;
+  int32_t in_offsets[2];
+  int32_t out_offsets1[2];
+  int32_t out_offsets2[2];
+  int32_t end1[2];
+  int32_t end2[2];
 };
 
 void copy_vec(int32_t *dst, flexbuffers::Reference ref) {
@@ -42,11 +43,11 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   op_data->name = "XC_Concat";
   auto parser = CustomOptionParser(buffer, length);
   op_data->begin = parser.parseNamedCustomOption("b").AsInt32();
-  copy_vec(op_data->end1, parser.parseNamedCustomOption("e1"));
   copy_vec(op_data->in_offsets, parser.parseNamedCustomOption("i"));
   copy_vec(op_data->out_offsets1, parser.parseNamedCustomOption("o1"));
-  copy_vec(op_data->end2, parser.parseNamedCustomOption("e2"));
   copy_vec(op_data->out_offsets2, parser.parseNamedCustomOption("o2"));
+  copy_vec(op_data->end1, parser.parseNamedCustomOption("e1"));
+  copy_vec(op_data->end2, parser.parseNamedCustomOption("e2"));
   return op_data;
 }
 
@@ -70,12 +71,19 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   void *out_data = tflite::micro::GetTensorData<void>(output);
   // TODO [michael p]: Make this cleaner
   // Get size of output buffer
-  slice_memcpy((int8_t *)in_data1, (int8_t *)out_data, op_data->in_offsets,
-               op_data->out_offsets1, (int32_t[]){0, 0, 0, 0, 0}, op_data->end1,
+  const int32_t io0 = op_data->in_offsets[0];
+  const int32_t oo01 = op_data->out_offsets1[0];
+  const int32_t oo02 = op_data->out_offsets2[0];
+  const int32_t in_offsets[4] = {io0, io0, io0, op_data->in_offsets[1]};
+  const int32_t out_offsets1[4] = {oo01, oo01, oo01, op_data->out_offsets1[1]};
+  const int32_t out_offsets2[4] = {oo02, oo02, oo02, op_data->out_offsets2[1]};
+  const int32_t end1[5] = {1, 1, 1, op_data->end1[0], op_data->end1[1]};
+  const int32_t end2[5] = {1, 1, 1, op_data->end2[0], op_data->end2[1]};
+  slice_memcpy((int8_t *)in_data1, (int8_t *)out_data, in_offsets, out_offsets1,
+               (const int32_t[]){0, 0, 0, 0, 0}, end1, inv_memcpy_wrapper);
+  slice_memcpy((int8_t *)in_data2, (int8_t *)out_data, in_offsets, out_offsets2,
+               (const int32_t[]){0, 0, 0, 0, op_data->begin}, end2,
                inv_memcpy_wrapper);
-  slice_memcpy((int8_t *)in_data2, (int8_t *)out_data, op_data->in_offsets,
-               op_data->out_offsets2, (int32_t[]){0, 0, 0, 0, op_data->begin},
-               op_data->end2, inv_memcpy_wrapper);
   return kTfLiteOk;
 }
 

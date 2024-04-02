@@ -7,6 +7,7 @@
 extern "C" {
 #include "lib_nn/api/nn_operator.h"
 #include "nn_op_utils.h"
+#include "vpu_memmove_word_aligned.h"
 }
 
 namespace tflite {
@@ -25,6 +26,10 @@ struct ConcatOpData
 
 inline void memcpy_wrapper(void *dst, void *src, size_t size) {
   memcpy(dst, src, size);
+}
+
+inline void vpu_memcpy_wrapper(void *dst, void *src, size_t size) {
+  vpu_memmove_word_aligned(dst, src, size);
 }
 
 void *Init(TfLiteContext *context, const char *buffer, size_t length) {
@@ -56,10 +61,13 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   const void *in_data2 = tflite::micro::GetTensorData<void>(input2);
   void *out_data = tflite::micro::GetTensorData<void>(output);
   const int32_t offset = op_data->size1 + op_data->size2;
+  const bool is_vpu = op_data->size1 % 4 == 0 && op_data->size2 % 4 == 0;
   slice_memcpy_1d((int8_t *)out_data, (int8_t *)in_data1, op_data->size1,
-                  offset, op_data->num_copies, memcpy_wrapper);
+                  offset, op_data->num_copies,
+                  is_vpu ? vpu_memcpy_wrapper : memcpy_wrapper);
   slice_memcpy_1d((int8_t *)out_data + op_data->size1, (int8_t *)in_data2,
-                  op_data->size2, offset, op_data->num_copies, memcpy_wrapper);
+                  op_data->size2, offset, op_data->num_copies,
+                  is_vpu ? vpu_memcpy_wrapper : memcpy_wrapper);
   return kTfLiteOk;
 }
 

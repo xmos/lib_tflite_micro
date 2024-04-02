@@ -3,7 +3,6 @@
 #include "../thread_call.h"
 #include "xcore_common.h"
 #include "xcore_config.h"
-#include "xcore_custom_options.h"
 #include "xcore_utils.h"
 extern "C" {
 #include "lib_nn/api/nn_operator.h"
@@ -36,7 +35,8 @@ void lookup16_thread_worker(void *shared, void *start, void *end) {
   int *e = static_cast<int *>(end);
   auto sd = static_cast<LookupShared *>(shared);
   // output and input pointers are adjusted with thread start
-  quadratic_interpolation_128((int16_t*)sd->Y + *s, (int16_t*)sd->X + *s, sd->table, *e - *s);
+  quadratic_interpolation_128((int16_t *)sd->Y + *s, (int16_t *)sd->X + *s,
+                              sd->table, *e - *s);
 }
 }
 // This is the struct that contains the data required by the operator
@@ -93,23 +93,22 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   }
 
   thread_function_pointer_t fn;
-  switch(input->type) {
-    case kTfLiteInt8: {
-      fn = lookup8_thread_worker;
-      break;
-    }
-    case kTfLiteInt16: {
-      fn = lookup16_thread_worker;
-      break;
-    }
-    default: {
-      return kTfLiteError;
-    }
+  switch (input->type) {
+  case kTfLiteInt8: {
+    fn = lookup8_thread_worker;
+    break;
+  }
+  case kTfLiteInt16: {
+    fn = lookup16_thread_worker;
+    break;
+  }
+  default: {
+    return kTfLiteError;
+  }
   }
 
   thread_call((void *)&shared_data, &op_data->s[tc - 1], &op_data->e[tc - 1],
-              (thread_function_pointer_t)fn,
-              &xc_config->thread_info);
+              (thread_function_pointer_t)fn, &xc_config->thread_info);
   return kTfLiteOk;
 }
 
@@ -117,7 +116,7 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
 
 TFLMRegistration *Register_XC_lookup() {
   static TFLMRegistration r = {lookup::Init, nullptr, lookup::Prepare,
-                                    lookup::Eval};
+                               lookup::Eval};
   return &r;
 }
 

@@ -36,27 +36,37 @@ struct Blob_UnaryI16Shared {
 
 extern "C" {
 
-void xc_unaryi16_invoke(int32_t **tensor_descriptor, uint8_t *op_descriptor, int32_t *th_descriptor,
-                 int thread_num) {
-    int tc = th_descriptor[0];
-    if(thread_num >= tc)
-      return;
-
-    int16_t* in = (int16_t*)tensor_descriptor[0];
-    float* out = (float*)tensor_descriptor[1];
-    int *thread_data = (int*)(th_descriptor + 1);
+__attribute__((fptrgroup("invoke_group")))
+int32_t** xc_unaryi16_invoke(int32_t **tensor_descriptor, int32_t *th_descriptor) {
+    uint8_t* op_descriptor = (uint8_t*)tensor_descriptor[0];
     op_descriptor = op_descriptor + 4;
+    int16_t* in = (int16_t*)tensor_descriptor[1];
+    float* out = (float*)tensor_descriptor[2];
+    int *thread_data = (int*)(th_descriptor);
 
-    int th_start = thread_data[thread_num];
-    int th_count = thread_data[thread_num + tc];
+    int th_start = thread_data[0];
+    int th_count = thread_data[1];
+
+    // for(int i = 0; i < 5; i++) {
+    //   dequantize_int16_tensor(out + thread_data[2*i], in + thread_data[2*i], thread_data[2*i + 1], op_descriptor);
+    // }
+
+    printf("address of out = %p\n", out + th_start);
 
     dequantize_int16_tensor(out + th_start, in + th_start, th_count, op_descriptor);
+    // for (int i=0; i < 3; i++) {
+    // printf("%d, ", ((int16_t*)out)[i]);
+    // }
+    // printf("\n");
+
+    return tensor_descriptor + 3;
 }
 
 void blob_unaryi16_thread_worker(void *shared, void *start, void *count) {
   int *s = static_cast<int *>(start);
   int *c = static_cast<int *>(count);
   auto sd = static_cast<Blob_UnaryI16Shared *>(shared);
+
   sd->fn(sd->Y + (*s * sd->outputTypeMultiplier),
          sd->X + (*s * sd->inputTypeMultiplier), *c, sd->op_blob);
 }
@@ -87,8 +97,8 @@ TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
 
 TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   // Get Input/Output Tensors
-  const TfLiteEvalTensor *op_blob = tflite::micro::GetEvalInput(context, node, 0);
-  const TfLiteEvalTensor *th_blob = tflite::micro::GetEvalInput(context, node, 1);
+  const TfLiteEvalTensor *th_blob = tflite::micro::GetEvalInput(context, node, 0);
+  const TfLiteEvalTensor *op_blob = tflite::micro::GetEvalInput(context, node, 1);
   const TfLiteEvalTensor *input = tflite::micro::GetEvalInput(context, node, 2);
   TfLiteEvalTensor *output = tflite::micro::GetEvalOutput(context, node, 0);
 
@@ -103,8 +113,8 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
       micro_context->external_context());
   
   int op_type = op_blob_data[0]; 
-  int tc = th_blob_data[0];
-  int *thread_data = (int*)(th_blob_data + 1);
+  int tc = 5;
+  int *thread_data = (int*)(th_blob_data);
   
   Blob_UnaryI16Shared shared_data;
   shared_data.Y = out_data;
@@ -113,14 +123,28 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   shared_data.fn = fn_ptrs[op_type];
   shared_data.inputTypeMultiplier = op_type == Quantize_t ? 2 : 1;
   shared_data.outputTypeMultiplier = op_type == Dequantize_t ? 2 : 1;
-  for (int t = 0; t < tc - 1; t++) {
-    thread_variable_setup((void *)&thread_data[t], (void *)&thread_data[t + tc],
-                          xc_config->thread_info.thread_ids.id[t]);
+  // for (int t = 0; t < tc - 1; t++) {
+  //   thread_variable_setup((void *)&thread_data[2*t], (void *)&thread_data[2*t + 1],
+  //                         xc_config->thread_info.thread_ids.id[t]);
+  // }
+  // thread_call((void *)&shared_data, &thread_data[2 * (tc - 1)], &thread_data[2 * (tc - 1) + 1],
+  //             (thread_function_pointer_t)blob_unaryi16_thread_worker,
+  //             &xc_config->thread_info);
+
+  for(int i = 0; i < tc; i++) {
+
+          printf("address of out = %p, thread %d, address in %p, count %d \n", shared_data.Y + (thread_data[2 * i] * shared_data.outputTypeMultiplier), i, shared_data.X + (thread_data[2 * i] * shared_data.inputTypeMultiplier), thread_data[2 * i + 1]);
+
+      shared_data.fn(shared_data.Y + (thread_data[2 * i] * shared_data.outputTypeMultiplier),
+         shared_data.X + (thread_data[2 * i] * shared_data.inputTypeMultiplier), thread_data[2 * i + 1], shared_data.op_blob);
   }
-  thread_call((void *)&shared_data, &thread_data[tc - 1], &thread_data[tc - 1 + tc],
-              (thread_function_pointer_t)blob_unaryi16_thread_worker,
-              &xc_config->thread_info);
-  
+
+  // for (int i=0; i < 3; i++) {
+  //   printf("%d, ", ((int16_t*)out_data)[i]);
+  // }
+  // printf("\n");
+
+
   return kTfLiteOk;
 }
 

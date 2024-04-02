@@ -7,6 +7,7 @@
 extern "C" {
 #include "lib_nn/api/nn_operator.h"
 #include "nn_op_utils.h"
+#include "vpu_memmove_word_aligned.h"
 }
 
 namespace tflite {
@@ -32,6 +33,10 @@ void copy_vec(int32_t *dst, flexbuffers::Reference ref) {
 
 inline void inv_memcpy_wrapper(void *src, void *dst, size_t len) {
   memcpy(dst, src, len);
+}
+
+inline void inv_vpu_memcpy_wrapper(void *src, void *dst, size_t len) {
+  vpu_memmove_word_aligned(dst, src, len);
 }
 
 void *Init(TfLiteContext *context, const char *buffer, size_t length) {
@@ -67,9 +72,12 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
     out_size *= output->dims->data[i];
   }
   vpu_memset_32(out_data, 0, out_size / 4);
-  slice_memcpy((int8_t *)in_data, (int8_t *)out_data, op_data->in_offsets,
-               op_data->out_offsets, op_data->begin, op_data->end,
-               inv_memcpy_wrapper);
+  slice_memcpy(
+      (int8_t *)in_data, (int8_t *)out_data, op_data->in_offsets,
+      op_data->out_offsets, op_data->begin, op_data->end,
+      (op_data->in_offsets[3] % 4 == 0 && op_data->out_offsets[3] % 4 == 0)
+          ? inv_vpu_memcpy_wrapper
+          : inv_memcpy_wrapper);
   return kTfLiteOk;
 }
 

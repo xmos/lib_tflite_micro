@@ -3,6 +3,7 @@
 extern "C" {
 #include "nn_layers.h"
 #include "nn_op_utils.h"
+#include "vpu_memmove_word_aligned.h"
 }
 
 #include "xcore_custom_options.h"
@@ -45,6 +46,10 @@ inline void memcpy_wrapper(void *dst, void *src, size_t size) {
   memcpy(dst, src, size);
 }
 
+inline void vpu_memcpy_wrapper(void *dst, void *src, size_t size) {
+  vpu_memmove_word_aligned(dst, src, size);
+}
+
 // Does all the requests for scratches
 TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
   return kTfLiteOk;
@@ -77,9 +82,12 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   // Pointers to data in In/Out Tensors
   const void *in_data = tflite::micro::GetTensorData<void>(input);
   void *out_data = tflite::micro::GetTensorData<void>(output);
-  slice_memcpy((int8_t *)out_data, (int8_t *)in_data, op_data->in_offsets,
-               op_data->out_offsets, op_data->begin, op_data->end,
-               memcpy_wrapper);
+  slice_memcpy(
+      (int8_t *)out_data, (int8_t *)in_data, op_data->in_offsets,
+      op_data->out_offsets, op_data->begin, op_data->end,
+      (op_data->in_offsets[3] % 4 == 0 && op_data->out_offsets[3] % 4 == 0)
+          ? vpu_memcpy_wrapper
+          : memcpy_wrapper);
   return kTfLiteOk;
 }
 

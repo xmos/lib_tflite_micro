@@ -71,7 +71,8 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   for (int i = 0; i < output->dims->size; i++) {
     out_size *= output->dims->data[i];
   }
-  vpu_memset_32(out_data, 0, out_size / 4);
+  // vpu_memset_32(out_data, 0, out_size / 4);
+  memset(out_data, 0, out_size);
   slice_memcpy(
       (int8_t *)in_data, (int8_t *)out_data, op_data->in_offsets,
       op_data->out_offsets, op_data->begin, op_data->end,

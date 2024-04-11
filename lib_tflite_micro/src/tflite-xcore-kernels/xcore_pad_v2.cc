@@ -6,8 +6,8 @@
 
 extern "C" {
 #include "lib_nn/api/nn_operator.h"
-#include "nn_op_utils.h"
 #include "vpu_memmove_word_aligned.h"
+#include "vpu_memset_256.h"
 }
 
 namespace tflite {
@@ -72,7 +72,9 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
     out_size *= output->dims->data[i];
   }
   // vpu_memset_32(out_data, 0, out_size / 4);
-  memset(out_data, 0, out_size);
+  uint8_t from[32];
+  broadcast_32_to_256(from, 0);
+  vpu_memset_256(out_data, from, out_size);
   slice_memcpy(
       (int8_t *)in_data, (int8_t *)out_data, op_data->in_offsets,
       op_data->out_offsets, op_data->begin, op_data->end,

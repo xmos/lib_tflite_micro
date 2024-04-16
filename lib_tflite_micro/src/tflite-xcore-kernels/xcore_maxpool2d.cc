@@ -50,9 +50,6 @@ void maxpool2d_thread_worker(void *shard, void *scrtch, void *kp) {
  *
  */
 struct MaxPool2DThreadInfo {
-  size_t scratch_size;     // Each thread needs a scratch
-  int stack_scratch_index; // All threads stack and scratch consolidated into a
-                           // single scratch buffer
   nn::abstract_kernel_params_t *kparams;
 };
 
@@ -64,6 +61,7 @@ struct MaxPool2DThreadInfo {
 struct MaxPool2DOpData
     : XCoreOpData { // Inherits the operator name field from XCoreOpData
   size_t thread_count;
+  size_t scratch_size;
   MaxPool2DThreadInfo *threads;
   nn::conv_params_t maxpool_params; // The job to be done by this thread
 };
@@ -84,7 +82,7 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
       parser.parseNamedCustomOption("a").AsBlob().data();
   const uint8_t *ot_fn_data =
       parser.parseNamedCustomOption("o").AsBlob().data();
-  int32_t scratch_size = parser.parseNamedCustomOption("s").AsInt32();
+  op_data->scratch_size = parser.parseNamedCustomOption("s").AsInt32();
   auto ak_params_vec = parser.parseNamedCustomOption("p").AsVector();
 
   auto thread_count = ak_params_vec.size();
@@ -93,7 +91,6 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
       static_cast<MaxPool2DThreadInfo *>(context->AllocatePersistentBuffer(
           context, thread_count * sizeof(MaxPool2DThreadInfo)));
   for (int t = 0; t < thread_count; ++t) {
-    op_data->threads[t].scratch_size = scratch_size;
     op_data->threads[t].kparams =
         getDeserializedParams<nn::abstract_kernel_params_t>(
             ak_params_vec[t].AsBlob().data());
@@ -119,22 +116,18 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
 }
 
 TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
-  auto *op_data = reinterpret_cast<MaxPool2DOpData *>(node->user_data);
-  for (int t = 0; t < op_data->thread_count; ++t) {
-    if (op_data->threads[t].scratch_size) {
-      TF_LITE_ENSURE_STATUS(context->RequestScratchBufferInArena(
-          context, op_data->threads[t].scratch_size,
-          &op_data->threads[t].stack_scratch_index));
-    }
-  }
   return kTfLiteOk;
 }
 
 TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   const TfLiteEvalTensor *input = tflite::micro::GetEvalInput(context, node, 0);
+  const TfLiteEvalTensor *scratch_buffer_tensor =
+      tflite::micro::GetEvalInput(context, node, 1);
+  int8_t *scratch_buffer = nullptr;
+  if (scratch_buffer_tensor) {
+    scratch_buffer = const_cast<int8_t *>(tflite::micro::GetTensorData<int8_t>(scratch_buffer_tensor));
+  }
   TfLiteEvalTensor *output = tflite::micro::GetEvalOutput(context, node, 0);
-  const TfLiteEvalTensor *multipliers_and_biases_tensor =
-      tflite::micro::GetEvalInput(context, node, 2);
 
   MicroContext *micro_context = GetMicroContext(context);
   xc_context_config_t *xc_config = reinterpret_cast<xc_context_config_t *>(
@@ -148,10 +141,9 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   shared_data.X = (int8_t *)tflite::micro::GetTensorData<int8_t>(input);
   shared_data.Y = (int8_t *)tflite::micro::GetTensorData<int8_t>(output);
   shared_data.conv_params = &op_data->maxpool_params;
-  for (int t = 0; t < n_threads; ++t) {
-    if (op_data->threads[t].scratch_size) {
-      thread_scratch[t] = (int8_t *)context->GetScratchBuffer(
-          context, op_data->threads[t].stack_scratch_index);
+  if (op_data->scratch_size) {
+    for (int t = 0; t < n_threads; ++t) {
+        thread_scratch[t] = (int8_t *)&scratch_buffer[t * op_data->scratch_size];
     }
   }
 

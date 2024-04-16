@@ -16,21 +16,12 @@ namespace micro {
 namespace xcore {
 namespace concat {
 
-// TODO: [michael p] Optimise this, don't need all those params
 struct ConcatOpData
     : XCoreOpData { // Inherits the operator name field from XCoreOpData
   int32_t num_copies;
   int32_t size1;
   int32_t size2;
 };
-
-inline void memcpy_wrapper(void *dst, void *src, size_t size) {
-  memcpy(dst, src, size);
-}
-
-inline void vpu_memcpy_wrapper(void *dst, void *src, size_t size) {
-  vpu_memmove_word_aligned(dst, src, size);
-}
 
 void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   auto op_data = construct_persistent_object<ConcatOpData>(context);
@@ -50,24 +41,25 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   TFLITE_DCHECK(node->user_data != nullptr);
 
   auto *op_data = static_cast<ConcatOpData *>(node->user_data);
-  // Get Input/Output Tensors
   const TfLiteEvalTensor *input1 =
       tflite::micro::GetEvalInput(context, node, 0);
   const TfLiteEvalTensor *input2 =
       tflite::micro::GetEvalInput(context, node, 1);
   TfLiteEvalTensor *output = tflite::micro::GetEvalOutput(context, node, 0);
   // Pointers to data in In/Out Tensors
-  const void *in_data1 = tflite::micro::GetTensorData<void>(input1);
-  const void *in_data2 = tflite::micro::GetTensorData<void>(input2);
-  void *out_data = tflite::micro::GetTensorData<void>(output);
-  const int32_t offset = op_data->size1 + op_data->size2;
-  const bool is_vpu = op_data->size1 % 4 == 0 && op_data->size2 % 4 == 0;
-  slice_memcpy_1d((int8_t *)out_data, (int8_t *)in_data1, op_data->size1,
-                  offset, op_data->num_copies,
-                  is_vpu ? vpu_memcpy_wrapper : memcpy_wrapper);
-  slice_memcpy_1d((int8_t *)out_data + op_data->size1, (int8_t *)in_data2,
-                  op_data->size2, offset, op_data->num_copies,
-                  is_vpu ? vpu_memcpy_wrapper : memcpy_wrapper);
+  const int8_t *in_data1 = tflite::micro::GetTensorData<int8_t>(input1);
+  const int8_t *in_data2 = tflite::micro::GetTensorData<int8_t>(input2);
+  int8_t *out_data = tflite::micro::GetTensorData<int8_t>(output);
+  const int size1 = op_data->size1;
+  const int size2 = op_data->size2;
+  for (int i = 0; i < op_data->num_copies; i++) {
+    vpu_memmove_word_aligned(out_data, in_data1, size1);
+    out_data += size1;
+    in_data1 += size1;
+    vpu_memmove_word_aligned(out_data, in_data2, size2);
+    out_data += size2;
+    in_data2 += size2;
+  }
   return kTfLiteOk;
 }
 

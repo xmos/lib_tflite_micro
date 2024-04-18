@@ -5,7 +5,6 @@
 #include <string.h>
 
 extern "C" {
-#include "lib_nn/api/nn_operator.h"
 #include "vpu_memmove_word_aligned.h"
 #include "vpu_memset_256.h"
 }

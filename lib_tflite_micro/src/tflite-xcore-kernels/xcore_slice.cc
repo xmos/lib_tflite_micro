@@ -1,8 +1,6 @@
 // Copyright (c) 2023, XMOS Ltd, All rights reserved
 
 extern "C" {
-#include "nn_layers.h"
-#include "nn_op_utils.h"
 #include "vpu_memmove_word_aligned.h"
 }
 

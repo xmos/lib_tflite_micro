@@ -8,6 +8,8 @@ extern "C" {
 #include "vpu_memmove_word_aligned.h"
 }
 
+constexpr int kMaxNumInputs = 13;
+
 namespace tflite {
 namespace ops {
 namespace micro {
@@ -21,7 +23,7 @@ using tflite::micro::GetTensorData;
 struct ConcatOpData
     : XCoreOpData { // Inherits the operator name field from XCoreOpData
   int32_t num_copies;
-  int32_t sizes[16];
+  int32_t sizes[kMaxNumInputs];
   int32_t num_inputs;
   void (*func_ptr)(void *, const void *, unsigned);
 };
@@ -37,7 +39,7 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   op_data->num_copies = parser.parseNamedCustomOption("n").AsInt32();
   op_data->num_inputs = parser.parseNamedCustomOption("i").AsInt32();
   auto sizes = parser.parseNamedCustomOption("s").AsVector();
-  TFLITE_DCHECK(sizes.size() <= 16);
+  TFLITE_DCHECK(sizes.size() <= kMaxNumInputs);
   for (int i = 0; i < sizes.size(); i++) {
     op_data->sizes[i] = sizes[i].AsInt32();
   }
@@ -54,7 +56,7 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   TFLITE_DCHECK(node->user_data != nullptr);
 
   auto *op_data = static_cast<ConcatOpData *>(node->user_data);
-  const int8_t *inputs[16];
+  const int8_t *inputs[kMaxNumInputs];
   for (int i = 0; i < op_data->num_inputs; i++)
     inputs[i] = GetTensorData<int8_t>(GetEvalInput(context, node, i));
 

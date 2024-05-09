@@ -1,7 +1,5 @@
 // Copyright (c) 2023, XMOS Ltd, All rights reserved
 
-#include "tensorflow/lite/kernels/internal/reference/broadcast_to.h"
-
 #include "../thread_call.h"
 #include "xcore_common.h"
 #include "xcore_config.h"
@@ -89,28 +87,6 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   int16_t *out_data = tflite::micro::GetTensorData<int16_t>(output);
 
   int output_size = tflite::micro::GetTensorShape(output).FlatSize();
-  int x1_size = tflite::micro::GetTensorShape(input1).FlatSize();
-  int x2_size = tflite::micro::GetTensorShape(input2).FlatSize();
-
-  if (x2_size < x1_size) {
-    // Broadcast input2 into the output
-    // We can then add input1 and output to get actual output
-    assert(x1_size == output_size);
-    tflite::reference_ops::BroadcastTo<5>(
-        tflite::micro::GetTensorShape(input2), input2->data.raw,
-        tflite::micro::GetTensorShape(output), output->data.raw, input2->type);
-
-    in2_data = out_data;
-  } else if (x1_size < x2_size) {
-    // Broadcast input1 into the output
-    // We can then add input2 and output to get actual output
-    assert(x2_size == output_size);
-    tflite::reference_ops::BroadcastTo<5>(
-        tflite::micro::GetTensorShape(input1), input1->data.raw,
-        tflite::micro::GetTensorShape(output), output->data.raw, input1->type);
-
-    in1_data = out_data;
-  }
 
   MicroContext *micro_context = GetMicroContext(context);
   xc_context_config_t *xc_config = reinterpret_cast<xc_context_config_t *>(

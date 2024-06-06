@@ -272,6 +272,21 @@ index 2ec3a1bf..2a724f61 100644
    }
  
    micro_context->DeallocateTempTfLiteTensor(input);
+diff --git a/tensorflow/lite/micro/kernels/broadcast_to.cc b/tensorflow/lite/micro/kernels/broadcast_to.cc
+index 61deaa31..078cd778 100644
+--- a/tensorflow/lite/micro/kernels/broadcast_to.cc
++++ b/tensorflow/lite/micro/kernels/broadcast_to.cc
+@@ -66,9 +66,8 @@ TfLiteStatus ValidateOutputTensor(TfLiteContext* context, TfLiteTensor* input,
+   }
+ 
+   // Validating the shape of the output tensor.
+-  tflite::RuntimeShape output_shape = tflite::GetTensorShape(output);
+   for (int idx = 0; idx < output_num_dims; ++idx) {
+-    TF_LITE_ENSURE(context, output_shape.Dims(idx) == get_shape_data(idx));
++    TF_LITE_ENSURE(context, SizeOfDimension(output, idx) == get_shape_data(idx));
+   }
+   return kTfLiteOk;
+ }
 diff --git a/tensorflow/lite/micro/kernels/concatenation.cc b/tensorflow/lite/micro/kernels/concatenation.cc
 index b4a838f7..e9f0381e 100644
 --- a/tensorflow/lite/micro/kernels/concatenation.cc

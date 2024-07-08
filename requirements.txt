@@ -1,4 +1,4 @@
-# python_version 3.7.6
+# python_version 3.12
 numpy>=1.20
 opencv-python>=4.4
 flatbuffers<2.0,>=1.12

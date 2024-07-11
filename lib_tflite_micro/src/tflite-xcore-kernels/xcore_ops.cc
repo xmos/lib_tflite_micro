@@ -34,6 +34,7 @@ void RegisterXCOps(MicroOpResolver *res) {
   resolver->AddCustom(XC_conv2d_v2_OpCode, Register_XC_conv2d_v2());
   resolver->AddCustom(XC_maxpool2d_OpCode, Register_XC_maxpool2d());
   resolver->AddCustom(XC_softmax_OpCode, Register_XC_softmax());
+  resolver->AddCustom(XC_batched_softmax_OpCode, Register_XC_batched_softmax());
   resolver->AddCustom(XC_add_OpCode, Register_XC_add());
   resolver->AddCustom(XC_slice_OpCode, Register_XC_slice());
   resolver->AddCustom(XC_broadcast_OpCode, Register_XC_broadcast());

@@ -49,7 +49,13 @@ class Compiler {
   std::string getTensorName(int tensorIndex, int sg) const;
 
   // Returns tensor arena size
-  size_t getTensorArenaSize() const { return arenaBufferSize_; }
+  size_t getTensorArenaSize() const { return persistentArenaSize_ + nonPersistentArenaSize_; }
+
+  // Returns persistent arena size
+  size_t getPersistentArenaSize() const { return persistentArenaSize_; }
+
+  // Returns non-persistent arena size
+  size_t getNonPersistentArenaSize() const { return nonPersistentArenaSize_; }
 
  private:
   bool init(const void *modelData);
@@ -105,7 +111,8 @@ class Compiler {
   std::unique_ptr<tflite::MicroInterpreter> interpreter_;
   MemMap memMap_;
 
-  size_t arenaBufferSize_ = 0;
+  size_t persistentArenaSize_ = 0;
+  size_t nonPersistentArenaSize_ = 0;
   size_t varTensors_count = 0;
   // Vector of vector is for subgraphs
   std::vector<std::vector<TensorInfo>> tensors_;

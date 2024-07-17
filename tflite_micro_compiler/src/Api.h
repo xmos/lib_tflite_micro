@@ -27,6 +27,12 @@ class TFLMC_Compiler {
   // Returns tensor arena size
   size_t getTensorArenaSize() const;
 
+  // Returns non-persistent tensor arena size
+  size_t TFLMC_Compiler::getNonPersistentTensorArenaSize() const;
+
+  // Returns persistent tensor arena size
+  size_t TFLMC_Compiler::getPersistentTensorArenaSize() const;
+
  private:
   Compiler *compiler_;
 };

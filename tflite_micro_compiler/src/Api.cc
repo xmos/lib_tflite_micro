@@ -30,14 +30,14 @@ size_t TFLMC_Compiler::getTensorArenaSize() const {
   return compiler_->getTensorArenaSize();
 }
 
-// Returns non-persistent tensor arena size
-size_t TFLMC_Compiler::getNonPersistentTensorArenaSize() const {
-  return compiler_->getNonPersistentTensorArenaSize();
+// Returns non-persistent arena size
+size_t TFLMC_Compiler::getNonPersistentArenaSize() const {
+  return compiler_->getNonPersistentArenaSize();
 }
 
-// Returns persistent tensor arena size
-size_t TFLMC_Compiler::getPersistentTensorArenaSize() const {
-  return compiler_->getPersistentTensorArenaSize();
+// Returns persistent arena size
+size_t TFLMC_Compiler::getPersistentArenaSize() const {
+  return compiler_->getPersistentArenaSize();
 }
 
 }  // namespace tflmc

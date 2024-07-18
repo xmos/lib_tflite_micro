@@ -551,8 +551,6 @@ constexpr int kTensorArenaSize = )"
      << persistentArenaSize_ + nonPersistentArenaSize_ << R"(;
 constexpr int kPersistentTensorArenaSize = )"
      << persistentArenaSize_ << R"(;
-constexpr int kNonPersistentTensorArenaSize = )"
-     << nonPersistentArenaSize_ << R"(;
 
 #ifdef EXTERN_TENSOR_ARENA
 

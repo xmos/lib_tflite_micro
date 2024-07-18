@@ -549,12 +549,12 @@ namespace xcore {
 
 constexpr int kTensorArenaSize = )"
      << persistentArenaSize_ + nonPersistentArenaSize_ << R"(;
-constexpr int kPersistentTensorArenaSize = )"
-     << persistentArenaSize_ << R"(;
 
 #ifdef EXTERN_TENSOR_ARENA
 
 #ifdef SPLIT_PERSISTENT_TENSOR_ARENA
+constexpr int kPersistentTensorArenaSize = )"
+     << persistentArenaSize_ << R"(;
 extern uint8_t persistent_tensor_arena[];
 #endif // SPLIT_PERSISTENT_TENSOR_ARENA
 

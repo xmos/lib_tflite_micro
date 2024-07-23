@@ -41,8 +41,6 @@ static int data_offset;
 // 5            60MHz     80MHz
 // 6            50MHz     66MHz
 
-#define CLK_DIVIDE 3
-
 extern unsigned int fl_getDataPartitionBase(void);
 
 // Address in Flash where the training pattern starts
@@ -51,11 +49,15 @@ extern unsigned int fl_getDataPartitionBase(void);
 
 extern void fast_read_loop(fl_QSPIPorts &qspi, unsigned addr, unsigned mode, unsigned read_adj, unsigned read_count, unsigned read_data[], chanend ?c_data_out);
 
+static int clk_divider;
+
 static void ports_clocks_setup(fl_QSPIPorts &qspi)
 {
-  
-    // Define a clock source - core clock divided by (2*CLK_DIVIDE)
-    configure_clock_xcore(qspi.qspiClkblk, CLK_DIVIDE);
+    int ref_clk_div;
+    sswitch_read_reg(tile[0], XS1_SSWITCH_REF_CLK_DIVIDER_NUM, &ref_clk_div);
+    clk_divider = (ref_clk_div + 1)/2;
+    // Define a clock source - core clock divided by (2*clk_divider)
+    configure_clock_xcore(qspi.qspiClkblk, clk_divider);
     
     // For experimentation only do not use.
     //set_clock_fall_delay(qspi.qspiClkblk, 1);
@@ -102,7 +104,7 @@ int fast_flash_init(fl_QSPIPorts &qspi) {
     // Declare the results as an array of 36 (max) chars.
     // Bit 0 sdelay, bits 1-2 read adj, bits 3-5 pad delay, bit 7 is pass/fail.
     // the index into the array becomes the nominal time.
-    char results[6*CLK_DIVIDE];
+    char results[6*4];  // clk_divider is at most 4
     
     // So, lets run the testing and collect pass/fail results.
     // Keep an index of the time we are looping across.
@@ -120,7 +122,7 @@ int fast_flash_init(fl_QSPIPorts &qspi) {
             } else {
                 set_port_no_sample_delay(qspi.qspiSIO);
             }
-            for(int pad_delay = (CLK_DIVIDE - 1); pad_delay >= 0; pad_delay--) // Pad delays (only loop over useful pad delays)
+            for(int pad_delay = (clk_divider - 1); pad_delay >= 0; pad_delay--) // Pad delays (only loop over useful pad delays)
             {
                 // Set input pad delay in units of core clocks
                 set_pad_delay(qspi.qspiSIO, pad_delay);

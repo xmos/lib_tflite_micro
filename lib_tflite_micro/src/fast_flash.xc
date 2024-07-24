@@ -50,11 +50,12 @@ extern unsigned int fl_getDataPartitionBase(void);
 extern void fast_read_loop(fl_QSPIPorts &qspi, unsigned addr, unsigned mode, unsigned read_adj, unsigned read_count, unsigned read_data[], chanend ?c_data_out);
 
 static int clk_divider;
+extern tileref tile[];
 
 static void ports_clocks_setup(fl_QSPIPorts &qspi)
 {
-    int ref_clk_div;
-    sswitch_read_reg(tile[0], XS1_SSWITCH_REF_CLK_DIVIDER_NUM, &ref_clk_div);
+    unsigned int ref_clk_div;
+    read_sswitch_reg(get_tile_id(tile[0]), XS1_SSWITCH_REF_CLK_DIVIDER_NUM, ref_clk_div);
     clk_divider = (ref_clk_div + 1)/2;
     // Define a clock source - core clock divided by (2*clk_divider)
     configure_clock_xcore(qspi.qspiClkblk, clk_divider);

@@ -175,17 +175,17 @@ void inference_engine_unload_model(inference_engine_t *UNSAFE ie);
  * \param ie           pointer to inference engine.
  * \param model_bytes  Number of bytes in the model
  * \param model_data   Pointer to the model (one of data_model or
- * data_tensor_arena passed above) \param c_flash      Optional channel to flash
- * server, to be used for fetching parameter blocks
+ * data_tensor_arena passed above) \param c_flash_or_tile      Optional channel to flash
+ * or tile server
  *
  * \returns            non zero indicates an error
  */
 #ifdef __XC__
-    int inference_engine_load_model(inference_engine_t * UNSAFE ie, uint32_t model_bytes, uint32_t * UNSAFE model_data, chanend ?c_flash);
+    int inference_engine_load_model(inference_engine_t * UNSAFE ie, uint32_t model_bytes, uint32_t * UNSAFE model_data, chanend ?c_flash_or_tile);
 #else
 int inference_engine_load_model(inference_engine_t *UNSAFE ie,
                                 uint32_t model_bytes,
-                                uint32_t *UNSAFE model_data, void *flash_data);
+                                uint32_t *UNSAFE model_data, void *weights_data_ptr);
 #endif
 
     /** Function that invokes the inference engine. This function will create an

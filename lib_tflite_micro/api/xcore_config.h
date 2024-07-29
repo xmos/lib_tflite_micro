@@ -11,7 +11,7 @@ struct xc_context_config_t {
   // calculated in the compiler.
   int model_thread_count;
   thread_info_t thread_info;
-  void *UNSAFE flash_data; // channel to flash reader.
+  void *UNSAFE weights_data_ptr; // DDR ptr or channel to flash/tile server.
 };
 
 #endif // XCORE_CONFIG_H_

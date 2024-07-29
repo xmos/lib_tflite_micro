@@ -1041,13 +1041,13 @@ TfLiteTensor* )"
 
 #pragma stackfunction 1000
 TfLiteStatus )"
-     << prefix_ << R"(init(void *flash_data) {
+     << prefix_ << R"(init(void *weights_data_ptr) {
   // Clear and initialize
   scratch_buffer_idx = 0;
   persistentBufferPtr = tensor_arena + kTensorArenaSize;
 
-  // Set flash data in xcore context config
-  xc_config.flash_data = flash_data;
+  // Set weights data ptr in xcore context config
+  xc_config.weights_data_ptr = weights_data_ptr;
   // Set thread count specified in the compiler
   xc_config.model_thread_count = )"
      << numXCThreads_ << R"(;
@@ -1360,7 +1360,7 @@ void tflmc::Compiler::writeHeader(std::ostream &out) {
 #endif
 
 // Sets up the model with init and prepare steps.
-TfLiteStatus %PREFIX%init(void *flash_data);
+TfLiteStatus %PREFIX%init(void *weights_data_ptr);
 // Returns the input tensor with the given index.
 TfLiteTensor *%PREFIX%input(int index);
 // Returns the output tensor with the given index.

@@ -39,7 +39,7 @@ void inference_engine_unload_model(inference_engine *ie) {
 }
 
 int inference_engine_load_model(inference_engine *ie, uint32_t model_bytes,
-                                uint32_t *model_data, void *flash_data) {
+                                uint32_t *model_data, void *weights_data_ptr) {
 
   if (ie->xtflm->interpreter) {
     TF_LITE_REPORT_ERROR(&ie->xtflm->error_reporter, "Model not unloaded");
@@ -145,7 +145,7 @@ int inference_engine_load_model(inference_engine *ie, uint32_t model_bytes,
       (uint8_t *)ie->xtflm->interpreter_buffer, ie->xtflm->model,
       ie->xtflm->resolver, kTensorArena, kTensorArenaSize, true, &ie->xtflm->xcore_profiler);
   ie->xc_config.model_thread_count = ie->num_threads;
-  ie->xc_config.flash_data = flash_data;
+  ie->xc_config.weights_data_ptr = weights_data_ptr;
   ie->xc_config.thread_info.nstackwords = stackWordsPerThread;
   ie->xc_config.thread_info.stacks = (void *)sp;
   TfLiteStatus set_external_context_status =

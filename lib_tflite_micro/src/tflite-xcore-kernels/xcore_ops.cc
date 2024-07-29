@@ -38,7 +38,7 @@ void RegisterXCOps(MicroOpResolver *res) {
   resolver->AddCustom(XC_add_OpCode, Register_XC_add());
   resolver->AddCustom(XC_slice_OpCode, Register_XC_slice());
   resolver->AddCustom(XC_broadcast_OpCode, Register_XC_broadcast());
-  resolver->AddCustom(XC_ld_flash_OpCode, Register_XC_ld_flash());
+  resolver->AddCustom(XC_ld_weights_OpCode, Register_XC_ld_weights());
   resolver->AddCustom(XC_bsign_8_OpCode, Register_XC_bsign_8());
   resolver->AddCustom(XC_lookup_OpCode, Register_XC_lookup());
   resolver->AddCustom(XC_pad_OpCode, Register_XC_pad());

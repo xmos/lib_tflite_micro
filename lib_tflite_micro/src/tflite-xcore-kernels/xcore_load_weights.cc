@@ -94,13 +94,13 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
     // Parallel mode is for reading weights from another tile
     int use_parallel_mode = chan_in_word(c_flash_or_tile);
     if (!use_parallel_mode) {
-      chan_out_word(c_flash_or_tile_or_tile, op_data->addr);
+      chan_out_word(c_flash_or_tile, op_data->addr);
 
       int32_t total_size = 0;
       for (int i = 0; i < node->outputs->size; ++i) {
         total_size += op_data->sizes[i];
       }
-      chan_out_word(c_flash_or_tile_or_tile, total_size);
+      chan_out_word(c_flash_or_tile, total_size);
 
       for (int i = 0; i < node->outputs->size; ++i) {
         data_ptr = data_ptrs[i];

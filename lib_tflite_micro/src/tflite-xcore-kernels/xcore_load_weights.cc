@@ -87,20 +87,20 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
       data_ptrs[i] = tflite::micro::GetTensorData<int8_t>(output);
     }
 
-    chanend_t c_flash = (chanend_t) static_cast<int>(
+    chanend_t c_flash_or_tile = (chanend_t) static_cast<int>(
         reinterpret_cast<intptr_t>(xc_config->weights_data_ptr));
-    chan_out_word(c_flash, 0); // TODO: share with aiserver.
+    chan_out_word(c_flash_or_tile, 0); // TODO: share with aiserver.
 
     // Parallel mode is for reading weights from another tile
-    int use_parallel_mode = chan_in_word(c_flash);
+    int use_parallel_mode = chan_in_word(c_flash_or_tile);
     if (!use_parallel_mode) {
-      chan_out_word(c_flash, op_data->addr);
+      chan_out_word(c_flash_or_tile_or_tile, op_data->addr);
 
       int32_t total_size = 0;
       for (int i = 0; i < node->outputs->size; ++i) {
         total_size += op_data->sizes[i];
       }
-      chan_out_word(c_flash, total_size);
+      chan_out_word(c_flash_or_tile_or_tile, total_size);
 
       for (int i = 0; i < node->outputs->size; ++i) {
         data_ptr = data_ptrs[i];
@@ -113,28 +113,28 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
           // avoid handshake.
           // Adding something like a printf() within this loop
           // might slow it down enough to corrupt the received data.
-          ((uint32_t *)data_ptr)[j] = chanend_in_word(c_flash);
+          ((uint32_t *)data_ptr)[j] = chanend_in_word(c_flash_or_tile);
         }
       }
       // As there is no handshake, we have to accept the end token
       // to close the chanend
-      chanend_check_end_token(c_flash);
+      chanend_check_end_token(c_flash_or_tile);
     } else {
       // The parallel mode uses four threads and can only work if
       // the model has been compiled with at least four threads.
       assert(xc_config->model_thread_count >= 4 &&
              "At least four threads are required for parallel read from "
              "another tile!");
-      chan_out_word(c_flash, op_data->addr);
-      chan_out_word(c_flash, op_data->sizes[0]);
-      memory_parallel_receive_thread_call(c_flash, (uint32_t *)data_ptrs[0],
+      chan_out_word(c_flash_or_tile, op_data->addr);
+      chan_out_word(c_flash_or_tile, op_data->sizes[0]);
+      memory_parallel_receive_thread_call(c_flash_or_tile, (uint32_t *)data_ptrs[0],
                                           op_data->sizes[0], tif);
       for (int i = 1; i < node->outputs->size; ++i) {
-        chan_out_word(c_flash, 0);
-        chan_in_word(c_flash);
-        chan_out_word(c_flash, op_data->addr + op_data->sizes[i - 1]);
-        chan_out_word(c_flash, op_data->sizes[i]);
-        memory_parallel_receive_thread_call(c_flash, (uint32_t *)data_ptrs[i],
+        chan_out_word(c_flash_or_tile, 0);
+        chan_in_word(c_flash_or_tile);
+        chan_out_word(c_flash_or_tile, op_data->addr + op_data->sizes[i - 1]);
+        chan_out_word(c_flash_or_tile, op_data->sizes[i]);
+        memory_parallel_receive_thread_call(c_flash_or_tile, (uint32_t *)data_ptrs[i],
                                             op_data->sizes[i], tif);
       }
     }

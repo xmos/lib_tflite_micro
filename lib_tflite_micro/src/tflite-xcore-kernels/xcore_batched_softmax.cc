@@ -55,8 +55,9 @@ TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
   xc_context_config_t *xc_config = reinterpret_cast<xc_context_config_t *>(
       micro_context->external_context());
   const TfLiteEvalTensor *input = tflite::micro::GetEvalInput(context, node, 0);
-  const int num_softmaxes = tflite::micro::GetTensorShape(input).Dims(0);
-  op_data->softmax_size = tflite::micro::GetTensorShape(input).Dims(1);
+  const int trailing_dim = tflite::micro::GetTensorShape(input).DimensionsCount() - 1;
+  const int num_softmaxes = tflite::micro::GetTensorShape(input).Dims(trailing_dim - 1);
+  op_data->softmax_size = tflite::micro::GetTensorShape(input).Dims(trailing_dim);
   op_data->tc = xc_config->model_thread_count;
   int starts[XCORE_MAX_NUM_THREADS];
   int ends[XCORE_MAX_NUM_THREADS];

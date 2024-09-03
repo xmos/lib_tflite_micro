@@ -1194,7 +1194,7 @@ TfLiteStatus )"
   currentSubgraphIndex = 0;
 
 #ifdef TFLMC_XCORE_PROFILE
-  printf("\nCumulative times for prepare()...");
+  printf("\nCumulative times for prepare()...\n");
   for (int i = 0; i < OP_LAST; i++) {
     op_times_summed += op_times[i];
     printf("%-32s %-12d %.2fms\n", op_strs[i], op_times[i], op_times[i]/100000.0);

@@ -1015,6 +1015,10 @@ printf("[\n");
 #endif
 
     if (status != kTfLiteOk) {
+#ifdef TFLMC_XCORE_PROFILE
+      printf("ERROR: Node %d (%s) invocation failed with status %d\n", i, op_strs[used_ops[i]], status);
+      printf("Model invocation aborted\n\n");
+#endif
       currentSubgraphIndex = prevSubgraphIndex;
       return status;
     }
@@ -1215,7 +1219,10 @@ TfLiteStatus )"
   op_times_summed = 0;
 #endif
 
-  mg_InvokeSubgraph(0);
+  TfLiteStatus status = mg_InvokeSubgraph(0);
+  if (status != kTfLiteOk) {
+    return status;
+  }
 
   thread_destroy(&xc_config.thread_info);
 )";

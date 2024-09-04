@@ -974,19 +974,28 @@ printf("[\n");
 
 #ifdef TFLMC_XCORE_PROFILE
 #ifdef __xcore__
-  asm volatile ("gettime %0" : "=r" (time_t0));
+    asm volatile ("gettime %0" : "=r" (time_t0));
 #endif
 #endif
 
     TfLiteStatus status = registrations[used_ops[i]].invoke(&ctx, &tflNodes[i]);
 
+    if (status != kTfLiteOk) {
+#ifdef TFLMC_XCORE_PROFILE
+      printf("\nERROR: Node %d (%s) invocation failed with status %d\n", i, op_strs[used_ops[i]], status);
+      printf("Model invocation aborted\n\n");
+#endif
+      currentSubgraphIndex = prevSubgraphIndex;
+      return status;
+    }
+
 #ifdef TFLMC_XCORE_PROFILE
 #ifdef __xcore__
-  asm volatile ("gettime %0" : "=r" (time_t1));
+    asm volatile ("gettime %0" : "=r" (time_t1));
 #endif
-  op_times[used_ops[i]] += time_t1 - time_t0;
-  op_counts[used_ops[i]] += 1;
-  printf("node %-5d %-32s %-12d\n", i, op_strs[used_ops[i]], time_t1 - time_t0);
+    op_times[used_ops[i]] += time_t1 - time_t0;
+    op_counts[used_ops[i]] += 1;
+    printf("node %-5d %-32s %-12d\n", i, op_strs[used_ops[i]], time_t1 - time_t0);
 #endif
 
 #ifdef TFLMC_PRINT_TENSORS
@@ -1014,15 +1023,6 @@ printf("[\n");
       printf("}\n");
     }
 #endif
-
-    if (status != kTfLiteOk) {
-#ifdef TFLMC_XCORE_PROFILE
-      printf("\nERROR: Node %d (%s) invocation failed with status %d\n", i, op_strs[used_ops[i]], status);
-      printf("Model invocation aborted\n\n");
-#endif
-      currentSubgraphIndex = prevSubgraphIndex;
-      return status;
-    }
   }
 #ifdef TFLMC_PRINT_TENSORS
 printf("]\n");

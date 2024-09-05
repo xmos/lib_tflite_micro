@@ -64,6 +64,24 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   // Pointers to data in In/Out Tensors
   int8_t *out_data = GetTensorData<int8_t>(output);
   void (*func_ptr)(void *, const void *, unsigned) = op_data->func_ptr;
+  bool all_ones = true;
+  for (int i = 0; i < op_data->num_inputs; i++) {
+    if (op_data->sizes[i] != 1) {
+      all_ones = false;
+      break;
+    }
+  }
+  if (all_ones) {
+    for (int i = 0; i < op_data->num_copies; i++) {
+      for (int j = 0; j < op_data->num_inputs; j++) {
+        *out_data++ = *inputs[j]++;
+        // out_data[0] = inputs[j][0];
+        // out_data++;
+        // inputs[j]++;
+      }
+    }
+    return kTfLiteOk;
+  }
   for (int i = 0; i < op_data->num_copies; i++) {
     for (int j = 0; j < op_data->num_inputs; j++) {
       const int size = op_data->sizes[j];

@@ -54,6 +54,17 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   const int size = op_data->size;
   const int num_copies = op_data->num_copies;
   const int num_broadcasts = op_data->num_broadcasts;
+  if (size == 1) {
+    for (int i = 0; i < num_broadcasts; i++) {
+      memset(out_data, *in_data, num_copies);
+      // for (int j = 0; j < num_copies; j++) {
+      //   *out_data++ = *in_data;
+      // }
+      out_data += num_copies;
+      in_data++;
+    }
+    return kTfLiteOk;
+  }
   void (*func_ptr)(void *, const void *, unsigned) = op_data->func_ptr;
   for (int i = 0; i < num_broadcasts; i++) {
     for (int j = 0; j < num_copies; j++) {

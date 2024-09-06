@@ -1,7 +1,9 @@
 // Copyright (c) 2023, XMOS Ltd, All rights reserved
 
+#include <cstdint>
 extern "C" {
 #include "vpu_memmove_word_aligned.h"
+#include "vpu_memset_256.h"
 }
 
 #include "xcore_custom_options.h"
@@ -43,7 +45,6 @@ TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
 }
 
 TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
-
   auto *op_data = static_cast<BroadcastOpData *>(node->user_data);
   // Get Input/Output Tensors
   const TfLiteEvalTensor *input = tflite::micro::GetEvalInput(context, node, 0);
@@ -54,29 +55,49 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   const int size = op_data->size;
   const int num_copies = op_data->num_copies;
   const int num_broadcasts = op_data->num_broadcasts;
-  if (size == 1) {
+  if (size == 1 && num_copies < 64) {
     for (int i = 0; i < num_broadcasts; i++) {
       memset(out_data, *in_data, num_copies);
-      // for (int j = 0; j < num_copies; j++) {
-      //   *out_data++ = *in_data;
-      // }
       out_data += num_copies;
       in_data++;
     }
     return kTfLiteOk;
   }
-  void (*func_ptr)(void *, const void *, unsigned) = op_data->func_ptr;
-  for (int i = 0; i < num_broadcasts; i++) {
-    for (int j = 0; j < num_copies; j++) {
-      func_ptr(out_data, in_data, size);
-      out_data += size;
+  if ((size != 1 && size != 2 && size != 4) || num_copies < 64) {
+    void (*func_ptr)(void *, const void *, unsigned) = op_data->func_ptr;
+    for (int i = 0; i < num_broadcasts; i++) {
+      for (int j = 0; j < num_copies; j++) {
+        func_ptr(out_data, in_data, size);
+        out_data += size;
+      }
+      in_data += size;
     }
+
+    return kTfLiteOk;
+  }
+  uint32_t c;
+  uint8_t from[32];
+  for (int i = 0; i < num_broadcasts; i++) {
+    switch (size) {
+    case 1:
+      // c = ins[0] * 0x01010101;
+      c = ((uint8_t)(*in_data)) * 0x01010101;
+      break;
+    case 2:
+      c = ((uint8_t)(*in_data) | ((uint8_t)(in_data[1]) << 8)) * 0x00010001;
+      break;
+    case 4:
+      c = ((uint8_t)(*in_data) | ((uint8_t)(in_data[1]) << 8) |
+           ((uint8_t)(in_data[2]) << 16) | ((uint8_t)(in_data[3]) << 24));
+      break;
+    }
+    broadcast_32_to_256(from, c);
+    vpu_memset_256(out_data, from, num_copies * size);
+    out_data += num_copies * size;
     in_data += size;
   }
-
   return kTfLiteOk;
 }
-
 } // namespace broadcast
 
 TFLMRegistration *Register_XC_broadcast() {

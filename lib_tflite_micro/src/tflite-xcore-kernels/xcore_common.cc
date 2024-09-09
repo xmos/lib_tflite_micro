@@ -10,7 +10,7 @@
 #define ALIGN(X) __align(X)
 #endif
 
-namespace tflite {
+namespace tflite_micro {
 namespace ops {
 namespace micro {
 namespace xcore {
@@ -54,7 +54,7 @@ void calculateThreadSplit(int &tc, int split_size, int split_start[],
 } // namespace xcore
 } // namespace micro
 } // namespace ops
-} // namespace tflite
+} // namespace tflite_micro
 
 #define MAX_DEBUG_LOG_LENGTH 256
 #define MAX_DEBUG_LOG_ENTRIES 3

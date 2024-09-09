@@ -1,6 +1,6 @@
 #include "xcore_utils.h"
 
-namespace tflite {
+namespace tflite_micro {
 namespace ops {
 namespace micro {
 namespace xcore {
@@ -18,4 +18,4 @@ size_t FetchBuffer(int8_t **dest, int8_t const *src, size_t size) {
 } // namespace xcore
 } // namespace micro
 } // namespace ops
-} // namespace tflite
+} // namespace tflite_micro

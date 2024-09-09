@@ -4,11 +4,11 @@
 #include "tensorflow/lite/kernels/internal/compatibility.h"
 #include "tensorflow/lite/micro/micro_time.h"
 
-namespace tflite {
+namespace tflite_micro {
 namespace micro {
 namespace xcore {
 
-void XCoreProfiler::Init(tflite::MicroAllocator *allocator,
+void XCoreProfiler::Init(tflite_micro::MicroAllocator *allocator,
                          size_t max_event_count) {
   max_event_count_ = max_event_count;
   event_durations_ = static_cast<uint32_t *>(
@@ -24,12 +24,12 @@ void XCoreProfiler::ClearEvents() { event_count_ = 0; }
 uint32_t XCoreProfiler::BeginEvent(const char *tag) {
   TFLITE_DCHECK(tag);
   event_tag_ = tag;
-  event_start_time_ = tflite::GetCurrentTimeTicks();
+  event_start_time_ = tflite_micro::GetCurrentTimeTicks();
   return 0;
 }
 
 void XCoreProfiler::EndEvent(uint32_t event_handle) {
-  int32_t event_end_time = tflite::GetCurrentTimeTicks();
+  int32_t event_end_time = tflite_micro::GetCurrentTimeTicks();
   event_count_ = event_count_ % max_event_count_;
   // wrap if there are too many events
   event_durations_[event_count_++] = event_end_time - event_start_time_;
@@ -37,4 +37,4 @@ void XCoreProfiler::EndEvent(uint32_t event_handle) {
 
 } // namespace xcore
 } // namespace micro
-} // namespace tflite
+} // namespace tflite_micro

@@ -1,6 +1,6 @@
 #include "xcore_custom_options.h"
 
-namespace tflite {
+namespace tflite_micro {
 namespace ops {
 namespace micro {
 namespace xcore {
@@ -35,4 +35,4 @@ CustomOptionParser::parseNamedCustomOption(const char *name) const {
 } // namespace xcore
 } // namespace micro
 } // namespace ops
-} // namespace tflite
+} // namespace tflite_micro

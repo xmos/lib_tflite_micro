@@ -7,7 +7,7 @@
 #include "xcore_custom_options.h"
 #include "xcore_utils.h"
 
-namespace tflite {
+namespace tflite_micro {
 namespace ops {
 namespace micro {
 namespace xcore {
@@ -57,7 +57,7 @@ TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
   MicroContext *micro_context = GetMicroContext(context);
   xc_context_config_t *xc_config = reinterpret_cast<xc_context_config_t *>(
       micro_context->external_context());
-  const TfLiteEvalTensor *output = tflite::micro::GetEvalOutput(context, node, 0);
+  const TfLiteEvalTensor *output = tflite_micro::micro::GetEvalOutput(context, node, 0);
   int out_f = output->dims->data[1];
   op_data->tc = xc_config->model_thread_count;
   calculateThreadSplit(op_data->tc, out_f, op_data->s, op_data->e);
@@ -67,21 +67,21 @@ TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
 TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   auto op_data = static_cast<Beta_FcF32OpData *>(node->user_data);
   // Get Input/Output Tensors
-  const TfLiteEvalTensor *input = tflite::micro::GetEvalInput(context, node, 0);
+  const TfLiteEvalTensor *input = tflite_micro::micro::GetEvalInput(context, node, 0);
   const TfLiteEvalTensor *kernels =
-      tflite::micro::GetEvalInput(context, node, 1);
-  TfLiteEvalTensor *output = tflite::micro::GetEvalOutput(context, node, 0);
+      tflite_micro::micro::GetEvalInput(context, node, 1);
+  TfLiteEvalTensor *output = tflite_micro::micro::GetEvalOutput(context, node, 0);
 
   int out_f = output->dims->data[1];
 
   int in_f = input->dims->data[1];
 
   // Pointers to data in In/Out Tensors
-  float *out_data = tflite::micro::GetTensorData<float>(output);
+  float *out_data = tflite_micro::micro::GetTensorData<float>(output);
   float *in_data =
-      const_cast<float *>(tflite::micro::GetTensorData<float>(input));
+      const_cast<float *>(tflite_micro::micro::GetTensorData<float>(input));
   float *kernel_data =
-      const_cast<float *>(tflite::micro::GetTensorData<float>(kernels));
+      const_cast<float *>(tflite_micro::micro::GetTensorData<float>(kernels));
 
   MicroContext *micro_context = GetMicroContext(context);
   xc_context_config_t *xc_config = reinterpret_cast<xc_context_config_t *>(
@@ -119,4 +119,4 @@ TFLMRegistration *Register_XC_beta_fcf32() {
 } // namespace xcore
 } // namespace micro
 } // namespace ops
-} // namespace tflite
+} // namespace tflite_micro

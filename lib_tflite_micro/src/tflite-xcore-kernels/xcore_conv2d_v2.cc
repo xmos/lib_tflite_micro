@@ -19,7 +19,7 @@ extern "C" {
 #include "lib_nn/api/output_transform_fn_int16.h"
 }
 
-namespace tflite {
+namespace tflite_micro {
 namespace ops {
 namespace micro {
 namespace xcore {
@@ -380,34 +380,34 @@ TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
 
 TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   const TfLiteEvalTensor *input_tensor =
-      tflite::micro::GetEvalInput(context, node, 0);
+      tflite_micro::micro::GetEvalInput(context, node, 0);
   TfLiteEvalTensor *output_tensor =
-      tflite::micro::GetEvalOutput(context, node, 0);
+      tflite_micro::micro::GetEvalOutput(context, node, 0);
   const TfLiteEvalTensor *weights_tensor =
-      tflite::micro::GetEvalInput(context, node, 1);
+      tflite_micro::micro::GetEvalInput(context, node, 1);
   const TfLiteEvalTensor *multipliers_and_biases_tensor =
-      tflite::micro::GetEvalInput(context, node, 2);
+      tflite_micro::micro::GetEvalInput(context, node, 2);
 
   int8_t *output =
-      (int8_t *)tflite::micro::GetTensorData<int8_t>(output_tensor);
+      (int8_t *)tflite_micro::micro::GetTensorData<int8_t>(output_tensor);
   const TfLiteEvalTensor *partial_output_tensor =
-      tflite::micro::GetEvalInput(context, node, 3);
+      tflite_micro::micro::GetEvalInput(context, node, 3);
   // Copy the partial output into the output tensor only if it is not NULL
   if (partial_output_tensor) {
     int8_t *partial_output =
-        (int8_t *)tflite::micro::GetTensorData<int8_t>(partial_output_tensor);
+        (int8_t *)tflite_micro::micro::GetTensorData<int8_t>(partial_output_tensor);
     size_t sizeof_tensor_type;
     TfLiteTypeSizeOf(partial_output_tensor->type, &sizeof_tensor_type);
-    int size = tflite::micro::GetTensorShape(partial_output_tensor).FlatSize();
+    int size = tflite_micro::micro::GetTensorShape(partial_output_tensor).FlatSize();
     memcpy((int8_t *)output, (int8_t *)partial_output,
            size * sizeof_tensor_type);
   }
 
   const TfLiteEvalTensor *scratch_buffer_tensor =
-      tflite::micro::GetEvalInput(context, node, 4);
+      tflite_micro::micro::GetEvalInput(context, node, 4);
   int8_t *scratch_buffer = nullptr;
   if (scratch_buffer_tensor) {
-    scratch_buffer = const_cast<int8_t *>(tflite::micro::GetTensorData<int8_t>(scratch_buffer_tensor));
+    scratch_buffer = const_cast<int8_t *>(tflite_micro::micro::GetTensorData<int8_t>(scratch_buffer_tensor));
   }
 
   MicroContext *micro_context = GetMicroContext(context);
@@ -422,14 +422,14 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
 #endif
 
   int8_t *weights =
-      (int8_t *)tflite::micro::GetTensorData<int8_t>(weights_tensor);
+      (int8_t *)tflite_micro::micro::GetTensorData<int8_t>(weights_tensor);
   int16_t *multipliers_and_biases =
-      (int16_t *)tflite::micro::GetTensorData<int16_t>(
+      (int16_t *)tflite_micro::micro::GetTensorData<int16_t>(
           multipliers_and_biases_tensor);
 
   int8_t *thread_scratch[XCORE_MAX_NUM_THREADS];
   Conv2DShared shared_data;
-  shared_data.X = (int8_t *)tflite::micro::GetTensorData<int8_t>(input_tensor);
+  shared_data.X = (int8_t *)tflite_micro::micro::GetTensorData<int8_t>(input_tensor);
   shared_data.Y = output;
   shared_data.conv_params = &op_data->conv_params;
   if (op_data->kt == DepthwiseConv2DValidDirect_t ||
@@ -444,7 +444,7 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
     // scratch buffer contains scratch space for each thread and for expanding i16 weights
     int16_t *i16_expanded_weights_scratch = (int16_t *)&scratch_buffer[n_threads * op_data->scratch_size];
     expand_8_to_16(i16_expanded_weights_scratch, weights,
-                   tflite::micro::GetTensorShape(weights_tensor).FlatSize());
+                   tflite_micro::micro::GetTensorShape(weights_tensor).FlatSize());
     shared_data.weights = (int8_t *)i16_expanded_weights_scratch;
   } else {
     shared_data.weights = weights;
@@ -490,4 +490,4 @@ TFLMRegistration *Register_XC_conv2d_v2() {
 } // namespace xcore
 } // namespace micro
 } // namespace ops
-} // namespace tflite
+} // namespace tflite_micro

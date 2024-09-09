@@ -9,7 +9,7 @@ extern "C" {
 #include "lib_nn/api/nn_operator.h"
 }
 
-namespace tflite {
+namespace tflite_micro {
 namespace ops {
 namespace micro {
 namespace xcore {
@@ -54,10 +54,10 @@ TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
   MicroContext *micro_context = GetMicroContext(context);
   xc_context_config_t *xc_config = reinterpret_cast<xc_context_config_t *>(
       micro_context->external_context());
-  const TfLiteEvalTensor *input = tflite::micro::GetEvalInput(context, node, 0);
-  const int trailing_dim = tflite::micro::GetTensorShape(input).DimensionsCount() - 1;
-  const int num_softmaxes = tflite::micro::GetTensorShape(input).Dims(trailing_dim - 1);
-  op_data->softmax_size = tflite::micro::GetTensorShape(input).Dims(trailing_dim);
+  const TfLiteEvalTensor *input = tflite_micro::micro::GetEvalInput(context, node, 0);
+  const int trailing_dim = tflite_micro::micro::GetTensorShape(input).DimensionsCount() - 1;
+  const int num_softmaxes = tflite_micro::micro::GetTensorShape(input).Dims(trailing_dim - 1);
+  op_data->softmax_size = tflite_micro::micro::GetTensorShape(input).Dims(trailing_dim);
   op_data->tc = xc_config->model_thread_count;
   int starts[XCORE_MAX_NUM_THREADS];
   int ends[XCORE_MAX_NUM_THREADS];
@@ -75,14 +75,14 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   auto *op_data = static_cast<SoftmaxBatchedOpData *>(node->user_data);
 
   // Get Input/Output Tensors
-  const TfLiteEvalTensor *input = tflite::micro::GetEvalInput(context, node, 0);
-  const TfLiteEvalTensor *table = tflite::micro::GetEvalInput(context, node, 1);
-  TfLiteEvalTensor *output = tflite::micro::GetEvalOutput(context, node, 0);
+  const TfLiteEvalTensor *input = tflite_micro::micro::GetEvalInput(context, node, 0);
+  const TfLiteEvalTensor *table = tflite_micro::micro::GetEvalInput(context, node, 1);
+  TfLiteEvalTensor *output = tflite_micro::micro::GetEvalOutput(context, node, 0);
 
   // Pointers to data in In/Out Tensors
-  const float *table_vals = tflite::micro::GetTensorData<float>(table);
-  int8_t *out_data = tflite::micro::GetTensorData<int8_t>(output);
-  const int8_t *in_data = tflite::micro::GetTensorData<int8_t>(input);
+  const float *table_vals = tflite_micro::micro::GetTensorData<float>(table);
+  int8_t *out_data = tflite_micro::micro::GetTensorData<int8_t>(output);
+  const int8_t *in_data = tflite_micro::micro::GetTensorData<int8_t>(input);
   MicroContext *micro_context = GetMicroContext(context);
   xc_context_config_t *xc_config = reinterpret_cast<xc_context_config_t *>(
       micro_context->external_context());
@@ -114,4 +114,4 @@ TFLMRegistration *Register_XC_batched_softmax() {
 } // namespace xcore
 } // namespace micro
 } // namespace ops
-} // namespace tflite
+} // namespace tflite_micro

@@ -8,16 +8,16 @@
 #include "tensorflow/lite/micro/micro_arena_constants.h"
 #include "xcore_utils.h"
 
-namespace tflite {
+namespace tflite_micro {
 namespace micro {
 namespace xcore {
 
-XCoreInterpreter::XCoreInterpreter(const tflite::Model *model,
-                                   const tflite::MicroOpResolver &resolver,
-                                   tflite::MicroAllocator *allocator,
+XCoreInterpreter::XCoreInterpreter(const tflite_micro::Model *model,
+                                   const tflite_micro::MicroOpResolver &resolver,
+                                   tflite_micro::MicroAllocator *allocator,
                                    bool use_current_thread,
                                    XCoreProfiler *profiler)
-    : tflite::MicroInterpreter(model, resolver, allocator, nullptr,
+    : tflite_micro::MicroInterpreter(model, resolver, allocator, nullptr,
                                profiler) {
   this->model__ = model;
   this->allocator_ = allocator;
@@ -27,8 +27,8 @@ XCoreInterpreter::XCoreInterpreter(const tflite::Model *model,
 }
 
 XCoreInterpreter *XCoreInterpreter::Create(
-    uint8_t interpreter_buffer[], const tflite::Model *model,
-    const tflite::MicroOpResolver &resolver, uint8_t *arena, size_t arena_size, bool use_current_thread,
+    uint8_t interpreter_buffer[], const tflite_micro::Model *model,
+    const tflite_micro::MicroOpResolver &resolver, uint8_t *arena, size_t arena_size, bool use_current_thread,
     XCoreProfiler *profiler) {
   MicroAllocator *memory_allocator =
       MicroAllocator::Create(arena, arena_size);
@@ -58,8 +58,8 @@ const char *XCoreInterpreter::node_name(int sub_idx, int i) {
       graph->GetAllocations()[sub_idx].node_and_registrations[i].node.user_data;
 
   if (user_data != NULL) {
-    struct tflite::ops::micro::XCoreOpData *x =
-        (struct tflite::ops::micro::XCoreOpData *)user_data;
+    struct tflite_micro::ops::micro::XCoreOpData *x =
+        (struct tflite_micro::ops::micro::XCoreOpData *)user_data;
     return x->name;
   }
   return NULL;
@@ -91,7 +91,7 @@ TfLiteStatus XCoreInterpreter::GetTensorDetails(size_t tensor_index, char *name,
   zero_point[0] = 0;
 
   ConvertTensorType(tensor_p->type(), (TfLiteType *)type);
-  const tflite::QuantizationParameters *quantization_params =
+  const tflite_micro::QuantizationParameters *quantization_params =
       tensor_p->quantization();
   if (quantization_params) {
     auto *scale_vector = quantization_params->scale();
@@ -128,7 +128,7 @@ TfLiteStatus XCoreInterpreter::GetTensorDetailsBufferSizes(
 
   *scales = 1;
   *zero_points = 1;
-  const tflite::QuantizationParameters *quantization_params =
+  const tflite_micro::QuantizationParameters *quantization_params =
       tensor_p->quantization();
   if (quantization_params) {
     auto *scale_vector = quantization_params->scale();
@@ -156,4 +156,4 @@ size_t XCoreInterpreter::output_tensor_index(size_t output_index) {
 
 } // namespace xcore
 } // namespace micro
-} // namespace tflite
+} // namespace tflite_micro

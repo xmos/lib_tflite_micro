@@ -10,9 +10,9 @@ namespace tflmc {
 // Helper functions for top-level code generation.
 class CodeWriter {
  public:
-  CodeWriter(std::ostream &out, const tflite::SubGraph *subgraph);
+  CodeWriter(std::ostream &out, const tflite_micro::SubGraph *subgraph);
 
-  void writeBuiltin(tflite::BuiltinOperator op, const void *data,
+  void writeBuiltin(tflite_micro::BuiltinOperator op, const void *data,
                     const std::string &name);
 
   // Write IntArray with variable declaration.
@@ -37,7 +37,7 @@ class CodeWriter {
 
  private:
   std::ostream &out_;
-  const tflite::SubGraph *subgraph_ = nullptr;
+  const tflite_micro::SubGraph *subgraph_ = nullptr;
 };
 
 }  // namespace tflmc

@@ -9,7 +9,7 @@
 
 namespace {
 
-class AllocatorToGetLastAllocSize : public tflite::BuiltinDataAllocator {
+class AllocatorToGetLastAllocSize : public tflite_micro::BuiltinDataAllocator {
  public:
   void* Allocate(size_t size, size_t alignment_hint) override {
     lastAllocSize = size;
@@ -21,15 +21,15 @@ class AllocatorToGetLastAllocSize : public tflite::BuiltinDataAllocator {
  private:
   size_t lastAllocSize = 0;
 };
-size_t GetBuiltinDataSize(tflite::BuiltinOperator opType,
-                          const tflite::SubGraph* subgraph) {
+size_t GetBuiltinDataSize(tflite_micro::BuiltinOperator opType,
+                          const tflite_micro::SubGraph* subgraph) {
   // There seems to be no simple query function for this, so tickle the
   // information out of the parse function.
   auto dummyOp = subgraph->operators()->Get(0);
-  tflite::MicroErrorReporter errReporter;
+  tflite_micro::MicroErrorReporter errReporter;
   AllocatorToGetLastAllocSize allocator;
   void* outData = nullptr;
-  if (tflite::ParseOpData(dummyOp, opType, &errReporter, &allocator,
+  if (tflite_micro::ParseOpData(dummyOp, opType, &errReporter, &allocator,
                           &outData) == kTfLiteOk)
     free(outData);
   return allocator.GetLastAllocSize();
@@ -38,7 +38,7 @@ size_t GetBuiltinDataSize(tflite::BuiltinOperator opType,
 }  // namespace
 
 tflmc::CodeWriter::CodeWriter(std::ostream& out,
-                              const tflite::SubGraph* subgraph)
+                              const tflite_micro::SubGraph* subgraph)
     : out_(out), subgraph_(subgraph) {
   // Setup stream: Print booleans as string:
   out_ << std::boolalpha;
@@ -54,7 +54,7 @@ tflmc::CodeWriter::CodeWriter(std::ostream& out,
   }
 }
 
-void tflmc::CodeWriter::writeBuiltin(tflite::BuiltinOperator op,
+void tflmc::CodeWriter::writeBuiltin(tflite_micro::BuiltinOperator op,
                                      const void* data,
                                      const std::string& name) {
   using namespace tflmc;
@@ -63,7 +63,7 @@ void tflmc::CodeWriter::writeBuiltin(tflite::BuiltinOperator op,
   }
   out_ << "const ";
   switch (op) {
-    case tflite::BuiltinOperator_CONV_2D: {
+    case tflite_micro::BuiltinOperator_CONV_2D: {
       out_ << "TfLiteConvParams " << name << " = { ";
       TfLiteConvParams const* p = (TfLiteConvParams const*)data;
       out_ << to_string(p->padding) << ", " << p->stride_width << ","
@@ -71,7 +71,7 @@ void tflmc::CodeWriter::writeBuiltin(tflite::BuiltinOperator op,
            << p->dilation_width_factor << "," << p->dilation_height_factor
            << " };";
     } break;
-    case tflite::BuiltinOperator_DEPTHWISE_CONV_2D: {
+    case tflite_micro::BuiltinOperator_DEPTHWISE_CONV_2D: {
       out_ << "TfLiteDepthwiseConvParams " << name << " = { ";
       TfLiteDepthwiseConvParams const* p =
           (TfLiteDepthwiseConvParams const*)data;
@@ -80,7 +80,7 @@ void tflmc::CodeWriter::writeBuiltin(tflite::BuiltinOperator op,
            << to_string(p->activation) << ", " << p->dilation_width_factor
            << "," << p->dilation_height_factor << " };";
     } break;
-    case tflite::BuiltinOperator_FULLY_CONNECTED: {
+    case tflite_micro::BuiltinOperator_FULLY_CONNECTED: {
       out_ << "TfLiteFullyConnectedParams " << name << " = { ";
       TfLiteFullyConnectedParams const* p =
           (TfLiteFullyConnectedParams const*)data;
@@ -88,8 +88,8 @@ void tflmc::CodeWriter::writeBuiltin(tflite::BuiltinOperator op,
            << ", " << p->keep_num_dims << ", " << p->asymmetric_quantize_inputs
            << " };";
     } break;
-    case tflite::BuiltinOperator_MAX_POOL_2D:
-    case tflite::BuiltinOperator_AVERAGE_POOL_2D: {
+    case tflite_micro::BuiltinOperator_MAX_POOL_2D:
+    case tflite_micro::BuiltinOperator_AVERAGE_POOL_2D: {
       out_ << "TfLitePoolParams " << name << " = { ";
       TfLitePoolParams const* p = (TfLitePoolParams const*)data;
       out_ << to_string(p->padding) << ", " << p->stride_width << ","
@@ -97,66 +97,66 @@ void tflmc::CodeWriter::writeBuiltin(tflite::BuiltinOperator op,
            << p->filter_height << ", " << to_string(p->activation) << ", { "
            << to_string(p->computed.padding) << " } };";
     } break;
-    case tflite::BuiltinOperator_RESHAPE: {
+    case tflite_micro::BuiltinOperator_RESHAPE: {
       out_ << "TfLiteReshapeParams " << name << " = { { ";
       TfLiteReshapeParams const* p = (TfLiteReshapeParams const*)data;
       for (uint32_t i = 0; i < TFLITE_RESHAPE_PARAMS_MAX_DIMENSION_COUNT; ++i)
         out_ << p->shape[i] << ", ";
       out_ << "}, " << p->num_dimensions << " };";
     } break;
-    case tflite::BuiltinOperator_SOFTMAX: {
+    case tflite_micro::BuiltinOperator_SOFTMAX: {
       out_ << "TfLiteSoftmaxParams " << name << " = { ";
       TfLiteSoftmaxParams const* p = (TfLiteSoftmaxParams const*)data;
       out_ << p->beta << " };";
     } break;
-    case tflite::BuiltinOperator_ADD: {
+    case tflite_micro::BuiltinOperator_ADD: {
       out_ << "TfLiteAddParams " << name << " = { ";
       TfLiteAddParams const* p = (TfLiteAddParams const*)data;
       out_ << to_string(p->activation) << " };";
     } break;
-    case tflite::BuiltinOperator_MEAN: {
+    case tflite_micro::BuiltinOperator_MEAN: {
       out_ << "TfLiteReducerParams " << name << " = { ";
       TfLiteReducerParams const* p = (TfLiteReducerParams const*)data;
       out_ << p->keep_dims << " };";
     } break;
-    case tflite::BuiltinOperator_MUL: {
+    case tflite_micro::BuiltinOperator_MUL: {
       out_ << "TfLiteMulParams " << name << " = { ";
       TfLiteMulParams const* p = (TfLiteMulParams const*)data;
       out_ << to_string(p->activation) << " };";
     } break;
-    case tflite::BuiltinOperator_PACK: {
+    case tflite_micro::BuiltinOperator_PACK: {
       out_ << "TfLitePackParams " << name << " = { ";
       TfLitePackParams const* p = (TfLitePackParams const*)data;
       out_ << p->values_count << ", " << p->axis << " };";
     } break;
-    case tflite::BuiltinOperator_SHAPE: {
+    case tflite_micro::BuiltinOperator_SHAPE: {
       out_ << "TfLiteShapeParams " << name << " = { "
            << " };";
     } break;
-    case tflite::BuiltinOperator_SUB: {
+    case tflite_micro::BuiltinOperator_SUB: {
       out_ << "TfLiteSubParams " << name << " = { ";
       TfLiteSubParams const* p = (TfLiteSubParams const*)data;
       out_ << to_string(p->activation) << " };";
     } break;
-    case tflite::BuiltinOperator_CONCATENATION: {
+    case tflite_micro::BuiltinOperator_CONCATENATION: {
       out_ << "TfLiteConcatenationParams " << name << " = { ";
       TfLiteConcatenationParams const* p =
           (TfLiteConcatenationParams const*)data;
       out_ << p->axis << ", " << to_string(p->activation) << " };";
     } break;
-    case tflite::BuiltinOperator_RESIZE_NEAREST_NEIGHBOR: {
+    case tflite_micro::BuiltinOperator_RESIZE_NEAREST_NEIGHBOR: {
       out_ << "TfLiteResizeNearestNeighborParams " << name << " = { ";
       TfLiteResizeNearestNeighborParams const* p =
           (TfLiteResizeNearestNeighborParams const*)data;
       out_ << p->align_corners << ", " << p->half_pixel_centers << " };";
     } break;
-    case tflite::BuiltinOperator_STRIDED_SLICE: {
+    case tflite_micro::BuiltinOperator_STRIDED_SLICE: {
       out_ << "TfLiteStridedSliceParams " << name << " = { ";
       TfLiteStridedSliceParams const* p = (TfLiteStridedSliceParams const*)data;
       out_ << p->begin_mask << ", " << p->end_mask << ", " << p->ellipsis_mask
            << ", " << p->new_axis_mask << ", " << p->shrink_axis_mask << " };";
     } break;
-    case tflite::BuiltinOperator_TRANSPOSE_CONV: {
+    case tflite_micro::BuiltinOperator_TRANSPOSE_CONV: {
       out_ << "TfLiteTransposeConvParams " << name << " = { ";
       TfLiteTransposeConvParams const* p =
           (TfLiteTransposeConvParams const*)data;
@@ -171,7 +171,7 @@ void tflmc::CodeWriter::writeBuiltin(tflite::BuiltinOperator op,
       for (uint32_t i = 0; i < datalen; ++i)
         out_ << int(((uint8_t const*)data)[i]) << ", ";
       out_ << " }; /* op type " << int(op) << "="
-           << tflite::EnumNameBuiltinOperator(op) << " */";
+           << tflite_micro::EnumNameBuiltinOperator(op) << " */";
     } break;
   }
   out_ << '\n';
@@ -211,7 +211,7 @@ static void dump_tensor_contents(std::ostream& out_, const TfLiteTensor& t,
   if (t.dims->size == 0) {  // special case 0 dimensions, we output an array to
                             // avoid distinction from >0 dimension at every use
     out_ << "const " << tname << " " << name << "[1] = { "
-         << (printT)(tflite::GetTensorData<T>(&t)[0]) << " };\n";
+         << (printT)(tflite_micro::GetTensorData<T>(&t)[0]) << " };\n";
     return;
   }
 
@@ -243,7 +243,7 @@ static void dump_tensor_contents(std::ostream& out_, const TfLiteTensor& t,
     // one dimension/packed: 10 per line of data
     for (int i = 0; i < serialized_elts; ++i) {
       if (i % 10 == 0) out_ << "\n    ";
-      out_ << (printT)(tflite::GetTensorData<T>(&t)[i]) << ", ";
+      out_ << (printT)(tflite_micro::GetTensorData<T>(&t)[i]) << ", ";
     }
     out_ << "\n};\n";
   } else if (t.dims->size == 2) {
@@ -251,7 +251,7 @@ static void dump_tensor_contents(std::ostream& out_, const TfLiteTensor& t,
     for (int i = 0; i < t.dims->data[0]; ++i) {
       out_ << "\n  ";
       for (int j = 0; j < t.dims->data[1]; ++j)
-        out_ << (printT)(tflite::GetTensorData<T>(&t)[i * t.dims->data[1] + j])
+        out_ << (printT)(tflite_micro::GetTensorData<T>(&t)[i * t.dims->data[1] + j])
              << ", ";
     }
     out_ << "\n};\n";
@@ -278,7 +278,7 @@ static void dump_tensor_contents(std::ostream& out_, const TfLiteTensor& t,
       out_ << "\n  /* " << indexstr << " */ ";
       for (int j = 0; j < middle_dim; ++j) {
         for (int k = 0; k < inner_dim; ++k)
-          out_ << (printT)(tflite::GetTensorData<T>(
+          out_ << (printT)(tflite_micro::GetTensorData<T>(
                       &t)[(i * middle_dim + j) * inner_dim + k])
                << ",";
         out_ << " ";  // separator between middle indices

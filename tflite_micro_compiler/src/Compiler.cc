@@ -41,23 +41,23 @@ static std::vector<uint8_t> dummy_arena;
 
 static void *LoggingAllocatePersistentBuffer(struct TfLiteContext *ctx,
                                              size_t bytes) {
-  void *ptr = tflite::GetMicroContext(ctx)->AllocatePersistentBuffer(bytes);
+  void *ptr = tflite_micro::GetMicroContext(ctx)->AllocatePersistentBuffer(bytes);
   assert(ptr != nullptr && "Alloc failure");
   g_loggedAllocations.push_back({-(g_arenaPtr - (uint8_t *)ptr + g_arena_size),
                                  bytes, g_currentNodeIndex});
   return ptr;
 }
 
-TfLiteTensor *tflmc::GetTensor(tflite::MicroInterpreter *interpreter, int i,
+TfLiteTensor *tflmc::GetTensor(tflite_micro::MicroInterpreter *interpreter, int i,
                                int sg) {
   auto ctx = &interpreter->context_;
-  return tflite::MicroContextGetTensor(ctx, i, sg);
+  return tflite_micro::MicroContextGetTensor(ctx, i, sg);
 }
 
-TfLiteEvalTensor *tflmc::GetEvalTensor(tflite::MicroInterpreter *interpreter,
+TfLiteEvalTensor *tflmc::GetEvalTensor(tflite_micro::MicroInterpreter *interpreter,
                                        int i, int sg) {
   auto ctx = &interpreter->context_;
-  return tflite::MicroContextGetEvalTensor(ctx, i, sg);
+  return tflite_micro::MicroContextGetEvalTensor(ctx, i, sg);
 }
 
 bool tflmc::CompileFile(const std::string &modelFileName,
@@ -133,7 +133,7 @@ tflmc::Compiler::Compiler(const void *modelData,
 }
 
 bool tflmc::Compiler::init(const void *modelData) {
-  model_ = tflite::GetModel(modelData);
+  model_ = tflite_micro::GetModel(modelData);
   if (model_->version() != TFLITE_SCHEMA_VERSION) {
     MicroPrintf(
         "Model provided is schema version %d not equal "
@@ -174,7 +174,7 @@ bool tflmc::Compiler::init(const void *modelData) {
                  "parameter for PythonOpsResolver!\n";
     return false;
   }
-  tflite::ops::micro::xcore::RegisterXCOps(&resolver_);
+  tflite_micro::ops::micro::xcore::RegisterXCOps(&resolver_);
 
   // Build an interpreter to run the model with.
   arena_buf_.resize(SUFFICIENT_ARENA_SIZE);
@@ -184,7 +184,7 @@ bool tflmc::Compiler::init(const void *modelData) {
   g_arenaPtr = arena_buf_.data();
 
   interpreter_ =
-      std::unique_ptr<tflite::MicroInterpreter>(new tflite::MicroInterpreter(
+      std::unique_ptr<tflite_micro::MicroInterpreter>(new tflite_micro::MicroInterpreter(
           model_, resolver_, arena_buf_.data(), arena_buf_.size()));
 
   TfLiteStatus set_external_context_status =
@@ -209,7 +209,7 @@ bool tflmc::Compiler::init(const void *modelData) {
   // the arena as it is not meant to be called after AllocateTensors().
   dummy_arena.resize(SUFFICIENT_ARENA_SIZE);
   auto dummy_interpreter =
-      std::unique_ptr<tflite::MicroInterpreter>(new tflite::MicroInterpreter(
+      std::unique_ptr<tflite_micro::MicroInterpreter>(new tflite_micro::MicroInterpreter(
           model_, resolver_, dummy_arena.data(), dummy_arena.size()));
   for (int g = 0; g < subgraphs->size(); g++) {
     auto sg = (*subgraphs)[g];
@@ -262,17 +262,17 @@ bool tflmc::Compiler::init(const void *modelData) {
       auto nodeAndReg = interpreter_->node_and_registration(i, g);
       auto node = &nodeAndReg.node;
       auto reg = nodeAndReg.registration;
-      auto code = tflite::EnumValuesBuiltinOperator()[reg->builtin_code];
+      auto code = tflite_micro::EnumValuesBuiltinOperator()[reg->builtin_code];
 
       if (debugPrint_) {
         printf("operation %lu: %s\n", i,
-               tflite::EnumNamesBuiltinOperator()[code]);
+               tflite_micro::EnumNamesBuiltinOperator()[code]);
       }
 
       RegistrationInfo regInfo;
       regInfo.reg = reg;
       regInfo.code = code;
-      if (code == tflite::BuiltinOperator_CUSTOM) {
+      if (code == tflite_micro::BuiltinOperator_CUSTOM) {
         regInfo.custom_name = reg->custom_name;
         if (regInfo.custom_name == "TFLite_Detection_PostProcess") {
           has_tflite_custom_ops = true;
@@ -294,7 +294,7 @@ bool tflmc::Compiler::init(const void *modelData) {
 
   // scratch buffers
   DEBUG_LOG(("\n\nTFLMC Allocated scratch buffer offsets:\n"));
-  tflite::internal::ScratchBufferRequest *requests =
+  tflite_micro::internal::ScratchBufferRequest *requests =
       interpreter_->allocator_.GetScratchBufferRequests();
   for (size_t k = 0;
        k < interpreter_->allocator_.GetScratchBufferRequestCount(); k++) {
@@ -419,7 +419,7 @@ void tflmc::Compiler::deDuplicateData() {
     for (size_t i = 0; i < nodes_[g].size(); i++) {
       auto &node = nodes_[g][i].node;
       auto &regInfo = registrations_[nodes_[g][i].regIndex];
-      if (regInfo.code == tflite::BuiltinOperator_CUSTOM) {
+      if (regInfo.code == tflite_micro::BuiltinOperator_CUSTOM) {
         llvm::ArrayRef<uint8_t> in((uint8_t const *)node.custom_initial_data,
                                    node.custom_initial_data_size);
         std::vector<llvm::ArrayRef<uint8_t>> data;
@@ -515,7 +515,7 @@ namespace micro {
 namespace xcore {
 )";
     for (size_t i = 0; i < registrations_.size(); i++) {
-      if (registrations_[i].code == tflite::BuiltinOperator_CUSTOM &&
+      if (registrations_[i].code == tflite_micro::BuiltinOperator_CUSTOM &&
           registrations_[i].custom_name != "TFLite_Detection_PostProcess") {
         wr << "extern TFLMRegistration *Register_"
            << registrations_[i].custom_name << "(void);\n";
@@ -532,7 +532,7 @@ namespace xcore {
     wr << R"(namespace tflite {
 )";
     for (size_t i = 0; i < registrations_.size(); i++) {
-      if (registrations_[i].code == tflite::BuiltinOperator_CUSTOM &&
+      if (registrations_[i].code == tflite_micro::BuiltinOperator_CUSTOM &&
           registrations_[i].custom_name == "TFLite_Detection_PostProcess") {
         wr << "extern TFLMRegistration "
               "*Register_DETECTION_POSTPROCESS(void);\n";
@@ -561,10 +561,10 @@ template <int SZ, class T> struct TfArray {
 enum used_operators_e {
   )";
   for (size_t i = 0; i < registrations_.size(); i++) {
-    if (registrations_[i].code == tflite::BuiltinOperator_CUSTOM) {
+    if (registrations_[i].code == tflite_micro::BuiltinOperator_CUSTOM) {
       wr << "OP_" << registrations_[i].custom_name << ", ";
     } else {
-      wr << "OP_" << tflite::EnumNameBuiltinOperator(registrations_[i].code)
+      wr << "OP_" << tflite_micro::EnumNameBuiltinOperator(registrations_[i].code)
          << ", ";
     }
   }
@@ -575,10 +575,10 @@ enum used_operators_e {
 const char *op_strs[] = {
 )";
   for (size_t i = 0; i < registrations_.size(); i++) {
-    if (registrations_[i].code == tflite::BuiltinOperator_CUSTOM) {
+    if (registrations_[i].code == tflite_micro::BuiltinOperator_CUSTOM) {
       wr << "\"OP_" << registrations_[i].custom_name << "\", ";
     } else {
-      wr << "\"OP_" << tflite::EnumNameBuiltinOperator(registrations_[i].code)
+      wr << "\"OP_" << tflite_micro::EnumNameBuiltinOperator(registrations_[i].code)
          << "\", ";
     }
   }
@@ -638,7 +638,7 @@ struct {
     for (size_t i = 0; i < nodes_[g].size(); i++) {
       auto &node = nodes_[g][i].node;
       auto &regInfo = registrations_[nodes_[g][i].regIndex];
-      if (regInfo.code == tflite::BuiltinOperator_CUSTOM) {
+      if (regInfo.code == tflite_micro::BuiltinOperator_CUSTOM) {
         // if duplicate, don't write
         if (!opdataMap_[g].count(i)) {
           wr << "uint8_t ALIGN(4) opdata" + std::to_string(i) << "["
@@ -744,7 +744,7 @@ TfLiteNode tflNodes[] =
         wr << "nullptr, ";
       }
       auto regI = nodes_[g][i].regIndex;
-      if (registrations_[regI].code == tflite::BuiltinOperator_CUSTOM) {
+      if (registrations_[regI].code == tflite_micro::BuiltinOperator_CUSTOM) {
         wr << nodes_[g][i].node.custom_initial_data_size << ", ";
       } else {
         wr << "0, ";
@@ -760,11 +760,11 @@ used_operators_e used_ops[] =
   for (size_t g = 0; g < tensors_.size(); g++) {
     for (size_t i = 0; i < nodes_[g].size(); i++) {
       auto regI = nodes_[g][i].regIndex;
-      if (registrations_[regI].code == tflite::BuiltinOperator_CUSTOM) {
+      if (registrations_[regI].code == tflite_micro::BuiltinOperator_CUSTOM) {
         wr << "OP_" << registrations_[regI].custom_name << ", ";
       } else {
         wr << "OP_"
-           << tflite::EnumNameBuiltinOperator(registrations_[regI].code)
+           << tflite_micro::EnumNameBuiltinOperator(registrations_[regI].code)
            << ", ";
       }
     }
@@ -856,8 +856,8 @@ const int scratch_buffer_offsets[)"
     }
   }
   wr << R"( };
-tflite::MicroContext mc;
-tflite::MicroGraph micro_graph;
+tflite_micro::MicroContext mc;
+tflite_micro::MicroGraph micro_graph;
 size_t currentSubgraphIndex = 0;
 
 // Xcore context and thread variables
@@ -923,7 +923,7 @@ static void* mc_external_context() {
   return &xc_config;
 }
 
-static tflite::MicroGraph& mc_graph() {
+static tflite_micro::MicroGraph& mc_graph() {
   return micro_graph;
 }
 
@@ -1088,23 +1088,23 @@ TfLiteStatus )"
 
   for (size_t i = 0; i < registrations_.size(); i++) {
     std::string opName;
-    if (registrations_[i].code == tflite::BuiltinOperator_CUSTOM) {
+    if (registrations_[i].code == tflite_micro::BuiltinOperator_CUSTOM) {
       opName = registrations_[i].custom_name;
       if (opName == "TFLite_Detection_PostProcess") {
         wr << "  registrations[OP_" << opName
-           << "] = *(tflite::Register_DETECTION_POSTPROCESS());\n";
+           << "] = *(tflite_micro::Register_DETECTION_POSTPROCESS());\n";
       } else {
         wr << "  registrations[OP_" << opName
-           << "] = *(tflite::ops::micro::xcore::Register_" << opName
+           << "] = *(tflite_micro::ops::micro::xcore::Register_" << opName
            << "());\n";
       }
-    } else if ((registrations_[i].code == tflite::BuiltinOperator_ROUND)) {
-      opName = tflite::EnumNameBuiltinOperator(registrations_[i].code);
+    } else if ((registrations_[i].code == tflite_micro::BuiltinOperator_ROUND)) {
+      opName = tflite_micro::EnumNameBuiltinOperator(registrations_[i].code);
       wr << "  registrations[OP_" << opName
-         << "] = tflite::ops::micro::Register_" << opName << "();\n";
+         << "] = tflite_micro::ops::micro::Register_" << opName << "();\n";
     } else {
-      opName = tflite::EnumNameBuiltinOperator(registrations_[i].code);
-      wr << "  registrations[OP_" << opName << "] = tflite::Register_" << opName
+      opName = tflite_micro::EnumNameBuiltinOperator(registrations_[i].code);
+      wr << "  registrations[OP_" << opName << "] = tflite_micro::Register_" << opName
          << "();\n";
     }
   }

@@ -6,11 +6,11 @@
 #include "tensorflow/lite/micro/compatibility.h"
 #include "tensorflow/lite/micro/tflite_bridge/micro_error_reporter.h"
 
-namespace tflite {
+namespace tflite_micro {
 namespace micro {
 namespace xcore {
 
-class XCoreErrorReporter : public tflite::MicroErrorReporter {
+class XCoreErrorReporter : public tflite_micro::MicroErrorReporter {
 public:
   explicit XCoreErrorReporter(){};
   ~XCoreErrorReporter() override = default;
@@ -27,6 +27,6 @@ private:
 
 } // namespace xcore
 } // namespace micro
-} // namespace tflite
+} // namespace tflite_micro
 
 #endif // XCORE_ERROR_REPORTER_H_

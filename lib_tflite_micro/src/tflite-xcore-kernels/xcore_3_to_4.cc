@@ -7,7 +7,7 @@ extern "C" {
 #include "lib_nn/api/nn_operator.h"
 }
 
-namespace tflite {
+namespace tflite_micro {
 namespace ops {
 namespace micro {
 namespace xcore {
@@ -29,8 +29,8 @@ void* Init(TfLiteContext* context, const char* buffer, size_t length) {
 }
 
 TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
-  TfLiteEvalTensor *output = tflite::micro::GetEvalOutput(context, node, 0);
-  auto shape = tflite::micro::GetTensorShape(output);
+  TfLiteEvalTensor *output = tflite_micro::micro::GetEvalOutput(context, node, 0);
+  auto shape = tflite_micro::micro::GetTensorShape(output);
   TFLITE_DCHECK(shape.DimensionsCount() == 4 && shape.DimsData()[0] == 1);
   int number_of_pixels = shape.DimsData()[1] * shape.DimsData()[2];
   OpData* op_data = static_cast<OpData*>(node->user_data);
@@ -43,15 +43,15 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
   const OpData* data = static_cast<const OpData*>(node->user_data);
 
   const TfLiteEvalTensor* input =
-      tflite::micro::GetEvalInput(context, node, /*index=*/0);
+      tflite_micro::micro::GetEvalInput(context, node, /*index=*/0);
 
   TfLiteEvalTensor* output =
-      tflite::micro::GetEvalOutput(context, node, /*index=*/0);
+      tflite_micro::micro::GetEvalOutput(context, node, /*index=*/0);
 
   int8_t *output_p =
-      const_cast<int8_t *>(tflite::micro::GetTensorData<int8_t>(output));
+      const_cast<int8_t *>(tflite_micro::micro::GetTensorData<int8_t>(output));
   int8_t *input_p =
-      const_cast<int8_t *>(tflite::micro::GetTensorData<int8_t>(input));
+      const_cast<int8_t *>(tflite_micro::micro::GetTensorData<int8_t>(input));
 
   pad_3_to_4_run(output_p,
           input_p,
@@ -70,4 +70,4 @@ TFLMRegistration *Register_XC_pad_3_to_4() {
 } // namespace xcore
 }  // namespace micro
 }  // namespace ops
-}  // namespace tflite
+}  // namespace tflite_micro

@@ -12,7 +12,7 @@ extern "C" {
 #include "lib_nn/api/dequantize_int16.h"
 }
 
-namespace tflite {
+namespace tflite_micro {
 namespace ops {
 namespace micro {
 namespace xcore {
@@ -71,8 +71,8 @@ TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
   MicroContext *micro_context = GetMicroContext(context);
   xc_context_config_t *xc_config = reinterpret_cast<xc_context_config_t *>(
       micro_context->external_context());
-  const TfLiteEvalTensor *input = tflite::micro::GetEvalInput(context, node, 0);
-  int input_size = tflite::micro::GetTensorShape(input).FlatSize();
+  const TfLiteEvalTensor *input = tflite_micro::micro::GetEvalInput(context, node, 0);
+  int input_size = tflite_micro::micro::GetTensorShape(input).FlatSize();
   op_data->tc = xc_config->model_thread_count;
   calculateThreadSplit(op_data->tc, input_size, op_data->s, op_data->e);
   return kTfLiteOk;
@@ -82,14 +82,14 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   auto *op_data = static_cast<UnaryI16OpData *>(node->user_data);
 
   // Get Input/Output Tensors
-  const TfLiteEvalTensor *input = tflite::micro::GetEvalInput(context, node, 0);
-  const TfLiteEvalTensor *blob = tflite::micro::GetEvalInput(context, node, 1);
-  TfLiteEvalTensor *output = tflite::micro::GetEvalOutput(context, node, 0);
+  const TfLiteEvalTensor *input = tflite_micro::micro::GetEvalInput(context, node, 0);
+  const TfLiteEvalTensor *blob = tflite_micro::micro::GetEvalInput(context, node, 1);
+  TfLiteEvalTensor *output = tflite_micro::micro::GetEvalOutput(context, node, 0);
 
   // Pointers to data in In/Out Tensors
-  const int16_t *in_data = tflite::micro::GetTensorData<int16_t>(input);
-  const int16_t *blob_data = tflite::micro::GetTensorData<int16_t>(blob);
-  int16_t *out_data = tflite::micro::GetTensorData<int16_t>(output);
+  const int16_t *in_data = tflite_micro::micro::GetTensorData<int16_t>(input);
+  const int16_t *blob_data = tflite_micro::micro::GetTensorData<int16_t>(blob);
+  int16_t *out_data = tflite_micro::micro::GetTensorData<int16_t>(output);
   MicroContext *micro_context = GetMicroContext(context);
   xc_context_config_t *xc_config = reinterpret_cast<xc_context_config_t *>(
       micro_context->external_context());
@@ -123,4 +123,4 @@ TFLMRegistration *Register_XC_unaryi16() {
 } // namespace xcore
 } // namespace micro
 } // namespace ops
-} // namespace tflite
+} // namespace tflite_micro

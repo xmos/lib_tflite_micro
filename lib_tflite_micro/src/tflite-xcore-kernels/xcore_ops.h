@@ -3,7 +3,7 @@
 
 #include "tensorflow/lite/micro/micro_mutable_op_resolver.h"
 
-namespace tflite {
+namespace tflite_micro {
 namespace ops {
 namespace micro {
 namespace xcore {
@@ -61,11 +61,11 @@ TFLMRegistration *Register_XC_mean();
 // Binarized ops
 TFLMRegistration *Register_XC_bsign_8();
 
-void RegisterXCOps(tflite::MicroOpResolver *res);
+void RegisterXCOps(tflite_micro::MicroOpResolver *res);
 
 } // namespace xcore
 } // namespace micro
 } // namespace ops
-} // namespace tflite
+} // namespace tflite_micro
 
 #endif // XCORE_OPS_H_

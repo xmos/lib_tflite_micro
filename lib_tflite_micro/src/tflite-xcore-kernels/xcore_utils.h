@@ -9,7 +9,7 @@
 #include "tensorflow/lite/micro/kernels/kernel_util.h"
 #include "tensorflow/lite/micro/memory_helpers.h"
 
-namespace tflite {
+namespace tflite_micro {
 namespace ops {
 namespace micro {
 
@@ -79,14 +79,14 @@ fetch_scratch_if_needed(TfLiteContext *context, T *&array,
   if (scratch_idx >= 0) {
     array =
         static_cast<const T *>(context->GetScratchBuffer(context, scratch_idx));
-    const RuntimeShape shape = tflite::micro::GetTensorShape(tensor);
+    const RuntimeShape shape = tflite_micro::micro::GetTensorShape(tensor);
 
     size_t sizeof_tensor_type;
     TfLiteTypeSizeOf(tensor->type, &sizeof_tensor_type);
-    FetchBuffer((int8_t **)&array, tflite::micro::GetTensorData<int8_t>(tensor),
+    FetchBuffer((int8_t **)&array, tflite_micro::micro::GetTensorData<int8_t>(tensor),
                 shape.FlatSize() * sizeof_tensor_type);
   } else {
-    array = tflite::micro::GetTensorData<T>(tensor);
+    array = tflite_micro::micro::GetTensorData<T>(tensor);
   }
   TF_LITE_ENSURE(context, array);
   return kTfLiteOk;
@@ -155,6 +155,6 @@ public:
 } // namespace xcore
 } // namespace micro
 } // namespace ops
-} // namespace tflite
+} // namespace tflite_micro
 
 #endif // XCORE_UTILS_H_

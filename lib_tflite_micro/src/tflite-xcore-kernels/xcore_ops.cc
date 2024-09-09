@@ -13,7 +13,7 @@
     "tflite-micro patch not applied! Fix by running 'make patch' in lib_tflite_micro!"
 #endif
 
-namespace tflite {
+namespace tflite_micro {
 namespace ops {
 namespace micro {
 namespace xcore {
@@ -51,4 +51,4 @@ void RegisterXCOps(MicroOpResolver *res) {
 } // namespace xcore
 } // namespace micro
 } // namespace ops
-} // namespace tflite
+} // namespace tflite_micro

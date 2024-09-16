@@ -1,3 +1,18 @@
+diff --git a/python/tflite_micro/interpreter_wrapper.cc b/python/tflite_micro/interpreter_wrapper.cc
+index 53efe8e3..b3d50706 100644
+--- a/python/tflite_micro/interpreter_wrapper.cc
++++ b/python/tflite_micro/interpreter_wrapper.cc
+@@ -343,8 +343,8 @@ void InterpreterWrapper::SetInputTensor(PyObject* data, size_t index) {
+   if (TfLiteTypeFromPyArray(array) != tensor->type) {
+     std::string err_str =
+         "Cannot set tensor: Got value of type " +
+-        std::string(TfLiteTypeGetName(TfLiteTypeFromPyArray(array))) +
+-        " but expected type " + TfLiteTypeGetName(tensor->type) +
++        std::string(TfLiteMicroTypeGetName(TfLiteTypeFromPyArray(array))) +
++        " but expected type " + TfLiteMicroTypeGetName(tensor->type) +
+         " for input " + std::to_string(index);
+     ThrowValueError(err_str.c_str());
+   }
 diff --git a/python/tflite_micro/python_ops_resolver.cc b/python/tflite_micro/python_ops_resolver.cc
 index ab67bd4a..127c4ee9 100644
 --- a/python/tflite_micro/python_ops_resolver.cc
@@ -103,10 +118,10 @@ index ae0a7566..709e7e6f 100644
    PythonOpsResolver();
  
 diff --git a/tensorflow/lite/array.cc b/tensorflow/lite/array.cc
-index 1b1ff2e4..bea9fe5a 100644
+index 1b1ff2e4..668991db 100644
 --- a/tensorflow/lite/array.cc
 +++ b/tensorflow/lite/array.cc
-@@ -15,7 +15,7 @@ limitations under the License.
+@@ -15,19 +15,19 @@ limitations under the License.
  
  #include "tensorflow/lite/array.h"
  
@@ -115,14 +130,23 @@ index 1b1ff2e4..bea9fe5a 100644
  namespace array_internal {
  
  void TfLiteArrayDeleter::operator()(TfLiteIntArray* a) {
-@@ -30,4 +30,4 @@ void TfLiteArrayDeleter::operator()(TfLiteFloatArray* a) {
+   if (a) {
+-    TfLiteIntArrayFree(a);
++    TfLiteMicroIntArrayFree(a);
+   }
+ }
+ void TfLiteArrayDeleter::operator()(TfLiteFloatArray* a) {
+   if (a) {
+-    TfLiteFloatArrayFree(a);
++    TfLiteMicroFloatArrayFree(a);
+   }
  }
  
  }  // namespace array_internal
 -}  // namespace tflite
 +}  // namespace tflite_micro
 diff --git a/tensorflow/lite/array.h b/tensorflow/lite/array.h
-index 44550cd1..2612305b 100644
+index 44550cd1..4b4390d7 100644
 --- a/tensorflow/lite/array.h
 +++ b/tensorflow/lite/array.h
 @@ -23,7 +23,7 @@ limitations under the License.
@@ -134,6 +158,22 @@ index 44550cd1..2612305b 100644
  
  /// TfLite*Array helpers
  
+@@ -73,13 +73,13 @@ TfLiteArrayUniquePtr<T> BuildTfLiteArray(int size);
+ // Allocates a TfLiteIntArray of given size using malloc.
+ template <>
+ inline IntArrayUniquePtr BuildTfLiteArray<int>(const int size) {
+-  return IntArrayUniquePtr(TfLiteIntArrayCreate(size));
++  return IntArrayUniquePtr(TfLiteMicroIntArrayCreate(size));
+ }
+ 
+ // Allocates a TfLiteFloatArray of given size using malloc.
+ template <>
+ inline FloatArrayUniquePtr BuildTfLiteArray<float>(const int size) {
+-  return FloatArrayUniquePtr(TfLiteFloatArrayCreate(size));
++  return FloatArrayUniquePtr(TfLiteMicroFloatArrayCreate(size));
+ }
+ 
+ // Allocates a TFLiteArray of given size and initializes it with the given
 @@ -151,6 +151,6 @@ inline FloatArrayUniquePtr BuildTfLiteArray(const TfLiteFloatArray& other) {
    return BuildTfLiteArray(other.size, other.data);
  }
@@ -323,7 +363,7 @@ index 3a6594da..a26f482d 100644
  
    /// Generally referring to issues when the TF Lite model has ops that cannot
 diff --git a/tensorflow/lite/core/c/common.cc b/tensorflow/lite/core/c/common.cc
-index a2046fc8..c88efed6 100644
+index a2046fc8..d9757bd9 100644
 --- a/tensorflow/lite/core/c/common.cc
 +++ b/tensorflow/lite/core/c/common.cc
 @@ -106,78 +106,78 @@ void TfLiteVarArrayFree(T* a) {
@@ -331,17 +371,17 @@ index a2046fc8..c88efed6 100644
  extern "C" {
  
 -size_t TfLiteIntArrayGetSizeInBytes(int size) {
-+size_t TfliteMicroIntArrayGetSizeInBytes(int size) {
++size_t TfLiteMicroIntArrayGetSizeInBytes(int size) {
    return TfLiteVarArrayGetSizeInBytes<TfLiteIntArray>(size);
  }
  
 -int TfLiteIntArrayEqual(const TfLiteIntArray* a, const TfLiteIntArray* b) {
-+int TfliteMicroIntArrayEqual(const TfLiteIntArray* a, const TfLiteIntArray* b) {
++int TfLiteMicroIntArrayEqual(const TfLiteIntArray* a, const TfLiteIntArray* b) {
    return TfLiteVarArrayEqual(a, b);
  }
  
 -int TfLiteIntArrayEqualsArray(const TfLiteIntArray* a, int b_size,
-+int TfliteMicroIntArrayEqualsArray(const TfLiteIntArray* a, int b_size,
++int TfLiteMicroIntArrayEqualsArray(const TfLiteIntArray* a, int b_size,
                                const int b_data[]) {
    return TfLiteVarArrayEqualsArray(a, b_size, b_data);
  }
@@ -349,7 +389,7 @@ index a2046fc8..c88efed6 100644
  #ifndef TF_LITE_STATIC_MEMORY
  
 -TfLiteIntArray* TfLiteIntArrayCreate(int size) {
-+TfLiteIntArray* TfliteMicroIntArrayCreate(int size) {
++TfLiteIntArray* TfLiteMicroIntArrayCreate(int size) {
    return TfLiteVarArrayCreate<TfLiteIntArray>(size);
  }
  
@@ -359,7 +399,7 @@ index a2046fc8..c88efed6 100644
  }
  
 -void TfLiteIntArrayFree(TfLiteIntArray* a) { TfLiteVarArrayFree(a); }
-+void TfliteMicroIntArrayFree(TfLiteIntArray* a) { TfLiteVarArrayFree(a); }
++void TfLiteMicroIntArrayFree(TfLiteIntArray* a) { TfLiteVarArrayFree(a); }
  
  #endif  // TF_LITE_STATIC_MEMORY
  
@@ -381,7 +421,7 @@ index a2046fc8..c88efed6 100644
  }
  
 -void TfLiteFloatArrayFree(TfLiteFloatArray* a) { TfLiteVarArrayFree(a); }
-+void TfliteMicroFloatArrayFree(TfLiteFloatArray* a) { TfLiteVarArrayFree(a); }
++void TfLiteMicroFloatArrayFree(TfLiteFloatArray* a) { TfLiteVarArrayFree(a); }
  
 -void TfLiteTensorDataFree(TfLiteTensor* t) {
 +void TfliteMicroTensorDataFree(TfLiteTensor* t) {
@@ -413,12 +453,12 @@ index a2046fc8..c88efed6 100644
          (TfLiteAffineQuantization*)(quantization->params);
      if (q_params->scale) {
 -      TfLiteFloatArrayFree(q_params->scale);
-+      TfliteMicroFloatArrayFree(q_params->scale);
++      TfLiteMicroFloatArrayFree(q_params->scale);
        q_params->scale = nullptr;
      }
      if (q_params->zero_point) {
 -      TfLiteIntArrayFree(q_params->zero_point);
-+      TfliteMicroIntArrayFree(q_params->zero_point);
++      TfLiteMicroIntArrayFree(q_params->zero_point);
        q_params->zero_point = nullptr;
      }
      free(q_params);
@@ -434,13 +474,13 @@ index a2046fc8..c88efed6 100644
  
    if (sparsity->traversal_order) {
 -    TfLiteIntArrayFree(sparsity->traversal_order);
-+    TfliteMicroIntArrayFree(sparsity->traversal_order);
++    TfLiteMicroIntArrayFree(sparsity->traversal_order);
      sparsity->traversal_order = nullptr;
    }
  
    if (sparsity->block_map) {
 -    TfLiteIntArrayFree(sparsity->block_map);
-+    TfliteMicroIntArrayFree(sparsity->block_map);
++    TfLiteMicroIntArrayFree(sparsity->block_map);
      sparsity->block_map = nullptr;
    }
  
@@ -449,14 +489,14 @@ index a2046fc8..c88efed6 100644
        TfLiteDimensionMetadata metadata = sparsity->dim_metadata[i];
        if (metadata.format == kTfLiteDimSparseCSR) {
 -        TfLiteIntArrayFree(metadata.array_segments);
-+        TfliteMicroIntArrayFree(metadata.array_segments);
++        TfLiteMicroIntArrayFree(metadata.array_segments);
          metadata.array_segments = nullptr;
 -        TfLiteIntArrayFree(metadata.array_indices);
-+        TfliteMicroIntArrayFree(metadata.array_indices);
++        TfLiteMicroIntArrayFree(metadata.array_indices);
          metadata.array_indices = nullptr;
        }
      }
-@@ -219,13 +219,13 @@ void TfLiteSparsityFree(TfLiteSparsity* sparsity) {
+@@ -219,27 +219,27 @@ void TfLiteSparsityFree(TfLiteSparsity* sparsity) {
    free(sparsity);
  }
  
@@ -465,16 +505,19 @@ index a2046fc8..c88efed6 100644
 -  if (t->dims) TfLiteIntArrayFree(t->dims);
 +void TfliteMicroTensorFree(TfLiteTensor* t) {
 +  TfliteMicroTensorDataFree(t);
-+  if (t->dims) TfliteMicroIntArrayFree(t->dims);
++  if (t->dims) TfLiteMicroIntArrayFree(t->dims);
    t->dims = nullptr;
  
    if (t->dims_signature) {
 -    TfLiteIntArrayFree((TfLiteIntArray*)t->dims_signature);
-+    TfliteMicroIntArrayFree((TfLiteIntArray*)t->dims_signature);
++    TfLiteMicroIntArrayFree((TfLiteIntArray*)t->dims_signature);
    }
    t->dims_signature = nullptr;
  
-@@ -234,12 +234,12 @@ void TfLiteTensorFree(TfLiteTensor* t) {
+-  TfLiteQuantizationFree(&t->quantization);
+-  TfLiteSparsityFree(t->sparsity);
++  TfLiteMicroQuantizationFree(&t->quantization);
++  TfLiteMicroSparsityFree(t->sparsity);
    t->sparsity = nullptr;
  }
  
@@ -501,7 +544,7 @@ index a2046fc8..c88efed6 100644
    dst->type = src->type;
 -  if (dst->dims) TfLiteIntArrayFree(dst->dims);
 -  dst->dims = TfLiteIntArrayCopy(src->dims);
-+  if (dst->dims) TfliteMicroIntArrayFree(dst->dims);
++  if (dst->dims) TfLiteMicroIntArrayFree(dst->dims);
 +  dst->dims = TfliteMicroIntArrayCopy(src->dims);
    if (src->allocation_type == kTfLiteVariantObject) {
      // An edge case exists in control flow ops when they copy inputs to outputs
@@ -651,9 +694,82 @@ index a2046fc8..c88efed6 100644
      case kTfLiteMemNone:
        return kTfLiteRunStepInit;
 diff --git a/tensorflow/lite/core/c/common.h b/tensorflow/lite/core/c/common.h
-index d9abf9ea..d5e8d40f 100644
+index d9abf9ea..e3bdc817 100644
 --- a/tensorflow/lite/core/c/common.h
 +++ b/tensorflow/lite/core/c/common.h
+@@ -107,28 +107,28 @@ typedef struct TfLiteIntArray {
+ 
+ // Given the size (number of elements) in a TfLiteIntArray, calculate its size
+ // in bytes.
+-size_t TfLiteIntArrayGetSizeInBytes(int size);
++size_t TfLiteMicroIntArrayGetSizeInBytes(int size);
+ 
+ #ifndef TF_LITE_STATIC_MEMORY
+ // Create a array of a given `size` (uninitialized entries).
+ // This returns a pointer, that you must free using TfLiteIntArrayFree().
+-TfLiteIntArray* TfLiteIntArrayCreate(int size);
++TfLiteIntArray* TfLiteMicroIntArrayCreate(int size);
+ #endif
+ 
+ // Check if two intarrays are equal. Returns 1 if they are equal, 0 otherwise.
+-int TfLiteIntArrayEqual(const TfLiteIntArray* a, const TfLiteIntArray* b);
++int TfLiteMicroIntArrayEqual(const TfLiteIntArray* a, const TfLiteIntArray* b);
+ 
+ // Check if an intarray equals an array. Returns 1 if equals, 0 otherwise.
+-int TfLiteIntArrayEqualsArray(const TfLiteIntArray* a, int b_size,
++int TfLiteMicroIntArrayEqualsArray(const TfLiteIntArray* a, int b_size,
+                               const int b_data[]);
+ 
+ #ifndef TF_LITE_STATIC_MEMORY
+ // Create a copy of an array passed as `src`.
+ // You are expected to free memory with TfLiteIntArrayFree
+-TfLiteIntArray* TfLiteIntArrayCopy(const TfLiteIntArray* src);
++TfLiteIntArray* TfLiteMicroIntArrayCopy(const TfLiteIntArray* src);
+ 
+ // Free memory of array `a`.
+-void TfLiteIntArrayFree(TfLiteIntArray* a);
++void TfLiteMicroIntArrayFree(TfLiteIntArray* a);
+ #endif  // TF_LITE_STATIC_MEMORY
+ 
+ // Fixed size list of floats. Used for per-channel quantization.
+@@ -156,14 +156,14 @@ int TfLiteFloatArrayGetSizeInBytes(int size);
+ #ifndef TF_LITE_STATIC_MEMORY
+ // Create a array of a given `size` (uninitialized entries).
+ // This returns a pointer, that you must free using TfLiteFloatArrayFree().
+-TfLiteFloatArray* TfLiteFloatArrayCreate(int size);
++TfLiteFloatArray* TfLiteMicroFloatArrayCreate(int size);
+ 
+ // Create a copy of an array passed as `src`.
+ // You are expected to free memory with TfLiteFloatArrayFree.
+-TfLiteFloatArray* TfLiteFloatArrayCopy(const TfLiteFloatArray* src);
++TfLiteFloatArray* TfLiteMicroFloatArrayCopy(const TfLiteFloatArray* src);
+ 
+ // Free memory of array `a`.
+-void TfLiteFloatArrayFree(TfLiteFloatArray* a);
++void TfLiteMicroFloatArrayFree(TfLiteFloatArray* a);
+ #endif  // TF_LITE_STATIC_MEMORY
+ 
+ // Since we must not depend on any libraries, define a minimal subset of
+@@ -238,8 +238,8 @@ void TfLiteFloatArrayFree(TfLiteFloatArray* a);
+   do {                                                                     \
+     if ((a) != (b)) {                                                      \
+       TF_LITE_KERNEL_LOG((context), "%s:%d %s != %s (%s != %s)", __FILE__, \
+-                         __LINE__, #a, #b, TfLiteTypeGetName(a),           \
+-                         TfLiteTypeGetName(b));                            \
++                         __LINE__, #a, #b, TfLiteMicroTypeGetName(a),           \
++                         TfLiteMicroTypeGetName(b));                            \
+       return kTfLiteError;                                                 \
+     }                                                                      \
+   } while (0)
+@@ -279,7 +279,7 @@ typedef struct TfLiteFloat16 {
+ } TfLiteFloat16;
+ 
+ // Return the name of a given type, for error reporting purposes.
+-const char* TfLiteTypeGetName(TfLiteType type);
++const char* TfLiteMicroTypeGetName(TfLiteType type);
+ 
+ // SupportedQuantizationTypes.
+ typedef enum TfLiteQuantizationType {
 @@ -472,7 +472,7 @@ typedef struct TfLiteTensor {
    // bytes = sizeof(float) * 3 * 2 = 4 * 3 * 2 = 24.
    size_t bytes;
@@ -724,6 +840,19 @@ index d9abf9ea..d5e8d40f 100644
    int custom_initial_data_size;
  } TfLiteNode;
  #endif  // TF_LITE_STATIC_MEMORY
+@@ -662,10 +657,10 @@ typedef struct TfLiteEvalTensor {
+ void TfLiteTensorDataFree(TfLiteTensor* t);
+ 
+ // Free quantization data.
+-void TfLiteQuantizationFree(TfLiteQuantization* quantization);
++void TfLiteMicroQuantizationFree(TfLiteQuantization* quantization);
+ 
+ // Free sparsity parameters.
+-void TfLiteSparsityFree(TfLiteSparsity* sparsity);
++void TfLiteMicroSparsityFree(TfLiteSparsity* sparsity);
+ 
+ // Free memory of tensor `t`.
+ void TfLiteTensorFree(TfLiteTensor* t);
 @@ -1316,8 +1311,8 @@ typedef struct TfLiteOpaqueDelegateBuilder {
  // the objects pointed to by any of the fields within the
  // 'opaque_delegate_builder' must outlive the returned
@@ -2787,7 +2916,7 @@ index f2cc1603..bddd87b5 100644
  
  #endif  // TENSORFLOW_LITE_KERNELS_INTERNAL_TYPES_H_
 diff --git a/tensorflow/lite/kernels/kernel_util.cc b/tensorflow/lite/kernels/kernel_util.cc
-index 58fd99f8..ae3d4853 100644
+index 58fd99f8..41f15b61 100644
 --- a/tensorflow/lite/kernels/kernel_util.cc
 +++ b/tensorflow/lite/kernels/kernel_util.cc
 @@ -38,7 +38,7 @@ limitations under the License.
@@ -2799,6 +2928,42 @@ index 58fd99f8..ae3d4853 100644
  
  namespace {
  
+@@ -411,7 +411,7 @@ TfLiteStatus CalculateActivationRangeQuantized(TfLiteContext* context,
+ }
+ 
+ bool HaveSameShapes(const TfLiteTensor* input1, const TfLiteTensor* input2) {
+-  return TfLiteIntArrayEqual(input1->dims, input2->dims);
++  return TfLiteMicroIntArrayEqual(input1->dims, input2->dims);
+ }
+ 
+ #ifndef TF_LITE_STATIC_MEMORY
+@@ -425,7 +425,7 @@ TfLiteStatus GetOutputShapeFromInput(TfLiteContext* context,
+     return kTfLiteError;
+   }
+   const int output_dims = SizeOfDimension(input, 0);
+-  IntArrayUniquePtr shape(TfLiteIntArrayCreate(output_dims));
++  IntArrayUniquePtr shape(TfLiteMicroIntArrayCreate(output_dims));
+   for (int i = 0; i < output_dims; i++) {
+     shape->data[i] = input->data.i32[i];
+   }
+@@ -464,7 +464,7 @@ TfLiteStatus CalculateShapeForBroadcast(TfLiteContext* context,
+   const int dims2 = NumDimensions(input2);
+   const int out_dims = std::max(dims1, dims2);
+ 
+-  IntArrayUniquePtr shape(TfLiteIntArrayCreate(out_dims));
++  IntArrayUniquePtr shape(TfLiteMicroIntArrayCreate(out_dims));
+   for (int i = 0; i < out_dims; ++i) {
+     const int d1 = i >= dims1 ? 1 : SizeOfDimension(input1, dims1 - i - 1);
+     const int d2 = i >= dims2 ? 1 : SizeOfDimension(input2, dims2 - i - 1);
+@@ -495,7 +495,7 @@ TfLiteStatus CalculateShapeForBroadcast(TfLiteContext* context,
+   const int dims2 = NumDimensions(input2);
+   const int dims3 = NumDimensions(input3);
+   const int out_dims = std::max(std::max(dims1, dims2), dims3);
+-  IntArrayUniquePtr shape(TfLiteIntArrayCreate(out_dims));
++  IntArrayUniquePtr shape(TfLiteMicroIntArrayCreate(out_dims));
+   for (int i = 0; i < out_dims; ++i) {
+     const int d1 = i >= dims1 ? 1 : SizeOfDimension(input1, dims1 - i - 1);
+     const int d2 = i >= dims2 ? 1 : SizeOfDimension(input2, dims2 - i - 1);
 @@ -591,4 +591,4 @@ bool HasUnspecifiedDimension(const TfLiteTensor* tensor) {
    return false;
  }
@@ -5883,7 +6048,7 @@ index 95ecc26d..5b8c016d 100644
  
  #endif  // TENSORFLOW_LITE_MICRO_KERNELS_ACTIVATION_UTILS_H_
 diff --git a/tensorflow/lite/micro/kernels/activations.cc b/tensorflow/lite/micro/kernels/activations.cc
-index 1086325c..4c9f5b21 100644
+index 1086325c..a35d034c 100644
 --- a/tensorflow/lite/micro/kernels/activations.cc
 +++ b/tensorflow/lite/micro/kernels/activations.cc
 @@ -27,7 +27,26 @@ limitations under the License.
@@ -5914,7 +6079,7 @@ index 1086325c..4c9f5b21 100644
  namespace {
  
  void* ReluInit(TfLiteContext* context, const char* buffer, size_t length) {
-@@ -40,24 +59,31 @@ TfLiteStatus ReluEval(TfLiteContext* context, TfLiteNode* node) {
+@@ -40,29 +59,36 @@ TfLiteStatus ReluEval(TfLiteContext* context, TfLiteNode* node) {
    const ReluOpData& data = *(static_cast<const ReluOpData*>(node->user_data));
  
    const TfLiteEvalTensor* input =
@@ -5956,7 +6121,13 @@ index 1086325c..4c9f5b21 100644
        return kTfLiteOk;
      }
      default: {
-@@ -78,25 +104,25 @@ TfLiteStatus Relu6Eval(TfLiteContext* context, TfLiteNode* node) {
+       MicroPrintf("Only float32 is supported currently, got %s",
+-                  TfLiteTypeGetName(input->type));
++                  TfLiteMicroTypeGetName(input->type));
+       return kTfLiteError;
+     }
+   }
+@@ -78,30 +104,30 @@ TfLiteStatus Relu6Eval(TfLiteContext* context, TfLiteNode* node) {
    const Relu6OpData& data = *(static_cast<const Relu6OpData*>(node->user_data));
  
    const TfLiteEvalTensor* input =
@@ -5992,6 +6163,12 @@ index 1086325c..4c9f5b21 100644
        return kTfLiteOk;
      }
      default: {
+       MicroPrintf("Only float32 is supported currently, got %s",
+-                  TfLiteTypeGetName(input->type));
++                  TfLiteMicroTypeGetName(input->type));
+       return kTfLiteError;
+     }
+   }
 @@ -110,11 +136,11 @@ TfLiteStatus Relu6Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -6149,7 +6326,7 @@ index 25402a80..1bf02d4e 100644
                                   golden_quantized, output_shape, output_scale,
                                   output_zero_point, output_data);
 diff --git a/tensorflow/lite/micro/kernels/add.cc b/tensorflow/lite/micro/kernels/add.cc
-index b27206c6..e0e2512f 100644
+index b27206c6..b5d25f9c 100644
 --- a/tensorflow/lite/micro/kernels/add.cc
 +++ b/tensorflow/lite/micro/kernels/add.cc
 @@ -30,7 +30,7 @@ limitations under the License.
@@ -6161,7 +6338,7 @@ index b27206c6..e0e2512f 100644
  
  TfLiteStatus EvalAdd(TfLiteContext* context, TfLiteNode* node,
                       TfLiteAddParams* params, const OpDataAdd* data,
-@@ -38,45 +38,45 @@ TfLiteStatus EvalAdd(TfLiteContext* context, TfLiteNode* node,
+@@ -38,50 +38,50 @@ TfLiteStatus EvalAdd(TfLiteContext* context, TfLiteNode* node,
                       const TfLiteEvalTensor* input2, TfLiteEvalTensor* output) {
    switch (output->type) {
      case kTfLiteFloat32: {
@@ -6233,6 +6410,12 @@ index b27206c6..e0e2512f 100644
        }
      } break;
      default:
+       MicroPrintf("Type %s (%d) not supported.",
+-                  TfLiteTypeGetName(output->type), output->type);
++                  TfLiteMicroTypeGetName(output->type), output->type);
+       return kTfLiteError;
+   }
+ 
 @@ -93,7 +93,7 @@ TfLiteStatus EvalAddQuantized(TfLiteContext* context, TfLiteNode* node,
                                const TfLiteEvalTensor* input1,
                                const TfLiteEvalTensor* input2,
@@ -6242,7 +6425,7 @@ index b27206c6..e0e2512f 100644
    op_params.left_shift = data->left_shift;
    op_params.input1_offset = data->input1_offset;
    op_params.input1_multiplier = data->input1_multiplier;
-@@ -107,46 +107,46 @@ TfLiteStatus EvalAddQuantized(TfLiteContext* context, TfLiteNode* node,
+@@ -107,53 +107,53 @@ TfLiteStatus EvalAddQuantized(TfLiteContext* context, TfLiteNode* node,
    SetActivationParams(data->output_activation_min, data->output_activation_max,
                        &op_params);
    bool need_broadcast = reference_ops::ProcessBroadcastShapes(
@@ -6315,6 +6498,14 @@ index b27206c6..e0e2512f 100644
                             false);
        }
        break;
+     }
+     default:
+       MicroPrintf("Type %s (%d) not supported.",
+-                  TfLiteTypeGetName(output->type), output->type);
++                  TfLiteMicroTypeGetName(output->type), output->type);
+       return kTfLiteError;
+   }
+ 
 @@ -172,11 +172,11 @@ TfLiteStatus AddEval(TfLiteContext* context, TfLiteNode* node) {
    const OpDataAdd* data = static_cast<const OpDataAdd*>(node->user_data);
  
@@ -6330,6 +6521,15 @@ index b27206c6..e0e2512f 100644
  
    if (output->type == kTfLiteFloat32 || output->type == kTfLiteInt32) {
      TF_LITE_ENSURE_OK(
+@@ -185,7 +185,7 @@ TfLiteStatus AddEval(TfLiteContext* context, TfLiteNode* node) {
+     TF_LITE_ENSURE_OK(context, EvalAddQuantized(context, node, params, data,
+                                                 input1, input2, output));
+   } else {
+-    MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(output->type),
++    MicroPrintf("Type %s (%d) not supported.", TfLiteMicroTypeGetName(output->type),
+                 output->type);
+     return kTfLiteError;
+   }
 @@ -194,7 +194,7 @@ TfLiteStatus AddEval(TfLiteContext* context, TfLiteNode* node) {
  }
  
@@ -6381,7 +6581,7 @@ index cc945091..034fa5ef 100644
 -}  // namespace tflite
 +}  // namespace tflite_micro
 diff --git a/tensorflow/lite/micro/kernels/add_n.cc b/tensorflow/lite/micro/kernels/add_n.cc
-index 765d5d63..46fce901 100644
+index 765d5d63..2e912c24 100644
 --- a/tensorflow/lite/micro/kernels/add_n.cc
 +++ b/tensorflow/lite/micro/kernels/add_n.cc
 @@ -24,7 +24,7 @@ limitations under the License.
@@ -6393,6 +6593,15 @@ index 765d5d63..46fce901 100644
  namespace {
  
  constexpr int kInputTensor0 = 0;
+@@ -123,7 +123,7 @@ TfLiteStatus CalculateOpData(TfLiteContext* context, TfLiteNode* node) {
+         &data->output_activation_max));
+   } else {
+     MicroPrintf("ADD_N only supports FLOAT32 and INT8, got %s.",
+-                TfLiteTypeGetName(output->type));
++                TfLiteMicroTypeGetName(output->type));
+     return kTfLiteError;
+   }
+ 
 @@ -146,8 +146,8 @@ inline const T** CopyInputsToScratchBuffer(TfLiteContext* context,
    const T** all_inputs = static_cast<decltype(all_inputs)>(scratch_buffer);
    for (int i = 0; i < num_inputs; i++) {
@@ -6415,7 +6624,7 @@ index 765d5d63..46fce901 100644
  }
  
  template <typename T>
-@@ -187,13 +187,13 @@ void EvalAddNQuantized(TfLiteContext* context, TfLiteNode* node,
+@@ -187,20 +187,20 @@ void EvalAddNQuantized(TfLiteContext* context, TfLiteNode* node,
    SetActivationParams(data->output_activation_min, data->output_activation_max,
                        &params);
  
@@ -6432,6 +6641,14 @@ index 765d5d63..46fce901 100644
    if (output->type == kTfLiteFloat32) {
      EvalAddN<float>(context, node, output);
    } else if (output->type == kTfLiteInt8) {
+     EvalAddNQuantized<int8_t>(context, node, output);
+   } else {
+     MicroPrintf("ADD_N only supports FLOAT32 and INT8, got %s.",
+-                TfLiteTypeGetName(output->type));
++                TfLiteMicroTypeGetName(output->type));
+     return kTfLiteError;
+   }
+   return kTfLiteOk;
 @@ -209,7 +209,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -6767,7 +6984,7 @@ index 6e8b40c0..41fda2dc 100644
    }
  }
 diff --git a/tensorflow/lite/micro/kernels/arc_mli/add.cc b/tensorflow/lite/micro/kernels/arc_mli/add.cc
-index d6cbddd6..ab3160fa 100644
+index d6cbddd6..8268af42 100644
 --- a/tensorflow/lite/micro/kernels/arc_mli/add.cc
 +++ b/tensorflow/lite/micro/kernels/arc_mli/add.cc
 @@ -35,7 +35,7 @@ limitations under the License.
@@ -6826,7 +7043,7 @@ index d6cbddd6..ab3160fa 100644
    op_params.left_shift = data->left_shift;
    op_params.input1_offset = data->input1_offset;
    op_params.input1_multiplier = data->input1_multiplier;
-@@ -219,46 +219,46 @@ TfLiteStatus EvalAddQuantized(TfLiteContext* context, TfLiteNode* node,
+@@ -219,53 +219,53 @@ TfLiteStatus EvalAddQuantized(TfLiteContext* context, TfLiteNode* node,
    SetActivationParams(data->output_activation_min, data->output_activation_max,
                        &op_params);
    bool need_broadcast = reference_ops::ProcessBroadcastShapes(
@@ -6899,6 +7116,14 @@ index d6cbddd6..ab3160fa 100644
                             false);
        }
        break;
+     }
+     default:
+       MicroPrintf("Type %s (%d) not supported.",
+-                  TfLiteTypeGetName(output->type), output->type);
++                  TfLiteMicroTypeGetName(output->type), output->type);
+       return kTfLiteError;
+   }
+ 
 @@ -395,11 +395,11 @@ TfLiteStatus AddEval(TfLiteContext* context, TfLiteNode* node) {
    const OpData* data = static_cast<const OpData*>(node->user_data);
  
@@ -6914,6 +7139,15 @@ index d6cbddd6..ab3160fa 100644
    if (data->is_mli_applicable) {
      ret_val =
          EvalMLIAddInt8(context, node, params, data, input1, input2, output);
+@@ -409,7 +409,7 @@ TfLiteStatus AddEval(TfLiteContext* context, TfLiteNode* node) {
+     ret_val =
+         EvalAddQuantized(context, node, params, data, input1, input2, output);
+   } else {
+-    MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(output->type),
++    MicroPrintf("Type %s (%d) not supported.", TfLiteMicroTypeGetName(output->type),
+                 output->type);
+     ret_val = kTfLiteError;
+   }
 @@ -418,7 +418,7 @@ TfLiteStatus AddEval(TfLiteContext* context, TfLiteNode* node) {
  }
  
@@ -6925,7 +7159,7 @@ index d6cbddd6..ab3160fa 100644
 -}  // namespace tflite
 +}  // namespace tflite_micro
 diff --git a/tensorflow/lite/micro/kernels/arc_mli/conv.cc b/tensorflow/lite/micro/kernels/arc_mli/conv.cc
-index 41d2c535..847c3ace 100644
+index 41d2c535..86d485d3 100644
 --- a/tensorflow/lite/micro/kernels/arc_mli/conv.cc
 +++ b/tensorflow/lite/micro/kernels/arc_mli/conv.cc
 @@ -32,7 +32,7 @@ limitations under the License.
@@ -6992,7 +7226,7 @@ index 41d2c535..847c3ace 100644
  #else
    MicroPrintf("Node configuration is not supported by ARC MLI Library.");
  #endif
-@@ -638,16 +638,16 @@ void EvalFloat(TfLiteContext* context, TfLiteNode* node,
+@@ -638,19 +638,19 @@ void EvalFloat(TfLiteContext* context, TfLiteNode* node,
    op_params.float_activation_min = output_activation_min;
    op_params.float_activation_max = output_activation_max;
  
@@ -7018,7 +7252,11 @@ index 41d2c535..847c3ace 100644
 +                      tflite_micro::micro::GetTensorData<float>(im2col));
  #else
    MicroPrintf("Type %s (%d) is not supported by ARC MLI Library.",
-               TfLiteTypeGetName(input->type), input->type);
+-              TfLiteTypeGetName(input->type), input->type);
++              TfLiteMicroTypeGetName(input->type), input->type);
+ #endif
+ }
+ 
 @@ -658,13 +658,13 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
    auto* params = reinterpret_cast<TfLiteConvParams*>(node->builtin_data);
  
@@ -7037,6 +7275,15 @@ index 41d2c535..847c3ace 100644
  
    TFLITE_DCHECK(node->user_data != nullptr);
    const OpData& data = *(static_cast<const OpData*>(node->user_data));
+@@ -695,7 +695,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+                                    bias, output);
+       break;
+     default:
+-      MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(input->type),
++      MicroPrintf("Type %s (%d) not supported.", TfLiteMicroTypeGetName(input->type),
+                   input->type);
+       return kTfLiteError;
+   }
 @@ -705,7 +705,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -7048,7 +7295,7 @@ index 41d2c535..847c3ace 100644
 -}  // namespace tflite
 +}  // namespace tflite_micro
 diff --git a/tensorflow/lite/micro/kernels/arc_mli/depthwise_conv.cc b/tensorflow/lite/micro/kernels/arc_mli/depthwise_conv.cc
-index c2c9cd5c..a01853ba 100644
+index c2c9cd5c..330448f0 100644
 --- a/tensorflow/lite/micro/kernels/arc_mli/depthwise_conv.cc
 +++ b/tensorflow/lite/micro/kernels/arc_mli/depthwise_conv.cc
 @@ -33,7 +33,7 @@ limitations under the License.
@@ -7078,7 +7325,7 @@ index c2c9cd5c..a01853ba 100644
    // Padding type is ignored, but still set.
    op_params.padding_type = PaddingType::kSame;
    op_params.padding_values.width = data.padding.width;
-@@ -376,15 +376,15 @@ void EvalFloat(TfLiteContext* context, TfLiteNode* node,
+@@ -376,18 +376,18 @@ void EvalFloat(TfLiteContext* context, TfLiteNode* node,
    op_params.float_activation_min = output_activation_min;
    op_params.float_activation_max = output_activation_max;
  
@@ -7102,7 +7349,11 @@ index c2c9cd5c..a01853ba 100644
 +      tflite_micro::micro::GetTensorData<float>(output));
  #else
    MicroPrintf("Type %s (%d) is not supported by ARC MLI Library.",
-               TfLiteTypeGetName(input->type), input->type);
+-              TfLiteTypeGetName(input->type), input->type);
++              TfLiteMicroTypeGetName(input->type), input->type);
+ #endif
+ }
+ TfLiteStatus EvalMliQuantizedPerChannel(
 @@ -615,14 +615,14 @@ void EvalQuantizedPerChannel(TfLiteContext* context, TfLiteNode* node,
  
    reference_integer_ops::DepthwiseConvPerChannel(
@@ -7145,7 +7396,7 @@ index c2c9cd5c..a01853ba 100644
            : nullptr;
  
    switch (input->type) {  // Already know in/out types are same.
-@@ -666,14 +666,14 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+@@ -666,26 +666,26 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
            reference_integer_ops::DepthwiseConvPerChannel(
                DepthwiseConvParamsQuantized(params, data),
                data.per_channel_output_multiplier, data.per_channel_output_shift,
@@ -7168,6 +7419,21 @@ index c2c9cd5c..a01853ba 100644
            break;
          }
          default:
+           MicroPrintf("Filter type %s (%d) for input type %s not supported.",
+-                      TfLiteTypeGetName(filter->type), filter->type,
+-                      TfLiteTypeGetName(input->type));
++                      TfLiteMicroTypeGetName(filter->type), filter->type,
++                      TfLiteMicroTypeGetName(input->type));
+           return kTfLiteError;
+       }
+       break;
+     }
+     default:
+-      MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(input->type),
++      MicroPrintf("Type %s (%d) not supported.", TfLiteMicroTypeGetName(input->type),
+                   input->type);
+       return kTfLiteError;
+   }
 @@ -695,7 +695,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -7179,7 +7445,7 @@ index c2c9cd5c..a01853ba 100644
 -}  // namespace tflite
 +}  // namespace tflite_micro
 diff --git a/tensorflow/lite/micro/kernels/arc_mli/fully_connected.cc b/tensorflow/lite/micro/kernels/arc_mli/fully_connected.cc
-index 4af06601..8f82cd80 100644
+index 4af06601..903573be 100644
 --- a/tensorflow/lite/micro/kernels/arc_mli/fully_connected.cc
 +++ b/tensorflow/lite/micro/kernels/arc_mli/fully_connected.cc
 @@ -30,7 +30,7 @@ limitations under the License.
@@ -7223,7 +7489,7 @@ index 4af06601..8f82cd80 100644
    return kTfLiteOk;
  #else
    MicroPrintf("Node configuration is not supported by ARC MLI Library.");
-@@ -411,18 +411,18 @@ TfLiteStatus EvalFloat(TfLiteContext* context, TfLiteNode* node,
+@@ -411,22 +411,22 @@ TfLiteStatus EvalFloat(TfLiteContext* context, TfLiteNode* node,
    float output_activation_min, output_activation_max;
    CalculateActivationRange(activation, &output_activation_min,
                             &output_activation_max);
@@ -7252,6 +7518,11 @@ index 4af06601..8f82cd80 100644
    return kTfLiteOk;
  #else
    MicroPrintf("Type %s (%d) is not supported by ARC MLI Library.",
+-              TfLiteTypeGetName(input->type), input->type);
++              TfLiteMicroTypeGetName(input->type), input->type);
+   return kTfLiteError;
+ #endif
+ }
 @@ -437,13 +437,13 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
        static_cast<const TfLiteFullyConnectedParams*>(node->builtin_data);
  
@@ -7270,6 +7541,15 @@ index 4af06601..8f82cd80 100644
  
    TFLITE_DCHECK(node->user_data != nullptr);
    const OpData& data = *(static_cast<const OpData*>(node->user_data));
+@@ -462,7 +462,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+       }
+ 
+     default:
+-      MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(input->type),
++      MicroPrintf("Type %s (%d) not supported.", TfLiteMicroTypeGetName(input->type),
+                   input->type);
+       return kTfLiteError;
+   }
 @@ -470,7 +470,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }
  
@@ -7439,7 +7719,7 @@ index 6e4e16e8..67c84e93 100644
  
  #endif  // TENSORFLOW_LITE_MICRO_KERNELS_ARC_MLI_TF_UTILS_H_
 diff --git a/tensorflow/lite/micro/kernels/arc_mli/pooling.cc b/tensorflow/lite/micro/kernels/arc_mli/pooling.cc
-index 104ec311..c4ecb1c2 100644
+index 104ec311..87724206 100644
 --- a/tensorflow/lite/micro/kernels/arc_mli/pooling.cc
 +++ b/tensorflow/lite/micro/kernels/arc_mli/pooling.cc
 @@ -28,7 +28,7 @@ limitations under the License.
@@ -7451,7 +7731,7 @@ index 104ec311..c4ecb1c2 100644
  
  namespace {
  
-@@ -172,10 +172,10 @@ void AverageEvalFloat(TfLiteContext* context, const TfLiteNode* node,
+@@ -172,13 +172,13 @@ void AverageEvalFloat(TfLiteContext* context, const TfLiteNode* node,
    op_params.padding_values.width = data.padding.width;
    op_params.float_activation_min = activation_min;
    op_params.float_activation_max = activation_max;
@@ -7465,8 +7745,12 @@ index 104ec311..c4ecb1c2 100644
 +                             tflite_micro::micro::GetTensorData<float>(output));
  #else
    MicroPrintf("Type %s (%d) is not supported by ARC MLI Library.",
-               TfLiteTypeGetName(input->type), input->type);
-@@ -281,10 +281,10 @@ void AverageEvalQuantized(TfLiteContext* context, const TfLiteNode* node,
+-              TfLiteTypeGetName(input->type), input->type);
++              TfLiteMicroTypeGetName(input->type), input->type);
+ #endif
+ }
+ 
+@@ -281,13 +281,13 @@ void AverageEvalQuantized(TfLiteContext* context, const TfLiteNode* node,
    op_params.quantized_activation_max = data.activation_max;
  
    reference_integer_ops::AveragePool(
@@ -7480,7 +7764,11 @@ index 104ec311..c4ecb1c2 100644
 +      tflite_micro::micro::GetTensorData<int8_t>(output));
  #else
    MicroPrintf("Type %s (%d) is not supported by ARC MLI Library.",
-               TfLiteTypeGetName(input->type), input->type);
+-              TfLiteTypeGetName(input->type), input->type);
++              TfLiteMicroTypeGetName(input->type), input->type);
+ #endif
+ }
+ 
 @@ -295,7 +295,7 @@ void MaxEvalFloat(TfLiteContext* context, TfLiteNode* node,
                    TfLitePoolParams* params, const OpData& data,
                    const TfLiteEvalTensor* input, TfLiteEvalTensor* output) {
@@ -7490,7 +7778,7 @@ index 104ec311..c4ecb1c2 100644
    op_params.stride_height = params->stride_height;
    op_params.stride_width = params->stride_width;
    op_params.filter_height = params->filter_height;
-@@ -304,10 +304,10 @@ void MaxEvalFloat(TfLiteContext* context, TfLiteNode* node,
+@@ -304,15 +304,15 @@ void MaxEvalFloat(TfLiteContext* context, TfLiteNode* node,
    op_params.padding_values.width = data.padding.width;
    op_params.float_activation_min = data.activation_min_f32;
    op_params.float_activation_max = data.activation_max_f32;
@@ -7505,6 +7793,12 @@ index 104ec311..c4ecb1c2 100644
  #else
    MicroPrintf(
  
+       "Node configuration or type %s (%d) is not supported by ARC MLI Library.",
+-      TfLiteTypeGetName(input->type), input->type);
++      TfLiteMicroTypeGetName(input->type), input->type);
+ #endif
+ }
+ 
 @@ -321,7 +321,7 @@ void MaxEvalQuantized(TfLiteContext* context, TfLiteNode* node,
                        const TfLiteEvalTensor* input, TfLiteEvalTensor* output) {
  #if !defined(TF_LITE_STRIP_REFERENCE_IMPL)
@@ -7514,7 +7808,7 @@ index 104ec311..c4ecb1c2 100644
    op_params.stride_height = params->stride_height;
    op_params.stride_width = params->stride_width;
    op_params.filter_height = params->filter_height;
-@@ -332,10 +332,10 @@ void MaxEvalQuantized(TfLiteContext* context, TfLiteNode* node,
+@@ -332,15 +332,15 @@ void MaxEvalQuantized(TfLiteContext* context, TfLiteNode* node,
    op_params.quantized_activation_max = data.activation_max;
  
    reference_integer_ops::MaxPool(op_params,
@@ -7529,6 +7823,12 @@ index 104ec311..c4ecb1c2 100644
  #else
    MicroPrintf(
  
+       "Node configuration or type %s (%d) is not supported by ARC MLI Library.",
+-      TfLiteTypeGetName(input->type), input->type);
++      TfLiteMicroTypeGetName(input->type), input->type);
+ #endif
+ }
+ 
 @@ -349,9 +349,9 @@ TfLiteStatus AverageEval(TfLiteContext* context, TfLiteNode* node) {
    auto* params = reinterpret_cast<TfLitePoolParams*>(node->builtin_data);
  
@@ -7541,6 +7841,15 @@ index 104ec311..c4ecb1c2 100644
  
    TFLITE_DCHECK(node->user_data != nullptr);
    const OpData& data = *(static_cast<const OpData*>(node->user_data));
+@@ -370,7 +370,7 @@ TfLiteStatus AverageEval(TfLiteContext* context, TfLiteNode* node) {
+       break;
+     default:
+       MicroPrintf("Input type %s is not currently supported",
+-                  TfLiteTypeGetName(input->type));
++                  TfLiteMicroTypeGetName(input->type));
+       return kTfLiteError;
+   }
+   return kTfLiteOk;
 @@ -380,9 +380,9 @@ TfLiteStatus MaxEval(TfLiteContext* context, TfLiteNode* node) {
    auto* params = reinterpret_cast<TfLitePoolParams*>(node->builtin_data);
  
@@ -7553,6 +7862,15 @@ index 104ec311..c4ecb1c2 100644
  
    TFLITE_DCHECK(node->user_data != nullptr);
    const OpData& data = *(static_cast<const OpData*>(node->user_data));
+@@ -400,7 +400,7 @@ TfLiteStatus MaxEval(TfLiteContext* context, TfLiteNode* node) {
+       break;
+     default:
+       MicroPrintf("Type %s not currently supported.",
+-                  TfLiteTypeGetName(input->type));
++                  TfLiteMicroTypeGetName(input->type));
+       return kTfLiteError;
+   }
+   return kTfLiteOk;
 @@ -409,11 +409,11 @@ TfLiteStatus MaxEval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -7649,7 +7967,7 @@ index 645781bc..0e5dd02b 100644
  
  #endif  // TENSORFLOW_LITE_MICRO_ARC_SCRATCH_BUFFERS_H_
 diff --git a/tensorflow/lite/micro/kernels/arg_min_max.cc b/tensorflow/lite/micro/kernels/arg_min_max.cc
-index 2ba058cc..91b86dab 100644
+index 2ba058cc..5aeb2f0b 100644
 --- a/tensorflow/lite/micro/kernels/arg_min_max.cc
 +++ b/tensorflow/lite/micro/kernels/arg_min_max.cc
 @@ -23,7 +23,7 @@ limitations under the License.
@@ -7688,6 +8006,27 @@ index 2ba058cc..91b86dab 100644
                    is_arg_max)
    if (axis->type == kTfLiteInt32) {
      if (output->type == kTfLiteInt32) {
+@@ -78,17 +78,17 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node, bool is_arg_max) {
+           MicroPrintf(
+               "Only float32, uint8_t and int8_t are "
+               "supported currently, got %s.",
+-              TfLiteTypeGetName(input->type));
++              TfLiteMicroTypeGetName(input->type));
+           return kTfLiteError;
+       }
+     } else {
+       MicroPrintf("Only int32_t are supported currently, got %s.",
+-                  TfLiteTypeGetName(output->type));
++                  TfLiteMicroTypeGetName(output->type));
+       return kTfLiteError;
+     }
+   } else {
+     MicroPrintf("Only int32_t are supported currently, got %s.",
+-                TfLiteTypeGetName(axis->type));
++                TfLiteMicroTypeGetName(axis->type));
+     return kTfLiteError;
+   }
+ 
 @@ -108,11 +108,11 @@ TfLiteStatus ArgMaxEval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -7846,7 +8185,7 @@ index bd99bd1a..b4f5dfa7 100644
 -}  // namespace tflite
 +}  // namespace tflite_micro
 diff --git a/tensorflow/lite/micro/kernels/batch_matmul.cc b/tensorflow/lite/micro/kernels/batch_matmul.cc
-index 9ecc4fc3..15d4e915 100644
+index 9ecc4fc3..2f8317ff 100644
 --- a/tensorflow/lite/micro/kernels/batch_matmul.cc
 +++ b/tensorflow/lite/micro/kernels/batch_matmul.cc
 @@ -28,7 +28,7 @@ limitations under the License.
@@ -7882,6 +8221,15 @@ index 9ecc4fc3..15d4e915 100644
                                   context, output, output_eval));
  
    // Fill in any broadcast dimensions.
+@@ -165,7 +165,7 @@ TfLiteEvalTensor* AllocInitTransposeTensorFromTfLiteTensor(
+   eval_tensor->type = tensor.type;
+ 
+   const int tensor_rank = NumDimensions(&tensor);
+-  const size_t eval_dims_size = TfLiteIntArrayGetSizeInBytes(tensor_rank);
++  const size_t eval_dims_size = TfLiteMicroIntArrayGetSizeInBytes(tensor_rank);
+   eval_tensor->dims = static_cast<TfLiteIntArray*>(
+       micro_context->AllocatePersistentBuffer(eval_dims_size));
+   if (eval_tensor->dims == nullptr) {
 @@ -234,9 +234,9 @@ TfLiteStatus InitializeTemporaries(TfLiteContext* context, TfLiteNode* node,
  template <typename Scalar>
  void TransposeRowsColumnsImpl(const TfLiteEvalTensor& tensor_in,
@@ -7932,7 +8280,7 @@ index 9ecc4fc3..15d4e915 100644
  
    bool adj_y = op_context.params->adj_y;
    bool adj_x = op_context.params->adj_x;
-@@ -526,18 +526,18 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+@@ -526,22 +526,22 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
      case kTfLiteFloat32:
        // Note we pass RHS args first, LHS args second. See note above.
        reference_ops::BatchMatMul(
@@ -7957,6 +8305,11 @@ index 9ecc4fc3..15d4e915 100644
                         output);
      default:
        MicroPrintf("BATCH_MATMUL doesn't support input type %s",
+-                  TfLiteTypeGetName(lhs->type));
++                  TfLiteMicroTypeGetName(lhs->type));
+       return kTfLiteError;
+   }
+   return kTfLiteOk;
 @@ -550,7 +550,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -8327,7 +8680,7 @@ index abba7577..27d27c37 100644
        &quantization_params_output, kInputDims, kLhsInput, kRhsInput,
        kOutputDims, kExpect, output_data);
 diff --git a/tensorflow/lite/micro/kernels/batch_to_space_nd.cc b/tensorflow/lite/micro/kernels/batch_to_space_nd.cc
-index 090a040a..873a6876 100644
+index 090a040a..c3dc44a5 100644
 --- a/tensorflow/lite/micro/kernels/batch_to_space_nd.cc
 +++ b/tensorflow/lite/micro/kernels/batch_to_space_nd.cc
 @@ -22,7 +22,7 @@ limitations under the License.
@@ -8339,7 +8692,7 @@ index 090a040a..873a6876 100644
  
  namespace {
  
-@@ -64,36 +64,36 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
+@@ -64,39 +64,39 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
  
  TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
    const TfLiteEvalTensor* input =
@@ -8395,7 +8748,11 @@ index 090a040a..873a6876 100644
 +          tflite_micro::micro::GetTensorData<int8_t>(output));
        break;
      default:
-       MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(input->type),
+-      MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(input->type),
++      MicroPrintf("Type %s (%d) not supported.", TfLiteMicroTypeGetName(input->type),
+                   input->type);
+       return kTfLiteError;
+   }
 @@ -106,7 +106,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace.
  
@@ -8765,7 +9122,7 @@ index aec5261a..9f3e6394 100644
  
  TF_LITE_MICRO_TESTS_END
 diff --git a/tensorflow/lite/micro/kernels/cast.cc b/tensorflow/lite/micro/kernels/cast.cc
-index 10d25eb4..44d97845 100644
+index 10d25eb4..87093fb3 100644
 --- a/tensorflow/lite/micro/kernels/cast.cc
 +++ b/tensorflow/lite/micro/kernels/cast.cc
 @@ -19,7 +19,7 @@ limitations under the License.
@@ -8777,7 +9134,7 @@ index 10d25eb4..44d97845 100644
  namespace {
  
  constexpr int kInputTensor = 0;
-@@ -67,7 +67,7 @@ TfLiteStatus copyToTensor(TfLiteContext* context, const FromT* in,
+@@ -67,51 +67,51 @@ TfLiteStatus copyToTensor(TfLiteContext* context, const FromT* in,
        copyCast(in, out->data.u32, num_elements);
        break;
      case kTfLiteFloat32:
@@ -8786,7 +9143,12 @@ index 10d25eb4..44d97845 100644
        break;
      default:
        // Unsupported type.
-@@ -79,27 +79,27 @@ TfLiteStatus copyToTensor(TfLiteContext* context, const FromT* in,
+       MicroPrintf("Output type %s (%d) not supported.",
+-                  TfLiteTypeGetName(out->type), out->type);
++                  TfLiteMicroTypeGetName(out->type), out->type);
+   }
+   return kTfLiteOk;
+ }
  
  TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
    const TfLiteEvalTensor* input =
@@ -8822,7 +9184,12 @@ index 10d25eb4..44d97845 100644
                            output, num_elements);
      default:
        // Unsupported type.
-@@ -111,7 +111,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+       MicroPrintf("Input type %s (%d) not supported.",
+-                  TfLiteTypeGetName(input->type), input->type);
++                  TfLiteMicroTypeGetName(input->type), input->type);
+   }
+   return kTfLiteOk;
+ }
  }  // namespace
  
  TFLMRegistration Register_CAST() {
@@ -9011,7 +9378,7 @@ index caba85e9..4343c4d9 100644
  
  TF_LITE_MICRO_TESTS_END
 diff --git a/tensorflow/lite/micro/kernels/ceva/conv.cc b/tensorflow/lite/micro/kernels/ceva/conv.cc
-index c68913d5..6632210c 100644
+index c68913d5..dc9f1ea4 100644
 --- a/tensorflow/lite/micro/kernels/ceva/conv.cc
 +++ b/tensorflow/lite/micro/kernels/ceva/conv.cc
 @@ -33,7 +33,7 @@ limitations under the License.
@@ -9109,6 +9476,15 @@ index c68913d5..6632210c 100644
  
    TFLITE_DCHECK(node->user_data != nullptr);
    const OpDataConv& data = *(static_cast<const OpDataConv*>(node->user_data));
+@@ -236,7 +236,7 @@ TfLiteStatus EvalCEVA(TfLiteContext* context, TfLiteNode* node) {
+                               output, nullptr);
+       break;
+     default:
+-      MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(input->type),
++      MicroPrintf("Type %s (%d) not supported.", TfLiteMicroTypeGetName(input->type),
+                   input->type);
+       return kTfLiteError;
+   }
 @@ -252,7 +252,7 @@ TfLiteStatus ConvEval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -9120,7 +9496,7 @@ index c68913d5..6632210c 100644
 -}  // namespace tflite
 +}  // namespace tflite_micro
 diff --git a/tensorflow/lite/micro/kernels/ceva/depthwise_conv.cc b/tensorflow/lite/micro/kernels/ceva/depthwise_conv.cc
-index eed5d9ee..9e098706 100644
+index eed5d9ee..ca0df4ba 100644
 --- a/tensorflow/lite/micro/kernels/ceva/depthwise_conv.cc
 +++ b/tensorflow/lite/micro/kernels/ceva/depthwise_conv.cc
 @@ -34,7 +34,7 @@ limitations under the License.
@@ -9204,7 +9580,7 @@ index eed5d9ee..9e098706 100644
            : nullptr;
  
    // TODO(aselle): Consider whether float conv and quantized conv should be
-@@ -230,14 +230,14 @@ TfLiteStatus EvalCEVA(TfLiteContext* context, TfLiteNode* node) {
+@@ -230,26 +230,26 @@ TfLiteStatus EvalCEVA(TfLiteContext* context, TfLiteNode* node) {
            reference_integer_ops::DepthwiseConvPerChannel(
                DepthwiseConvParamsQuantized(*params, data),
                data.per_channel_output_multiplier, data.per_channel_output_shift,
@@ -9227,6 +9603,21 @@ index eed5d9ee..9e098706 100644
            break;
          }
          default:
+           MicroPrintf("Filter type %s (%d) for input type %s not supported.",
+-                      TfLiteTypeGetName(filter->type), filter->type,
+-                      TfLiteTypeGetName(input->type));
++                      TfLiteMicroTypeGetName(filter->type), filter->type,
++                      TfLiteMicroTypeGetName(input->type));
+           return kTfLiteError;
+       }
+       break;
+     }
+     default:
+-      MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(input->type),
++      MicroPrintf("Type %s (%d) not supported.", TfLiteMicroTypeGetName(input->type),
+                   input->type);
+       return kTfLiteError;
+   }
 @@ -267,8 +267,8 @@ TfLiteStatus DepthWiseConvEval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -9239,7 +9630,7 @@ index eed5d9ee..9e098706 100644
 -}  // namespace tflite
 +}  // namespace tflite_micro
 diff --git a/tensorflow/lite/micro/kernels/ceva/fully_connected.cc b/tensorflow/lite/micro/kernels/ceva/fully_connected.cc
-index 0e0b14d4..739d395e 100644
+index 0e0b14d4..c8d0f4de 100644
 --- a/tensorflow/lite/micro/kernels/ceva/fully_connected.cc
 +++ b/tensorflow/lite/micro/kernels/ceva/fully_connected.cc
 @@ -37,7 +37,7 @@ extern int32_t* CEVA_TFLM_KERNELS_SCRATCH;
@@ -9357,6 +9748,15 @@ index 0e0b14d4..739d395e 100644
  
    TFLITE_DCHECK(node->user_data != nullptr);
    const OpDataFullyConnected& data =
+@@ -227,7 +227,7 @@ TfLiteStatus EvalCEVA(TfLiteContext* context, TfLiteNode* node) {
+                                    output);
+ 
+     default:
+-      MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(input->type),
++      MicroPrintf("Type %s (%d) not supported.", TfLiteMicroTypeGetName(input->type),
+                   input->type);
+       return kTfLiteError;
+   }
 @@ -244,7 +244,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -9368,7 +9768,7 @@ index 0e0b14d4..739d395e 100644
 -}  // namespace tflite
 +}  // namespace tflite_micro
 diff --git a/tensorflow/lite/micro/kernels/ceva/logistic.cc b/tensorflow/lite/micro/kernels/ceva/logistic.cc
-index 00e438fb..11e6e2b8 100644
+index 00e438fb..50b1b226 100644
 --- a/tensorflow/lite/micro/kernels/ceva/logistic.cc
 +++ b/tensorflow/lite/micro/kernels/ceva/logistic.cc
 @@ -33,7 +33,7 @@ limitations under the License.
@@ -9408,7 +9808,7 @@ index 00e438fb..11e6e2b8 100644
  #ifdef MCPS_MEASUREMENT
          MCPS_START_ONE;
  #endif
-@@ -70,10 +70,10 @@ TfLiteStatus LogisticEval(TfLiteContext* context, TfLiteNode* node) {
+@@ -70,17 +70,17 @@ TfLiteStatus LogisticEval(TfLiteContext* context, TfLiteNode* node) {
  #endif
  
  #else
@@ -9423,6 +9823,15 @@ index 00e438fb..11e6e2b8 100644
  #endif  // ceva platform
          return kTfLiteOk;
        }
+       default:
+         MicroPrintf("Input %s, output %s not supported.",
+-                    TfLiteTypeGetName(input->type),
+-                    TfLiteTypeGetName(output->type));
++                    TfLiteMicroTypeGetName(input->type),
++                    TfLiteMicroTypeGetName(output->type));
+         return kTfLiteError;
+     }
+   } else if (input->type == kTfLiteInt8) {
 @@ -92,8 +92,8 @@ TfLiteStatus LogisticEval(TfLiteContext* context, TfLiteNode* node) {
          int32_t input_multiplier = data->input_multiplier;
          int32_t input_left_shift = data->input_left_shift;
@@ -9434,7 +9843,7 @@ index 00e438fb..11e6e2b8 100644
  
  #ifdef MCPS_MEASUREMENT
          MCPS_START_ONE;
-@@ -110,8 +110,8 @@ TfLiteStatus LogisticEval(TfLiteContext* context, TfLiteNode* node) {
+@@ -110,21 +110,21 @@ TfLiteStatus LogisticEval(TfLiteContext* context, TfLiteNode* node) {
              data->input_zero_point, data->input_range_radius,
              data->input_multiplier, data->input_left_shift,
              NumElements(input->dims),
@@ -9445,6 +9854,23 @@ index 00e438fb..11e6e2b8 100644
  #endif  // ceva platform
          return kTfLiteOk;
        }
+       default:
+         MicroPrintf("Input %s, output %s not supported.",
+-                    TfLiteTypeGetName(input->type),
+-                    TfLiteTypeGetName(output->type));
++                    TfLiteMicroTypeGetName(input->type),
++                    TfLiteMicroTypeGetName(output->type));
+         return kTfLiteError;
+     }
+   } else {
+     MicroPrintf("Input %s, output %s not supported.",
+-                TfLiteTypeGetName(input->type),
+-                TfLiteTypeGetName(output->type));
++                TfLiteMicroTypeGetName(input->type),
++                TfLiteMicroTypeGetName(output->type));
+     return kTfLiteError;
+   }
+   return kTfLiteOk;
 @@ -133,6 +133,6 @@ TfLiteStatus LogisticEval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -9500,7 +9926,7 @@ index 585f968b..43860664 100644
 -}  // namespace tflite
 +}  // namespace tflite_micro
 diff --git a/tensorflow/lite/micro/kernels/ceva/softmax.cc b/tensorflow/lite/micro/kernels/ceva/softmax.cc
-index beb43cd4..96c57d30 100644
+index beb43cd4..864487e9 100644
 --- a/tensorflow/lite/micro/kernels/ceva/softmax.cc
 +++ b/tensorflow/lite/micro/kernels/ceva/softmax.cc
 @@ -32,16 +32,16 @@ limitations under the License.
@@ -9579,6 +10005,15 @@ index beb43cd4..96c57d30 100644
  
    TFLITE_DCHECK(node->user_data != nullptr);
    SoftmaxParams op_data = *static_cast<SoftmaxParams*>(node->user_data);
+@@ -145,7 +145,7 @@ TfLiteStatus SoftmaxEvalCEVA(TfLiteContext* context, TfLiteNode* node) {
+       return SoftmaxQuantizedCEVA(context, input, output, op_data);
+     }
+     default:
+-      MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(input->type),
++      MicroPrintf("Type %s (%d) not supported.", TfLiteMicroTypeGetName(input->type),
+                   input->type);
+       return kTfLiteError;
+   }
 @@ -161,7 +161,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -9633,7 +10068,7 @@ index 048a1160..9b766c0d 100644
  #endif
  #endif  // CEVA_TYPES_H_
 diff --git a/tensorflow/lite/micro/kernels/circular_buffer.cc b/tensorflow/lite/micro/kernels/circular_buffer.cc
-index 3e901047..4f385a85 100644
+index 3e901047..b4c13e82 100644
 --- a/tensorflow/lite/micro/kernels/circular_buffer.cc
 +++ b/tensorflow/lite/micro/kernels/circular_buffer.cc
 @@ -47,7 +47,7 @@ limitations under the License.
@@ -9666,7 +10101,7 @@ index 3e901047..4f385a85 100644
  
    TFLITE_DCHECK(node->user_data != nullptr);
    OpDataCircularBuffer* data =
-@@ -88,8 +88,8 @@ TfLiteStatus CircularBufferEval(TfLiteContext* context, TfLiteNode* node) {
+@@ -88,11 +88,11 @@ TfLiteStatus CircularBufferEval(TfLiteContext* context, TfLiteNode* node) {
    int depth = output->dims->data[2] * output->dims->data[3];
  
    if (input->type == kTfLiteInt8) {
@@ -9676,7 +10111,11 @@ index 3e901047..4f385a85 100644
 +             tflite_micro::micro::GetTensorData<int8_t>(output));
    } else {
      MicroPrintf("Type %s (%d) not supported.",
-                        TfLiteTypeGetName(input->type), input->type);
+-                       TfLiteTypeGetName(input->type), input->type);
++                       TfLiteMicroTypeGetName(input->type), input->type);
+     return kTfLiteError;
+   }
+ 
 @@ -108,9 +108,9 @@ TfLiteStatus CircularBufferEval(TfLiteContext* context, TfLiteNode* node) {
  }
  
@@ -9894,7 +10333,7 @@ index 8fde7c51..7f1b64eb 100644
        /*builtin_data=*/nullptr);
    TF_LITE_MICRO_EXPECT_EQ(kTfLiteOk, runner.InitAndPrepare());
 diff --git a/tensorflow/lite/micro/kernels/cmsis_nn/add.cc b/tensorflow/lite/micro/kernels/cmsis_nn/add.cc
-index 898410a3..3a499c06 100644
+index 898410a3..10633add 100644
 --- a/tensorflow/lite/micro/kernels/cmsis_nn/add.cc
 +++ b/tensorflow/lite/micro/kernels/cmsis_nn/add.cc
 @@ -27,7 +27,7 @@ limitations under the License.
@@ -10016,7 +10455,7 @@ index 898410a3..3a499c06 100644
    }
  
    return kTfLiteOk;
-@@ -204,45 +204,45 @@ TfLiteStatus EvalAdd(TfLiteContext* context, TfLiteNode* node,
+@@ -204,50 +204,50 @@ TfLiteStatus EvalAdd(TfLiteContext* context, TfLiteNode* node,
                       const TfLiteEvalTensor* input2, TfLiteEvalTensor* output) {
    switch (output->type) {
      case kTfLiteFloat32: {
@@ -10088,6 +10527,21 @@ index 898410a3..3a499c06 100644
        }
      } break;
      default:
+       MicroPrintf("Type %s (%d) not supported.",
+-                  TfLiteTypeGetName(output->type), output->type);
++                  TfLiteMicroTypeGetName(output->type), output->type);
+       return kTfLiteError;
+   }
+ 
+@@ -271,7 +271,7 @@ TfLiteStatus EvalAddQuantized(TfLiteContext* context, TfLiteNode* node,
+     }
+     default:
+       MicroPrintf("Type %s (%d) not supported.",
+-                  TfLiteTypeGetName(output->type), output->type);
++                  TfLiteMicroTypeGetName(output->type), output->type);
+       return kTfLiteError;
+   }
+ 
 @@ -332,11 +332,11 @@ TfLiteStatus EvalAdd(TfLiteContext* context, TfLiteNode* node) {
    auto* params = reinterpret_cast<TfLiteAddParams*>(node->builtin_data);
  
@@ -10103,6 +10557,15 @@ index 898410a3..3a499c06 100644
  
    TFLITE_DCHECK(node->user_data != nullptr);
    const OpData* data = static_cast<const OpData*>(node->user_data);
+@@ -348,7 +348,7 @@ TfLiteStatus EvalAdd(TfLiteContext* context, TfLiteNode* node) {
+     TF_LITE_ENSURE_OK(context, EvalAddQuantized(context, node, params, data,
+                                                 input1, input2, output));
+   } else {
+-    MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(output->type),
++    MicroPrintf("Type %s (%d) not supported.", TfLiteMicroTypeGetName(output->type),
+                 output->type);
+     return kTfLiteError;
+   }
 @@ -360,11 +360,11 @@ TfLiteStatus EvalAddInt8(TfLiteContext* context, TfLiteNode* node) {
    auto* params = reinterpret_cast<TfLiteAddParams*>(node->builtin_data);
  
@@ -10154,7 +10617,7 @@ index 898410a3..3a499c06 100644
 -}  // namespace tflite
 +}  // namespace tflite_micro
 diff --git a/tensorflow/lite/micro/kernels/cmsis_nn/conv.cc b/tensorflow/lite/micro/kernels/cmsis_nn/conv.cc
-index b387c6d7..bc4d914e 100644
+index b387c6d7..42bb1827 100644
 --- a/tensorflow/lite/micro/kernels/cmsis_nn/conv.cc
 +++ b/tensorflow/lite/micro/kernels/cmsis_nn/conv.cc
 @@ -28,7 +28,7 @@ limitations under the License.
@@ -10369,7 +10832,16 @@ index b387c6d7..bc4d914e 100644
        break;
      }
      case kTfLiteInt8:
-@@ -486,14 +486,14 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+@@ -471,7 +471,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+         }
+         default: {
+           MicroPrintf("Filter type %s (%d) not supported.",
+-                      TfLiteTypeGetName(filter->type), filter->type);
++                      TfLiteMicroTypeGetName(filter->type), filter->type);
+           return kTfLiteError;
+         }
+       }
+@@ -486,23 +486,23 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
              ConvParamsQuantized(params, data.reference_op_data),
              data.reference_op_data.per_channel_output_multiplier,
              data.reference_op_data.per_channel_output_shift,
@@ -10391,7 +10863,18 @@ index b387c6d7..bc4d914e 100644
 +            tflite_micro::micro::GetTensorData<int16_t>(output));
        } else {
          MicroPrintf("Bias type %s (%d) not supported.",
-                     TfLiteTypeGetName(bias->type), bias->type);
+-                    TfLiteTypeGetName(bias->type), bias->type);
++                    TfLiteMicroTypeGetName(bias->type), bias->type);
+         return kTfLiteError;
+       }
+       break;
+     }
+     default:
+-      MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(input->type),
++      MicroPrintf("Type %s (%d) not supported.", TfLiteMicroTypeGetName(input->type),
+                   input->type);
+       return kTfLiteError;
+   }
 @@ -513,15 +513,15 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -10413,7 +10896,7 @@ index b387c6d7..bc4d914e 100644
 -}  // namespace tflite
 +}  // namespace tflite_micro
 diff --git a/tensorflow/lite/micro/kernels/cmsis_nn/depthwise_conv.cc b/tensorflow/lite/micro/kernels/cmsis_nn/depthwise_conv.cc
-index 7b733b76..e7d74b5c 100644
+index 7b733b76..1e1814f9 100644
 --- a/tensorflow/lite/micro/kernels/cmsis_nn/depthwise_conv.cc
 +++ b/tensorflow/lite/micro/kernels/cmsis_nn/depthwise_conv.cc
 @@ -29,7 +29,7 @@ limitations under the License.
@@ -10525,6 +11008,24 @@ index 7b733b76..e7d74b5c 100644
        break;
      }
      case kTfLiteInt8:
+@@ -363,7 +363,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+         }
+         default: {
+           MicroPrintf("Filter type %s (%d) not supported.",
+-                      TfLiteTypeGetName(filter->type), filter->type);
++                      TfLiteMicroTypeGetName(filter->type), filter->type);
+           return kTfLiteError;
+         }
+       }
+@@ -373,7 +373,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+                                   bias, output);
+       break;
+     default:
+-      MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(input->type),
++      MicroPrintf("Type %s (%d) not supported.", TfLiteMicroTypeGetName(input->type),
+                   input->type);
+       return kTfLiteError;
+   }
 @@ -389,17 +389,17 @@ TfLiteStatus EvalInt8(TfLiteContext* context, TfLiteNode* node) {
    const OpData& data = *(static_cast<OpData*>(node->user_data));
  
@@ -10588,7 +11089,7 @@ index 7b733b76..e7d74b5c 100644
 -}  // namespace tflite
 +}  // namespace tflite_micro
 diff --git a/tensorflow/lite/micro/kernels/cmsis_nn/fully_connected.cc b/tensorflow/lite/micro/kernels/cmsis_nn/fully_connected.cc
-index dbba5b27..08d646a4 100644
+index dbba5b27..ce1fa4a3 100644
 --- a/tensorflow/lite/micro/kernels/cmsis_nn/fully_connected.cc
 +++ b/tensorflow/lite/micro/kernels/cmsis_nn/fully_connected.cc
 @@ -29,7 +29,7 @@ limitations under the License.
@@ -10727,7 +11228,7 @@ index dbba5b27..08d646a4 100644
        break;
      }
      case kTfLiteInt8: {
-@@ -379,16 +379,16 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+@@ -379,21 +379,21 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
              return EvalQuantizedInt8(context, node, data, input, &filter_int8,
                                       bias, output);
            } else {
@@ -10753,7 +11254,22 @@ index dbba5b27..08d646a4 100644
              return kTfLiteOk;
            }
          default:
-@@ -419,13 +419,13 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+           MicroPrintf("Filter Type %s (%d) not supported.",
+-                      TfLiteTypeGetName(filter->type), filter->type);
++                      TfLiteMicroTypeGetName(filter->type), filter->type);
+           return kTfLiteError;
+       }
+       break;
+@@ -403,7 +403,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+                                 output);
+     }
+     default: {
+-      MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(input->type),
++      MicroPrintf("Type %s (%d) not supported.", TfLiteMicroTypeGetName(input->type),
+                   input->type);
+       return kTfLiteError;
+     }
+@@ -419,25 +419,25 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  // refactoring.
  TfLiteStatus EvalInt8(TfLiteContext* context, TfLiteNode* node) {
    const TfLiteEvalTensor* input =
@@ -10771,7 +11287,12 @@ index dbba5b27..08d646a4 100644
  
    TFLITE_DCHECK(node->user_data != nullptr);
    const OpData& data = *(static_cast<const OpData*>(node->user_data));
-@@ -437,7 +437,7 @@ TfLiteStatus EvalInt8(TfLiteContext* context, TfLiteNode* node) {
+ 
+   // Checks in Prepare ensure input, output and filter types are all the same.
+   if (input->type != kTfLiteInt8) {
+-    MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(input->type),
++    MicroPrintf("Type %s (%d) not supported.", TfLiteMicroTypeGetName(input->type),
+                 input->type);
      return kTfLiteError;
    }
  
@@ -10780,7 +11301,7 @@ index dbba5b27..08d646a4 100644
        context, data.reference_op_data.filter_buffer_index, filter);
  
    return EvalQuantizedInt8(context, node, data, input, &filter_int8, bias,
-@@ -446,13 +446,13 @@ TfLiteStatus EvalInt8(TfLiteContext* context, TfLiteNode* node) {
+@@ -446,20 +446,20 @@ TfLiteStatus EvalInt8(TfLiteContext* context, TfLiteNode* node) {
  
  TfLiteStatus EvalInt16(TfLiteContext* context, TfLiteNode* node) {
    const TfLiteEvalTensor* input =
@@ -10798,6 +11319,14 @@ index dbba5b27..08d646a4 100644
  
    TFLITE_DCHECK(node->user_data != nullptr);
    const OpData& data = *(static_cast<const OpData*>(node->user_data));
+ 
+   // Checks in Prepare ensure input, output and filter types are all the same.
+   if (input->type != kTfLiteInt16) {
+-    MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(input->type),
++    MicroPrintf("Type %s (%d) not supported.", TfLiteMicroTypeGetName(input->type),
+                 input->type);
+     return kTfLiteError;
+   }
 @@ -470,19 +470,19 @@ TfLiteStatus EvalInt16(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -10824,7 +11353,7 @@ index dbba5b27..08d646a4 100644
 -}  // namespace tflite
 +}  // namespace tflite_micro
 diff --git a/tensorflow/lite/micro/kernels/cmsis_nn/mul.cc b/tensorflow/lite/micro/kernels/cmsis_nn/mul.cc
-index 571d88ab..d7617825 100644
+index 571d88ab..192b3769 100644
 --- a/tensorflow/lite/micro/kernels/cmsis_nn/mul.cc
 +++ b/tensorflow/lite/micro/kernels/cmsis_nn/mul.cc
 @@ -26,13 +26,13 @@ limitations under the License.
@@ -10937,6 +11466,15 @@ index 571d88ab..d7617825 100644
  
    switch (input1->type) {
      case kTfLiteInt8:
+@@ -126,7 +126,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+       break;
+     default:
+       MicroPrintf("Type %s (%d) not supported.",
+-                  TfLiteTypeGetName(input1->type), input1->type);
++                  TfLiteMicroTypeGetName(input1->type), input1->type);
+       return kTfLiteError;
+   }
+ 
 @@ -139,11 +139,11 @@ TfLiteStatus EvalInt8(TfLiteContext* context, TfLiteNode* node) {
  
    const OpDataMul* data = static_cast<const OpDataMul*>(node->user_data);
@@ -10988,7 +11526,7 @@ index 571d88ab..d7617825 100644
 -}  // namespace tflite
 +}  // namespace tflite_micro
 diff --git a/tensorflow/lite/micro/kernels/cmsis_nn/pooling.cc b/tensorflow/lite/micro/kernels/cmsis_nn/pooling.cc
-index d8311dbb..b33963ff 100644
+index d8311dbb..823ea054 100644
 --- a/tensorflow/lite/micro/kernels/cmsis_nn/pooling.cc
 +++ b/tensorflow/lite/micro/kernels/cmsis_nn/pooling.cc
 @@ -23,7 +23,7 @@ limitations under the License.
@@ -10999,6 +11537,24 @@ index d8311dbb..b33963ff 100644
 +namespace tflite_micro {
  
  namespace {
+ 
+@@ -215,7 +215,7 @@ TfLiteStatus AverageEval(TfLiteContext* context, TfLiteNode* node) {
+     AverageEvalQuantized(context, node, params, data, input, output);
+   } else {
+     MicroPrintf("Input type %s is not currently supported",
+-                TfLiteTypeGetName(input->type));
++                TfLiteMicroTypeGetName(input->type));
+     return kTfLiteError;
+   }
+ 
+@@ -276,7 +276,7 @@ TfLiteStatus MaxEval(TfLiteContext* context, TfLiteNode* node) {
+     MaxEvalQuantized(context, node, params, data, input, output);
+   } else {
+     MicroPrintf("Input type %s is not currently supported",
+-                TfLiteTypeGetName(input->type));
++                TfLiteMicroTypeGetName(input->type));
+     return kTfLiteError;
+   }
  
 @@ -320,27 +320,27 @@ TfLiteStatus MaxEvalInt16(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
@@ -11036,7 +11592,7 @@ index d8311dbb..b33963ff 100644
 -}  // namespace tflite
 +}  // namespace tflite_micro
 diff --git a/tensorflow/lite/micro/kernels/cmsis_nn/softmax.cc b/tensorflow/lite/micro/kernels/cmsis_nn/softmax.cc
-index f83a0902..594bff97 100644
+index f83a0902..590a5ad0 100644
 --- a/tensorflow/lite/micro/kernels/cmsis_nn/softmax.cc
 +++ b/tensorflow/lite/micro/kernels/cmsis_nn/softmax.cc
 @@ -26,7 +26,7 @@ limitations under the License.
@@ -11097,7 +11653,7 @@ index f83a0902..594bff97 100644
        }
        return kTfLiteOk;
      }
-@@ -117,10 +117,10 @@ TfLiteStatus SoftmaxEval(TfLiteContext* context, TfLiteNode* node) {
+@@ -117,57 +117,57 @@ TfLiteStatus SoftmaxEval(TfLiteContext* context, TfLiteNode* node) {
  
        TFLITE_DCHECK_EQ(
            arm_softmax_s16(
@@ -11110,7 +11666,12 @@ index f83a0902..594bff97 100644
            ARM_CMSIS_NN_SUCCESS);
        return kTfLiteOk;
      }
-@@ -132,42 +132,42 @@ TfLiteStatus SoftmaxEval(TfLiteContext* context, TfLiteNode* node) {
+     default:
+-      MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(input->type),
++      MicroPrintf("Type %s (%d) not supported.", TfLiteMicroTypeGetName(input->type),
+                   input->type);
+       return kTfLiteError;
+   }
  }
  
  TfLiteStatus SoftmaxEvalInt8(TfLiteContext* context, TfLiteNode* node) {
@@ -11203,7 +11764,7 @@ index f83a0902..594bff97 100644
 -}  // namespace tflite
 +}  // namespace tflite_micro
 diff --git a/tensorflow/lite/micro/kernels/cmsis_nn/svdf.cc b/tensorflow/lite/micro/kernels/cmsis_nn/svdf.cc
-index 97563887..4eb042ec 100644
+index 97563887..c2841046 100644
 --- a/tensorflow/lite/micro/kernels/cmsis_nn/svdf.cc
 +++ b/tensorflow/lite/micro/kernels/cmsis_nn/svdf.cc
 @@ -28,7 +28,7 @@ limitations under the License.
@@ -11243,7 +11804,7 @@ index 97563887..4eb042ec 100644
            output_data);
        return kTfLiteOk;
      }
-@@ -309,13 +309,13 @@ TfLiteStatus EvalIntegerSVDF(TfLiteContext* context, TfLiteNode* node,
+@@ -309,20 +309,20 @@ TfLiteStatus EvalIntegerSVDF(TfLiteContext* context, TfLiteNode* node,
        arm_svdf_state_s16_s8(
            &scratch_ctx, &scratch_output_ctx, &svdf_params, &in_quant_params,
            &out_quant_params, &input_dims,
@@ -11262,6 +11823,14 @@ index 97563887..4eb042ec 100644
            &output_dims, output_data);
        return kTfLiteOk;
      }
+ 
+     default:
+       MicroPrintf("Could not find matching function for type %s.",
+-                  TfLiteTypeGetName(weights_time_tensor->type));
++                  TfLiteMicroTypeGetName(weights_time_tensor->type));
+       return kTfLiteError;
+   }
+ }
 @@ -334,19 +334,19 @@ TfLiteStatus EvalSvdf(TfLiteContext* context, TfLiteNode* node) {
        *(static_cast<const CmsisNnOpDataSvdf*>(node->user_data));
  
@@ -11288,6 +11857,15 @@ index 97563887..4eb042ec 100644
  
    switch (weights_time->type) {
      case kTfLiteFloat32: {
+@@ -365,7 +365,7 @@ TfLiteStatus EvalSvdf(TfLiteContext* context, TfLiteNode* node) {
+ 
+     default:
+       MicroPrintf("Type %s not currently supported.",
+-                  TfLiteTypeGetName(weights_feature->type));
++                  TfLiteMicroTypeGetName(weights_feature->type));
+       return kTfLiteError;
+   }
+   return kTfLiteOk;
 @@ -378,19 +378,19 @@ TfLiteStatus EvalSvdfInt8(TfLiteContext* context, TfLiteNode* node) {
        *(static_cast<const CmsisNnOpDataSvdf*>(node->user_data));
  
@@ -11330,7 +11908,7 @@ index 97563887..4eb042ec 100644
 -}  // namespace tflite
 +}  // namespace tflite_micro
 diff --git a/tensorflow/lite/micro/kernels/cmsis_nn/unidirectional_sequence_lstm.cc b/tensorflow/lite/micro/kernels/cmsis_nn/unidirectional_sequence_lstm.cc
-index f66ce804..e7ecfa6a 100644
+index f66ce804..7580af99 100644
 --- a/tensorflow/lite/micro/kernels/cmsis_nn/unidirectional_sequence_lstm.cc
 +++ b/tensorflow/lite/micro/kernels/cmsis_nn/unidirectional_sequence_lstm.cc
 @@ -29,7 +29,7 @@ limitations under the License.
@@ -11492,6 +12070,51 @@ index f66ce804..e7ecfa6a 100644
  
    return kTfLiteOk;
  }
+@@ -556,7 +556,7 @@ TfLiteStatus UnidirectionalSequenceLstmPrepare(TfLiteContext* context,
+     MicroPrintf(
+         "Cell state type %s (%d) not supported. The quantized Unidirectional "
+         "Sequence LSTM Op only support int16 cell state",
+-        TfLiteTypeGetName(cell_state_type), cell_state_type);
++        TfLiteMicroTypeGetName(cell_state_type), cell_state_type);
+     return kTfLiteError;
+   }
+   // request buffers (four buffers)
+@@ -605,7 +605,7 @@ TfLiteStatus UnidirectionalSequenceLstmEval(TfLiteContext* context,
+         }
+         default: {
+           MicroPrintf("Filter type %s (%d) not supported.",
+-                      TfLiteTypeGetName(weight_type), activation_type);
++                      TfLiteMicroTypeGetName(weight_type), activation_type);
+           return kTfLiteError;
+         }
+       }
+@@ -623,7 +623,7 @@ TfLiteStatus UnidirectionalSequenceLstmEval(TfLiteContext* context,
+         }
+         default: {
+           MicroPrintf("Filter type %s (%d) not supported.",
+-                      TfLiteTypeGetName(weight_type), weight_type);
++                      TfLiteMicroTypeGetName(weight_type), weight_type);
+           return kTfLiteError;
+         }
+       }
+@@ -631,7 +631,7 @@ TfLiteStatus UnidirectionalSequenceLstmEval(TfLiteContext* context,
+     }
+     default: {
+       MicroPrintf("Input type %s (%d) not supported.",
+-                  TfLiteTypeGetName(activation_type), activation_type);
++                  TfLiteMicroTypeGetName(activation_type), activation_type);
+       return kTfLiteError;
+     }
+   }
+@@ -660,7 +660,7 @@ TfLiteStatus UnidirectionalSequenceLstmEvalInt8(TfLiteContext* context,
+                                                    buffers);
+   } else {
+     MicroPrintf("Input type %s (%d) not supported.",
+-                TfLiteTypeGetName(activation_type), activation_type);
++                TfLiteMicroTypeGetName(activation_type), activation_type);
+     return kTfLiteError;
+   }
+   return kTfLiteOk;
 @@ -669,15 +669,15 @@ TfLiteStatus UnidirectionalSequenceLstmEvalInt8(TfLiteContext* context,
  }  // namespace
  
@@ -11512,7 +12135,7 @@ index f66ce804..e7ecfa6a 100644
 -}  // namespace tflite
 +}  // namespace tflite_micro
 diff --git a/tensorflow/lite/micro/kernels/comparisons.cc b/tensorflow/lite/micro/kernels/comparisons.cc
-index 4056316f..3526af04 100644
+index 4056316f..5a092782 100644
 --- a/tensorflow/lite/micro/kernels/comparisons.cc
 +++ b/tensorflow/lite/micro/kernels/comparisons.cc
 @@ -21,7 +21,7 @@ limitations under the License.
@@ -11524,7 +12147,7 @@ index 4056316f..3526af04 100644
  
  namespace {
  
-@@ -38,82 +38,82 @@ TfLiteStatus EqualEval(TfLiteContext* context, TfLiteNode* node) {
+@@ -38,87 +38,87 @@ TfLiteStatus EqualEval(TfLiteContext* context, TfLiteNode* node) {
    const OpData* data = static_cast<const OpData*>(node->user_data);
  
    const TfLiteEvalTensor* input1 =
@@ -11635,7 +12258,13 @@ index 4056316f..3526af04 100644
                  output_data);
        break;
      default:
-@@ -130,82 +130,82 @@ TfLiteStatus NotEqualEval(TfLiteContext* context, TfLiteNode* node) {
+       MicroPrintf("Type %s (%d) not supported.",
+-                  TfLiteTypeGetName(input1->type), input1->type);
++                  TfLiteMicroTypeGetName(input1->type), input1->type);
+       return kTfLiteError;
+   }
+   return kTfLiteOk;
+@@ -130,87 +130,87 @@ TfLiteStatus NotEqualEval(TfLiteContext* context, TfLiteNode* node) {
    const OpData* data = static_cast<const OpData*>(node->user_data);
  
    const TfLiteEvalTensor* input1 =
@@ -11746,7 +12375,13 @@ index 4056316f..3526af04 100644
                  output_data);
        break;
      default:
-@@ -221,69 +221,69 @@ TfLiteStatus GreaterEval(TfLiteContext* context, TfLiteNode* node) {
+       MicroPrintf("Type %s (%d) not supported.",
+-                  TfLiteTypeGetName(input1->type), input1->type);
++                  TfLiteMicroTypeGetName(input1->type), input1->type);
+       return kTfLiteError;
+   }
+   return kTfLiteOk;
+@@ -221,74 +221,74 @@ TfLiteStatus GreaterEval(TfLiteContext* context, TfLiteNode* node) {
    const OpData* data = static_cast<const OpData*>(node->user_data);
  
    const TfLiteEvalTensor* input1 =
@@ -11840,7 +12475,13 @@ index 4056316f..3526af04 100644
                  output_data);
        break;
      default:
-@@ -299,69 +299,69 @@ TfLiteStatus GreaterEqualEval(TfLiteContext* context, TfLiteNode* node) {
+       MicroPrintf("Type %s (%d) not supported.",
+-                  TfLiteTypeGetName(input1->type), input1->type);
++                  TfLiteMicroTypeGetName(input1->type), input1->type);
+       return kTfLiteError;
+   }
+   return kTfLiteOk;
+@@ -299,74 +299,74 @@ TfLiteStatus GreaterEqualEval(TfLiteContext* context, TfLiteNode* node) {
    const OpData* data = static_cast<const OpData*>(node->user_data);
  
    const TfLiteEvalTensor* input1 =
@@ -11934,7 +12575,13 @@ index 4056316f..3526af04 100644
                  output_data);
        break;
      default:
-@@ -377,69 +377,69 @@ TfLiteStatus LessEval(TfLiteContext* context, TfLiteNode* node) {
+       MicroPrintf("Type %s (%d) not supported.",
+-                  TfLiteTypeGetName(input1->type), input1->type);
++                  TfLiteMicroTypeGetName(input1->type), input1->type);
+       return kTfLiteError;
+   }
+   return kTfLiteOk;
+@@ -377,74 +377,74 @@ TfLiteStatus LessEval(TfLiteContext* context, TfLiteNode* node) {
    const OpData* data = static_cast<const OpData*>(node->user_data);
  
    const TfLiteEvalTensor* input1 =
@@ -12028,7 +12675,13 @@ index 4056316f..3526af04 100644
                  output_data);
        break;
      default:
-@@ -455,69 +455,69 @@ TfLiteStatus LessEqualEval(TfLiteContext* context, TfLiteNode* node) {
+       MicroPrintf("Type %s (%d) not supported.",
+-                  TfLiteTypeGetName(input1->type), input1->type);
++                  TfLiteMicroTypeGetName(input1->type), input1->type);
+       return kTfLiteError;
+   }
+   return kTfLiteOk;
+@@ -455,74 +455,74 @@ TfLiteStatus LessEqualEval(TfLiteContext* context, TfLiteNode* node) {
    const OpData* data = static_cast<const OpData*>(node->user_data);
  
    const TfLiteEvalTensor* input1 =
@@ -12122,6 +12775,12 @@ index 4056316f..3526af04 100644
                  output_data);
        break;
      default:
+       MicroPrintf("Type %s (%d) not supported.",
+-                  TfLiteTypeGetName(input1->type), input1->type);
++                  TfLiteMicroTypeGetName(input1->type), input1->type);
+       return kTfLiteError;
+   }
+   return kTfLiteOk;
 @@ -580,27 +580,27 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -12509,7 +13168,7 @@ index eec57d62..4b4533e4 100644
          input2_data, input2_quantized, input1_scale, input1_zero_point,
          expected_data, expected_dim, output_data);
 diff --git a/tensorflow/lite/micro/kernels/concatenation.cc b/tensorflow/lite/micro/kernels/concatenation.cc
-index b4a838f7..cbede447 100644
+index b4a838f7..4d4bf7d2 100644
 --- a/tensorflow/lite/micro/kernels/concatenation.cc
 +++ b/tensorflow/lite/micro/kernels/concatenation.cc
 @@ -24,11 +24,11 @@ limitations under the License.
@@ -12566,6 +13225,15 @@ index b4a838f7..cbede447 100644
  }
  
  void* Init(TfLiteContext* context, const char* buffer, size_t length) {
+@@ -205,7 +205,7 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
+     }
+     default:
+       MicroPrintf("Op Concatenation does not currently support Type '%s'.",
+-                  TfLiteTypeGetName(output_type));
++                  TfLiteMicroTypeGetName(output_type));
+       return kTfLiteError;
+   }
+ 
 @@ -216,7 +216,7 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
  
  TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
@@ -12574,6 +13242,15 @@ index b4a838f7..cbede447 100644
 +      tflite_micro::micro::GetEvalOutput(context, node, kOutputTensor);
    TF_LITE_ENSURE(context, output_tensor != nullptr);
    TfLiteType output_type = output_tensor->type;
+ 
+@@ -242,7 +242,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+ 
+     default:
+       MicroPrintf("Op Concatenation does not currently support Type '%s'.",
+-                  TfLiteTypeGetName(output_type));
++                  TfLiteMicroTypeGetName(output_type));
+       return kTfLiteError;
+   }
  
 @@ -252,7 +252,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
@@ -12738,7 +13415,7 @@ index ddbc74d4..6e5689dc 100644
        input_zero_point, axis, output_shape, output_value, output_scale,
        output_zero_point, output_data);
 diff --git a/tensorflow/lite/micro/kernels/conv.cc b/tensorflow/lite/micro/kernels/conv.cc
-index 26300896..73782d4a 100644
+index 26300896..bca963cd 100644
 --- a/tensorflow/lite/micro/kernels/conv.cc
 +++ b/tensorflow/lite/micro/kernels/conv.cc
 @@ -24,20 +24,20 @@ limitations under the License.
@@ -12794,7 +13471,7 @@ index 26300896..73782d4a 100644
        break;
      }
      case kTfLiteInt16: {
-@@ -64,26 +64,26 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+@@ -64,29 +64,29 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
          reference_integer_ops::ConvPerChannel(
              ConvParamsQuantized(params, data),
              data.per_channel_output_multiplier, data.per_channel_output_shift,
@@ -12836,8 +13513,12 @@ index 26300896..73782d4a 100644
 +            tflite_micro::micro::GetTensorData<int16_t>(output));
        } else {
          MicroPrintf("Bias type %s (%d) not supported.",
-                     TfLiteTypeGetName(bias->type), bias->type);
-@@ -96,34 +96,34 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+-                    TfLiteTypeGetName(bias->type), bias->type);
++                    TfLiteMicroTypeGetName(bias->type), bias->type);
+         return kTfLiteError;
+       }
+       break;
+@@ -96,45 +96,45 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
          case kTfLiteInt4: {
            int8_t* unpacked_filter_data = static_cast<int8_t*>(
                context->GetScratchBuffer(context, data.filter_buffer_index));
@@ -12890,6 +13571,19 @@ index 26300896..73782d4a 100644
            break;
          }
          default:
+           MicroPrintf("Weight type %s (%d) not supported.",
+-                      TfLiteTypeGetName(filter->type), filter->type);
++                      TfLiteMicroTypeGetName(filter->type), filter->type);
+           return kTfLiteError;
+       }
+       break;
+     }
+     default:
+-      MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(input->type),
++      MicroPrintf("Type %s (%d) not supported.", TfLiteMicroTypeGetName(input->type),
+                   input->type);
+       return kTfLiteError;
+   }
 @@ -144,7 +144,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -13952,7 +14646,7 @@ index a0f733b8..9f3a8949 100644
 -}  // namespace tflite
 +}  // namespace tflite_micro
 diff --git a/tensorflow/lite/micro/kernels/cumsum.cc b/tensorflow/lite/micro/kernels/cumsum.cc
-index f62f2a51..26669471 100644
+index f62f2a51..4693edd9 100644
 --- a/tensorflow/lite/micro/kernels/cumsum.cc
 +++ b/tensorflow/lite/micro/kernels/cumsum.cc
 @@ -22,7 +22,7 @@ limitations under the License.
@@ -14000,7 +14694,7 @@ index f62f2a51..26669471 100644
        return kTfLiteOk;
      } break;
  
-@@ -149,10 +149,10 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+@@ -149,16 +149,16 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
        params.output_shift = data->output_shift;
        SetActivationParams(data->output_activation_min,
                            data->output_activation_max, &params);
@@ -14013,6 +14707,13 @@ index f62f2a51..26669471 100644
        return kTfLiteOk;
      } break;
  
+     default: {
+       MicroPrintf("CUMSUM only supports FLOAT32 and INT8, got %s.",
+-                  TfLiteTypeGetName(output->type));
++                  TfLiteMicroTypeGetName(output->type));
+       return kTfLiteError;
+     }
+   }
 @@ -169,7 +169,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -14249,7 +14950,7 @@ index 1d85f696..f52aa86e 100644
  }
  TF_LITE_MICRO_TESTS_END
 diff --git a/tensorflow/lite/micro/kernels/depth_to_space.cc b/tensorflow/lite/micro/kernels/depth_to_space.cc
-index 7e0a8fa5..86f9bfe0 100644
+index 7e0a8fa5..dc699e29 100644
 --- a/tensorflow/lite/micro/kernels/depth_to_space.cc
 +++ b/tensorflow/lite/micro/kernels/depth_to_space.cc
 @@ -22,7 +22,7 @@ limitations under the License.
@@ -14272,7 +14973,7 @@ index 7e0a8fa5..86f9bfe0 100644
                                   context, output, output_eval));
    output->dims->data[kBatchRank] = input->dims->data[kBatchRank];
    output->dims->data[kHeightRank] = output_height;
-@@ -102,27 +102,27 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+@@ -102,31 +102,31 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
        reinterpret_cast<TfLiteDepthToSpaceParams*>(node->builtin_data);
  
    const TfLiteEvalTensor* input =
@@ -14311,6 +15012,11 @@ index 7e0a8fa5..86f9bfe0 100644
        break;
      default:
        MicroPrintf("DEPTH_TO_SPACE only supports FLOAT32 and INT8, got %s.",
+-                  TfLiteTypeGetName(output->type));
++                  TfLiteMicroTypeGetName(output->type));
+       return kTfLiteError;
+   }
+ 
 @@ -136,7 +136,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -14503,7 +15209,7 @@ index 4053436d..3bad065a 100644
        output_data);
  }
 diff --git a/tensorflow/lite/micro/kernels/depthwise_conv.cc b/tensorflow/lite/micro/kernels/depthwise_conv.cc
-index 398f8cd0..65f9868f 100644
+index 398f8cd0..4aa3aea3 100644
 --- a/tensorflow/lite/micro/kernels/depthwise_conv.cc
 +++ b/tensorflow/lite/micro/kernels/depthwise_conv.cc
 @@ -24,7 +24,7 @@ limitations under the License.
@@ -14557,7 +15263,7 @@ index 398f8cd0..65f9868f 100644
        break;
      }
      case kTfLiteInt8: {
-@@ -70,34 +70,34 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+@@ -70,40 +70,40 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
          case kTfLiteInt4: {
            int8_t* unpacked_filter_data = static_cast<int8_t*>(
                context->GetScratchBuffer(context, data.filter_buffer_index));
@@ -14610,7 +15316,15 @@ index 398f8cd0..65f9868f 100644
            break;
          }
          default:
-@@ -114,14 +114,14 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+           MicroPrintf("Filter type %s (%d) for input type %s not supported.",
+-                      TfLiteTypeGetName(filter->type), filter->type,
+-                      TfLiteTypeGetName(input->type));
++                      TfLiteMicroTypeGetName(filter->type), filter->type,
++                      TfLiteMicroTypeGetName(input->type));
+           return kTfLiteError;
+       }
+       break;
+@@ -114,27 +114,27 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
            reference_integer_ops::DepthwiseConvPerChannel(
                DepthwiseConvParamsQuantized(params, data),
                data.per_channel_output_multiplier, data.per_channel_output_shift,
@@ -14633,6 +15347,22 @@ index 398f8cd0..65f9868f 100644
            break;
          }
          default:
+           MicroPrintf("Filter type %s (%d) for input type %s not supported.",
+-                      TfLiteTypeGetName(filter->type), filter->type,
+-                      TfLiteTypeGetName(input->type));
++                      TfLiteMicroTypeGetName(filter->type), filter->type,
++                      TfLiteMicroTypeGetName(input->type));
+           return kTfLiteError;
+       }
+       break;
+     }
+     default:
+       MicroPrintf("Input type %s (%d) not supported.",
+-                  TfLiteTypeGetName(input->type), input->type);
++                  TfLiteMicroTypeGetName(input->type), input->type);
+       return kTfLiteError;
+   }
+   return kTfLiteOk;
 @@ -143,7 +143,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -15182,7 +15912,7 @@ index b50b40ae..5dca2627 100644
        filter_shape, filter_values, filter_quantized, bias_shape, bias_values,
        bias_quantized, output_shape, golden, golden_quantized, output_data,
 diff --git a/tensorflow/lite/micro/kernels/dequantize.cc b/tensorflow/lite/micro/kernels/dequantize.cc
-index 428c866a..f41a5b6c 100644
+index 428c866a..1eca1697 100644
 --- a/tensorflow/lite/micro/kernels/dequantize.cc
 +++ b/tensorflow/lite/micro/kernels/dequantize.cc
 @@ -26,7 +26,7 @@ limitations under the License.
@@ -15205,7 +15935,7 @@ index 428c866a..f41a5b6c 100644
  
    // Output type ensured to be kTfLiteFloat32 at the Prepare stage
    TFLITE_DCHECK(output->type == kTfLiteFloat32);
-@@ -47,24 +47,24 @@ TfLiteStatus DequantizeEval(TfLiteContext* context, TfLiteNode* node) {
+@@ -47,29 +47,29 @@ TfLiteStatus DequantizeEval(TfLiteContext* context, TfLiteNode* node) {
    switch (input->type) {
      case kTfLiteInt8:
        reference_ops::Dequantize(data->quantization_params,
@@ -15242,6 +15972,13 @@ index 428c866a..f41a5b6c 100644
        break;
      default:
        MicroPrintf("Input %s, output %s not supported.",
+-                  TfLiteTypeGetName(input->type),
+-                  TfLiteTypeGetName(output->type));
++                  TfLiteMicroTypeGetName(input->type),
++                  TfLiteMicroTypeGetName(output->type));
+       return kTfLiteError;
+   }
+ 
 @@ -77,8 +77,8 @@ TfLiteStatus DequantizeEval(TfLiteContext* context, TfLiteNode* node) {
  }
  
@@ -15718,7 +16455,7 @@ index 728e2e71..fa6ee9b6 100644
  }
  
 diff --git a/tensorflow/lite/micro/kernels/div.cc b/tensorflow/lite/micro/kernels/div.cc
-index b29686ac..b9749bbc 100644
+index b29686ac..5a3c666c 100644
 --- a/tensorflow/lite/micro/kernels/div.cc
 +++ b/tensorflow/lite/micro/kernels/div.cc
 @@ -23,7 +23,7 @@ limitations under the License.
@@ -15813,6 +16550,15 @@ index b29686ac..b9749bbc 100644
  
    if (output->type == kTfLiteFloat32) {
      EvalDiv<float>(context, node, params, data, input1, input2, output);
+@@ -203,7 +203,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+     MicroPrintf(
+         "DIV only supports FLOAT32, INT32, quantized INT8 "
+         "now, got type %s (%d).",
+-        TfLiteTypeGetName(output->type), output->type);
++        TfLiteMicroTypeGetName(output->type), output->type);
+     return kTfLiteError;
+   }
+ 
 @@ -213,7 +213,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -16013,7 +16759,7 @@ index ef35d0c0..49501379 100644
  }
  
 diff --git a/tensorflow/lite/micro/kernels/elementwise.cc b/tensorflow/lite/micro/kernels/elementwise.cc
-index a33c3406..a64e58d6 100644
+index a33c3406..f3703edd 100644
 --- a/tensorflow/lite/micro/kernels/elementwise.cc
 +++ b/tensorflow/lite/micro/kernels/elementwise.cc
 @@ -24,7 +24,7 @@ limitations under the License.
@@ -16025,6 +16771,24 @@ index a33c3406..a64e58d6 100644
  namespace {
  
  constexpr int kAbsNameId = 0;
+@@ -89,7 +89,7 @@ TfLiteStatus GenericPrepare(TfLiteContext* context, TfLiteNode* node) {
+   TF_LITE_ENSURE_TYPES_EQ(context, input->type, output->type);
+   if (!IsSupportedType(input->type)) {
+     MicroPrintf("Input data type %s (%d) is not supported.",
+-                TfLiteTypeGetName(input->type), input->type);
++                TfLiteMicroTypeGetName(input->type), input->type);
+     return kTfLiteError;
+   }
+ 
+@@ -111,7 +111,7 @@ TfLiteStatus PrepareAbsRsqrt(TfLiteContext* context, TfLiteNode* node) {
+   TF_LITE_ENSURE_TYPES_EQ(context, input->type, output->type);
+   if (!IsSupportedType(input->type)) {
+     MicroPrintf("Input data type %s (%d) is not supported.",
+-                TfLiteTypeGetName(input->type), input->type);
++                TfLiteMicroTypeGetName(input->type), input->type);
+     return kTfLiteError;
+   }
+ 
 @@ -171,12 +171,12 @@ inline TfLiteStatus EvalImplQuantized(
      T func(TfLiteContext*, TfLiteNode*, T),
      TfLiteStatus validate_input_func(TfLiteContext*, TfLiteNode*, T),
@@ -16081,6 +16845,24 @@ index a33c3406..a64e58d6 100644
                                              op_data->shift - kShift) +
        op_data->output_offset;
    return static_cast<T>(std::min(
+@@ -316,7 +316,7 @@ TfLiteStatus AbsEval(TfLiteContext* context, TfLiteNode* node) {
+       break;
+     default:
+       MicroPrintf("Current data type %s is not supported.",
+-                  TfLiteTypeGetName(type));
++                  TfLiteMicroTypeGetName(type));
+       return kTfLiteError;
+       break;
+   }
+@@ -356,7 +356,7 @@ TfLiteStatus RsqrtEval(TfLiteContext* context, TfLiteNode* node) {
+ 
+     default:
+       MicroPrintf("Current data type %s is not supported.",
+-                  TfLiteTypeGetName(type));
++                  TfLiteMicroTypeGetName(type));
+       return kTfLiteError;
+   }
+ }
 @@ -372,45 +372,45 @@ TfLiteStatus LogicalNotEval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -16328,7 +17110,7 @@ index 10e96c35..2abca41a 100644
  }
  
 diff --git a/tensorflow/lite/micro/kernels/elu.cc b/tensorflow/lite/micro/kernels/elu.cc
-index aacd21e1..9e22f3ad 100644
+index aacd21e1..74e4efca 100644
 --- a/tensorflow/lite/micro/kernels/elu.cc
 +++ b/tensorflow/lite/micro/kernels/elu.cc
 @@ -27,7 +27,7 @@ limitations under the License.
@@ -16377,6 +17159,15 @@ index aacd21e1..9e22f3ad 100644
        return kTfLiteOk;
      }
      case kTfLiteInt8: {
+@@ -137,7 +137,7 @@ TfLiteStatus EluEval(TfLiteContext* context, TfLiteNode* node) {
+     }
+     default:
+       MicroPrintf("ELU only supports float32 and int8 currently, got %s.",
+-                  TfLiteTypeGetName(input->type));
++                  TfLiteMicroTypeGetName(input->type));
+       return kTfLiteError;
+   }
+ }
 @@ -145,7 +145,7 @@ TfLiteStatus EluEval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -16446,7 +17237,7 @@ index e8fa378f..cee31795 100644
  }
  
 diff --git a/tensorflow/lite/micro/kernels/embedding_lookup.cc b/tensorflow/lite/micro/kernels/embedding_lookup.cc
-index 77ac0e0c..2e168efd 100644
+index 77ac0e0c..ec8c879a 100644
 --- a/tensorflow/lite/micro/kernels/embedding_lookup.cc
 +++ b/tensorflow/lite/micro/kernels/embedding_lookup.cc
 @@ -36,7 +36,7 @@ limitations under the License.
@@ -16510,6 +17301,15 @@ index 77ac0e0c..2e168efd 100644
  
    OpData& op_data = *static_cast<OpData*>(node->user_data);
  
+@@ -199,7 +199,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+       }
+     default:
+       MicroPrintf("EMBEDDING_LOOKUP only supports FLOAT32 and INT8, got %s.",
+-                  TfLiteTypeGetName(output->type));
++                  TfLiteMicroTypeGetName(output->type));
+       return kTfLiteError;
+   }
+ }
 @@ -207,7 +207,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -16720,7 +17520,7 @@ index 5b863032..da91066b 100644
  
  #endif  // TENSORFLOW_LITE_MICRO_KERNELS_ETHOSU_H_
 diff --git a/tensorflow/lite/micro/kernels/exp.cc b/tensorflow/lite/micro/kernels/exp.cc
-index 1a2e00ca..5c152c73 100644
+index 1a2e00ca..52a226cd 100644
 --- a/tensorflow/lite/micro/kernels/exp.cc
 +++ b/tensorflow/lite/micro/kernels/exp.cc
 @@ -21,7 +21,7 @@ limitations under the License.
@@ -16732,7 +17532,7 @@ index 1a2e00ca..5c152c73 100644
  namespace {
  
  constexpr int kInputTensor = 0;
-@@ -53,16 +53,16 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
+@@ -53,19 +53,19 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
  
  TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
    const TfLiteEvalTensor* input =
@@ -16754,7 +17554,11 @@ index 1a2e00ca..5c152c73 100644
 +                       tflite_micro::micro::GetTensorData<float>(output));
    } else {
      MicroPrintf("Type %s (%d) currently not supported by Exp.",
-                 TfLiteTypeGetName(input->type), input->type);
+-                TfLiteTypeGetName(input->type), input->type);
++                TfLiteMicroTypeGetName(input->type), input->type);
+     return kTfLiteError;
+   }
+   return kTfLiteOk;
 @@ -73,7 +73,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -16797,7 +17601,7 @@ index ff18106d..9afb2d16 100644
  
  TF_LITE_MICRO_TESTS_END
 diff --git a/tensorflow/lite/micro/kernels/expand_dims.cc b/tensorflow/lite/micro/kernels/expand_dims.cc
-index 0c4c6ff3..f4c66007 100644
+index 0c4c6ff3..1e09478a 100644
 --- a/tensorflow/lite/micro/kernels/expand_dims.cc
 +++ b/tensorflow/lite/micro/kernels/expand_dims.cc
 @@ -20,7 +20,7 @@ limitations under the License.
@@ -16809,7 +17613,7 @@ index 0c4c6ff3..f4c66007 100644
  namespace {
  
  constexpr int kInputTensor = 0;
-@@ -30,14 +30,14 @@ constexpr int kOutputTensor = 0;
+@@ -30,19 +30,19 @@ constexpr int kOutputTensor = 0;
  TfLiteStatus GetAxisValueFromTensor(TfLiteContext* context,
                                      const TfLiteTensor* axis,
                                      int32_t* axis_value) {
@@ -16826,6 +17630,12 @@ index 0c4c6ff3..f4c66007 100644
      *axis_value = axis_ptr[0];
      return kTfLiteOk;
    } else {
+     MicroPrintf("Axis type %s (%d) not supported by Expand_Dims.",
+-                TfLiteTypeGetName(axis->type), axis->type);
++                TfLiteMicroTypeGetName(axis->type), axis->type);
+     return kTfLiteError;
+   }
+ }
 @@ -57,7 +57,7 @@ TfLiteStatus VerifyTensorDim(TfLiteContext* context, const TfLiteTensor* input,
    TF_LITE_ENSURE_OK(context,
                      GetAxisValueFromTensor(context, axis_tensor, &axis_value));
@@ -16988,7 +17798,7 @@ index d8e217e5..0da3351f 100644
                                                      output_dims, output_data);
  
 diff --git a/tensorflow/lite/micro/kernels/fill.cc b/tensorflow/lite/micro/kernels/fill.cc
-index b1b366eb..eecb4d2d 100644
+index b1b366eb..067da5c9 100644
 --- a/tensorflow/lite/micro/kernels/fill.cc
 +++ b/tensorflow/lite/micro/kernels/fill.cc
 @@ -23,7 +23,7 @@ limitations under the License.
@@ -16999,6 +17809,15 @@ index b1b366eb..eecb4d2d 100644
 +namespace tflite_micro {
  
  namespace {
+ 
+@@ -124,7 +124,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+       break;
+     default:
+       MicroPrintf("Fill only currently supports float32 for input 1, got %d.",
+-                  TfLiteTypeGetName(value->type));
++                  TfLiteMicroTypeGetName(value->type));
+       return kTfLiteError;
+   }
  
 @@ -134,7 +134,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
@@ -17116,7 +17935,7 @@ index 094c8b55..3a6df0f8 100644
 -}  // namespace tflite
 +}  // namespace tflite_micro
 diff --git a/tensorflow/lite/micro/kernels/floor_div.cc b/tensorflow/lite/micro/kernels/floor_div.cc
-index 5c008085..cb50ccb1 100644
+index 5c008085..5a68e069 100644
 --- a/tensorflow/lite/micro/kernels/floor_div.cc
 +++ b/tensorflow/lite/micro/kernels/floor_div.cc
 @@ -23,7 +23,7 @@ limitations under the License.
@@ -17189,6 +18008,15 @@ index 5c008085..cb50ccb1 100644
  
    switch (input1->type) {
      case kTfLiteFloat32: {
+@@ -115,7 +115,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+     }
+     default: {
+       MicroPrintf("Type '%s' is not supported by FLOOR_DIV.",
+-                  TfLiteTypeGetName(input1->type));
++                  TfLiteMicroTypeGetName(input1->type));
+       return kTfLiteError;
+     }
+   }
 @@ -124,7 +124,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -17258,7 +18086,7 @@ index 531ee639..6ee28275 100644
  }
  
 diff --git a/tensorflow/lite/micro/kernels/floor_mod.cc b/tensorflow/lite/micro/kernels/floor_mod.cc
-index f4598920..ef79a030 100644
+index f4598920..a9228f2b 100644
 --- a/tensorflow/lite/micro/kernels/floor_mod.cc
 +++ b/tensorflow/lite/micro/kernels/floor_mod.cc
 @@ -26,7 +26,7 @@ limitations under the License.
@@ -17322,6 +18150,15 @@ index f4598920..ef79a030 100644
  
    switch (input1->type) {
      case kTfLiteFloat32: {
+@@ -113,7 +113,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+     }
+     default: {
+       MicroPrintf("Type '%s' is not supported by FLOOR_MOD.",
+-                  TfLiteTypeGetName(input1->type));
++                  TfLiteMicroTypeGetName(input1->type));
+       return kTfLiteError;
+     }
+   }
 @@ -122,7 +122,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -17431,7 +18268,7 @@ index 466b3352..7e269731 100644
  
  TF_LITE_MICRO_TESTS_END
 diff --git a/tensorflow/lite/micro/kernels/fully_connected.cc b/tensorflow/lite/micro/kernels/fully_connected.cc
-index 54576faf..a60b9d83 100644
+index 54576faf..d216938c 100644
 --- a/tensorflow/lite/micro/kernels/fully_connected.cc
 +++ b/tensorflow/lite/micro/kernels/fully_connected.cc
 @@ -23,7 +23,7 @@ limitations under the License.
@@ -17443,6 +18280,17 @@ index 54576faf..a60b9d83 100644
  namespace {
  
  void* Init(TfLiteContext* context, const char* buffer, size_t length) {
+@@ -60,8 +60,8 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
+        (filter->type != kTfLiteInt8 && filter->type != kTfLiteInt4)) ||
+       (input->type == kTfLiteInt16 && filter->type != kTfLiteInt8)) {
+     MicroPrintf("Input type: %s with filter type : %s not supported.",
+-                TfLiteTypeGetName(input->type),
+-                TfLiteTypeGetName(filter->type));
++                TfLiteMicroTypeGetName(input->type),
++                TfLiteMicroTypeGetName(filter->type));
+     return kTfLiteError;
+   }
+ 
 @@ -93,13 +93,13 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
        static_cast<const TfLiteFullyConnectedParams*>(node->builtin_data);
  
@@ -17487,7 +18335,7 @@ index 54576faf..a60b9d83 100644
        break;
      }
  
-@@ -127,32 +127,32 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+@@ -127,37 +127,37 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
          case kTfLiteInt4: {
            int8_t* unpacked_filter_data = static_cast<int8_t*>(
                context->GetScratchBuffer(context, data.filter_buffer_index));
@@ -17540,7 +18388,13 @@ index 54576faf..a60b9d83 100644
            break;
          }
          default: {
-@@ -167,16 +167,16 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+           MicroPrintf("Filter type %s (%d) not supported.",
+-                      TfLiteTypeGetName(filter->type), input->type);
++                      TfLiteMicroTypeGetName(filter->type), input->type);
+           return kTfLiteError;
+         }
+       }
+@@ -167,21 +167,21 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
      case kTfLiteInt16: {
        switch (filter->type) {
          case kTfLiteInt8: {
@@ -17566,6 +18420,21 @@ index 54576faf..a60b9d83 100644
            break;
          }
          default: {
+           MicroPrintf("Filter type %s (%d) not supported.",
+-                      TfLiteTypeGetName(filter->type), input->type);
++                      TfLiteMicroTypeGetName(filter->type), input->type);
+           return kTfLiteError;
+         }
+       }
+@@ -190,7 +190,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+ 
+     default: {
+       MicroPrintf("Input type %s (%d) not supported.",
+-                  TfLiteTypeGetName(input->type), input->type);
++                  TfLiteMicroTypeGetName(input->type), input->type);
+       return kTfLiteError;
+     }
+   }
 @@ -200,11 +200,11 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -17985,7 +18854,7 @@ index 2ad13205..fb523151 100644
        kTfLiteOk);
  }
 diff --git a/tensorflow/lite/micro/kernels/gather.cc b/tensorflow/lite/micro/kernels/gather.cc
-index 99556011..69c8854c 100644
+index 99556011..d0db59d1 100644
 --- a/tensorflow/lite/micro/kernels/gather.cc
 +++ b/tensorflow/lite/micro/kernels/gather.cc
 @@ -21,7 +21,7 @@ limitations under the License.
@@ -18010,6 +18879,24 @@ index 99556011..69c8854c 100644
    const TfLiteIntArray* input_dims = input->dims;
    const int input_dims_size = input_dims->size;
    int axis = params->axis;
+@@ -120,7 +120,7 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
+       break;
+     default:
+       MicroPrintf("Positions of type '%s' are not supported by gather.",
+-                  TfLiteTypeGetName(coords->type));
++                  TfLiteMicroTypeGetName(coords->type));
+       return kTfLiteError;
+       break;
+   }
+@@ -135,7 +135,7 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
+       break;
+     default:
+       MicroPrintf("Type '%s' is not supported by gather.",
+-                  TfLiteTypeGetName(input->type));
++                  TfLiteMicroTypeGetName(input->type));
+       return kTfLiteError;
+       break;
+   }
 @@ -163,8 +163,8 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
    // MicroInterpreter is a temporary allocation. We must therefore relocate the
    // dims from the FlatBuffer to the persistent storage arena.
@@ -18036,6 +18923,15 @@ index 99556011..69c8854c 100644
  
    if (coords->type == kTfLiteInt32) {
      switch (input->type) {
+@@ -208,7 +208,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+         break;
+       default:
+         MicroPrintf("Type '%s' is not supported by gather.",
+-                    TfLiteTypeGetName(input->type));
++                    TfLiteMicroTypeGetName(input->type));
+         return kTfLiteError;
+         break;
+     }
 @@ -218,7 +218,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -18047,7 +18943,7 @@ index 99556011..69c8854c 100644
 -}  // namespace tflite
 +}  // namespace tflite_micro
 diff --git a/tensorflow/lite/micro/kernels/gather_nd.cc b/tensorflow/lite/micro/kernels/gather_nd.cc
-index 3774dddb..ef361bc8 100644
+index 3774dddb..ced6c62a 100644
 --- a/tensorflow/lite/micro/kernels/gather_nd.cc
 +++ b/tensorflow/lite/micro/kernels/gather_nd.cc
 @@ -20,7 +20,7 @@ limitations under the License.
@@ -18059,6 +18955,24 @@ index 3774dddb..ef361bc8 100644
  namespace {
  
  constexpr int kParams = 0;
+@@ -49,7 +49,7 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
+       break;
+     default:
+       MicroPrintf("Params of type '%s' are not supported by gather_nd.",
+-                  TfLiteTypeGetName(params->type));
++                  TfLiteMicroTypeGetName(params->type));
+       return kTfLiteError;
+       break;
+   }
+@@ -58,7 +58,7 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
+       break;
+     default:
+       MicroPrintf("Indices of type '%s' are not supported by gather_nd.",
+-                  TfLiteTypeGetName(indices->type));
++                  TfLiteMicroTypeGetName(indices->type));
+       return kTfLiteError;
+   }
+ 
 @@ -89,8 +89,8 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
    // The tensor output dims must be relocated
    // from the FlatBuffer to the persistent storage arena.
@@ -18083,6 +18997,15 @@ index 3774dddb..ef361bc8 100644
  
    int n_slices = 1;
    for (int i = 0; i < indices_dims - 1; ++i) {
+@@ -176,7 +176,7 @@ TfLiteStatus EvalGatherNd(TfLiteContext* context,
+       break;
+     default:
+       MicroPrintf("Params type '%s' are not supported by gather_nd.",
+-                  TfLiteTypeGetName(params->type));
++                  TfLiteMicroTypeGetName(params->type));
+       return kTfLiteError;
+   }
+   if (status != kTfLiteOk) {
 @@ -187,11 +187,11 @@ TfLiteStatus EvalGatherNd(TfLiteContext* context,
  
  TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
@@ -18098,7 +19021,15 @@ index 3774dddb..ef361bc8 100644
  
    switch (indices->type) {
      case kTfLiteInt32:
-@@ -206,7 +206,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+@@ -199,14 +199,14 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+       break;
+     default:
+       MicroPrintf("Indices of type '%s' are not supported by gather_nd.",
+-                  TfLiteTypeGetName(indices->type));
++                  TfLiteMicroTypeGetName(indices->type));
+       return kTfLiteError;
+   }
+ }
  }  // namespace
  
  TFLMRegistration Register_GATHER_ND() {
@@ -18459,7 +19390,7 @@ index 91c010b0..4972edb3 100644
        output_data, golden_dims, golden_data, axis, batch_dims);
  }
 diff --git a/tensorflow/lite/micro/kernels/hard_swish.cc b/tensorflow/lite/micro/kernels/hard_swish.cc
-index f7f49ec4..f62528bd 100644
+index f7f49ec4..0165c441 100644
 --- a/tensorflow/lite/micro/kernels/hard_swish.cc
 +++ b/tensorflow/lite/micro/kernels/hard_swish.cc
 @@ -28,7 +28,7 @@ limitations under the License.
@@ -18471,7 +19402,7 @@ index f7f49ec4..f62528bd 100644
  namespace {
  void* HardSwishInit(TfLiteContext* context, const char* buffer, size_t length) {
    TFLITE_DCHECK(context->AllocatePersistentBuffer != nullptr);
-@@ -37,25 +37,25 @@ void* HardSwishInit(TfLiteContext* context, const char* buffer, size_t length) {
+@@ -37,28 +37,28 @@ void* HardSwishInit(TfLiteContext* context, const char* buffer, size_t length) {
  
  TfLiteStatus HardSwishEval(TfLiteContext* context, TfLiteNode* node) {
    const TfLiteEvalTensor* input =
@@ -18508,7 +19439,11 @@ index f7f49ec4..f62528bd 100644
 +          tflite_micro::micro::GetTensorData<int8_t>(output));
      } break;
      default: {
-       MicroPrintf("Unsupported type %s", TfLiteTypeGetName(input->type));
+-      MicroPrintf("Unsupported type %s", TfLiteTypeGetName(input->type));
++      MicroPrintf("Unsupported type %s", TfLiteMicroTypeGetName(input->type));
+       return kTfLiteError;
+     }
+   }
 @@ -68,8 +68,8 @@ TfLiteStatus HardSwishEval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -18887,7 +19822,7 @@ index 25b97c11..a0be324f 100644
  
  #endif  // TENSORFLOW_LITE_MICRO_KERNELS_KERNEL_RUNNER_H_
 diff --git a/tensorflow/lite/micro/kernels/kernel_util.cc b/tensorflow/lite/micro/kernels/kernel_util.cc
-index 12adf361..d02f7855 100644
+index 12adf361..b1c524d1 100644
 --- a/tensorflow/lite/micro/kernels/kernel_util.cc
 +++ b/tensorflow/lite/micro/kernels/kernel_util.cc
 @@ -20,7 +20,7 @@ limitations under the License.
@@ -18899,6 +19834,24 @@ index 12adf361..d02f7855 100644
  namespace micro {
  
  namespace {
+@@ -96,7 +96,7 @@ bool HaveSameShapes(const TfLiteEvalTensor* input1,
+                     const TfLiteEvalTensor* input2) {
+   TFLITE_DCHECK(input1 != nullptr);
+   TFLITE_DCHECK(input2 != nullptr);
+-  return TfLiteIntArrayEqual(input1->dims, input2->dims);
++  return TfLiteMicroIntArrayEqual(input1->dims, input2->dims);
+ }
+ 
+ const RuntimeShape GetTensorShape(const TfLiteEvalTensor* tensor) {
+@@ -132,7 +132,7 @@ TfLiteStatus CreateWritableTensorDimsWithCopy(TfLiteContext* context,
+   TF_LITE_ENSURE(context, eval_tensor != nullptr);
+   TF_LITE_ENSURE(context, context->AllocatePersistentBuffer != nullptr);
+   int ranks = tensor->dims->size;
+-  size_t alloc_size = TfLiteIntArrayGetSizeInBytes(ranks);
++  size_t alloc_size = TfLiteMicroIntArrayGetSizeInBytes(ranks);
+   TfLiteIntArray* new_dims = static_cast<TfLiteIntArray*>(
+       context->AllocatePersistentBuffer(context, alloc_size));
+   TfLiteIntArray* old_dims = tensor->dims;
 @@ -162,8 +162,8 @@ TfLiteStatus CopyOpInputsToOpOutputs(TfLiteContext* context, TfLiteNode* node) {
    TF_LITE_ENSURE(context, node->inputs->size == node->outputs->size);
    for (int i = 0; i < node->inputs->size; i++) {
@@ -18994,7 +19947,7 @@ index f14c9271..f8a534fa 100644
  
  #endif  // TENSORFLOW_LITE_MICRO_KERNELS_KERNEL_UTIL_H_
 diff --git a/tensorflow/lite/micro/kernels/l2_pool_2d.cc b/tensorflow/lite/micro/kernels/l2_pool_2d.cc
-index c5eb70f9..8c9612a0 100644
+index c5eb70f9..29c0da08 100644
 --- a/tensorflow/lite/micro/kernels/l2_pool_2d.cc
 +++ b/tensorflow/lite/micro/kernels/l2_pool_2d.cc
 @@ -23,7 +23,7 @@ limitations under the License.
@@ -19053,6 +20006,15 @@ index c5eb70f9..8c9612a0 100644
    op_params.stride_height = params->stride_height;
    op_params.stride_width = params->stride_width;
    op_params.filter_height = params->filter_height;
+@@ -127,7 +127,7 @@ TfLiteStatus L2Eval(TfLiteContext* context, TfLiteNode* node) {
+       break;
+     default:
+       MicroPrintf("L2_POOL_2D only supports float32 currently, got %s.",
+-                  TfLiteTypeGetName(input->type));
++                  TfLiteMicroTypeGetName(input->type));
+       return kTfLiteError;
+   }
+   return kTfLiteOk;
 @@ -136,7 +136,7 @@ TfLiteStatus L2Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -19189,7 +20151,7 @@ index a8c20b20..c876a3d9 100644
  }
  
 diff --git a/tensorflow/lite/micro/kernels/l2norm.cc b/tensorflow/lite/micro/kernels/l2norm.cc
-index fa3601bf..942c2611 100644
+index fa3601bf..5a5355b3 100644
 --- a/tensorflow/lite/micro/kernels/l2norm.cc
 +++ b/tensorflow/lite/micro/kernels/l2norm.cc
 @@ -20,7 +20,7 @@ limitations under the License.
@@ -19234,7 +20196,7 @@ index fa3601bf..942c2611 100644
      const int trailing_dim = input_shape.DimensionsCount() - 1;
      const int depth =
          MatchingDim(input_shape, trailing_dim, output_shape, trailing_dim);
-@@ -118,8 +118,8 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+@@ -118,11 +118,11 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
          MatchingFlatSizeSkipDim(input_shape, trailing_dim, output_shape);
      reference_integer_ops::L2Normalization(
          data.input_zero_point, outer_size, depth,
@@ -19244,7 +20206,11 @@ index fa3601bf..942c2611 100644
 +        tflite_micro::micro::GetTensorData<int8_t>(output));
    } else {
      MicroPrintf("Output type is %s, requires float.",
-                 TfLiteTypeGetName(output->type));
+-                TfLiteTypeGetName(output->type));
++                TfLiteMicroTypeGetName(output->type));
+     return kTfLiteError;
+   }
+ 
 @@ -132,9 +132,9 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -19352,7 +20318,7 @@ index 435f2f00..7efa7b8e 100644
  }
  
 diff --git a/tensorflow/lite/micro/kernels/leaky_relu.cc b/tensorflow/lite/micro/kernels/leaky_relu.cc
-index ee86f195..6e5c3937 100644
+index ee86f195..b0a2b3cf 100644
 --- a/tensorflow/lite/micro/kernels/leaky_relu.cc
 +++ b/tensorflow/lite/micro/kernels/leaky_relu.cc
 @@ -24,7 +24,7 @@ limitations under the License.
@@ -19406,6 +20372,15 @@ index ee86f195..6e5c3937 100644
        return kTfLiteOk;
      } break;
      case kTfLiteInt8: {
+@@ -80,7 +80,7 @@ TfLiteStatus LeakyReluEval(TfLiteContext* context, TfLiteNode* node) {
+     } break;
+     default:
+       MicroPrintf("Only float32, int8 are supported by LEAKY_RELU, got %s.",
+-                  TfLiteTypeGetName(input->type));
++                  TfLiteMicroTypeGetName(input->type));
+       return kTfLiteError;
+   }
+ 
 @@ -88,8 +88,8 @@ TfLiteStatus LeakyReluEval(TfLiteContext* context, TfLiteNode* node) {
  }
  
@@ -19552,7 +20527,7 @@ index 3c5df3f2..bcb692db 100644
  }
  
 diff --git a/tensorflow/lite/micro/kernels/log_softmax.cc b/tensorflow/lite/micro/kernels/log_softmax.cc
-index 47f59376..e9d3bb1d 100644
+index 47f59376..e615fb0a 100644
 --- a/tensorflow/lite/micro/kernels/log_softmax.cc
 +++ b/tensorflow/lite/micro/kernels/log_softmax.cc
 @@ -25,7 +25,7 @@ limitations under the License.
@@ -19605,7 +20580,7 @@ index 47f59376..e9d3bb1d 100644
        return kTfLiteOk;
      }
      case kTfLiteInt8: {
-@@ -126,10 +126,10 @@ TfLiteStatus LogSoftmaxEval(TfLiteContext* context, TfLiteNode* node) {
+@@ -126,15 +126,15 @@ TfLiteStatus LogSoftmaxEval(TfLiteContext* context, TfLiteNode* node) {
        op_params.reverse_scaling_right_shift = data->reverse_scaling_right_shift;
        op_params.diff_min = data->diff_min;
        reference_ops::LogSoftmax(op_params, data->outer_size, data->depth,
@@ -19620,6 +20595,12 @@ index 47f59376..e9d3bb1d 100644
        return kTfLiteOk;
      }
      default:
+       MicroPrintf("LOG_SOFTMAX only supports float32, int8, got %s.",
+-                  TfLiteTypeGetName(input->type));
++                  TfLiteMicroTypeGetName(input->type));
+       return kTfLiteError;
+   }
+ }
 @@ -142,7 +142,7 @@ TfLiteStatus LogSoftmaxEval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -19894,7 +20875,7 @@ index eeab32ba..9cbe823e 100644
                                   golden, output_data);
  }
 diff --git a/tensorflow/lite/micro/kernels/logistic.cc b/tensorflow/lite/micro/kernels/logistic.cc
-index da2b34f1..029814c4 100644
+index da2b34f1..b49bc917 100644
 --- a/tensorflow/lite/micro/kernels/logistic.cc
 +++ b/tensorflow/lite/micro/kernels/logistic.cc
 @@ -27,7 +27,7 @@ limitations under the License.
@@ -19918,7 +20899,7 @@ index da2b34f1..029814c4 100644
  
    TFLITE_DCHECK(node->user_data != nullptr);
    OpDataLogistic* data = static_cast<OpDataLogistic*>(node->user_data);
-@@ -47,10 +47,10 @@ TfLiteStatus LogisticEval(TfLiteContext* context, TfLiteNode* node) {
+@@ -47,16 +47,16 @@ TfLiteStatus LogisticEval(TfLiteContext* context, TfLiteNode* node) {
    if (input->type == kTfLiteFloat32) {
      switch (output->type) {
        case kTfLiteFloat32: {
@@ -19933,7 +20914,15 @@ index da2b34f1..029814c4 100644
          return kTfLiteOk;
        }
        default:
-@@ -65,8 +65,8 @@ TfLiteStatus LogisticEval(TfLiteContext* context, TfLiteNode* node) {
+         MicroPrintf("Input %s, output %s not supported.",
+-                    TfLiteTypeGetName(input->type),
+-                    TfLiteTypeGetName(output->type));
++                    TfLiteMicroTypeGetName(input->type),
++                    TfLiteMicroTypeGetName(output->type));
+         return kTfLiteError;
+     }
+   } else if (input->type == kTfLiteInt16) {
+@@ -65,14 +65,14 @@ TfLiteStatus LogisticEval(TfLiteContext* context, TfLiteNode* node) {
          reference_integer_ops::Logistic(
              data->input_multiplier, data->input_left_shift,
              NumElements(input->dims),
@@ -19944,7 +20933,15 @@ index da2b34f1..029814c4 100644
          return kTfLiteOk;
        }
        default:
-@@ -82,8 +82,8 @@ TfLiteStatus LogisticEval(TfLiteContext* context, TfLiteNode* node) {
+         MicroPrintf("Input %s, output %s not supported.",
+-                    TfLiteTypeGetName(input->type),
+-                    TfLiteTypeGetName(output->type));
++                    TfLiteMicroTypeGetName(input->type),
++                    TfLiteMicroTypeGetName(output->type));
+         return kTfLiteError;
+     }
+   } else if (input->type == kTfLiteInt8) {
+@@ -82,22 +82,22 @@ TfLiteStatus LogisticEval(TfLiteContext* context, TfLiteNode* node) {
              data->input_zero_point, data->input_range_radius,
              data->input_multiplier, data->input_left_shift,
              NumElements(input->dims),
@@ -19955,6 +20952,24 @@ index da2b34f1..029814c4 100644
          return kTfLiteOk;
        }
        default:
+         MicroPrintf("Input %s, output %s not supported.",
+-                    TfLiteTypeGetName(input->type),
+-                    TfLiteTypeGetName(output->type));
++                    TfLiteMicroTypeGetName(input->type),
++                    TfLiteMicroTypeGetName(output->type));
+         return kTfLiteError;
+     }
+   } else {
+     // TODO(b/141211002): Also support other data types once we have supported
+     // temporary tensors in TFLM.
+     MicroPrintf("Input %s, output %s not supported.",
+-                TfLiteTypeGetName(input->type),
+-                TfLiteTypeGetName(output->type));
++                TfLiteMicroTypeGetName(input->type),
++                TfLiteMicroTypeGetName(output->type));
+     return kTfLiteError;
+   }
+   return kTfLiteOk;
 @@ -106,6 +106,6 @@ TfLiteStatus LogisticEval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -21472,7 +22487,7 @@ index dbdc3c55..d30728b9 100644
 +}  // namespace tflite_micro
  #endif  // TENSORFLOW_LITE_MICRO_KERNELS_LSTM_SHARED_H_
 diff --git a/tensorflow/lite/micro/kernels/maximum_minimum.cc b/tensorflow/lite/micro/kernels/maximum_minimum.cc
-index 48717074..fbb9caa6 100644
+index 48717074..40bfce5f 100644
 --- a/tensorflow/lite/micro/kernels/maximum_minimum.cc
 +++ b/tensorflow/lite/micro/kernels/maximum_minimum.cc
 @@ -25,7 +25,7 @@ limitations under the License.
@@ -21516,6 +22531,15 @@ index 48717074..fbb9caa6 100644
        op_type::template op<data_type>);
  }
  
+@@ -96,7 +96,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+         break;
+       default:
+         MicroPrintf("Type %s (%d) is not supported by Maximum/Minimum.",
+-                    TfLiteTypeGetName(op_context.output->type),
++                    TfLiteMicroTypeGetName(op_context.output->type),
+                     op_context.output->type);
+         return kTfLiteError;
+     }
 @@ -110,13 +110,13 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -21913,7 +22937,7 @@ index 06702263..bed46759 100644
                                   kTfLiteMirrorPaddingSymmetric, output_data);
  }
 diff --git a/tensorflow/lite/micro/kernels/mul.cc b/tensorflow/lite/micro/kernels/mul.cc
-index d9473d4e..937a7054 100644
+index d9473d4e..b7867165 100644
 --- a/tensorflow/lite/micro/kernels/mul.cc
 +++ b/tensorflow/lite/micro/kernels/mul.cc
 @@ -26,7 +26,7 @@ limitations under the License.
@@ -21940,6 +22964,15 @@ index d9473d4e..937a7054 100644
  
    switch (input1->type) {
      case kTfLiteInt8:
+@@ -54,7 +54,7 @@ TfLiteStatus MulEval(TfLiteContext* context, TfLiteNode* node) {
+       break;
+     default:
+       MicroPrintf("Type %s (%d) not supported.",
+-                  TfLiteTypeGetName(input1->type), input1->type);
++                  TfLiteMicroTypeGetName(input1->type), input1->type);
+       return kTfLiteError;
+   }
+ 
 @@ -62,7 +62,7 @@ TfLiteStatus MulEval(TfLiteContext* context, TfLiteNode* node) {
  }
  
@@ -22373,7 +23406,7 @@ index 2234a1f7..5ffcc935 100644
  }
  
 diff --git a/tensorflow/lite/micro/kernels/neg.cc b/tensorflow/lite/micro/kernels/neg.cc
-index c80a8093..97fad81f 100644
+index c80a8093..225d8e0d 100644
 --- a/tensorflow/lite/micro/kernels/neg.cc
 +++ b/tensorflow/lite/micro/kernels/neg.cc
 @@ -20,7 +20,7 @@ limitations under the License.
@@ -22385,7 +23418,7 @@ index c80a8093..97fad81f 100644
  
  namespace {
  
-@@ -29,16 +29,16 @@ constexpr int kOutputTensor = 0;
+@@ -29,19 +29,19 @@ constexpr int kOutputTensor = 0;
  
  TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
    const TfLiteEvalTensor* input =
@@ -22407,7 +23440,11 @@ index c80a8093..97fad81f 100644
 +                            tflite_micro::micro::GetTensorData<float>(output));
        break;
      default:
-       MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(input->type),
+-      MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(input->type),
++      MicroPrintf("Type %s (%d) not supported.", TfLiteMicroTypeGetName(input->type),
+                   input->type);
+       return kTfLiteError;
+   }
 @@ -51,7 +51,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -22459,7 +23496,7 @@ index a1d16858..b1fddd31 100644
  
  TF_LITE_MICRO_TESTS_END
 diff --git a/tensorflow/lite/micro/kernels/pack.cc b/tensorflow/lite/micro/kernels/pack.cc
-index 7b4aeef2..62d0f47e 100644
+index 7b4aeef2..d462ed24 100644
 --- a/tensorflow/lite/micro/kernels/pack.cc
 +++ b/tensorflow/lite/micro/kernels/pack.cc
 @@ -19,7 +19,7 @@ limitations under the License.
@@ -22515,6 +23552,15 @@ index 7b4aeef2..62d0f47e 100644
      case kTfLiteInt32: {
        return PackImpl<int32_t>(context, node, output, data->values_count,
                                 data->axis);
+@@ -95,7 +99,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+     }
+     default: {
+       MicroPrintf("Type '%s' is not supported by pack.",
+-                  TfLiteTypeGetName(output->type));
++                  TfLiteMicroTypeGetName(output->type));
+       return kTfLiteError;
+     }
+   }
 @@ -106,7 +110,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -22602,7 +23648,7 @@ index 09422176..99a680d5 100644
        output_shape, golden, output_data);
  }
 diff --git a/tensorflow/lite/micro/kernels/pad.cc b/tensorflow/lite/micro/kernels/pad.cc
-index f8d40ade..68170de0 100644
+index f8d40ade..c1d49a6d 100644
 --- a/tensorflow/lite/micro/kernels/pad.cc
 +++ b/tensorflow/lite/micro/kernels/pad.cc
 @@ -24,7 +24,7 @@ limitations under the License.
@@ -22658,7 +23704,7 @@ index f8d40ade..68170de0 100644
        }
      } break;
      case kTfLiteInt8: {
-@@ -74,40 +74,40 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+@@ -74,45 +74,45 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
        if (constant_values == nullptr) {
          pad_value = static_cast<uint8_t>(data->output_zero_point);
        } else {
@@ -22718,6 +23764,12 @@ index f8d40ade..68170de0 100644
      } break;
      default:
  
+       MicroPrintf("Type %s not currently supported by Pad.",
+-                  TfLiteTypeGetName(input->type));
++                  TfLiteMicroTypeGetName(input->type));
+       return kTfLiteError;
+   }
+   return kTfLiteOk;
 @@ -218,12 +218,12 @@ TfLiteStatus PadPrepare(TfLiteContext* context, TfLiteNode* node) {
  }
  
@@ -22900,7 +23952,7 @@ index 21939c8f..87f76776 100644
        pad_dims, pad_values, output_dims, golden, golden_quantized, output_scale,
        output_zero_point, output_data, kTfLiteError);
 diff --git a/tensorflow/lite/micro/kernels/pooling.cc b/tensorflow/lite/micro/kernels/pooling.cc
-index e03f72ec..1f71fd22 100644
+index e03f72ec..4a5ce5a6 100644
 --- a/tensorflow/lite/micro/kernels/pooling.cc
 +++ b/tensorflow/lite/micro/kernels/pooling.cc
 @@ -20,7 +20,7 @@ limitations under the License.
@@ -22912,6 +23964,24 @@ index e03f72ec..1f71fd22 100644
  
  namespace {
  
+@@ -52,7 +52,7 @@ TfLiteStatus AverageEval(TfLiteContext* context, TfLiteNode* node) {
+       break;
+     default:
+       MicroPrintf("Input type %s is not currently supported",
+-                  TfLiteTypeGetName(input->type));
++                  TfLiteMicroTypeGetName(input->type));
+       return kTfLiteError;
+   }
+   return kTfLiteOk;
+@@ -85,7 +85,7 @@ TfLiteStatus MaxEval(TfLiteContext* context, TfLiteNode* node) {
+       break;
+     default:
+       MicroPrintf("Type %s not currently supported.",
+-                  TfLiteTypeGetName(input->type));
++                  TfLiteMicroTypeGetName(input->type));
+       return kTfLiteError;
+   }
+   return kTfLiteOk;
 @@ -99,11 +99,11 @@ void* Init(TfLiteContext* context, const char* buffer, size_t length) {
  }  // namespace
  
@@ -23007,7 +24077,7 @@ index a87e22c3..2c0aa0f0 100644
  
  #endif  // TENSORFLOW_LITE_MICRO_KERNELS_POOLING_H_
 diff --git a/tensorflow/lite/micro/kernels/pooling_common.cc b/tensorflow/lite/micro/kernels/pooling_common.cc
-index b39e9d84..d53e9d11 100644
+index b39e9d84..915f707a 100644
 --- a/tensorflow/lite/micro/kernels/pooling_common.cc
 +++ b/tensorflow/lite/micro/kernels/pooling_common.cc
 @@ -22,7 +22,7 @@ limitations under the License.
@@ -23019,6 +24089,15 @@ index b39e9d84..d53e9d11 100644
  
  const int kPoolingInputTensor = 0;
  const int kPoolingOutputTensor = 0;
+@@ -74,7 +74,7 @@ TfLiteStatus PoolingPrepare(TfLiteContext* context, TfLiteNode* node) {
+                                       &data->activation_min,
+                                       &data->activation_max);
+   } else {
+-    MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(input->type),
++    MicroPrintf("Type %s (%d) not supported.", TfLiteMicroTypeGetName(input->type),
+                 input->type);
+     return kTfLiteError;
+   }
 @@ -100,17 +100,17 @@ void AveragePoolingEvalFloat(const TfLiteContext* context,
    op_params.padding_values.width = data->padding.width;
    op_params.float_activation_min = data->activation_min_f32;
@@ -23322,7 +24401,7 @@ index b0ee3a3d..6cd989d2 100644
        filter_width, stride_height, stride_width, golden1, output_shape,
        output_scale, output_zero_point, kTfLitePaddingValid, kTfLiteActRelu6,
 diff --git a/tensorflow/lite/micro/kernels/prelu.cc b/tensorflow/lite/micro/kernels/prelu.cc
-index 66a017b2..5629cd70 100644
+index 66a017b2..58bbdfa0 100644
 --- a/tensorflow/lite/micro/kernels/prelu.cc
 +++ b/tensorflow/lite/micro/kernels/prelu.cc
 @@ -25,7 +25,7 @@ limitations under the License.
@@ -23334,7 +24413,7 @@ index 66a017b2..5629cd70 100644
  
  void* PreluInit(TfLiteContext* context, const char* buffer, size_t length) {
    TFLITE_DCHECK(context->AllocatePersistentBuffer != nullptr);
-@@ -37,28 +37,28 @@ TfLiteStatus PreluEval(TfLiteContext* context, TfLiteNode* node) {
+@@ -37,39 +37,39 @@ TfLiteStatus PreluEval(TfLiteContext* context, TfLiteNode* node) {
    const PreluParams& params =
        *(static_cast<const PreluParams*>(node->user_data));
  
@@ -23378,7 +24457,11 @@ index 66a017b2..5629cd70 100644
        return kTfLiteOk;
      } break;
      default:
-@@ -69,7 +69,7 @@ TfLiteStatus PreluEval(TfLiteContext* context, TfLiteNode* node) {
+       MicroPrintf("Only float32 and uint8_t are supported currently, got %d.",
+-                  TfLiteTypeGetName(input->type));
++                  TfLiteMicroTypeGetName(input->type));
+       return kTfLiteError;
+   }
  }
  
  TFLMRegistration Register_PRELU() {
@@ -23848,7 +24931,7 @@ index ba93809a..e61074ac 100644
  
  #endif  // TENSORFLOW_LITE_MICRO_KERNELS_QUANTIZE_H_
 diff --git a/tensorflow/lite/micro/kernels/quantize_common.cc b/tensorflow/lite/micro/kernels/quantize_common.cc
-index cb04eafc..f1c5f4c0 100644
+index cb04eafc..09a275a1 100644
 --- a/tensorflow/lite/micro/kernels/quantize_common.cc
 +++ b/tensorflow/lite/micro/kernels/quantize_common.cc
 @@ -26,7 +26,7 @@ limitations under the License.
@@ -23860,7 +24943,7 @@ index cb04eafc..f1c5f4c0 100644
  
  TfLiteStatus PrepareQuantizeReference(TfLiteContext* context,
                                        TfLiteNode* node) {
-@@ -93,24 +93,24 @@ TfLiteStatus EvalQuantizeReference(TfLiteContext* context, TfLiteNode* node) {
+@@ -93,29 +93,29 @@ TfLiteStatus EvalQuantizeReference(TfLiteContext* context, TfLiteNode* node) {
    TFLITE_DCHECK(node->user_data != nullptr);
    auto* data = static_cast<OpDataQuantizeReference*>(node->user_data);
  
@@ -23895,7 +24978,14 @@ index cb04eafc..f1c5f4c0 100644
          return kTfLiteOk;
        default:
          MicroPrintf("Input %s, output %s not supported.",
-@@ -123,17 +123,17 @@ TfLiteStatus EvalQuantizeReference(TfLiteContext* context, TfLiteNode* node) {
+-                    TfLiteTypeGetName(input->type),
+-                    TfLiteTypeGetName(output->type));
++                    TfLiteMicroTypeGetName(input->type),
++                    TfLiteMicroTypeGetName(output->type));
+         return kTfLiteError;
+     }
+   } else if (input->type == kTfLiteInt32) {
+@@ -123,22 +123,22 @@ TfLiteStatus EvalQuantizeReference(TfLiteContext* context, TfLiteNode* node) {
      switch (output->type) {
        case kTfLiteInt8:
          reference_ops::Requantize(
@@ -23917,7 +25007,14 @@ index cb04eafc..f1c5f4c0 100644
          break;
        default:
          MicroPrintf("Input %s, output %s not supported.",
-@@ -146,24 +146,24 @@ TfLiteStatus EvalQuantizeReference(TfLiteContext* context, TfLiteNode* node) {
+-                    TfLiteTypeGetName(input->type),
+-                    TfLiteTypeGetName(output->type));
++                    TfLiteMicroTypeGetName(input->type),
++                    TfLiteMicroTypeGetName(output->type));
+         return kTfLiteError;
+     }
+   } else if (input->type == kTfLiteInt16) {
+@@ -146,29 +146,29 @@ TfLiteStatus EvalQuantizeReference(TfLiteContext* context, TfLiteNode* node) {
      switch (output->type) {
        case kTfLiteInt8:
          reference_ops::Requantize(
@@ -23948,7 +25045,14 @@ index cb04eafc..f1c5f4c0 100644
          return kTfLiteOk;
        default:
          MicroPrintf("Input %s, output %s not supported.",
-@@ -178,31 +178,31 @@ TfLiteStatus EvalQuantizeReference(TfLiteContext* context, TfLiteNode* node) {
+-                    TfLiteTypeGetName(input->type),
+-                    TfLiteTypeGetName(output->type));
++                    TfLiteMicroTypeGetName(input->type),
++                    TfLiteMicroTypeGetName(output->type));
+         return kTfLiteError;
+     }
+   } else if (input->type == kTfLiteInt8) {
+@@ -178,36 +178,36 @@ TfLiteStatus EvalQuantizeReference(TfLiteContext* context, TfLiteNode* node) {
      switch (output->type) {
        case kTfLiteInt8:
          reference_ops::Requantize(
@@ -23988,7 +25092,14 @@ index cb04eafc..f1c5f4c0 100644
          break;
        default:
          MicroPrintf("Input %s, output %s not supported.",
-@@ -215,10 +215,10 @@ TfLiteStatus EvalQuantizeReference(TfLiteContext* context, TfLiteNode* node) {
+-                    TfLiteTypeGetName(input->type),
+-                    TfLiteTypeGetName(output->type));
++                    TfLiteMicroTypeGetName(input->type),
++                    TfLiteMicroTypeGetName(output->type));
+         return kTfLiteError;
+     }
+   } else if (input->type == kTfLiteUInt8) {
+@@ -215,25 +215,25 @@ TfLiteStatus EvalQuantizeReference(TfLiteContext* context, TfLiteNode* node) {
      switch (output->type) {
        case kTfLiteInt8:
          reference_ops::Requantize(
@@ -24001,7 +25112,21 @@ index cb04eafc..f1c5f4c0 100644
          break;
        default:
          MicroPrintf("Input %s, output %s not supported.",
-@@ -236,4 +236,4 @@ TfLiteStatus EvalQuantizeReference(TfLiteContext* context, TfLiteNode* node) {
+-                    TfLiteTypeGetName(input->type),
+-                    TfLiteTypeGetName(output->type));
++                    TfLiteMicroTypeGetName(input->type),
++                    TfLiteMicroTypeGetName(output->type));
+         return kTfLiteError;
+     }
+   } else {
+     MicroPrintf("Input %s, output %s not supported.",
+-                TfLiteTypeGetName(input->type),
+-                TfLiteTypeGetName(output->type));
++                TfLiteMicroTypeGetName(input->type),
++                TfLiteMicroTypeGetName(output->type));
+     return kTfLiteError;
+   }
+ 
    return kTfLiteOk;
  }
  
@@ -25765,7 +26890,7 @@ index b52cebeb..5c3dddef 100644
        output_dims, output_data, &params, /*tolerance=*/1);
  }
 diff --git a/tensorflow/lite/micro/kernels/resize_nearest_neighbor.cc b/tensorflow/lite/micro/kernels/resize_nearest_neighbor.cc
-index 46b6ea16..580ef1d1 100644
+index 46b6ea16..2a5d7189 100644
 --- a/tensorflow/lite/micro/kernels/resize_nearest_neighbor.cc
 +++ b/tensorflow/lite/micro/kernels/resize_nearest_neighbor.cc
 @@ -23,7 +23,7 @@ limitations under the License.
@@ -25777,7 +26902,7 @@ index 46b6ea16..580ef1d1 100644
  
  namespace {
  
-@@ -70,40 +70,40 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+@@ -70,43 +70,43 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
        reinterpret_cast<TfLiteResizeNearestNeighborParams*>(node->builtin_data);
  
    const TfLiteEvalTensor* input =
@@ -25839,7 +26964,11 @@ index 46b6ea16..580ef1d1 100644
 +        tflite_micro::micro::GetTensorData<int16_t>(output));
    } else {
      MicroPrintf("Output tensor type %s (%d) not supported.",
-                 TfLiteTypeGetName(output->type), output->type);
+-                TfLiteTypeGetName(output->type), output->type);
++                TfLiteMicroTypeGetName(output->type), output->type);
+ 
+     return kTfLiteError;
+   }
 @@ -117,7 +117,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -26100,7 +27229,7 @@ index fa09a9fc..f109a93c 100644
  
  TF_LITE_MICRO_TESTS_END
 diff --git a/tensorflow/lite/micro/kernels/select.cc b/tensorflow/lite/micro/kernels/select.cc
-index 90e64136..ef082cbc 100644
+index 90e64136..c979debc 100644
 --- a/tensorflow/lite/micro/kernels/select.cc
 +++ b/tensorflow/lite/micro/kernels/select.cc
 @@ -23,7 +23,7 @@ limitations under the License.
@@ -26155,6 +27284,15 @@ index 90e64136..ef082cbc 100644
  
    switch (input_x->type) {
      case kTfLiteFloat32:
+@@ -174,7 +174,7 @@ TfLiteStatus SelectEval(TfLiteContext* context, TfLiteNode* node) {
+       break;
+     default:
+       MicroPrintf("Does not support type other than %s, but got %s",
+-                  "int8|int16|float32", TfLiteTypeGetName(input_x->type));
++                  "int8|int16|float32", TfLiteMicroTypeGetName(input_x->type));
+       return kTfLiteError;
+   }
+ 
 @@ -189,8 +189,8 @@ TfLiteStatus SelectEval(TfLiteContext* context, TfLiteNode* node) {
  // 1. Either the same shape (in which case the select is elementwise), or
  // 2. Broadcastable shapes between 'condition', 'x' and 'y'.
@@ -26342,7 +27480,7 @@ index 1f92660d..51b12526 100644
  
  TF_LITE_MICRO_TESTS_END
 diff --git a/tensorflow/lite/micro/kernels/shape.cc b/tensorflow/lite/micro/kernels/shape.cc
-index a39bfc0e..df3517a4 100644
+index a39bfc0e..2ab7388e 100644
 --- a/tensorflow/lite/micro/kernels/shape.cc
 +++ b/tensorflow/lite/micro/kernels/shape.cc
 @@ -23,7 +23,7 @@ limitations under the License.
@@ -26365,7 +27503,8 @@ index a39bfc0e..df3517a4 100644
 +      tflite_micro::micro::GetEvalOutput(context, node, kOutputTensor);
    if (output->type != kTfLiteInt32) {
      MicroPrintf("Output type %s (%d) not supported.",
-                 TfLiteTypeGetName(output->type), output->type);
+-                TfLiteTypeGetName(output->type), output->type);
++                TfLiteMicroTypeGetName(output->type), output->type);
      return kTfLiteError;
    } else {
 -    ExtractShape(input, tflite::micro::GetTensorData<int32_t>(output));
@@ -26469,7 +27608,7 @@ index 413b7264..b57175e3 100644
  }
  
 diff --git a/tensorflow/lite/micro/kernels/slice.cc b/tensorflow/lite/micro/kernels/slice.cc
-index 973da182..89d5fc04 100644
+index 973da182..48d543aa 100644
 --- a/tensorflow/lite/micro/kernels/slice.cc
 +++ b/tensorflow/lite/micro/kernels/slice.cc
 @@ -22,7 +22,7 @@ limitations under the License.
@@ -26513,7 +27652,15 @@ index 973da182..89d5fc04 100644
    op_params.begin_count = kMaxDim;
    op_params.size_count = kMaxDim;
    for (int i = 0; i < kMaxDim; ++i) {
-@@ -114,38 +114,38 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+@@ -107,49 +107,49 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+                                     op_params.begin, op_params.size);
+   } else {
+     MicroPrintf("Begin tensor type %s (%d) not supported.",
+-                TfLiteTypeGetName(input->type), input->type);
++                TfLiteMicroTypeGetName(input->type), input->type);
+     return kTfLiteError;
+   }
+ 
    switch (input->type) {
      case kTfLiteFloat32:
        reference_ops::Slice<float>(op_params,
@@ -26572,6 +27719,11 @@ index 973da182..89d5fc04 100644
        break;
      default:
        MicroPrintf("Input tensor type %s (%d) not supported.",
+-                  TfLiteTypeGetName(input->type), input->type);
++                  TfLiteMicroTypeGetName(input->type), input->type);
+       return kTfLiteError;
+   }
+   return kTfLiteOk;
 @@ -158,7 +158,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -26758,7 +27910,7 @@ index e787c0c7..5978afcc 100644
                               output_shape, expected_output_data, output_data);
  }
 diff --git a/tensorflow/lite/micro/kernels/softmax.cc b/tensorflow/lite/micro/kernels/softmax.cc
-index b154ecba..41c2596a 100644
+index b154ecba..8afaeb7b 100644
 --- a/tensorflow/lite/micro/kernels/softmax.cc
 +++ b/tensorflow/lite/micro/kernels/softmax.cc
 @@ -26,48 +26,48 @@ limitations under the License.
@@ -26833,6 +27985,15 @@ index b154ecba..41c2596a 100644
        return kTfLiteOk;
      }
      case kTfLiteInt8:
+@@ -76,7 +76,7 @@ TfLiteStatus SoftmaxEval(TfLiteContext* context, TfLiteNode* node) {
+       return kTfLiteOk;
+     }
+     default:
+-      MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(input->type),
++      MicroPrintf("Type %s (%d) not supported.", TfLiteMicroTypeGetName(input->type),
+                   input->type);
+       return kTfLiteError;
+   }
 @@ -84,7 +84,7 @@ TfLiteStatus SoftmaxEval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -27184,7 +28345,7 @@ index 057892bf..200649b6 100644
  }
  
 diff --git a/tensorflow/lite/micro/kernels/space_to_batch_nd.cc b/tensorflow/lite/micro/kernels/space_to_batch_nd.cc
-index 6b536eed..17a8b7bd 100644
+index 6b536eed..087c13fb 100644
 --- a/tensorflow/lite/micro/kernels/space_to_batch_nd.cc
 +++ b/tensorflow/lite/micro/kernels/space_to_batch_nd.cc
 @@ -23,7 +23,7 @@ limitations under the License.
@@ -27196,7 +28357,7 @@ index 6b536eed..17a8b7bd 100644
  
  namespace {
  
-@@ -73,36 +73,36 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+@@ -73,39 +73,39 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
        *(static_cast<const SpaceToBatchParams*>(node->user_data));
  
    const TfLiteEvalTensor* input =
@@ -27252,7 +28413,11 @@ index 6b536eed..17a8b7bd 100644
 +          tflite_micro::micro::GetTensorData<int8_t>(output));
        break;
      default:
-       MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(input->type),
+-      MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(input->type),
++      MicroPrintf("Type %s (%d) not supported.", TfLiteMicroTypeGetName(input->type),
+                   input->type);
+       return kTfLiteError;
+   }
 @@ -115,7 +115,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace.
  
@@ -27350,7 +28515,7 @@ index eae185b1..e5d3505b 100644
  
  TF_LITE_MICRO_TESTS_END
 diff --git a/tensorflow/lite/micro/kernels/space_to_depth.cc b/tensorflow/lite/micro/kernels/space_to_depth.cc
-index eac6613a..72544346 100644
+index eac6613a..9a7891e6 100644
 --- a/tensorflow/lite/micro/kernels/space_to_depth.cc
 +++ b/tensorflow/lite/micro/kernels/space_to_depth.cc
 @@ -22,7 +22,7 @@ limitations under the License.
@@ -27361,6 +28526,15 @@ index eac6613a..72544346 100644
 +namespace tflite_micro {
  
  namespace {
+ 
+@@ -111,7 +111,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+       break;
+     default:
+       MicroPrintf("SPACE_TO_DEPTH only supports FLOAT32 and INT8, got %s.",
+-                  TfLiteTypeGetName(input->type));
++                  TfLiteMicroTypeGetName(input->type));
+       return kTfLiteError;
+   }
  
 @@ -121,7 +121,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
@@ -27408,7 +28582,7 @@ index 1fd7d10e..a5c2f3e6 100644
                                       static_cast<void*>(&op_params));
    TF_LITE_MICRO_EXPECT_EQ(kTfLiteOk, runner.InitAndPrepare());
 diff --git a/tensorflow/lite/micro/kernels/split.cc b/tensorflow/lite/micro/kernels/split.cc
-index aa877201..c7090839 100644
+index aa877201..b72e6dca 100644
 --- a/tensorflow/lite/micro/kernels/split.cc
 +++ b/tensorflow/lite/micro/kernels/split.cc
 @@ -20,7 +20,7 @@ limitations under the License.
@@ -27458,6 +28632,15 @@ index aa877201..c7090839 100644
    if (axis_value < 0) {
      axis_value += input->dims->size;
    }
+@@ -109,7 +109,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+     }
+     default:
+       MicroPrintf("Type %s currently not supported.",
+-                  TfLiteTypeGetName(input->type));
++                  TfLiteMicroTypeGetName(input->type));
+       return kTfLiteError;
+   }
+ 
 @@ -119,7 +119,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -27599,7 +28782,7 @@ index e3bf37d0..cdaae07c 100644
        output2_shape, golden2, output1_data, output2_data);
  }
 diff --git a/tensorflow/lite/micro/kernels/split_v.cc b/tensorflow/lite/micro/kernels/split_v.cc
-index 6aed6f7f..b77647d2 100644
+index 6aed6f7f..c2f7c61d 100644
 --- a/tensorflow/lite/micro/kernels/split_v.cc
 +++ b/tensorflow/lite/micro/kernels/split_v.cc
 @@ -21,7 +21,7 @@ limitations under the License.
@@ -27659,6 +28842,15 @@ index 6aed6f7f..b77647d2 100644
    if (axis_value < 0) {
      axis_value += input->dims->size;
    }
+@@ -112,7 +112,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+     }
+     default:
+       MicroPrintf("Type %s currently not supported.",
+-                  TfLiteTypeGetName(input->type));
++                  TfLiteMicroTypeGetName(input->type));
+       return kTfLiteError;
+   }
+   return kTfLiteOk;
 @@ -121,7 +121,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -28145,7 +29337,7 @@ index c7d7e42a..fc1c7c20 100644
          /*narrow_range=*/true);
    }
 diff --git a/tensorflow/lite/micro/kernels/squeeze.cc b/tensorflow/lite/micro/kernels/squeeze.cc
-index e556755f..03088aa1 100644
+index e556755f..cec82039 100644
 --- a/tensorflow/lite/micro/kernels/squeeze.cc
 +++ b/tensorflow/lite/micro/kernels/squeeze.cc
 @@ -24,7 +24,7 @@ limitations under the License.
@@ -28157,7 +29349,7 @@ index e556755f..03088aa1 100644
  namespace {
  
  struct SqueezeContext {
-@@ -88,7 +88,7 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
+@@ -88,15 +88,15 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
  }
  
  TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
@@ -28165,8 +29357,9 @@ index e556755f..03088aa1 100644
 +  const TfLiteEvalTensor* input = tflite_micro::micro::GetEvalInput(context, node, 0);
  
    if (input->type == kTfLiteString) {
-     MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(input->type),
-@@ -96,7 +96,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+-    MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(input->type),
++    MicroPrintf("Type %s (%d) not supported.", TfLiteMicroTypeGetName(input->type),
+                 input->type);
      return kTfLiteError;
    }
  
@@ -28267,7 +29460,7 @@ index 149413bd..a6229a8b 100644
                                   &squeeze_params);
  }
 diff --git a/tensorflow/lite/micro/kernels/strided_slice.cc b/tensorflow/lite/micro/kernels/strided_slice.cc
-index 743f45b2..95f54d11 100644
+index 743f45b2..0feba8c7 100644
 --- a/tensorflow/lite/micro/kernels/strided_slice.cc
 +++ b/tensorflow/lite/micro/kernels/strided_slice.cc
 @@ -25,7 +25,7 @@ limitations under the License.
@@ -28279,7 +29472,7 @@ index 743f45b2..95f54d11 100644
  
  namespace {
  
-@@ -35,44 +35,44 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+@@ -35,47 +35,47 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
        *(static_cast<const StridedSliceParams*>(node->user_data));
  
    const TfLiteEvalTensor* input =
@@ -28345,7 +29538,11 @@ index 743f45b2..95f54d11 100644
 +                                  tflite_micro::micro::GetTensorData<bool>(output));
        break;
      default:
-       MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(input->type),
+-      MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(input->type),
++      MicroPrintf("Type %s (%d) not supported.", TfLiteMicroTypeGetName(input->type),
+                   input->type);
+       return kTfLiteError;
+   }
 @@ -85,7 +85,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -28928,7 +30125,7 @@ index 16c3d9c8..1db088d7 100644
        input_data, begin_data, end_data, strides_data, output_shape, output_data,
        golden, false, 1, true);
 diff --git a/tensorflow/lite/micro/kernels/sub.cc b/tensorflow/lite/micro/kernels/sub.cc
-index 930bc0ba..79ee8e9d 100644
+index 930bc0ba..8d62d956 100644
 --- a/tensorflow/lite/micro/kernels/sub.cc
 +++ b/tensorflow/lite/micro/kernels/sub.cc
 @@ -29,7 +29,7 @@ limitations under the License.
@@ -28989,7 +30186,7 @@ index 930bc0ba..79ee8e9d 100644
    op_params.left_shift = data->left_shift;
    op_params.input1_offset = data->input1_offset;
    op_params.input1_multiplier = data->input1_multiplier;
-@@ -82,47 +82,47 @@ TfLiteStatus EvalSubQuantized(TfLiteContext* context, TfLiteNode* node,
+@@ -82,53 +82,53 @@ TfLiteStatus EvalSubQuantized(TfLiteContext* context, TfLiteNode* node,
    SetActivationParams(data->output_activation_min, data->output_activation_max,
                        &op_params);
    bool need_broadcast = reference_ops::ProcessBroadcastShapes(
@@ -29067,6 +30264,13 @@ index 930bc0ba..79ee8e9d 100644
        }
        break;
      }
+     default:
+       MicroPrintf("Quantized type %s not currently supported.",
+-                  TfLiteTypeGetName(output->type));
++                  TfLiteMicroTypeGetName(output->type));
+       return kTfLiteError;
+   }
+   return kTfLiteOk;
 @@ -138,11 +138,11 @@ TfLiteStatus SubEval(TfLiteContext* context, TfLiteNode* node) {
    auto* params = reinterpret_cast<TfLiteSubParams*>(node->builtin_data);
  
@@ -29082,6 +30286,15 @@ index 930bc0ba..79ee8e9d 100644
  
    TFLITE_DCHECK(node->user_data != nullptr);
    const OpDataSub& data = *(static_cast<const OpDataSub*>(node->user_data));
+@@ -153,7 +153,7 @@ TfLiteStatus SubEval(TfLiteContext* context, TfLiteNode* node) {
+     TF_LITE_ENSURE_OK(context, EvalSubQuantized(context, node, params, &data,
+                                                 input1, input2, output));
+   } else {
+-    MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(output->type),
++    MicroPrintf("Type %s (%d) not supported.", TfLiteMicroTypeGetName(output->type),
+                 output->type);
+     return kTfLiteError;
+   }
 @@ -162,7 +162,7 @@ TfLiteStatus SubEval(TfLiteContext* context, TfLiteNode* node) {
  }
  
@@ -29375,7 +30588,7 @@ index d5226ebc..f551ef87 100644
    }
  }
 diff --git a/tensorflow/lite/micro/kernels/svdf.cc b/tensorflow/lite/micro/kernels/svdf.cc
-index 0ffb4b07..22522d0a 100644
+index 0ffb4b07..fc7aa97b 100644
 --- a/tensorflow/lite/micro/kernels/svdf.cc
 +++ b/tensorflow/lite/micro/kernels/svdf.cc
 @@ -29,7 +29,7 @@ limitations under the License.
@@ -29414,6 +30627,24 @@ index 0ffb4b07..22522d0a 100644
  
    switch (weights_feature->type) {
      case kTfLiteFloat32: {
+@@ -82,7 +82,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+         }
+         default:
+           MicroPrintf("Type %s not currently supported.",
+-                      TfLiteTypeGetName(weights_time->type));
++                      TfLiteMicroTypeGetName(weights_time->type));
+           return kTfLiteError;
+       }
+       break;
+@@ -90,7 +90,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+ 
+     default:
+       MicroPrintf("Type %s not currently supported.",
+-                  TfLiteTypeGetName(weights_feature->type));
++                  TfLiteMicroTypeGetName(weights_feature->type));
+       return kTfLiteError;
+   }
+   return kTfLiteOk;
 @@ -99,7 +99,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -29879,7 +31110,7 @@ index ae8fadc1..a7ce23fb 100644
  }
  
 diff --git a/tensorflow/lite/micro/kernels/tanh.cc b/tensorflow/lite/micro/kernels/tanh.cc
-index e6958893..c0346759 100644
+index e6958893..00398561 100644
 --- a/tensorflow/lite/micro/kernels/tanh.cc
 +++ b/tensorflow/lite/micro/kernels/tanh.cc
 @@ -27,7 +27,7 @@ limitations under the License.
@@ -29891,7 +31122,7 @@ index e6958893..c0346759 100644
  
  namespace {
  
-@@ -149,37 +149,37 @@ TfLiteStatus TanhPrepare(TfLiteContext* context, TfLiteNode* node) {
+@@ -149,43 +149,43 @@ TfLiteStatus TanhPrepare(TfLiteContext* context, TfLiteNode* node) {
  
  TfLiteStatus TanhEval(TfLiteContext* context, TfLiteNode* node) {
    const TfLiteEvalTensor* input =
@@ -29943,6 +31174,14 @@ index e6958893..c0346759 100644
        return kTfLiteOk;
      } break;
      default:
+       MicroPrintf("Input %s, output %s not supported.",
+-                  TfLiteTypeGetName(input->type),
+-                  TfLiteTypeGetName(output->type), context);
++                  TfLiteMicroTypeGetName(input->type),
++                  TfLiteMicroTypeGetName(output->type), context);
+       return kTfLiteError;
+   }
+ }
 @@ -193,7 +193,7 @@ TfLiteStatus TanhEval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -30181,7 +31420,7 @@ index 3edf4200..671bbb00 100644
  
  #endif  // TENSORFLOW_LITE_MICRO_KERNELS_TESTDATA_LSTM_TEST_DATA_H_
 diff --git a/tensorflow/lite/micro/kernels/transpose.cc b/tensorflow/lite/micro/kernels/transpose.cc
-index 710bfca4..1ce40795 100644
+index 710bfca4..fe27b79c 100644
 --- a/tensorflow/lite/micro/kernels/transpose.cc
 +++ b/tensorflow/lite/micro/kernels/transpose.cc
 @@ -21,7 +21,7 @@ limitations under the License.
@@ -30202,7 +31441,7 @@ index 710bfca4..1ce40795 100644
    const int32_t* perm_data = perm_tensor->data.i32;
    const int size = perm_tensor->dims->data[0];
    TransposeParams params;
-@@ -87,21 +87,27 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+@@ -87,27 +87,33 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
    // on each cell. It's safe to implement per size of scalar type and this
    // trick keeps the total code size in a reasonable range.
    const TfLiteEvalTensor* input =
@@ -30240,6 +31479,13 @@ index 710bfca4..1ce40795 100644
        break;
      default:
        MicroPrintf(
+           "Type %s is currently not supported by Transpose. "
+           "Only float32 and int8 is supported",
+-          TfLiteTypeGetName(input->type));
++          TfLiteMicroTypeGetName(input->type));
+       return kTfLiteError;
+   }
+ 
 @@ -117,6 +123,6 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -30250,7 +31496,7 @@ index 710bfca4..1ce40795 100644
 -}  // namespace tflite
 +}  // namespace tflite_micro
 diff --git a/tensorflow/lite/micro/kernels/transpose_conv.cc b/tensorflow/lite/micro/kernels/transpose_conv.cc
-index a2ac2b46..ed5b1b3e 100644
+index a2ac2b46..3574921f 100644
 --- a/tensorflow/lite/micro/kernels/transpose_conv.cc
 +++ b/tensorflow/lite/micro/kernels/transpose_conv.cc
 @@ -26,7 +26,7 @@ limitations under the License.
@@ -30350,7 +31596,7 @@ index a2ac2b46..ed5b1b3e 100644
        break;
      }
      case kTfLiteInt16: {
-@@ -306,32 +306,50 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+@@ -306,37 +306,55 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
          std::int64_t* bias_converted_buffer =
              static_cast<int64_t*>(context->GetScratchBuffer(
                  context, data.bias_converted_buffer_index));
@@ -30419,6 +31665,12 @@ index a2ac2b46..ed5b1b3e 100644
        }
        break;
      }
+     default:
+-      MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(input->type),
++      MicroPrintf("Type %s (%d) not supported.", TfLiteMicroTypeGetName(input->type),
+                   input->type);
+       return kTfLiteError;
+   }
 @@ -346,7 +364,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -31234,7 +32486,7 @@ index 12bc431f..ddd35808 100644
  }
  
 diff --git a/tensorflow/lite/micro/kernels/unidirectional_sequence_lstm.cc b/tensorflow/lite/micro/kernels/unidirectional_sequence_lstm.cc
-index b2966805..698dfebd 100644
+index b2966805..80ffe1ab 100644
 --- a/tensorflow/lite/micro/kernels/unidirectional_sequence_lstm.cc
 +++ b/tensorflow/lite/micro/kernels/unidirectional_sequence_lstm.cc
 @@ -27,7 +27,7 @@ limitations under the License.
@@ -31246,6 +32498,42 @@ index b2966805..698dfebd 100644
  
  namespace {
  /*Helper Functions*/
+@@ -80,7 +80,7 @@ TfLiteStatus UnidirectionalSequenceLstmPrepare(TfLiteContext* context,
+     MicroPrintf(
+         "Cell state type %s (%d) not supported. The quantized Unidirectional "
+         "Sequence LSTM Op only support int16 cell state",
+-        TfLiteTypeGetName(cell_state_type), cell_state_type);
++        TfLiteMicroTypeGetName(cell_state_type), cell_state_type);
+     return kTfLiteError;
+   }
+   // request buffers (four buffers)
+@@ -125,7 +125,7 @@ TfLiteStatus UnidirectionalSequenceLstmEval(TfLiteContext* context,
+         }
+         default: {
+           MicroPrintf("Filter type %s (%d) not supported.",
+-                      TfLiteTypeGetName(weight_type), activation_type);
++                      TfLiteMicroTypeGetName(weight_type), activation_type);
+           return kTfLiteError;
+         }
+       }
+@@ -143,7 +143,7 @@ TfLiteStatus UnidirectionalSequenceLstmEval(TfLiteContext* context,
+         }
+         default: {
+           MicroPrintf("Filter type %s (%d) not supported.",
+-                      TfLiteTypeGetName(weight_type), weight_type);
++                      TfLiteMicroTypeGetName(weight_type), weight_type);
+           return kTfLiteError;
+         }
+       }
+@@ -151,7 +151,7 @@ TfLiteStatus UnidirectionalSequenceLstmEval(TfLiteContext* context,
+     }
+     default: {
+       MicroPrintf("Input type %s (%d) not supported.",
+-                  TfLiteTypeGetName(activation_type), activation_type);
++                  TfLiteMicroTypeGetName(activation_type), activation_type);
+       return kTfLiteError;
+     }
+   }
 @@ -161,8 +161,8 @@ TfLiteStatus UnidirectionalSequenceLstmEval(TfLiteContext* context,
  }  // namespace
  
@@ -31371,7 +32659,7 @@ index c85e56fe..e3f219e5 100644
        int16_node_contents);
  }
 diff --git a/tensorflow/lite/micro/kernels/unpack.cc b/tensorflow/lite/micro/kernels/unpack.cc
-index 3ce4c33f..e2db17ed 100644
+index 3ce4c33f..d24ae96c 100644
 --- a/tensorflow/lite/micro/kernels/unpack.cc
 +++ b/tensorflow/lite/micro/kernels/unpack.cc
 @@ -20,7 +20,7 @@ limitations under the License.
@@ -31416,7 +32704,7 @@ index 3ce4c33f..e2db17ed 100644
  
    switch (input->type) {
      case kTfLiteFloat32: {
-@@ -86,6 +86,9 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+@@ -86,12 +86,15 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
      case kTfLiteInt32: {
        return UnpackImpl<int32_t>(context, node, input, data->num, data->axis);
      }
@@ -31426,6 +32714,13 @@ index 3ce4c33f..e2db17ed 100644
      case kTfLiteInt8: {
        return UnpackImpl<int8_t>(context, node, input, data->num, data->axis);
      }
+     default: {
+       MicroPrintf("Type '%s' is not supported by unpack.",
+-                  TfLiteTypeGetName(input->type));
++                  TfLiteMicroTypeGetName(input->type));
+       return kTfLiteError;
+     }
+   }
 @@ -102,7 +105,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -31689,7 +32984,7 @@ index 536f9033..85e97f6f 100644
    TfLiteTensor* input0 = interpreter.input(0);
    TfLiteTensor* input1 = interpreter.input(1);
 diff --git a/tensorflow/lite/micro/kernels/xtensa/add.cc b/tensorflow/lite/micro/kernels/xtensa/add.cc
-index 423e7982..8e68d8d0 100644
+index 423e7982..da867f17 100644
 --- a/tensorflow/lite/micro/kernels/xtensa/add.cc
 +++ b/tensorflow/lite/micro/kernels/xtensa/add.cc
 @@ -29,7 +29,7 @@ limitations under the License.
@@ -31701,7 +32996,7 @@ index 423e7982..8e68d8d0 100644
  
  TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
    TF_LITE_ENSURE_OK(context, AddPrepare(context, node));
-@@ -46,45 +46,45 @@ TfLiteStatus EvalAdd(TfLiteContext* context, TfLiteNode* node,
+@@ -46,50 +46,50 @@ TfLiteStatus EvalAdd(TfLiteContext* context, TfLiteNode* node,
                       const TfLiteEvalTensor* input2, TfLiteEvalTensor* output) {
    switch (output->type) {
      case kTfLiteFloat32: {
@@ -31773,6 +33068,12 @@ index 423e7982..8e68d8d0 100644
        }
      } break;
      default:
+       MicroPrintf("Type %s (%d) not supported.",
+-                  TfLiteTypeGetName(output->type), output->type);
++                  TfLiteMicroTypeGetName(output->type), output->type);
+       return kTfLiteError;
+   }
+   return kTfLiteOk;
 @@ -100,7 +100,7 @@ TfLiteStatus EvalAddQuantized(TfLiteContext* context, TfLiteNode* node,
                                const TfLiteEvalTensor* input1,
                                const TfLiteEvalTensor* input2,
@@ -31916,6 +33217,15 @@ index 423e7982..8e68d8d0 100644
                             false);
        }
  #endif  // defined(HIFI3) || defined(HIFI4)
+@@ -219,7 +219,7 @@ TfLiteStatus EvalAddQuantized(TfLiteContext* context, TfLiteNode* node,
+     }
+     default:
+       MicroPrintf("Type %s (%d) not supported.",
+-                  TfLiteTypeGetName(output->type), output->type);
++                  TfLiteMicroTypeGetName(output->type), output->type);
+       return kTfLiteError;
+   }
+ 
 @@ -247,11 +247,11 @@ TfLiteStatus AddEval(TfLiteContext* context, TfLiteNode* node) {
    const OpDataAdd* data = static_cast<const OpDataAdd*>(node->user_data);
  
@@ -31931,6 +33241,15 @@ index 423e7982..8e68d8d0 100644
  
    if (output->type == kTfLiteFloat32 || output->type == kTfLiteInt32) {
      TF_LITE_ENSURE_OK(
+@@ -260,7 +260,7 @@ TfLiteStatus AddEval(TfLiteContext* context, TfLiteNode* node) {
+     TF_LITE_ENSURE_OK(context, EvalAddQuantized(context, node, params, data,
+                                                 input1, input2, output));
+   } else {
+-    MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(output->type),
++    MicroPrintf("Type %s (%d) not supported.", TfLiteMicroTypeGetName(output->type),
+                 output->type);
+     return kTfLiteError;
+   }
 @@ -269,7 +269,7 @@ TfLiteStatus AddEval(TfLiteContext* context, TfLiteNode* node) {
  }
  
@@ -31971,7 +33290,7 @@ index 4e207130..5da70aef 100644
 +}  // namespace tflite_micro
  #endif  // defined(VISION_P6)
 diff --git a/tensorflow/lite/micro/kernels/xtensa/conv.cc b/tensorflow/lite/micro/kernels/xtensa/conv.cc
-index 0955b12f..a12441c3 100644
+index 0955b12f..b05277fc 100644
 --- a/tensorflow/lite/micro/kernels/xtensa/conv.cc
 +++ b/tensorflow/lite/micro/kernels/xtensa/conv.cc
 @@ -29,7 +29,7 @@ limitations under the License.
@@ -32030,6 +33349,15 @@ index 0955b12f..a12441c3 100644
        break;
      }
      case kTfLiteInt8: {
+@@ -106,7 +106,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+ #endif
+     }
+     default:
+-      MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(input->type),
++      MicroPrintf("Type %s (%d) not supported.", TfLiteMicroTypeGetName(input->type),
+                   input->type);
+       return kTfLiteError;
+   }
 @@ -117,7 +117,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -32164,7 +33492,7 @@ index 45c8f4bf..dd074dcb 100644
 +}  // namespace tflite_micro
  #endif  // defined(HIFI3) || defined(HIFI4) || defined(HIFI5)
 diff --git a/tensorflow/lite/micro/kernels/xtensa/conv_int16_reference.cc b/tensorflow/lite/micro/kernels/xtensa/conv_int16_reference.cc
-index 2492d4b3..a16a22b4 100644
+index 2492d4b3..3ea20077 100644
 --- a/tensorflow/lite/micro/kernels/xtensa/conv_int16_reference.cc
 +++ b/tensorflow/lite/micro/kernels/xtensa/conv_int16_reference.cc
 @@ -25,7 +25,7 @@ limitations under the License.
@@ -32176,7 +33504,7 @@ index 2492d4b3..a16a22b4 100644
  
  TfLiteStatus ConvReferenceEvalInt16(TfLiteContext* context, TfLiteNode* node) {
    TFLITE_DCHECK(node->user_data != nullptr);
-@@ -35,40 +35,40 @@ TfLiteStatus ConvReferenceEvalInt16(TfLiteContext* context, TfLiteNode* node) {
+@@ -35,47 +35,47 @@ TfLiteStatus ConvReferenceEvalInt16(TfLiteContext* context, TfLiteNode* node) {
    const auto& op_data = *(reinterpret_cast<OpDataConv*>(node->user_data));
  
    TfLiteEvalTensor* output =
@@ -32236,8 +33564,11 @@ index 2492d4b3..a16a22b4 100644
 +        tflite_micro::micro::GetTensorData<int16_t>(output));
    } else {
      MicroPrintf("Bias type %s (%d) not supported.",
-                 TfLiteTypeGetName(bias->type), bias->type);
-@@ -78,4 +78,4 @@ TfLiteStatus ConvReferenceEvalInt16(TfLiteContext* context, TfLiteNode* node) {
+-                TfLiteTypeGetName(bias->type), bias->type);
++                TfLiteMicroTypeGetName(bias->type), bias->type);
+     return kTfLiteError;
+   }
+ 
    return kTfLiteOk;
  }
  
@@ -32431,7 +33762,7 @@ index 812ab60e..4dfd4e03 100644
 +}  // namespace tflite_micro
  #endif  // defined(VISION_P6)
 diff --git a/tensorflow/lite/micro/kernels/xtensa/depthwise_conv.cc b/tensorflow/lite/micro/kernels/xtensa/depthwise_conv.cc
-index 8536ff79..9d8e3aca 100644
+index 8536ff79..43b0344a 100644
 --- a/tensorflow/lite/micro/kernels/xtensa/depthwise_conv.cc
 +++ b/tensorflow/lite/micro/kernels/xtensa/depthwise_conv.cc
 @@ -31,7 +31,7 @@ limitations under the License.
@@ -32466,7 +33797,7 @@ index 8536ff79..9d8e3aca 100644
        context, op_data.reference_op_data.filter_buffer_index, filter);
  
    switch (input->type) {  // Already know in/out types are same.
-@@ -108,14 +108,14 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+@@ -108,20 +108,20 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
                DepthwiseConvParamsQuantized(params, op_data.reference_op_data),
                op_data.reference_op_data.per_channel_output_multiplier,
                op_data.reference_op_data.per_channel_output_shift,
@@ -32489,7 +33820,14 @@ index 8536ff79..9d8e3aca 100644
  #endif  // defined(HIFI3) || defined(HIFI4) || defined(HIFI5)
            break;
          }
-@@ -133,14 +133,14 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+         default:
+           MicroPrintf("Filter type %s (%d) not supported.",
+-                      TfLiteTypeGetName(filter->type), filter->type);
++                      TfLiteMicroTypeGetName(filter->type), filter->type);
+           return kTfLiteError;
+       }
+       break;
+@@ -133,26 +133,26 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
                DepthwiseConvParamsQuantized(params, op_data.reference_op_data),
                op_data.reference_op_data.per_channel_output_multiplier,
                op_data.reference_op_data.per_channel_output_shift,
@@ -32512,6 +33850,21 @@ index 8536ff79..9d8e3aca 100644
            break;
          }
          default:
+           MicroPrintf("Filter type %s (%d) for input type %s not supported.",
+-                      TfLiteTypeGetName(filter->type), filter->type,
+-                      TfLiteTypeGetName(input->type));
++                      TfLiteMicroTypeGetName(filter->type), filter->type,
++                      TfLiteMicroTypeGetName(input->type));
+           return kTfLiteError;
+       }
+       break;
+     }
+     default:
+-      MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(input->type),
++      MicroPrintf("Type %s (%d) not supported.", TfLiteMicroTypeGetName(input->type),
+                   input->type);
+       return kTfLiteError;
+   }
 @@ -162,7 +162,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -32636,7 +33989,7 @@ index 35fa8cf1..6f6127a4 100644
 +}  // namespace tflite_micro
  #endif  // defined(VISION_P6)
 diff --git a/tensorflow/lite/micro/kernels/xtensa/fully_connected.cc b/tensorflow/lite/micro/kernels/xtensa/fully_connected.cc
-index df545800..09fd0e85 100644
+index df545800..9152db3d 100644
 --- a/tensorflow/lite/micro/kernels/xtensa/fully_connected.cc
 +++ b/tensorflow/lite/micro/kernels/xtensa/fully_connected.cc
 @@ -27,7 +27,7 @@ limitations under the License.
@@ -32692,7 +34045,16 @@ index df545800..09fd0e85 100644
        break;
      }
  
-@@ -88,16 +88,16 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+@@ -78,7 +78,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+         }
+         default: {
+           MicroPrintf("Filter type %s (%d) not supported.",
+-                      TfLiteTypeGetName(filter->type), input->type);
++                      TfLiteMicroTypeGetName(filter->type), input->type);
+           return kTfLiteError;
+         }
+       }
+@@ -88,21 +88,21 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
      case kTfLiteInt16: {
        switch (filter->type) {
          case kTfLiteInt8: {
@@ -32718,6 +34080,21 @@ index df545800..09fd0e85 100644
            break;
          }
          default: {
+           MicroPrintf("Filter type %s (%d) not supported.",
+-                      TfLiteTypeGetName(filter->type), input->type);
++                      TfLiteMicroTypeGetName(filter->type), input->type);
+           return kTfLiteError;
+         }
+       }
+@@ -111,7 +111,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+ 
+     default: {
+       MicroPrintf("Input type %s (%d) not supported.",
+-                  TfLiteTypeGetName(input->type), input->type);
++                  TfLiteMicroTypeGetName(input->type), input->type);
+       return kTfLiteError;
+     }
+   }
 @@ -121,12 +121,12 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -33036,7 +34413,7 @@ index 08ef4d9b..270294ee 100644
 +}  // namespace tflite_micro
  #endif  // defined(HIFIMINI)
 diff --git a/tensorflow/lite/micro/kernels/xtensa/leaky_relu.cc b/tensorflow/lite/micro/kernels/xtensa/leaky_relu.cc
-index 61ab9853..817f56ca 100644
+index 61ab9853..faff4955 100644
 --- a/tensorflow/lite/micro/kernels/xtensa/leaky_relu.cc
 +++ b/tensorflow/lite/micro/kernels/xtensa/leaky_relu.cc
 @@ -25,7 +25,7 @@ limitations under the License.
@@ -33107,6 +34484,15 @@ index 61ab9853..817f56ca 100644
            data.output_multiplier_alpha, data.output_shift_alpha,
            data.output_multiplier_identity, data.output_shift_identity,
            data.output_zero_point, flat_size);
+@@ -94,7 +94,7 @@ TfLiteStatus LeakyReluEval(TfLiteContext* context, TfLiteNode* node) {
+     } break;
+     default:
+       MicroPrintf("Only float32, int8 are supported by LEAKY_RELU, got %s.",
+-                  TfLiteTypeGetName(input->type));
++                  TfLiteMicroTypeGetName(input->type));
+       return kTfLiteError;
+   }
+ 
 @@ -102,8 +102,8 @@ TfLiteStatus LeakyReluEval(TfLiteContext* context, TfLiteNode* node) {
  }
  
@@ -33119,7 +34505,7 @@ index 61ab9853..817f56ca 100644
 -}  // namespace tflite
 +}  // namespace tflite_micro
 diff --git a/tensorflow/lite/micro/kernels/xtensa/logistic.cc b/tensorflow/lite/micro/kernels/xtensa/logistic.cc
-index 2ddf82ef..049e3b95 100644
+index 2ddf82ef..43de55ac 100644
 --- a/tensorflow/lite/micro/kernels/xtensa/logistic.cc
 +++ b/tensorflow/lite/micro/kernels/xtensa/logistic.cc
 @@ -28,7 +28,7 @@ limitations under the License.
@@ -33143,7 +34529,15 @@ index 2ddf82ef..049e3b95 100644
  
    TFLITE_DCHECK(node->user_data != nullptr);
    OpDataLogistic* data = static_cast<OpDataLogistic*>(node->user_data);
-@@ -55,33 +55,33 @@ TfLiteStatus LogisticEval(TfLiteContext* context, TfLiteNode* node) {
+@@ -48,40 +48,40 @@ TfLiteStatus LogisticEval(TfLiteContext* context, TfLiteNode* node) {
+   if (input->type != output->type) {
+     MicroPrintf(
+         "Input and output types must be identical. Input %s, output %s.",
+-        TfLiteTypeGetName(input->type), TfLiteTypeGetName(output->type));
++        TfLiteMicroTypeGetName(input->type), TfLiteMicroTypeGetName(output->type));
+     return kTfLiteError;
+   }
+ 
    switch (input->type) {
      case kTfLiteFloat32: {
  #if HIFI_VFPU && (defined(HIFI3) || defined(HIFI4) || defined(HIFI5))
@@ -33200,7 +34594,7 @@ index 2ddf82ef..049e3b95 100644
  #endif  // defined(HIFI3) || defined(HIFI4) || defined(HIFI5)
        break;
      }
-@@ -105,8 +105,8 @@ TfLiteStatus LogisticEval(TfLiteContext* context, TfLiteNode* node) {
+@@ -105,21 +105,21 @@ TfLiteStatus LogisticEval(TfLiteContext* context, TfLiteNode* node) {
            reference_integer_ops::Logistic(
                data->input_multiplier, data->input_left_shift,
                NumElements(input->dims),
@@ -33211,6 +34605,23 @@ index 2ddf82ef..049e3b95 100644
            break;
          default:
            MicroPrintf("Input %s, output %s not supported.",
+-                      TfLiteTypeGetName(input->type),
+-                      TfLiteTypeGetName(output->type));
++                      TfLiteMicroTypeGetName(input->type),
++                      TfLiteMicroTypeGetName(output->type));
+           return kTfLiteError;
+       }
+       break;
+     }
+     default: {
+       MicroPrintf("Input %s, output %s not supported.",
+-                  TfLiteTypeGetName(input->type),
+-                  TfLiteTypeGetName(output->type));
++                  TfLiteMicroTypeGetName(input->type),
++                  TfLiteMicroTypeGetName(output->type));
+       return kTfLiteError;
+     }
+   }
 @@ -129,6 +129,6 @@ TfLiteStatus LogisticEval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -33635,7 +35046,7 @@ index 4bcff1aa..4d854c68 100644
 +}  // namespace tflite_micro
  #endif  // TENSORFLOW_LITE_KERNELS_LSTM_SHARED_H_
 diff --git a/tensorflow/lite/micro/kernels/xtensa/pad.cc b/tensorflow/lite/micro/kernels/xtensa/pad.cc
-index 86d0ab3a..b2616269 100644
+index 86d0ab3a..afa07395 100644
 --- a/tensorflow/lite/micro/kernels/xtensa/pad.cc
 +++ b/tensorflow/lite/micro/kernels/xtensa/pad.cc
 @@ -26,7 +26,7 @@ limitations under the License.
@@ -33767,7 +35178,7 @@ index 86d0ab3a..b2616269 100644
  #if defined(HIFI3) || defined(HIFI4)
        }
  #endif  // defined(HIFI3) || defined(HIFI4)
-@@ -246,11 +246,11 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+@@ -246,16 +246,16 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
        int32_t pad_value =
            constant_values == nullptr
                ? 0
@@ -33784,6 +35195,12 @@ index 86d0ab3a..b2616269 100644
      } break;
      default:
  
+       MicroPrintf("Type %s not currently supported by Pad.",
+-                  TfLiteTypeGetName(input->type));
++                  TfLiteMicroTypeGetName(input->type));
+       return kTfLiteError;
+   }
+   return kTfLiteOk;
 @@ -264,12 +264,12 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -33827,7 +35244,7 @@ index f15e2f24..0dddbbe6 100644
 +}  // namespace tflite_micro
  #endif  // defined(VISION_P6)
 diff --git a/tensorflow/lite/micro/kernels/xtensa/pooling.cc b/tensorflow/lite/micro/kernels/xtensa/pooling.cc
-index 172d0587..16471a87 100644
+index 172d0587..aa3503eb 100644
 --- a/tensorflow/lite/micro/kernels/xtensa/pooling.cc
 +++ b/tensorflow/lite/micro/kernels/xtensa/pooling.cc
 @@ -23,7 +23,7 @@ limitations under the License.
@@ -33839,6 +35256,24 @@ index 172d0587..16471a87 100644
  
  namespace {
  
+@@ -72,7 +72,7 @@ TfLiteStatus AverageEval(TfLiteContext* context, TfLiteNode* node) {
+     }
+     default: {
+       MicroPrintf("Input type %s is not currently supported",
+-                  TfLiteTypeGetName(input->type));
++                  TfLiteMicroTypeGetName(input->type));
+       return kTfLiteError;
+     }
+   }
+@@ -123,7 +123,7 @@ TfLiteStatus MaxEval(TfLiteContext* context, TfLiteNode* node) {
+     }
+     default: {
+       MicroPrintf("Type %s not currently supported.",
+-                  TfLiteTypeGetName(input->type));
++                  TfLiteMicroTypeGetName(input->type));
+       return kTfLiteError;
+     }
+   }
 @@ -134,25 +134,25 @@ TfLiteStatus MaxEval(TfLiteContext* context, TfLiteNode* node) {
  
  TFLMRegistration Register_AVERAGE_POOL_2D() {
@@ -33878,7 +35313,7 @@ index 172d0587..16471a87 100644
 -}  // namespace tflite
 +}  // namespace tflite_micro
 diff --git a/tensorflow/lite/micro/kernels/xtensa/pooling_int8.cc b/tensorflow/lite/micro/kernels/xtensa/pooling_int8.cc
-index 84246d64..c8c0ee16 100644
+index 84246d64..c4dcbcc0 100644
 --- a/tensorflow/lite/micro/kernels/xtensa/pooling_int8.cc
 +++ b/tensorflow/lite/micro/kernels/xtensa/pooling_int8.cc
 @@ -22,7 +22,7 @@ limitations under the License.
@@ -33890,6 +35325,24 @@ index 84246d64..c8c0ee16 100644
  
  namespace {
  
+@@ -57,7 +57,7 @@ TfLiteStatus AverageEvalInt8(TfLiteContext* context, TfLiteNode* node) {
+     }
+     default: {
+       MicroPrintf("Input type %s is not currently supported",
+-                  TfLiteTypeGetName(input->type));
++                  TfLiteMicroTypeGetName(input->type));
+       return kTfLiteError;
+     }
+   }
+@@ -94,7 +94,7 @@ TfLiteStatus MaxEvalInt8(TfLiteContext* context, TfLiteNode* node) {
+     }
+     default: {
+       MicroPrintf("Type %s not currently supported.",
+-                  TfLiteTypeGetName(input->type));
++                  TfLiteMicroTypeGetName(input->type));
+       return kTfLiteError;
+     }
+   }
 @@ -157,8 +157,8 @@ TfLiteStatus AverageEvalQuantizedHifi(TfLiteContext* context,
                                        TfLiteEvalTensor* output) {
    TFLITE_DCHECK(input->type == kTfLiteInt8);
@@ -33998,7 +35451,7 @@ index b0186f16..b8503246 100644
  
  #endif  // VISIONP6
 diff --git a/tensorflow/lite/micro/kernels/xtensa/quantize.cc b/tensorflow/lite/micro/kernels/xtensa/quantize.cc
-index 15f5243e..15f7b81a 100644
+index 15f5243e..4f7b5c46 100644
 --- a/tensorflow/lite/micro/kernels/xtensa/quantize.cc
 +++ b/tensorflow/lite/micro/kernels/xtensa/quantize.cc
 @@ -26,7 +26,7 @@ limitations under the License.
@@ -34021,7 +35474,7 @@ index 15f5243e..15f7b81a 100644
  
    switch (input->type) {
      case kTfLiteUInt8: {
-@@ -43,11 +43,11 @@ TfLiteStatus EvalXtensa(TfLiteContext* context, TfLiteNode* node) {
+@@ -43,18 +43,18 @@ TfLiteStatus EvalXtensa(TfLiteContext* context, TfLiteNode* node) {
          case kTfLiteInt8: {
            int size = ElementCount(*input->dims);
            reference_ops::Requantize(
@@ -34035,6 +35488,15 @@ index 15f5243e..15f7b81a 100644
            break;
          }
  
+         default:
+           MicroPrintf("Input %s, output %s not supported.",
+-                      TfLiteTypeGetName(input->type),
+-                      TfLiteTypeGetName(output->type));
++                      TfLiteMicroTypeGetName(input->type),
++                      TfLiteMicroTypeGetName(output->type));
+           return kTfLiteError;
+       }
+       break;
 @@ -65,22 +65,22 @@ TfLiteStatus EvalXtensa(TfLiteContext* context, TfLiteNode* node) {
          case kTfLiteUInt8: {
            int size = ElementCount(*input->dims);
@@ -34086,7 +35548,7 @@ index 15f5243e..15f7b81a 100644
  
            TF_LITE_ENSURE_EQ(
                context,
-@@ -113,10 +113,10 @@ TfLiteStatus EvalXtensa(TfLiteContext* context, TfLiteNode* node) {
+@@ -113,18 +113,18 @@ TfLiteStatus EvalXtensa(TfLiteContext* context, TfLiteNode* node) {
                0);
  #else
            reference_ops::Requantize(
@@ -34099,6 +35561,16 @@ index 15f5243e..15f7b81a 100644
  #endif  // defined(HIFI5)
            break;
          }
+ 
+         default: {
+           MicroPrintf("Input %s, output %s not supported.",
+-                      TfLiteTypeGetName(input->type),
+-                      TfLiteTypeGetName(output->type));
++                      TfLiteMicroTypeGetName(input->type),
++                      TfLiteMicroTypeGetName(output->type));
+           return kTfLiteError;
+         }
+       }
 @@ -137,8 +137,8 @@ TfLiteStatus EvalXtensa(TfLiteContext* context, TfLiteNode* node) {
            int size = ElementCount(*input->dims);
            TF_LITE_ENSURE_EQ(context,
@@ -34135,7 +35607,7 @@ index 15f5243e..15f7b81a 100644
                                  op_data->input_zero_point,
                                  op_data->quantization_params.zero_point,
                                  op_data->requantize_output_shift,
-@@ -173,10 +173,10 @@ TfLiteStatus EvalXtensa(TfLiteContext* context, TfLiteNode* node) {
+@@ -173,18 +173,18 @@ TfLiteStatus EvalXtensa(TfLiteContext* context, TfLiteNode* node) {
  #else
            int32_t zero_point = op_data->quantization_params.zero_point;
            reference_ops::Requantize(
@@ -34148,6 +35620,16 @@ index 15f5243e..15f7b81a 100644
  #endif  // defined(HIFI5)
            break;
          }
+ 
+         default: {
+           MicroPrintf("Input %s, output %s not supported.",
+-                      TfLiteTypeGetName(input->type),
+-                      TfLiteTypeGetName(output->type));
++                      TfLiteMicroTypeGetName(input->type),
++                      TfLiteMicroTypeGetName(output->type));
+           return kTfLiteError;
+         }
+       }
 @@ -196,11 +196,11 @@ TfLiteStatus EvalXtensa(TfLiteContext* context, TfLiteNode* node) {
          case kTfLiteInt8: {
            int size = ElementCount(*input->dims);
@@ -34162,7 +35644,7 @@ index 15f5243e..15f7b81a 100644
            break;
          }
  
-@@ -208,10 +208,10 @@ TfLiteStatus EvalXtensa(TfLiteContext* context, TfLiteNode* node) {
+@@ -208,17 +208,17 @@ TfLiteStatus EvalXtensa(TfLiteContext* context, TfLiteNode* node) {
            int size = ElementCount(*input->dims);
            int32_t zero_point = op_data->quantization_params.zero_point;
            reference_ops::Requantize(
@@ -34175,7 +35657,16 @@ index 15f5243e..15f7b81a 100644
            break;
          }
  
-@@ -230,20 +230,20 @@ TfLiteStatus EvalXtensa(TfLiteContext* context, TfLiteNode* node) {
+         default: {
+           MicroPrintf("Input %s, output %s not supported.",
+-                      TfLiteTypeGetName(input->type),
+-                      TfLiteTypeGetName(output->type));
++                      TfLiteMicroTypeGetName(input->type),
++                      TfLiteMicroTypeGetName(output->type));
+           return kTfLiteError;
+         }
+       }
+@@ -230,27 +230,27 @@ TfLiteStatus EvalXtensa(TfLiteContext* context, TfLiteNode* node) {
          case kTfLiteInt8: {
            reference_ops::AffineQuantize(
                op_data->quantization_params,
@@ -34204,6 +35695,26 @@ index 15f5243e..15f7b81a 100644
            break;
          }
  
+         default: {
+           MicroPrintf("Input %s, output %s not supported.",
+-                      TfLiteTypeGetName(input->type),
+-                      TfLiteTypeGetName(output->type));
++                      TfLiteMicroTypeGetName(input->type),
++                      TfLiteMicroTypeGetName(output->type));
+           return kTfLiteError;
+         }
+       }
+@@ -259,8 +259,8 @@ TfLiteStatus EvalXtensa(TfLiteContext* context, TfLiteNode* node) {
+ 
+     default: {
+       MicroPrintf("Input %s, output %s not supported.",
+-                  TfLiteTypeGetName(input->type),
+-                  TfLiteTypeGetName(output->type));
++                  TfLiteMicroTypeGetName(input->type),
++                  TfLiteMicroTypeGetName(output->type));
+       return kTfLiteError;
+     }
+   }
 @@ -311,7 +311,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -34355,7 +35866,7 @@ index 3e855a4a..91979697 100644
 +}  // namespace tflite_micro
  #endif  // defined(VISION_P6)
 diff --git a/tensorflow/lite/micro/kernels/xtensa/softmax.cc b/tensorflow/lite/micro/kernels/xtensa/softmax.cc
-index c248fc5a..a3a44f78 100644
+index c248fc5a..d61056f1 100644
 --- a/tensorflow/lite/micro/kernels/xtensa/softmax.cc
 +++ b/tensorflow/lite/micro/kernels/xtensa/softmax.cc
 @@ -28,17 +28,17 @@ limitations under the License.
@@ -34392,7 +35903,7 @@ index c248fc5a..a3a44f78 100644
  
    if (input->type == kTfLiteInt8 && output->type == kTfLiteInt16) {
      return XtensaEvalSoftmaxInt8Int16(context, node);
-@@ -85,29 +85,29 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+@@ -85,33 +85,33 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
          context, node, *(static_cast<XtensaSoftmaxOpData*>(node->user_data)),
          input, output);
  #else
@@ -34436,6 +35947,11 @@ index c248fc5a..a3a44f78 100644
      return kTfLiteOk;
    }
  
+-  MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(input->type),
++  MicroPrintf("Type %s (%d) not supported.", TfLiteMicroTypeGetName(input->type),
+               input->type);
+   return kTfLiteError;
+ }
 @@ -119,8 +119,8 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -34448,7 +35964,7 @@ index c248fc5a..a3a44f78 100644
 -}  // namespace tflite
 +}  // namespace tflite_micro
 diff --git a/tensorflow/lite/micro/kernels/xtensa/softmax_int8_int16.cc b/tensorflow/lite/micro/kernels/xtensa/softmax_int8_int16.cc
-index d37a2f54..cf41344a 100644
+index d37a2f54..6824d2c3 100644
 --- a/tensorflow/lite/micro/kernels/xtensa/softmax_int8_int16.cc
 +++ b/tensorflow/lite/micro/kernels/xtensa/softmax_int8_int16.cc
 @@ -27,7 +27,7 @@ limitations under the License.
@@ -34486,7 +36002,7 @@ index d37a2f54..cf41344a 100644
    TFLITE_DCHECK(node->user_data != nullptr);
  
    if (input->type == kTfLiteInt8 && output->type == kTfLiteInt16) {
-@@ -132,11 +132,11 @@ TfLiteStatus XtensaEvalSoftmaxInt8Int16(TfLiteContext* context,
+@@ -132,23 +132,23 @@ TfLiteStatus XtensaEvalSoftmaxInt8Int16(TfLiteContext* context,
                      output, context);
  #else
      SoftmaxParams op_data = *static_cast<SoftmaxParams*>(node->user_data);
@@ -34503,7 +36019,11 @@ index d37a2f54..cf41344a 100644
      return kTfLiteOk;
  #endif  // defined(HIFI3) || defined(HIFI4) || defined(HIFI5)
    } else {
-@@ -147,8 +147,8 @@ TfLiteStatus XtensaEvalSoftmaxInt8Int16(TfLiteContext* context,
+-    MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(input->type),
++    MicroPrintf("Type %s (%d) not supported.", TfLiteMicroTypeGetName(input->type),
+                 input->type);
+     return kTfLiteError;
+   }
  }
  
  TFLMRegistration Register_SOFTMAX_INT8_INT16() {
@@ -34544,7 +36064,7 @@ index 0c783271..a8ebf1fe 100644
 +}  // namespace tflite_micro
  #endif  // defined(VISION_P6)
 diff --git a/tensorflow/lite/micro/kernels/xtensa/strided_slice.cc b/tensorflow/lite/micro/kernels/xtensa/strided_slice.cc
-index 4b5fe929..c86e6cd3 100644
+index 4b5fe929..bcceeb43 100644
 --- a/tensorflow/lite/micro/kernels/xtensa/strided_slice.cc
 +++ b/tensorflow/lite/micro/kernels/xtensa/strided_slice.cc
 @@ -27,22 +27,22 @@ limitations under the License.
@@ -34584,7 +36104,7 @@ index 4b5fe929..c86e6cd3 100644
  
    const int start_0 = StartForAxis(params_copy, input_shape, 0);
    const int stop_0 = StopForAxis(params_copy, input_shape, 0, start_0);
-@@ -85,52 +85,52 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+@@ -85,55 +85,55 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
        *(static_cast<const StridedSliceParams*>(node->user_data));
  
    const TfLiteEvalTensor* input =
@@ -34662,7 +36182,11 @@ index 4b5fe929..c86e6cd3 100644
 +                                  tflite_micro::micro::GetTensorData<bool>(output));
        break;
      default:
-       MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(input->type),
+-      MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(input->type),
++      MicroPrintf("Type %s (%d) not supported.", TfLiteMicroTypeGetName(input->type),
+                   input->type);
+       return kTfLiteError;
+   }
 @@ -142,7 +142,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -34674,7 +36198,7 @@ index 4b5fe929..c86e6cd3 100644
 -}  // namespace tflite
 +}  // namespace tflite_micro
 diff --git a/tensorflow/lite/micro/kernels/xtensa/sub.cc b/tensorflow/lite/micro/kernels/xtensa/sub.cc
-index 3d287d84..bc2e087b 100644
+index 3d287d84..4bdbec93 100644
 --- a/tensorflow/lite/micro/kernels/xtensa/sub.cc
 +++ b/tensorflow/lite/micro/kernels/xtensa/sub.cc
 @@ -29,7 +29,7 @@ limitations under the License.
@@ -34848,7 +36372,7 @@ index 3d287d84..bc2e087b 100644
              op_params.input2_offset, op_params.input2_shift,
              op_params.input2_multiplier, op_params.left_shift);
  
-@@ -198,21 +198,21 @@ TfLiteStatus EvalSubQuantized(TfLiteContext* context, TfLiteNode* node,
+@@ -198,28 +198,28 @@ TfLiteStatus EvalSubQuantized(TfLiteContext* context, TfLiteNode* node,
        }
  #else   // defined(HIFI3) || defined(HIFI4)
        if (need_broadcast) {
@@ -34884,6 +36408,14 @@ index 3d287d84..bc2e087b 100644
        }
  #endif  // defined(HIFI3) || defined(HIFI4)
        break;
+     }
+     default:
+       MicroPrintf("Quantized type %s not currently supported.",
+-                  TfLiteTypeGetName(output->type));
++                  TfLiteMicroTypeGetName(output->type));
+       return kTfLiteError;
+   }
+   return kTfLiteOk;
 @@ -229,11 +229,11 @@ TfLiteStatus SubEval(TfLiteContext* context, TfLiteNode* node) {
    auto* params = reinterpret_cast<TfLiteSubParams*>(node->builtin_data);
  
@@ -34899,6 +36431,15 @@ index 3d287d84..bc2e087b 100644
  
    TFLITE_DCHECK(node->user_data != nullptr);
    const OpDataSub& data = *(static_cast<const OpDataSub*>(node->user_data));
+@@ -244,7 +244,7 @@ TfLiteStatus SubEval(TfLiteContext* context, TfLiteNode* node) {
+     TF_LITE_ENSURE_OK(context, EvalSubQuantized(context, node, params, &data,
+                                                 input1, input2, output));
+   } else {
+-    MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(output->type),
++    MicroPrintf("Type %s (%d) not supported.", TfLiteMicroTypeGetName(output->type),
+                 output->type);
+     return kTfLiteError;
+   }
 @@ -253,7 +253,7 @@ TfLiteStatus SubEval(TfLiteContext* context, TfLiteNode* node) {
  }
  
@@ -34912,7 +36453,7 @@ index 3d287d84..bc2e087b 100644
 +}  // namespace tflite_micro
 \ No newline at end of file
 diff --git a/tensorflow/lite/micro/kernels/xtensa/svdf.cc b/tensorflow/lite/micro/kernels/xtensa/svdf.cc
-index 3a71f946..de512fb4 100644
+index 3a71f946..081abfd1 100644
 --- a/tensorflow/lite/micro/kernels/xtensa/svdf.cc
 +++ b/tensorflow/lite/micro/kernels/xtensa/svdf.cc
 @@ -30,7 +30,7 @@ limitations under the License.
@@ -35019,6 +36560,24 @@ index 3a71f946..de512fb4 100644
  
    TFLITE_DCHECK(node->user_data != nullptr);
    const OpDataSvdf& data = *(static_cast<const OpDataSvdf*>(node->user_data));
+@@ -364,7 +364,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+ 
+         default: {
+           MicroPrintf("Type %s not currently supported.",
+-                      TfLiteTypeGetName(weights_time->type));
++                      TfLiteMicroTypeGetName(weights_time->type));
+           return kTfLiteError;
+         }
+       }
+@@ -373,7 +373,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+ 
+     default: {
+       MicroPrintf("Type %s not currently supported.",
+-                  TfLiteTypeGetName(weights_feature->type));
++                  TfLiteMicroTypeGetName(weights_feature->type));
+       return kTfLiteError;
+     }
+   }
 @@ -384,11 +384,11 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -35035,7 +36594,7 @@ index 3a71f946..de512fb4 100644
 -}  // namespace tflite
 +}  // namespace tflite_micro
 diff --git a/tensorflow/lite/micro/kernels/xtensa/transpose_conv.cc b/tensorflow/lite/micro/kernels/xtensa/transpose_conv.cc
-index 20b0ab88..d212a48d 100644
+index 20b0ab88..a4e75fe8 100644
 --- a/tensorflow/lite/micro/kernels/xtensa/transpose_conv.cc
 +++ b/tensorflow/lite/micro/kernels/xtensa/transpose_conv.cc
 @@ -27,7 +27,7 @@ limitations under the License.
@@ -35182,7 +36741,7 @@ index 20b0ab88..d212a48d 100644
  
          const int num_elements = output_shape.FlatSize();
  
-@@ -364,15 +364,15 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+@@ -364,21 +364,21 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  #else
          reference_integer_ops::TransposeConv(
              data.params, data.per_channel_output_multiplier,
@@ -35207,6 +36766,13 @@ index 20b0ab88..d212a48d 100644
  #endif  // defined(HIFI3) || defined(HIFI4)
        }
        break;
+     }
+     default:
+-      MicroPrintf("Type %s (%d) not supported.", TfLiteTypeGetName(input->type),
++      MicroPrintf("Type %s (%d) not supported.", TfLiteMicroTypeGetName(input->type),
+                   input->type);
+       return kTfLiteError;
+   }
 @@ -388,7 +388,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
@@ -35218,7 +36784,7 @@ index 20b0ab88..d212a48d 100644
 -}  // namespace tflite
 +}  // namespace tflite_micro
 diff --git a/tensorflow/lite/micro/kernels/xtensa/unidirectional_sequence_lstm.cc b/tensorflow/lite/micro/kernels/xtensa/unidirectional_sequence_lstm.cc
-index cbce1e1c..4118edff 100644
+index cbce1e1c..0f9d3d63 100644
 --- a/tensorflow/lite/micro/kernels/xtensa/unidirectional_sequence_lstm.cc
 +++ b/tensorflow/lite/micro/kernels/xtensa/unidirectional_sequence_lstm.cc
 @@ -30,7 +30,7 @@ limitations under the License.
@@ -35439,6 +37005,15 @@ index cbce1e1c..4118edff 100644
        context, node, micro::lstm::full::kOutputTensor);
  
    // Copy out the LSTM specific params so they can be passed in the function.
+@@ -1104,7 +1104,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+ 
+     default:
+       MicroPrintf("Type %s is not currently supported.",
+-                  TfLiteTypeGetName(input_to_output_weights->type));
++                  TfLiteMicroTypeGetName(input_to_output_weights->type));
+       return kTfLiteError;
+   }
+   return kTfLiteOk;
 @@ -1115,7 +1115,7 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace ops
  
@@ -35921,7 +37496,7 @@ index 3017f56b..9561f126 100644
    thresholds.persistent_buffer_data = kTestConvModelPersistentBufferDataSize;
    thresholds.persistent_tflite_tensor_data_size =
 diff --git a/tensorflow/lite/micro/memory_helpers.cc b/tensorflow/lite/micro/memory_helpers.cc
-index 685f04b2..761270b9 100644
+index 685f04b2..ccfe4f15 100644
 --- a/tensorflow/lite/micro/memory_helpers.cc
 +++ b/tensorflow/lite/micro/memory_helpers.cc
 @@ -24,7 +24,7 @@ limitations under the License.
@@ -35951,6 +37526,15 @@ index 685f04b2..761270b9 100644
    for (int i = 0; i < dimensions_count; i++) {
      size *= input->dims->data[i];
    }
+@@ -158,7 +158,7 @@ TfLiteStatus AllocateOutputDimensionsFromInput(TfLiteContext* context,
+ 
+   output->dims =
+       reinterpret_cast<TfLiteIntArray*>(context->AllocatePersistentBuffer(
+-          context, TfLiteIntArrayGetSizeInBytes(size)));
++          context, TfLiteMicroIntArrayGetSizeInBytes(size)));
+ 
+   output->dims->size = input->dims->size;
+   for (int i = 0; i < dimensions_count; i++) {
 @@ -168,4 +168,4 @@ TfLiteStatus AllocateOutputDimensionsFromInput(TfLiteContext* context,
    return kTfLiteOk;
  }
@@ -36788,7 +38372,7 @@ index 5dca2b6a..40565806 100644
    TF_LITE_MICRO_EXPECT_EQ(allocation_info[0].last_used, 5);
    TF_LITE_MICRO_EXPECT_EQ(allocation_info[1].first_created, 0);
 diff --git a/tensorflow/lite/micro/micro_allocator.cc b/tensorflow/lite/micro/micro_allocator.cc
-index 930da754..17153db2 100644
+index 930da754..7cdd2ac3 100644
 --- a/tensorflow/lite/micro/micro_allocator.cc
 +++ b/tensorflow/lite/micro/micro_allocator.cc
 @@ -36,7 +36,7 @@ limitations under the License.
@@ -36827,6 +38411,20 @@ index 930da754..17153db2 100644
    // Make sure we remember if the serialized tensor is designated as a variable.
    result->is_variable = flatbuffer_tensor.is_variable();
  
+@@ -300,11 +300,11 @@ TfLiteStatus InitializeTfLiteTensorFromFlatbuffer(
+         allocate_temp
+             ? reinterpret_cast<TfLiteIntArray*>(
+                   non_persistent_buffer_allocator->AllocateTemp(
+-                      TfLiteIntArrayGetSizeInBytes(channels),
++                      TfLiteMicroIntArrayGetSizeInBytes(channels),
+                       alignof(TfLiteIntArray)))
+             : reinterpret_cast<TfLiteIntArray*>(
+                   persistent_buffer_allocator->AllocatePersistentBuffer(
+-                      TfLiteIntArrayGetSizeInBytes(channels),
++                      TfLiteMicroIntArrayGetSizeInBytes(channels),
+                       alignof(TfLiteIntArray)));
+     if (quantization->zero_point == nullptr) {
+       MicroPrintf("Unable to allocate quantization->zero_point.\n");
 @@ -334,14 +334,14 @@ TfLiteStatus InitializeTfLiteTensorFromFlatbuffer(
  }
  
@@ -40348,7 +41946,7 @@ index b6f69264..e585f0e8 100644
  
  #endif  // TENSORFLOW_LITE_MICRO_RECORDING_MICRO_ALLOCATOR_H_
 diff --git a/tensorflow/lite/micro/recording_micro_allocator_test.cc b/tensorflow/lite/micro/recording_micro_allocator_test.cc
-index 9d3a5965..becf6673 100644
+index 9d3a5965..024956ac 100644
 --- a/tensorflow/lite/micro/recording_micro_allocator_test.cc
 +++ b/tensorflow/lite/micro/recording_micro_allocator_test.cc
 @@ -23,7 +23,7 @@ limitations under the License.
@@ -40525,7 +42123,7 @@ index 9d3a5965..becf6673 100644
    TF_LITE_MICRO_EXPECT(micro_allocator != nullptr);
    if (micro_allocator == nullptr) return 1;
  
-@@ -199,9 +199,9 @@ TF_LITE_MICRO_TEST(TestRecordsPersistentTfLiteTensorQuantizationData) {
+@@ -199,25 +199,25 @@ TF_LITE_MICRO_TEST(TestRecordsPersistentTfLiteTensorQuantizationData) {
    // Walk the model subgraph to find all tensors with quantization params and
    // keep a tally.
    size_t quantized_channel_bytes = 0;
@@ -40537,7 +42135,14 @@ index 9d3a5965..becf6673 100644
        cur_tensor->quantization();
    if (quantization_params && quantization_params->scale() &&
        quantization_params->scale()->size() > 0 &&
-@@ -215,9 +215,9 @@ TF_LITE_MICRO_TEST(TestRecordsPersistentTfLiteTensorQuantizationData) {
+       quantization_params->zero_point() &&
+       quantization_params->zero_point()->size() > 0) {
+     size_t num_channels = quantization_params->scale()->size();
+-    quantized_channel_bytes += TfLiteIntArrayGetSizeInBytes(num_channels);
++    quantized_channel_bytes += TfLiteMicroIntArrayGetSizeInBytes(num_channels);
+   }
+ 
+   // Calculate the expected allocation bytes with subgraph quantization data:
    size_t expected_requested_bytes =
        TF_LITE_AFFINE_QUANTIZATION_SIZE + quantized_channel_bytes;
  
@@ -54887,3 +56492,29 @@ index 9cca36c7..36b02e0b 100644
 +}  // namespace tflite_micro
  
  #endif  // TENSORFLOW_LITE_SCHEMA_SCHEMA_UTILS_H_
+diff --git a/third_party/hexagon/fully_connected.cc b/third_party/hexagon/fully_connected.cc
+index 99ee1f3c..79bb15ba 100644
+--- a/third_party/hexagon/fully_connected.cc
++++ b/third_party/hexagon/fully_connected.cc
+@@ -117,7 +117,7 @@ TfLiteStatus HexagonFullyConnectedEval(TfLiteContext* context,
+ 
+     default:
+       MicroPrintf( "Type %s (%d) not supported.",
+-                         TfLiteTypeGetName(input->type), input->type);
++                         TfLiteMicroTypeGetName(input->type), input->type);
+       return kTfLiteError;
+   }
+   return kTfLiteOk;
+diff --git a/third_party/hexagon/svdf.cc b/third_party/hexagon/svdf.cc
+index b9a9ae28..e8bc9e38 100644
+--- a/third_party/hexagon/svdf.cc
++++ b/third_party/hexagon/svdf.cc
+@@ -97,7 +97,7 @@ TfLiteStatus SvdfEval(TfLiteContext* context, TfLiteNode* node) {
+ 
+     default:
+       MicroPrintf( "Type %s not currently supported.",
+-                         TfLiteTypeGetName(weights_feature->type));
++                         TfLiteMicroTypeGetName(weights_feature->type));
+       return kTfLiteError;
+   }
+   return kTfLiteOk;

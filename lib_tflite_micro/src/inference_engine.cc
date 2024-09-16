@@ -10,7 +10,7 @@
 
 #if !defined(XTFLM_DISABLED)
 
-tflite::MicroMutableOpResolver<XTFLM_OPERATORS> *
+tflite_micro::MicroMutableOpResolver<XTFLM_OPERATORS> *
 inference_engine_initialize(inference_engine *ie, uint32_t memory_primary[],
                             uint32_t n_primary, uint32_t memory_secondary[],
                             uint32_t n_secondary,
@@ -48,7 +48,7 @@ int inference_engine_load_model(inference_engine *ie, uint32_t model_bytes,
 
   // Map the model into a usable data structure. This doesn't involve any
   // copying or parsing, it's a very lightweight operation.
-  ie->xtflm->model = tflite::GetModel((uint8_t *)model_data);
+  ie->xtflm->model = tflite_micro::GetModel((uint8_t *)model_data);
   unsigned model_version = ie->xtflm->model->version();
 
   // Retrieve shared metadata
@@ -141,7 +141,7 @@ int inference_engine_load_model(inference_engine *ie, uint32_t model_bytes,
   memset(kTensorArena, 0, kTensorArenaSize);
 
   // Build an interpreter to run the model with
-  ie->xtflm->interpreter = tflite::micro::xcore::XCoreInterpreter::Create(
+  ie->xtflm->interpreter = tflite_micro::micro::xcore::XCoreInterpreter::Create(
       (uint8_t *)ie->xtflm->interpreter_buffer, ie->xtflm->model,
       ie->xtflm->resolver, kTensorArena, kTensorArenaSize, true, &ie->xtflm->xcore_profiler);
   ie->xc_config.model_thread_count = ie->num_threads;
@@ -301,9 +301,9 @@ void print_profiler_summary(inference_engine *ie) {
     } else {
       auto *opcode = (*opcodes)[index];
       auto builtin_code = std::max(opcode->builtin_code(),
-                                   static_cast<tflite::BuiltinOperator>(
+                                   static_cast<tflite_micro::BuiltinOperator>(
                                        opcode->deprecated_builtin_code()));
-      if (builtin_code == tflite::BuiltinOperator_CUSTOM) {
+      if (builtin_code == tflite_micro::BuiltinOperator_CUSTOM) {
         const char *name = ie->xtflm->interpreter->node_name(0, i);
         if (name != NULL) {
           op_name = name;
@@ -311,8 +311,8 @@ void print_profiler_summary(inference_engine *ie) {
           op_name = opcode->custom_code()->c_str();
         }
       } else {
-        op_name = tflite::EnumNameBuiltinOperator(
-            tflite::BuiltinOperator(builtin_code));
+        op_name = tflite_micro::EnumNameBuiltinOperator(
+            tflite_micro::BuiltinOperator(builtin_code));
       }
     }
 

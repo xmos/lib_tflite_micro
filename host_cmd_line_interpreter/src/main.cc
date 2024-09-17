@@ -34,7 +34,7 @@ void inference_engine_initialize(inference_engine_t *ie) {
   resolver->AddSlice();
   resolver->AddShape();
   resolver->AddPack();
-  tflite::ops::micro::xcore::RegisterXCOps(resolver);
+  tflite_micro::ops::micro::xcore::RegisterXCOps(resolver);
 }
 
 static int load_binary_file(const char *filename, uint32_t *content,

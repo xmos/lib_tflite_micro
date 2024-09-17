@@ -954,18 +954,19 @@ static TfLiteStatus mg_InvokeSubgraph(int g){
 printf("[\n");
 #endif
 
-  for(size_t i = tflNodes_subgraph_index[g]; i < tflNodes_subgraph_index[g+1]; ++i) {
+  for (size_t i = tflNodes_subgraph_index[g]; i < tflNodes_subgraph_index[g+1]; ++i) {
 
 #ifdef TFLMC_PRINT_INPUT_TENSORS
     // print every input tensor
-    printf("\nnode in %d", i);
-    for (int j=0; j<tflNodes[i].inputs->size; j++){
+    printf("node in %d\n", i);
+    for (int j = 0; j < tflNodes[i].inputs->size; j++) {
       // -1 such as in case of no bias tensor for conv
       if (tflNodes[i].inputs->data[j] != -1) {
-        printf("\ntensor %d, input %d, %d bytes, checksum %d\n", tflNodes[i].inputs->data[j], j, tflTensors[tflNodes[i].inputs->data[j]].bytes, checksum(tflTensors[tflNodes[i].inputs->data[j]].data.raw, tflTensors[tflNodes[i].inputs->data[j]].bytes));
-        for(int k=0; k<tflTensors[tflTensors_subgraph_index[g] + tflNodes[i].inputs->data[j]].bytes; k++){
+        printf("tensor %d, input %d, %d bytes, checksum %d\n", tflNodes[i].inputs->data[j], j, tflTensors[tflNodes[i].inputs->data[j]].bytes, checksum(tflTensors[tflNodes[i].inputs->data[j]].data.raw, tflTensors[tflNodes[i].inputs->data[j]].bytes));
+        for (int k = 0; k < tflTensors[tflTensors_subgraph_index[g] + tflNodes[i].inputs->data[j]].bytes; k++) {
           printf("%d,", (int8_t)tflTensors[tflTensors_subgraph_index[g] + tflNodes[i].inputs->data[j]].data.raw[k]);
         }
+        printf("\n");
       }
     }
     printf("\n");
@@ -973,54 +974,58 @@ printf("[\n");
 
 #ifdef TFLMC_XCORE_PROFILE
 #ifdef __xcore__
-  asm volatile ("gettime %0" : "=r" (time_t0));
+    asm volatile ("gettime %0" : "=r" (time_t0));
 #endif
 #endif
 
     TfLiteStatus status = registrations[used_ops[i]].invoke(&ctx, &tflNodes[i]);
 
+    if (status != kTfLiteOk) {
+#ifdef TFLMC_XCORE_PROFILE
+      printf("\nERROR: Node %d (%s) invocation failed with status %d\n", i, op_strs[used_ops[i]], status);
+      printf("Model invocation aborted\n\n");
+#endif
+      currentSubgraphIndex = prevSubgraphIndex;
+      return status;
+    }
+
 #ifdef TFLMC_XCORE_PROFILE
 #ifdef __xcore__
-  asm volatile ("gettime %0" : "=r" (time_t1));
+    asm volatile ("gettime %0" : "=r" (time_t1));
 #endif
-  op_times[used_ops[i]] += time_t1 - time_t0;
-  op_counts[used_ops[i]] += 1;
-  printf("\nnode %-5d %-32s %-12d", i, op_strs[used_ops[i]], time_t1 - time_t0);
+    op_times[used_ops[i]] += time_t1 - time_t0;
+    op_counts[used_ops[i]] += 1;
+    printf("node %-5d %-32s %-12d\n", i, op_strs[used_ops[i]], time_t1 - time_t0);
 #endif
 
 #ifdef TFLMC_PRINT_TENSORS
     // print every output tensor
-    printf("\n{\"node\" : \"%d\", \"op\" : \"%s\", \"data\" : [", i, op_strs[used_ops[i]]);
-    for (int j=0; j<tflNodes[i].outputs->size; j++){
-      printf("\n{\"tensor\" : %d, \"output\" : %d, \"bytes\" : %d, \"checksum\" : %d,\n", tflNodes[i].outputs->data[j], j, tflTensors[tflNodes[i].outputs->data[j]].bytes, checksum(tflTensors[tflNodes[i].outputs->data[j]].data.raw, tflTensors[tflNodes[i].outputs->data[j]].bytes));
+    printf("{\"node\" : \"%d\", \"op\" : \"%s\", \"data\" : [\n", i, op_strs[used_ops[i]]);
+    for (int j = 0; j < tflNodes[i].outputs->size; j++) {
+      printf("{\"tensor\" : %d, \"output\" : %d, \"bytes\" : %d, \"checksum\" : %d,\n", tflNodes[i].outputs->data[j], j, tflTensors[tflNodes[i].outputs->data[j]].bytes, checksum(tflTensors[tflNodes[i].outputs->data[j]].data.raw, tflTensors[tflNodes[i].outputs->data[j]].bytes));
       printf("\"val\" : [");
-      for(int k=0; k<tflTensors[tflTensors_subgraph_index[g] + tflNodes[i].outputs->data[j]].bytes; k++){
+      for (int k = 0; k < tflTensors[tflTensors_subgraph_index[g] + tflNodes[i].outputs->data[j]].bytes; k++) {
         printf("%d", (int8_t)tflTensors[tflTensors_subgraph_index[g] + tflNodes[i].outputs->data[j]].data.raw[k]);
-        if (k < tflTensors[tflTensors_subgraph_index[g] + tflNodes[i].outputs->data[j]].bytes-1){
+        if (k < tflTensors[tflTensors_subgraph_index[g] + tflNodes[i].outputs->data[j]].bytes - 1) {
           printf(",");
         }
       }
-      if(j<tflNodes[i].outputs->size-1){
+      if (j < tflNodes[i].outputs->size - 1) {
         printf("]},\n");
       } else {
         printf("]}]\n");
       }
     }
 
-    if(i < ((tflNodes_subgraph_index[g+1] - tflNodes_subgraph_index[g]) - 1)){
+    if (i < ((tflNodes_subgraph_index[g+1] - tflNodes_subgraph_index[g]) - 1)) {
       printf("},\n");
     } else {
       printf("}\n");
     }
 #endif
-
-    if (status != kTfLiteOk) {
-      currentSubgraphIndex = prevSubgraphIndex;
-      return status;
-    }
   }
 #ifdef TFLMC_PRINT_TENSORS
-printf("\n]");
+printf("]\n");
 #endif
 
   currentSubgraphIndex = prevSubgraphIndex;
@@ -1112,7 +1117,7 @@ TfLiteStatus )"
   }
 
 #ifdef TFLMC_XCORE_PROFILE
-  printf("\nProfiling init()...");
+  printf("Profiling init()...\n");
   memset(op_times, 0, sizeof(op_times));
   op_times_summed = 0;
 #endif
@@ -1138,7 +1143,7 @@ TfLiteStatus )"
       asm volatile ("gettime %0" : "=r" (time_t1));
 #endif
       op_times[used_ops[i]] += time_t1 - time_t0;
-      printf("\nnode %-5d %-32s %-12d", i, op_strs[used_ops[i]], time_t1 - time_t0);
+      printf("node %-5d %-32s %-12d\n", i, op_strs[used_ops[i]], time_t1 - time_t0);
 #endif
 
     }
@@ -1147,14 +1152,13 @@ TfLiteStatus )"
   currentSubgraphIndex = 0;
 
 #ifdef TFLMC_XCORE_PROFILE
-    printf("\n\nCumulative times for init()...");
-    for(int i=0; i<OP_LAST; i++){
-      op_times_summed += op_times[i];
-      printf("\n%-32s %-12d %.2fms", op_strs[i], op_times[i], op_times[i]/100000.0);
-    }
-    printf("\n\nTotal time for init() - %-10lld %.2fms\n\n", op_times_summed, op_times_summed/100000.0);
-  printf("\n");
-  printf("\nProfiling prepare()...");
+  printf("\n\nCumulative times for init()...\n");
+  for (int i = 0; i < OP_LAST; i++) {
+    op_times_summed += op_times[i];
+    printf("%-32s %-12d %.2fms\n", op_strs[i], op_times[i], op_times[i]/100000.0);
+  }
+  printf("\nTotal time for init() - %-10lld %.2fms\n", op_times_summed, op_times_summed/100000.0);
+  printf("\n\n\nProfiling prepare()...\n");
   memset(op_times, 0, sizeof(op_times));
   op_times_summed = 0;
 #endif
@@ -1178,7 +1182,7 @@ TfLiteStatus )"
       asm volatile ("gettime %0" : "=r" (time_t1));
 #endif
       op_times[used_ops[i]] += time_t1 - time_t0;
-      printf("\nnode %-5d %-32s %-12d", i, op_strs[used_ops[i]], time_t1 - time_t0);
+      printf("node %-5d %-32s %-12d\n", i, op_strs[used_ops[i]], time_t1 - time_t0);
 #endif
 
       if (status != kTfLiteOk) {
@@ -1190,13 +1194,12 @@ TfLiteStatus )"
   currentSubgraphIndex = 0;
 
 #ifdef TFLMC_XCORE_PROFILE
-printf("\n\nCumulative times for prepare()...");
-    for(int i=0; i<OP_LAST; i++){
-      op_times_summed += op_times[i];
-      printf("\n%-32s %-12d %.2fms", op_strs[i], op_times[i], op_times[i]/100000.0);
-    }
-    printf("\n\nTotal time for prepare() - %-10lld %.2fms\n\n", op_times_summed, op_times_summed/100000.0);
-  printf("\n");
+  printf("\nCumulative times for prepare()...\n");
+  for (int i = 0; i < OP_LAST; i++) {
+    op_times_summed += op_times[i];
+    printf("%-32s %-12d %.2fms\n", op_strs[i], op_times[i], op_times[i]/100000.0);
+  }
+  printf("\nTotal time for prepare() - %-10lld %.2fms\n", op_times_summed, op_times_summed/100000.0);
 #endif
 
   return kTfLiteOk;
@@ -1209,13 +1212,16 @@ TfLiteStatus )"
      << numXCThreads_ << R"((&xc_config.thread_info);
 
 #ifdef TFLMC_XCORE_PROFILE
-  printf("\nProfiling invoke()...");
+  printf("\n\n\nProfiling invoke()...\n");
   memset(op_times, 0, sizeof(op_times));
   memset(op_counts, 0, sizeof(op_counts));
   op_times_summed = 0;
 #endif
 
-  mg_InvokeSubgraph(0);
+  TfLiteStatus status = mg_InvokeSubgraph(0);
+  if (status != kTfLiteOk) {
+    return status;
+  }
 
   thread_destroy(&xc_config.thread_info);
 )";
@@ -1230,30 +1236,30 @@ TfLiteStatus )"
     int threadsDoneTime;
   };
   int conv_times1 = 0, conv_times2 = 0;
-  printf("\n\nConv()...");
-  for(size_t g = 0; g < )"
+  printf("\nConv()...\n");
+  for (size_t g = 0; g < )"
        << nodes_.size() << R"(; ++g) {
-    for(size_t i = tflNodes_subgraph_index[g]; i < tflNodes_subgraph_index[g+1]; ++i) {
-      if(used_ops[i] == OP_XC_conv2d_v2) {
+    for (size_t i = tflNodes_subgraph_index[g]; i < tflNodes_subgraph_index[g+1]; ++i) {
+      if (used_ops[i] == OP_XC_conv2d_v2) {
         auto *op_data = reinterpret_cast<convopdata *>(tflNodes[i].user_data);
         conv_times1 += op_data->threadsStartTime - op_data->evalStartTime;
         conv_times2 += op_data->threadsDoneTime - op_data->threadsStartTime;
-        printf("\nnode %-5d %-25s %-25s %-6d %-6d %-12d", i, op_strs[used_ops[i]], op_data->name, op_data->thread_count, op_data->threadsStartTime - op_data->evalStartTime, op_data->threadsDoneTime - op_data->threadsStartTime);
+        printf("node %-5d %-25s %-25s %-6d %-6d %-12d\n", i, op_strs[used_ops[i]], op_data->name, op_data->thread_count, op_data->threadsStartTime - op_data->evalStartTime, op_data->threadsDoneTime - op_data->threadsStartTime);
       }
     }
   }
-  printf("\nSummed - %-10d %-10d", conv_times1, conv_times2);
+  printf("Summed - %-10d %-10d\n", conv_times1, conv_times2);
 #endif
     )";
   }
   wr << R"(
 #ifdef TFLMC_XCORE_PROFILE
-  printf("\n\nCumulative times for invoke()...");
-  for(int i=0; i<OP_LAST; i++){
+  printf("\nCumulative times for invoke()...\n");
+  for (int i = 0; i < OP_LAST; i++) {
     op_times_summed += op_times[i];
-    printf("\n%-5d %-32s %-12d %.2fms", op_counts[i], op_strs[i], op_times[i], op_times[i]/100000.0);
+    printf("%-5d %-32s %-12d %.2fms\n", op_counts[i], op_strs[i], op_times[i], op_times[i]/100000.0);
   }
-  printf("\n\nTotal time for invoke() - %-10lld %.2fms\n\n", op_times_summed, op_times_summed/100000.0);
+  printf("\nTotal time for invoke() - %-10lld %.2fms\n", op_times_summed, op_times_summed/100000.0);
 #endif
 
   return kTfLiteOk;

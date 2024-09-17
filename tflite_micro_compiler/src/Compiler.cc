@@ -509,7 +509,7 @@ static_assert(()"
 
   // declare custom registrations
   if (has_custom_ops) {
-    wr << R"(namespace tflite {
+    wr << R"(namespace tflite_micro {
 namespace ops {
 namespace micro {
 namespace xcore {
@@ -524,12 +524,12 @@ namespace xcore {
     wr << R"(} // namespace xcore
 }  // namespace micro
 }  // namespace ops
-}  // namespace tflite
+}  // namespace tflite_micro
 
 )";
   }
   if (has_tflite_custom_ops) {
-    wr << R"(namespace tflite {
+    wr << R"(namespace tflite_micro {
 )";
     for (size_t i = 0; i < registrations_.size(); i++) {
       if (registrations_[i].code == tflite_micro::BuiltinOperator_CUSTOM &&
@@ -538,7 +538,7 @@ namespace xcore {
               "*Register_DETECTION_POSTPROCESS(void);\n";
       }
     }
-    wr << R"(} // namespace tflite
+    wr << R"(} // namespace tflite_micro
 
 )";
   }

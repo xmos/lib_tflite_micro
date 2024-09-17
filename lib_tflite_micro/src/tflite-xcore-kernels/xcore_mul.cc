@@ -6,7 +6,7 @@ extern "C" {
 #include "lib_nn/api/nn_layers.h"
 }
 
-namespace tflite {
+namespace tflite_micro {
 namespace ops {
 namespace micro {
 namespace xcore {
@@ -39,17 +39,17 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
 
   // Get Input/Output Tensors
   const TfLiteEvalTensor *input1 =
-      tflite::micro::GetEvalInput(context, node, 0);
+      tflite_micro::micro::GetEvalInput(context, node, 0);
   const TfLiteEvalTensor *input2 =
-      tflite::micro::GetEvalInput(context, node, 1);
-  TfLiteEvalTensor *output = tflite::micro::GetEvalOutput(context, node, 0);
+      tflite_micro::micro::GetEvalInput(context, node, 1);
+  TfLiteEvalTensor *output = tflite_micro::micro::GetEvalOutput(context, node, 0);
 
   // Pointers to data in In/Out Tensors
-  int8_t *out_data = tflite::micro::GetTensorData<int8_t>(output);
-  const int8_t *in1_data = tflite::micro::GetTensorData<int8_t>(input1);
-  const int8_t *in2_data = tflite::micro::GetTensorData<int8_t>(input2);
+  int8_t *out_data = tflite_micro::micro::GetTensorData<int8_t>(output);
+  const int8_t *in1_data = tflite_micro::micro::GetTensorData<int8_t>(input1);
+  const int8_t *in2_data = tflite_micro::micro::GetTensorData<int8_t>(input2);
 
-  int output_size = tflite::micro::GetTensorShape(output).FlatSize();
+  int output_size = tflite_micro::micro::GetTensorShape(output).FlatSize();
   mul_elementwise(in1_data, in2_data, output_size, op_data->mp_params, out_data);
 
   return kTfLiteOk;
@@ -66,4 +66,4 @@ TFLMRegistration *Register_XC_mul() {
 } // namespace xcore
 } // namespace micro
 } // namespace ops
-} // namespace tflite
+} // namespace tflite_micro

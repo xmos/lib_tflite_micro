@@ -17,7 +17,7 @@ extern "C" {
 }
 #endif
 
-namespace tflite {
+namespace tflite_micro {
 namespace ops {
 namespace micro {
 namespace xcore {
@@ -69,8 +69,8 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   // If not DDR, the weights will be in flash or on another tile
   if (op_data->is_ddr) {
     assert(node->outputs->size == 1 && "DDR loads have only one output!");
-    TfLiteEvalTensor *output = tflite::micro::GetEvalOutput(context, node, 0);
-    int8_t *data_ptr = tflite::micro::GetTensorData<int8_t>(output);
+    TfLiteEvalTensor *output = tflite_micro::micro::GetEvalOutput(context, node, 0);
+    int8_t *data_ptr = tflite_micro::micro::GetTensorData<int8_t>(output);
     vpu_memcpy_ext((void *)data_ptr,
                    ((int8_t *)xc_config->weights_data_ptr) + op_data->addr,
                    op_data->sizes[0]);
@@ -83,8 +83,8 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
     int8_t *data_ptr;
     assert(node->outputs->size < MAX_OUTPUTS);
     for (int i = 0; i < node->outputs->size; ++i) {
-      TfLiteEvalTensor *output = tflite::micro::GetEvalOutput(context, node, i);
-      data_ptrs[i] = tflite::micro::GetTensorData<int8_t>(output);
+      TfLiteEvalTensor *output = tflite_micro::micro::GetEvalOutput(context, node, i);
+      data_ptrs[i] = tflite_micro::micro::GetTensorData<int8_t>(output);
     }
 
     chanend_t c_flash_or_tile = (chanend_t) static_cast<int>(
@@ -144,8 +144,8 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   int addr_offset = 0;
 
   for (int i = 0; i < node->outputs->size; ++i) {
-    TfLiteEvalTensor *output = tflite::micro::GetEvalOutput(context, node, i);
-    int8_t *data_ptr = tflite::micro::GetTensorData<int8_t>(output);
+    TfLiteEvalTensor *output = tflite_micro::micro::GetEvalOutput(context, node, i);
+    int8_t *data_ptr = tflite_micro::micro::GetTensorData<int8_t>(output);
     memcpy((void *)data_ptr,
            ((int8_t *)xc_config->weights_data_ptr) + op_data->addr +
                addr_offset,
@@ -168,4 +168,4 @@ TFLMRegistration *Register_XC_ld_weights() {
 } // namespace xcore
 } // namespace micro
 } // namespace ops
-} // namespace tflite
+} // namespace tflite_micro

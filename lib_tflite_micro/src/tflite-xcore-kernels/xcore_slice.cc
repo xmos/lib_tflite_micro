@@ -7,7 +7,7 @@ extern "C" {
 #include "xcore_custom_options.h"
 #include "xcore_utils.h"
 
-namespace tflite {
+namespace tflite_micro {
 namespace ops {
 namespace micro {
 namespace xcore {
@@ -48,12 +48,12 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
 
   auto *op_data = static_cast<SliceOpData *>(node->user_data);
   // Get Input/Output Tensors
-  const TfLiteEvalTensor *input = tflite::micro::GetEvalInput(context, node, 0);
-  TfLiteEvalTensor *output = tflite::micro::GetEvalOutput(context, node, 0);
+  const TfLiteEvalTensor *input = tflite_micro::micro::GetEvalInput(context, node, 0);
+  TfLiteEvalTensor *output = tflite_micro::micro::GetEvalOutput(context, node, 0);
   // Pointers to data in In/Out Tensors
   const int8_t *in_data =
-      tflite::micro::GetTensorData<int8_t>(input) + op_data->start;
-  int8_t *out_data = tflite::micro::GetTensorData<int8_t>(output);
+      tflite_micro::micro::GetTensorData<int8_t>(input) + op_data->start;
+  int8_t *out_data = tflite_micro::micro::GetTensorData<int8_t>(output);
   const int size = op_data->size;
   const int offset = op_data->offset;
   void (*func_ptr)(void *, const void *, unsigned) = op_data->func_ptr;
@@ -76,4 +76,4 @@ TFLMRegistration *Register_XC_slice() {
 } // namespace xcore
 } // namespace micro
 } // namespace ops
-} // namespace tflite
+} // namespace tflite_micro

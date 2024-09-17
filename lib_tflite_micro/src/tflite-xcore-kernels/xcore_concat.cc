@@ -13,15 +13,15 @@ extern "C" {
 
 constexpr int kMaxNumInputs = 13;
 
-namespace tflite {
+namespace tflite_micro {
 namespace ops {
 namespace micro {
 namespace xcore {
 namespace concat {
 
-using tflite::micro::GetEvalInput;
-using tflite::micro::GetEvalOutput;
-using tflite::micro::GetTensorData;
+using tflite_micro::micro::GetEvalInput;
+using tflite_micro::micro::GetEvalOutput;
+using tflite_micro::micro::GetTensorData;
 
 struct ConcatOpData
     : XCoreOpData { // Inherits the operator name field from XCoreOpData
@@ -152,4 +152,4 @@ TFLMRegistration *Register_XC_concat() {
 } // namespace xcore
 } // namespace micro
 } // namespace ops
-} // namespace tflite
+} // namespace tflite_micro

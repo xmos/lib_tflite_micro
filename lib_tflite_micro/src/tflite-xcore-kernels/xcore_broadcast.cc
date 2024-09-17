@@ -9,7 +9,7 @@ extern "C" {
 #include "xcore_custom_options.h"
 #include "xcore_utils.h"
 
-namespace tflite {
+namespace tflite_micro {
 namespace ops {
 namespace micro {
 namespace xcore {
@@ -47,11 +47,11 @@ TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
 TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   auto *op_data = static_cast<BroadcastOpData *>(node->user_data);
   // Get Input/Output Tensors
-  const TfLiteEvalTensor *input = tflite::micro::GetEvalInput(context, node, 0);
-  TfLiteEvalTensor *output = tflite::micro::GetEvalOutput(context, node, 0);
+  const TfLiteEvalTensor *input = tflite_micro::micro::GetEvalInput(context, node, 0);
+  TfLiteEvalTensor *output = tflite_micro::micro::GetEvalOutput(context, node, 0);
   // Pointers to data in In/Out Tensors
-  const int8_t *in_data = tflite::micro::GetTensorData<int8_t>(input);
-  int8_t *out_data = tflite::micro::GetTensorData<int8_t>(output);
+  const int8_t *in_data = tflite_micro::micro::GetTensorData<int8_t>(input);
+  int8_t *out_data = tflite_micro::micro::GetTensorData<int8_t>(output);
   const int size = op_data->size;
   const int num_copies = op_data->num_copies;
   const int num_broadcasts = op_data->num_broadcasts;
@@ -109,4 +109,4 @@ TFLMRegistration *Register_XC_broadcast() {
 } // namespace xcore
 } // namespace micro
 } // namespace ops
-} // namespace tflite
+} // namespace tflite_micro

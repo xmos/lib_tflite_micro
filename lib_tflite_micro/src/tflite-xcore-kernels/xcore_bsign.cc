@@ -12,7 +12,7 @@ extern "C" {
 #include "lib_nn/api/nn_operator.h"
 }
 
-namespace tflite {
+namespace tflite_micro {
 namespace ops {
 namespace micro {
 namespace xcore {
@@ -96,10 +96,10 @@ TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
 TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   auto *op_data = reinterpret_cast<BSign8OpData *>(node->user_data);
 
-  op_data->args.X = tflite::micro::GetTensorData<int8_t>(
-      tflite::micro::GetEvalInput(context, node, 0));
-  op_data->args.Y = tflite::micro::GetTensorData<int32_t>(
-      tflite::micro::GetEvalOutput(context, node, 0));
+  op_data->args.X = tflite_micro::micro::GetTensorData<int8_t>(
+      tflite_micro::micro::GetEvalInput(context, node, 0));
+  op_data->args.Y = tflite_micro::micro::GetTensorData<int32_t>(
+      tflite_micro::micro::GetEvalOutput(context, node, 0));
 
   for (auto &thread : op_data->threads) { // TODO: remove - only 1 task!
     bsign_8_thread_worker(reinterpret_cast<void *>(&thread));
@@ -119,4 +119,4 @@ TFLMRegistration *Register_XC_bsign_8() {
 } // namespace xcore
 } // namespace micro
 } // namespace ops
-} // namespace tflite
+} // namespace tflite_micro

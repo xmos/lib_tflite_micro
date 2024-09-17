@@ -38,15 +38,15 @@
  * must therefore be allocated inside a C++ source file.
  */
 struct tflite_micro_objects {
-  tflite::micro::xcore::XCoreErrorReporter error_reporter;
-  tflite::micro::xcore::XCoreProfiler xcore_profiler;
+  tflite_micro::micro::xcore::XCoreErrorReporter error_reporter;
+  tflite_micro::micro::xcore::XCoreProfiler xcore_profiler;
   uint64_t interpreter_buffer
-      [(sizeof(tflite::micro::xcore::XCoreInterpreter) + sizeof(uint64_t) - 1) /
+      [(sizeof(tflite_micro::micro::xcore::XCoreInterpreter) + sizeof(uint64_t) - 1) /
        sizeof(uint64_t)]; // This needs to be aligned on a double word boundary
-  tflite::MicroMutableOpResolver<XTFLM_OPERATORS> resolver;
+  tflite_micro::MicroMutableOpResolver<XTFLM_OPERATORS> resolver;
 
-  tflite::micro::xcore::XCoreInterpreter *interpreter;
-  const tflite::Model *model;
+  tflite_micro::micro::xcore::XCoreInterpreter *interpreter;
+  const tflite_micro::Model *model;
 };
 #endif
 
@@ -122,8 +122,8 @@ typedef struct inference_engine {
  *                                                     &s0);
  *        resolver->AddAdd();
  *        resolver->AddConv2D();
- *        resolver->AddCustom(tflite::ops::micro::xcore::Conv2D_V2_OpCode,
- *                   tflite::ops::micro::xcore::Register_Conv2D_V2());
+ *        resolver->AddCustom(tflite_micro::ops::micro::xcore::Conv2D_V2_OpCode,
+ *                   tflite_micro::ops::micro::xcore::Register_Conv2D_V2());
  *    [...]
  *
  * Note that when tensorflow lite for micro is disabled this function will not
@@ -146,7 +146,7 @@ typedef struct inference_engine {
  * structures. Must be allocated by the caller.
  *
  */
-tflite::MicroMutableOpResolver<XTFLM_OPERATORS> *inference_engine_initialize(
+tflite_micro::MicroMutableOpResolver<XTFLM_OPERATORS> *inference_engine_initialize(
     inference_engine_t *UNSAFE ie, uint32_t memory_primary[],
     uint32_t n_memory_primary, uint32_t memory_secondary[],
     uint32_t n_secondary, struct tflite_micro_objects *UNSAFE xtflmo);

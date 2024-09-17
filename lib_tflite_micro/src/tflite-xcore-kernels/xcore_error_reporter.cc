@@ -14,7 +14,7 @@
 #include "tensorflow/lite/micro/debug_log.h"
 //#endif
 
-namespace tflite {
+namespace tflite_micro {
 namespace micro {
 namespace xcore {
 
@@ -55,4 +55,4 @@ int XCoreErrorReporter::Report(const char *format, va_list args) {
 
 } // namespace xcore
 } // namespace micro
-} // namespace tflite
+} // namespace tflite_micro

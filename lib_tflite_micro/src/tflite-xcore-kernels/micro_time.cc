@@ -11,10 +11,10 @@ extern "C" {
 #include <xcore/hwtimer.h>
 }
 
-namespace tflite {
+namespace tflite_micro {
 
 uint32_t ticks_per_second() { return PLATFORM_REFERENCE_HZ; }
 
 uint32_t GetCurrentTimeTicks() { return get_reference_time(); }
 
-} // namespace tflite
+} // namespace tflite_micro

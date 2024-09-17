@@ -6,7 +6,7 @@
 #include "xcore_custom_options.h"
 #include "xcore_utils.h"
 
-namespace tflite {
+namespace tflite_micro {
 namespace ops {
 namespace micro {
 namespace xcore {
@@ -57,7 +57,7 @@ TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
   MicroContext *micro_context = GetMicroContext(context);
   xc_context_config_t *xc_config = reinterpret_cast<xc_context_config_t *>(
       micro_context->external_context());
-  const TfLiteEvalTensor *input1 = tflite::micro::GetEvalInput(context, node, 0);
+  const TfLiteEvalTensor *input1 = tflite_micro::micro::GetEvalInput(context, node, 0);
   int samples = input1->dims->data[1];
   op_data->tc = xc_config->model_thread_count;
   calculateThreadSplit(op_data->tc, samples, op_data->s, op_data->e);
@@ -68,18 +68,18 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   auto *op_data = static_cast<Beta_ConcatF32OpData *>(node->user_data);
 
   // Get Input/Output Tensors
-  const TfLiteEvalTensor *input1 = tflite::micro::GetEvalInput(context, node, 0);
-  const TfLiteEvalTensor *input2 = tflite::micro::GetEvalInput(context, node, 1);
-  TfLiteEvalTensor *output = tflite::micro::GetEvalOutput(context, node, 0);
+  const TfLiteEvalTensor *input1 = tflite_micro::micro::GetEvalInput(context, node, 0);
+  const TfLiteEvalTensor *input2 = tflite_micro::micro::GetEvalInput(context, node, 1);
+  TfLiteEvalTensor *output = tflite_micro::micro::GetEvalOutput(context, node, 0);
 
   int channels = input1->dims->data[input1->dims->size - 1];
 
   // Pointers to data in In/Out Tensors
-  int8_t *out_data = tflite::micro::GetTensorData<int8_t>(output);
+  int8_t *out_data = tflite_micro::micro::GetTensorData<int8_t>(output);
   int8_t *in1_data =
-      const_cast<int8_t *>(tflite::micro::GetTensorData<int8_t>(input1));
+      const_cast<int8_t *>(tflite_micro::micro::GetTensorData<int8_t>(input1));
   int8_t *in2_data =
-      const_cast<int8_t *>(tflite::micro::GetTensorData<int8_t>(input2));
+      const_cast<int8_t *>(tflite_micro::micro::GetTensorData<int8_t>(input2));
 
   MicroContext *micro_context = GetMicroContext(context);
   xc_context_config_t *xc_config = reinterpret_cast<xc_context_config_t *>(
@@ -116,4 +116,4 @@ TFLMRegistration *Register_XC_beta_concatf32() {
 } // namespace xcore
 } // namespace micro
 } // namespace ops
-} // namespace tflite
+} // namespace tflite_micro

@@ -23,8 +23,8 @@ struct Allocation {
   int nodeIndex;
 };
 
-TfLiteTensor *GetTensor(tflite::MicroInterpreter *interpreter, int i, int sg);
-TfLiteEvalTensor *GetEvalTensor(tflite::MicroInterpreter *interpreter, int i,
+TfLiteTensor *GetTensor(tflite_micro::MicroInterpreter *interpreter, int i, int sg);
+TfLiteEvalTensor *GetEvalTensor(tflite_micro::MicroInterpreter *interpreter, int i,
                                 int sg);
 
 bool CompileFile(const std::string &modelFileName,
@@ -63,11 +63,11 @@ class Compiler {
   };
   struct RegistrationInfo {
     const TFLMRegistration *reg = nullptr;
-    tflite::BuiltinOperator code;
+    tflite_micro::BuiltinOperator code;
     std::string custom_name;
     bool operator==(const RegistrationInfo &other) {
       if (code != other.code) return false;
-      if (code == tflite::BuiltinOperator_CUSTOM) {
+      if (code == tflite_micro::BuiltinOperator_CUSTOM) {
         return custom_name == other.custom_name;
       } else
         return true;
@@ -98,11 +98,11 @@ class Compiler {
   std::string prefix_;
   const struct shared_config::xcore_metadata *sharedCfg_ = nullptr;
   int numXCThreads_ = 1;
-  const tflite::Model *model_ = nullptr;
-  const tflite::SubGraph *mainGraph_ = nullptr;
+  const tflite_micro::Model *model_ = nullptr;
+  const tflite_micro::SubGraph *mainGraph_ = nullptr;
   tflite::PythonOpsResolver resolver_;
   std::vector<uint8_t> arena_buf_;
-  std::unique_ptr<tflite::MicroInterpreter> interpreter_;
+  std::unique_ptr<tflite_micro::MicroInterpreter> interpreter_;
   MemMap memMap_;
 
   size_t arenaBufferSize_ = 0;

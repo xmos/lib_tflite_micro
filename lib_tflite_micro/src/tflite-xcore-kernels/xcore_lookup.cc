@@ -9,7 +9,7 @@ extern "C" {
 #include "lib_nn/api/quadratic_interpolation.h"
 }
 
-namespace tflite {
+namespace tflite_micro {
 namespace ops {
 namespace micro {
 namespace xcore {
@@ -59,8 +59,8 @@ TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
   MicroContext *micro_context = GetMicroContext(context);
   xc_context_config_t *xc_config = reinterpret_cast<xc_context_config_t *>(
       micro_context->external_context());
-  const TfLiteEvalTensor *input = tflite::micro::GetEvalInput(context, node, 0);
-  int input_size = tflite::micro::GetTensorShape(input).FlatSize();
+  const TfLiteEvalTensor *input = tflite_micro::micro::GetEvalInput(context, node, 0);
+  int input_size = tflite_micro::micro::GetTensorShape(input).FlatSize();
   op_data->tc = xc_config->model_thread_count;
   calculateThreadSplit(op_data->tc, input_size, op_data->s, op_data->e);
   return kTfLiteOk;
@@ -71,14 +71,14 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   auto *op_data = static_cast<LookupOpData *>(node->user_data);
 
   // Get Input/Output Tensors
-  const TfLiteEvalTensor *input = tflite::micro::GetEvalInput(context, node, 0);
-  const TfLiteEvalTensor *table = tflite::micro::GetEvalInput(context, node, 1);
-  TfLiteEvalTensor *output = tflite::micro::GetEvalOutput(context, node, 0);
+  const TfLiteEvalTensor *input = tflite_micro::micro::GetEvalInput(context, node, 0);
+  const TfLiteEvalTensor *table = tflite_micro::micro::GetEvalInput(context, node, 1);
+  TfLiteEvalTensor *output = tflite_micro::micro::GetEvalOutput(context, node, 0);
 
   // Pointers to data in In/Out Tensors
-  const uint8_t *table_vals = tflite::micro::GetTensorData<uint8_t>(table);
-  uint8_t *out_data = tflite::micro::GetTensorData<uint8_t>(output);
-  const uint8_t *in_data = tflite::micro::GetTensorData<uint8_t>(input);
+  const uint8_t *table_vals = tflite_micro::micro::GetTensorData<uint8_t>(table);
+  uint8_t *out_data = tflite_micro::micro::GetTensorData<uint8_t>(output);
+  const uint8_t *in_data = tflite_micro::micro::GetTensorData<uint8_t>(input);
   MicroContext *micro_context = GetMicroContext(context);
   xc_context_config_t *xc_config = reinterpret_cast<xc_context_config_t *>(
       micro_context->external_context());
@@ -123,4 +123,4 @@ TFLMRegistration *Register_XC_lookup() {
 } // namespace xcore
 } // namespace micro
 } // namespace ops
-} // namespace tflite
+} // namespace tflite_micro

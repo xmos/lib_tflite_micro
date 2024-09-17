@@ -11,16 +11,16 @@
 #define XCORE_PROFILER_DEFAULT_MAX_LEVELS (64)
 #endif
 
-namespace tflite {
+namespace tflite_micro {
 namespace micro {
 namespace xcore {
 
-class XCoreProfiler : public tflite::MicroProfiler {
+class XCoreProfiler : public tflite_micro::MicroProfiler {
 public:
   explicit XCoreProfiler(){};
   ~XCoreProfiler() override = default;
 
-  void Init(tflite::MicroAllocator *allocator,
+  void Init(tflite_micro::MicroAllocator *allocator,
             size_t max_event_count = XCORE_PROFILER_DEFAULT_MAX_LEVELS);
 
   void ClearEvents();
@@ -44,6 +44,6 @@ private:
 
 } // namespace xcore
 } // namespace micro
-} // namespace tflite
+} // namespace tflite_micro
 
 #endif // XCORE_PROFILER_H_

@@ -4,7 +4,7 @@
 #include <cassert>
 #include <cstdint>
 
-namespace tflite {
+namespace tflite_micro {
 namespace ops {
 namespace micro {
 namespace xcore {
@@ -14,6 +14,6 @@ void calculateThreadSplit(int &tc, int split_size, int split_start[], int split_
 } // namespace xcore
 } // namespace micro
 } // namespace ops
-} // namespace tflite
+} // namespace tflite_micro
 
 #endif // XCORE_COMMON_H_

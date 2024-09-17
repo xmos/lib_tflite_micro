@@ -8,21 +8,21 @@
 #include "tensorflow/lite/micro/micro_interpreter.h"
 #include "xcore_profiler.h"
 
-namespace tflite {
+namespace tflite_micro {
 namespace micro {
 namespace xcore {
 
-class XCoreInterpreter : public tflite::MicroInterpreter {
+class XCoreInterpreter : public tflite_micro::MicroInterpreter {
 public:
-  XCoreInterpreter(const tflite::Model *model,
-                   const tflite::MicroOpResolver &resolver,
-                   tflite::MicroAllocator *allocator,
+  XCoreInterpreter(const tflite_micro::Model *model,
+                   const tflite_micro::MicroOpResolver &resolver,
+                   tflite_micro::MicroAllocator *allocator,
                    bool use_curent_thread = true,
                    XCoreProfiler *profiler = nullptr);
 
   static XCoreInterpreter *
-  Create(uint8_t interpreter_buffer[], const tflite::Model *model,
-         const tflite::MicroOpResolver &resolver, uint8_t *arena,
+  Create(uint8_t interpreter_buffer[], const tflite_micro::Model *model,
+         const tflite_micro::MicroOpResolver &resolver, uint8_t *arena,
          size_t arena_size, bool use_current_thread, XCoreProfiler *profiler);
 
   void PrintMemoryPlan();
@@ -44,6 +44,6 @@ public:
 
 } // namespace xcore
 } // namespace micro
-} // namespace tflite
+} // namespace tflite_micro
 
 #endif // XCORE_INTERPRETER_H_

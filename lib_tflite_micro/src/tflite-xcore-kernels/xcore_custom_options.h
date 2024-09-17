@@ -4,7 +4,7 @@
 #include "flatbuffers/flexbuffers.h"
 #include "xcore_ops.h"
 
-namespace tflite {
+namespace tflite_micro {
 namespace ops {
 namespace micro {
 namespace xcore {
@@ -23,6 +23,6 @@ public:
 } // namespace xcore
 } // namespace micro
 } // namespace ops
-} // namespace tflite
+} // namespace tflite_micro
 
 #endif // XCORE_CUSTOM_OPTIONS_H_

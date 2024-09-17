@@ -10,7 +10,7 @@
 #include "xcore_custom_options.h"
 #include "xcore_utils.h"
 
-namespace tflite {
+namespace tflite_micro {
 namespace ops {
 namespace micro {
 namespace xcore {
@@ -120,14 +120,14 @@ TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
 }
 
 TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
-  const TfLiteEvalTensor *input = tflite::micro::GetEvalInput(context, node, 0);
+  const TfLiteEvalTensor *input = tflite_micro::micro::GetEvalInput(context, node, 0);
   const TfLiteEvalTensor *scratch_buffer_tensor =
-      tflite::micro::GetEvalInput(context, node, 1);
+      tflite_micro::micro::GetEvalInput(context, node, 1);
   int8_t *scratch_buffer = nullptr;
   if (scratch_buffer_tensor) {
-    scratch_buffer = const_cast<int8_t *>(tflite::micro::GetTensorData<int8_t>(scratch_buffer_tensor));
+    scratch_buffer = const_cast<int8_t *>(tflite_micro::micro::GetTensorData<int8_t>(scratch_buffer_tensor));
   }
-  TfLiteEvalTensor *output = tflite::micro::GetEvalOutput(context, node, 0);
+  TfLiteEvalTensor *output = tflite_micro::micro::GetEvalOutput(context, node, 0);
 
   MicroContext *micro_context = GetMicroContext(context);
   xc_context_config_t *xc_config = reinterpret_cast<xc_context_config_t *>(
@@ -138,8 +138,8 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
 
   int8_t *thread_scratch[XCORE_MAX_NUM_THREADS];
   MaxPool2DShared shared_data;
-  shared_data.X = (int8_t *)tflite::micro::GetTensorData<int8_t>(input);
-  shared_data.Y = (int8_t *)tflite::micro::GetTensorData<int8_t>(output);
+  shared_data.X = (int8_t *)tflite_micro::micro::GetTensorData<int8_t>(input);
+  shared_data.Y = (int8_t *)tflite_micro::micro::GetTensorData<int8_t>(output);
   shared_data.conv_params = &op_data->maxpool_params;
   if (op_data->scratch_size) {
     for (int t = 0; t < n_threads; ++t) {
@@ -173,4 +173,4 @@ TFLMRegistration *Register_XC_maxpool2d() {
 } // namespace xcore
 } // namespace micro
 } // namespace ops
-} // namespace tflite
+} // namespace tflite_micro

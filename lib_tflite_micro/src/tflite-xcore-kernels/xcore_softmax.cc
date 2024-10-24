@@ -1,5 +1,4 @@
 #include "../thread_call.h"
-#include "xcore_common.h"
 #include "xcore_config.h"
 #include "xcore_custom_options.h"
 #include "xcore_utils.h"
@@ -65,10 +64,9 @@ TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
       micro_context->external_context());
   const TfLiteEvalTensor *input = tflite_micro::micro::GetEvalInput(context, node, 0);
   int input_size = tflite_micro::micro::GetTensorShape(input).FlatSize();
-  op_data->tc = xc_config->model_thread_count;
   int s[XCORE_MAX_NUM_THREADS];
   int e[XCORE_MAX_NUM_THREADS];
-  calculateThreadSplit(op_data->tc, input_size, s, e);
+  op_data->tc = calculateAlignedThreadSplit(xc_config->model_thread_count, input_size, s, e);
   for (int t = 0; t < op_data->tc; t++) {
     op_data->idx[t] = {s[t], e[t]};
   }

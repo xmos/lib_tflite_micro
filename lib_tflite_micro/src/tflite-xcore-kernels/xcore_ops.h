@@ -32,6 +32,7 @@ constexpr const char *XC_concat_OpCode = "XC_concat";
 constexpr const char *XC_pad_3_to_4_OpCode = "XC_pad_3_to_4";
 constexpr const char *XC_mul_OpCode = "XC_mul";
 constexpr const char *XC_mean_OpCode = "XC_mean";
+constexpr const char *XC_expand_8_to_16_OpCode = "XC_expand_8_to_16";
 // Binarized ops
 constexpr const char *XC_bsign_8_OpCode = "XC_bsign_8";
 
@@ -58,6 +59,7 @@ TFLMRegistration *Register_XC_concat();
 TFLMRegistration *Register_XC_pad_3_to_4();
 TFLMRegistration *Register_XC_mul();
 TFLMRegistration *Register_XC_mean();
+TFLMRegistration *Register_XC_expand_8_to_16();
 // Binarized ops
 TFLMRegistration *Register_XC_bsign_8();
 

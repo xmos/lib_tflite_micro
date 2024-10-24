@@ -1,13 +1,13 @@
 // Copyright (c) 2023, XMOS Ltd, All rights reserved
 
 #include "thread_call.h"
-#include "xcore_common.h"
 #include "xcore_config.h"
 #include "xcore_custom_options.h"
 #include "xcore_utils.h"
 #include <string.h>
 
 extern "C" {
+#include "lib_nn/api/nn_operator.h"
 #include "vpu_memmove_word_aligned.h"
 }
 
@@ -83,11 +83,10 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   MicroContext *micro_context = GetMicroContext(context);
   xc_context_config_t *xc_config = reinterpret_cast<xc_context_config_t *>(
       micro_context->external_context());
-  op_data->tc = xc_config->model_thread_count;
   op_data->name = "XC_Concat";
   auto parser = CustomOptionParser(buffer, length);
   op_data->num_copies = parser.parseNamedCustomOption("n").AsInt32();
-  calculateThreadSplit(op_data->tc, op_data->num_copies, op_data->s,
+  op_data->tc = calculateAlignedThreadSplit(xc_config->model_thread_count, op_data->num_copies, op_data->s,
                        op_data->e);
   op_data->num_inputs = parser.parseNamedCustomOption("i").AsInt32();
   auto sizes = parser.parseNamedCustomOption("s").AsVector();

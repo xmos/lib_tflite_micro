@@ -1,7 +1,6 @@
 // Copyright (c) 2023, XMOS Ltd, All rights reserved
 
 #include "../thread_call.h"
-#include "xcore_common.h"
 #include "xcore_config.h"
 #include "xcore_custom_options.h"
 #include "xcore_utils.h"
@@ -64,8 +63,7 @@ TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
   const TfLiteEvalTensor *output =
       tflite_micro::micro::GetEvalOutput(context, node, 0);
   int output_size = tflite_micro::micro::GetTensorShape(output).FlatSize();
-  op_data->tc = xc_config->model_thread_count;
-  calculateThreadSplit(op_data->tc, output_size, op_data->s, op_data->e);
+  op_data->tc = calculateAlignedThreadSplit(xc_config->model_thread_count, output_size, op_data->s, op_data->e);
   return kTfLiteOk;
 }
 

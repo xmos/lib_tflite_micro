@@ -35,7 +35,7 @@ struct Conv2DShared {
   nn::conv_params_t *conv_params;
   int8_t *weights;
   int16_t *muls_and_biases;
-  bool isDepthwise;
+  nn::conv_type conv_type;
 };
 
 extern "C" {
@@ -45,9 +45,10 @@ void conv2d_v2_thread_worker(void *shard, void *scrtch, void *kp) {
   nn::abstract_kernel_params_t *akparams = (nn::abstract_kernel_params_t *)kp;
   auto scratch = static_cast<int8_t *>(scrtch);
   auto shared = static_cast<Conv2DShared *>(shard);
+
   execute(shared->Y, shared->X + akparams->input_offset, shared->conv_params,
           akparams, shared->weights, shared->muls_and_biases,
-          /*isConv=*/!shared->isDepthwise, scratch);
+          shared->conv_type, scratch);
 }
 }
 
@@ -434,21 +435,14 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   shared_data.conv_params = &op_data->conv_params;
   if (op_data->kt == DepthwiseConv2DValidDirect_t ||
       op_data->kt == DepthwiseConv2DPaddedIndirect_t) {
-    shared_data.isDepthwise = true;
+    shared_data.conv_type = nn::conv_type::DCONV;
+  } else if (op_data->kt == Conv2DValidDirectI16_t) {
+    shared_data.conv_type = nn::conv_type::I16CONV;
   } else {
-    shared_data.isDepthwise = false;
+    shared_data.conv_type = nn::conv_type::CONV;
   }
 
-  // expand weights for int16
-  if (op_data->kt == Conv2DValidDirectI16_t) {
-    // scratch buffer contains scratch space for each thread and for expanding i16 weights
-    int16_t *i16_expanded_weights_scratch = (int16_t *)&scratch_buffer[n_threads * op_data->scratch_size];
-    expand_8_to_16(i16_expanded_weights_scratch, weights,
-                   tflite_micro::micro::GetTensorShape(weights_tensor).FlatSize());
-    shared_data.weights = (int8_t *)i16_expanded_weights_scratch;
-  } else {
-    shared_data.weights = weights;
-  }
+  shared_data.weights = weights;
   shared_data.muls_and_biases = multipliers_and_biases;
   if (op_data->scratch_size) {
     for (int t = 0; t < n_threads; ++t) {

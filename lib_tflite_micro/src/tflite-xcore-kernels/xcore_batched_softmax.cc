@@ -1,6 +1,5 @@
 
 #include "../thread_call.h"
-#include "xcore_common.h"
 #include "xcore_config.h"
 #include "xcore_custom_options.h"
 #include "xcore_utils.h"
@@ -58,11 +57,10 @@ TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
   const int trailing_dim = tflite_micro::micro::GetTensorShape(input).DimensionsCount() - 1;
   const int num_softmaxes = tflite_micro::micro::GetTensorShape(input).Dims(trailing_dim - 1);
   op_data->softmax_size = tflite_micro::micro::GetTensorShape(input).Dims(trailing_dim);
-  op_data->tc = xc_config->model_thread_count;
   int starts[XCORE_MAX_NUM_THREADS];
   int ends[XCORE_MAX_NUM_THREADS];
   int counts[XCORE_MAX_NUM_THREADS];
-  calculateThreadSplit(op_data->tc, num_softmaxes, starts, ends);
+  op_data->tc = calculateAlignedThreadSplit(xc_config->model_thread_count, num_softmaxes, starts, ends);
   for (int t = 0; t < op_data->tc; t++) {
     op_data->counts[t] = ends[t] - starts[t];
     op_data->starts[t] = starts[t] * op_data->softmax_size;

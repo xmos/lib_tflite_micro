@@ -40,7 +40,7 @@ void maxpool2d_thread_worker(void *shard, void *scrtch, void *kp) {
   auto scratch = static_cast<int8_t *>(scrtch);
   auto shared = static_cast<MaxPool2DShared *>(shard);
   execute(shared->Y, shared->X, shared->conv_params, akparams, NULL, NULL,
-          false, scratch);
+          nn::conv_type::DCONV, scratch);
 }
 }
 

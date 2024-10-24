@@ -2,10 +2,12 @@
 
 #include "../thread_call.h"
 #include "conv2d_float.h"
-#include "xcore_common.h"
 #include "xcore_config.h"
 #include "xcore_custom_options.h"
 #include "xcore_utils.h"
+extern "C" {
+#include "lib_nn/api/nn_operator.h"
+}
 
 namespace tflite_micro {
 namespace ops {
@@ -59,8 +61,7 @@ TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
       micro_context->external_context());
   const TfLiteEvalTensor *output = tflite_micro::micro::GetEvalOutput(context, node, 0);
   int out_f = output->dims->data[1];
-  op_data->tc = xc_config->model_thread_count;
-  calculateThreadSplit(op_data->tc, out_f, op_data->s, op_data->e);
+  op_data->tc = calculateAlignedThreadSplit(xc_config->model_thread_count, out_f, op_data->s, op_data->e);
   return kTfLiteOk;
 }
 

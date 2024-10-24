@@ -6048,7 +6048,7 @@ index 95ecc26d..5b8c016d 100644
  
  #endif  // TENSORFLOW_LITE_MICRO_KERNELS_ACTIVATION_UTILS_H_
 diff --git a/tensorflow/lite/micro/kernels/activations.cc b/tensorflow/lite/micro/kernels/activations.cc
-index 1086325c..a35d034c 100644
+index 1086325c..aef1bbfb 100644
 --- a/tensorflow/lite/micro/kernels/activations.cc
 +++ b/tensorflow/lite/micro/kernels/activations.cc
 @@ -27,7 +27,26 @@ limitations under the License.
@@ -6127,7 +6127,7 @@ index 1086325c..a35d034c 100644
        return kTfLiteError;
      }
    }
-@@ -78,30 +104,30 @@ TfLiteStatus Relu6Eval(TfLiteContext* context, TfLiteNode* node) {
+@@ -78,30 +104,38 @@ TfLiteStatus Relu6Eval(TfLiteContext* context, TfLiteNode* node) {
    const Relu6OpData& data = *(static_cast<const Relu6OpData*>(node->user_data));
  
    const TfLiteEvalTensor* input =
@@ -6160,6 +6160,14 @@ index 1086325c..a35d034c 100644
 +                     tflite_micro::micro::GetTensorData<int8_t>(input),
 +                     tflite_micro::micro::GetTensorShape(output),
 +                     tflite_micro::micro::GetTensorData<int8_t>(output));
++      return kTfLiteOk;
++    }
++    case kTfLiteInt16: {
++      Relu6Quantized(data.zero_int8, data.six_int8,
++                     tflite_micro::micro::GetTensorShape(input),
++                     tflite_micro::micro::GetTensorData<int16_t>(input),
++                     tflite_micro::micro::GetTensorShape(output),
++                     tflite_micro::micro::GetTensorData<int16_t>(output));
        return kTfLiteOk;
      }
      default: {
@@ -6169,7 +6177,7 @@ index 1086325c..a35d034c 100644
        return kTfLiteError;
      }
    }
-@@ -110,11 +136,11 @@ TfLiteStatus Relu6Eval(TfLiteContext* context, TfLiteNode* node) {
+@@ -110,11 +144,11 @@ TfLiteStatus Relu6Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
  TFLMRegistration Register_RELU() {
@@ -6185,7 +6193,7 @@ index 1086325c..a35d034c 100644
 -}  // namespace tflite
 +}  // namespace tflite_micro
 diff --git a/tensorflow/lite/micro/kernels/activations.h b/tensorflow/lite/micro/kernels/activations.h
-index e953f0e0..15727298 100644
+index e953f0e0..0f83c033 100644
 --- a/tensorflow/lite/micro/kernels/activations.h
 +++ b/tensorflow/lite/micro/kernels/activations.h
 @@ -22,7 +22,7 @@ limitations under the License.
@@ -6210,7 +6218,15 @@ index e953f0e0..15727298 100644
  
  template <typename T>
  void CalculateReluOpData(const TfLiteTensor* input, TfLiteTensor* output,
-@@ -58,6 +59,6 @@ TfLiteStatus ReluPrepare(TfLiteContext* context, TfLiteNode* node);
+@@ -54,10 +55,14 @@ void Relu6Quantized(int8_t lower, int8_t upper, const RuntimeShape& input_shape,
+                     const int8_t* input_data, const RuntimeShape& output_shape,
+                     int8_t* output_data);
+ 
++void Relu6Quantized(int16_t lower, int16_t upper, const RuntimeShape& input_shape,
++                    const int16_t* input_data, const RuntimeShape& output_shape,
++                    int16_t* output_data);
++
+ TfLiteStatus ReluPrepare(TfLiteContext* context, TfLiteNode* node);
  
  TfLiteStatus Relu6Prepare(TfLiteContext* context, TfLiteNode* node);
  
@@ -6219,7 +6235,7 @@ index e953f0e0..15727298 100644
  
  #endif  // TENSORFLOW_LITE_MICRO_KERNELS_ACTIVATIONS_H_
 diff --git a/tensorflow/lite/micro/kernels/activations_common.cc b/tensorflow/lite/micro/kernels/activations_common.cc
-index 2ec3a1bf..9f24c7db 100644
+index 2ec3a1bf..8753f135 100644
 --- a/tensorflow/lite/micro/kernels/activations_common.cc
 +++ b/tensorflow/lite/micro/kernels/activations_common.cc
 @@ -28,28 +28,11 @@ limitations under the License.
@@ -6252,7 +6268,25 @@ index 2ec3a1bf..9f24c7db 100644
  template <typename T>
  void CalculateReluOpData(const TfLiteTensor* input, TfLiteTensor* output,
                           ReluOpData* data) {
-@@ -127,6 +110,8 @@ TfLiteStatus ReluPrepare(TfLiteContext* context, TfLiteNode* node) {
+@@ -113,6 +96,17 @@ void Relu6Quantized(int8_t lower, int8_t upper, const RuntimeShape& input_shape,
+   }
+ }
+ 
++void Relu6Quantized(int16_t lower, int16_t upper, const RuntimeShape& input_shape,
++                    const int16_t* input_data, const RuntimeShape& output_shape,
++                    int16_t* output_data) {
++  const int flat_size = MatchingFlatSize(input_shape, output_shape);
++  for (int i = 0; i < flat_size; ++i) {
++    const int16_t val = input_data[i];
++    const int16_t clamped = val > upper ? upper : val < lower ? lower : val;
++    output_data[i] = clamped;
++  }
++}
++
+ TfLiteStatus ReluPrepare(TfLiteContext* context, TfLiteNode* node) {
+   TFLITE_DCHECK(node->user_data != nullptr);
+   ReluOpData* data = static_cast<ReluOpData*>(node->user_data);
+@@ -127,6 +121,8 @@ TfLiteStatus ReluPrepare(TfLiteContext* context, TfLiteNode* node) {
  
    if (input->type == kTfLiteInt8) {
      CalculateReluOpData<int8_t>(input, output, data);
@@ -6261,7 +6295,7 @@ index 2ec3a1bf..9f24c7db 100644
    }
  
    micro_context->DeallocateTempTfLiteTensor(input);
-@@ -155,4 +140,4 @@ TfLiteStatus Relu6Prepare(TfLiteContext* context, TfLiteNode* node) {
+@@ -155,4 +151,4 @@ TfLiteStatus Relu6Prepare(TfLiteContext* context, TfLiteNode* node) {
    return kTfLiteOk;
  }
  

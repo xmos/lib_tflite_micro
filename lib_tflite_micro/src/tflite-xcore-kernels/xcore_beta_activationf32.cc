@@ -1,10 +1,12 @@
 // Copyright (c) 2023, XMOS Ltd, All rights reserved
 
 #include "../thread_call.h"
-#include "xcore_common.h"
 #include "xcore_config.h"
 #include "xcore_custom_options.h"
 #include "xcore_utils.h"
+extern "C" {
+#include "lib_nn/api/nn_operator.h"
+}
 
 namespace tflite_micro {
 namespace ops {
@@ -81,8 +83,7 @@ TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
       micro_context->external_context());
   const TfLiteEvalTensor *input = tflite_micro::micro::GetEvalInput(context, node, 0);
   int input_size = tflite_micro::micro::GetTensorShape(input).FlatSize();
-  op_data->tc = xc_config->model_thread_count;
-  calculateThreadSplit(op_data->tc, input_size, op_data->s, op_data->e);
+  op_data->tc = calculateAlignedThreadSplit(xc_config->model_thread_count, input_size, op_data->s, op_data->e);
   return kTfLiteOk;
 }
 

@@ -46,6 +46,7 @@ void RegisterXCOps(MicroOpResolver *res) {
   resolver->AddCustom(XC_pad_3_to_4_OpCode, Register_XC_pad_3_to_4());
   resolver->AddCustom(XC_mul_OpCode, Register_XC_mul());
   resolver->AddCustom(XC_mean_OpCode, Register_XC_mean());
+  resolver->AddCustom(XC_expand_8_to_16_OpCode, Register_XC_expand_8_to_16());
 }
 
 } // namespace xcore

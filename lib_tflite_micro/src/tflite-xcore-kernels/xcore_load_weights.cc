@@ -75,6 +75,8 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
                    ((int8_t *)xc_config->weights_data_ptr) + op_data->addr,
                    op_data->sizes[0]);
   } else {
+      // ALL THIS TO BE REPLACED WITH A CALL TO
+      // load_weights_synchronous
     // Any latency with flash might cause dropping of words.
     // We initialize the data_ptrs here so that they are ready
     // before we enter the flash data read loop.

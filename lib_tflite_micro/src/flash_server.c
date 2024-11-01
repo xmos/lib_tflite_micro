@@ -69,27 +69,15 @@ void flash_server(chanend_t c_flash[], flash_t headers[], int n_flash,
                   fl_QSPIPorts *qspi, fl_QuadDeviceSpec flash_spec[],
                   int n_flash_spec) {
     int res;
-    if ((res = fl_connectToDevice(qspi, flash_spec, n_flash_spec)) != 0) {
-        printstr("fl_connect err");printintln(res);    // TODO; these errors needs to be reported through AI server
-        asm("clre; waiteu");
-    }
-    
-    if ((res = fast_flash_init(qspi)) != 0) {
-        printstr("fast flash init err ");printintln(res);
-        asm("clre; waiteu");
-    }
-
-    if ((res = flash_version_check(qspi)) != 0) {
-        printstr("version check error");printintln(res);
-        asm("clre; waiteu");
-    }    
+    assert((res = fl_connectToDevice(qspi, flash_spec, n_flash_spec)) == 0);    
+    assert((res = fast_flash_init(qspi)) == 0);
+    assert((res = flash_version_check(qspi)) == 0);
     
     fast_flash_read(qspi, /*unsigned addr*/36, /*unsigned word_count*/(n_flash * sizeof(flash_t))/4, /*unsigned read_data[]*/(unsigned*)headers, /*chanend ?c_data_out*/ 0);
     
-    int flash_server_alive = 1;
     if (n_flash == 1) {
-        while(flash_server_alive) {
-            flash_server_alive = flash_server_operate(c_flash[0], &headers[0], qspi);
+        while(flash_server_operate(c_flash[0], &headers[0], qspi)) {
+            ;
         }
     } else if (n_flash == 2) {  // This is a bit unpleasant
         SELECT_RES(
@@ -111,8 +99,7 @@ void flash_server(chanend_t c_flash[], flash_t headers[], int n_flash,
             }
         }
     } else {
-        printstr("Too many flash channels");
-        asm("clre; waiteu");
+        assert(n_flash);
     }
 }
 
@@ -141,15 +128,16 @@ void f_client(chanend_t c_flash, int kill) {
     int *data_ptrs1[2] = {a, c};
     int *data_ptrs2[2] = {b, d};
     int data_sizes_in_words[2] = {20, 10};
-    load_weights_synchronous(c_flash, data_ptrs1, data_sizes_in_words, 2, 68, 4, NULL);
-    load_weights_asynchronous(c_flash, data_ptrs2, data_sizes_in_words, 2, 68, 4);
+    load_weights_synchronous(c_flash, data_ptrs1, data_sizes_in_words, 2, 8, 4, NULL);
+    load_weights_asynchronous(c_flash, data_ptrs2, data_sizes_in_words, 2, 8, 4);
     load_weights_asynchronous_wait(c_flash);
     for(int i = 0; i < 20; i++) {
-        printf("%08x %08x\n", a[i], b[i]);
+        if (a[i] != b[i]) printf("%2d %08x %08x\n", i, a[i], b[i]);
     }
     for(int i = 0; i < 10; i++) {
-        printf("%08x %08x\n", c[i], d[i]);
+        if (c[i] != d[i]) printf("%d %08x %08x\n", i, c[i], d[i]);
     }
+    printf("Done\n");
     if (kill) {
         load_weights_quit(c_flash);
     }

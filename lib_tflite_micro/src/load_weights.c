@@ -59,16 +59,14 @@ void load_weights_synchronous(chanend_t c_flash_or_tile, int *data_ptrs[], int d
 
 void load_weights_asynchronous(chanend_t c_flash_or_tile, int *data_ptrs[], int data_sizes_in_words[],
                               int N, int external_addr, int model_thread_count) {
-    assert(N == 1);
     chan_out_word(c_flash_or_tile, FLASH_READ_PARAMETERS_ASYNC);
     chan_out_word(c_flash_or_tile, external_addr);
+    chan_out_word(c_flash_or_tile, N);
     
-    int32_t total_bytes = 0;
     for (int i = 0; i < N; ++i) {
-        total_bytes += data_sizes_in_words[i] * 4;
+        chan_out_word(c_flash_or_tile, data_sizes_in_words[i] * 4);
+        chan_out_word(c_flash_or_tile, (int) data_ptrs[i]);
     }
-    chan_out_word(c_flash_or_tile, total_bytes);
-    chan_out_word(c_flash_or_tile, (int) data_ptrs[0]);
 }
 
 void load_weights_asynchronous_wait(chanend_t c_flash_or_tile) {

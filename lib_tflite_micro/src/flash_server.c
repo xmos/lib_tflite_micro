@@ -2,9 +2,11 @@
 #include <print.h>
 #include <stdint.h>
 #include <platform.h>
+#include <assert.h>
 #include <xcore/channel.h>
 #include <xcore/select.h>
 #include "flash_server.h"
+#include "load_weights.h"
 
 #include "fast_flash.h"
 
@@ -38,12 +40,21 @@ static int flash_server_operate(chanend_t c_flash, flash_t *headers, fl_QSPIPort
         address = headers->parameters_start + address;
         fast_flash_read(qspi, address, bytes/4, /*not using this arg*/(unsigned*)address, c_flash);
     } else if (cmd == FLASH_READ_PARAMETERS_ASYNC) {
-        int target_address;
+        int N;
+        int target_address[LOAD_WEIGHTS_MAX_BLOCKS];
+        int size_in_bytes[LOAD_WEIGHTS_MAX_BLOCKS];
         address = chan_in_word(c_flash);
-        bytes   = chan_in_word(c_flash);
-        target_address = chan_in_word(c_flash);
+        N       = chan_in_word(c_flash);
+        assert(N <= LOAD_WEIGHTS_MAX_BLOCKS);
+        for(int i = 0; i < N; i++) {
+            size_in_bytes[i] = chan_in_word(c_flash);
+            target_address[i] = chan_in_word(c_flash);
+        }
         address = headers->parameters_start + address;
-        fast_flash_read(qspi, address, bytes/4, (unsigned *)target_address, 0);
+        for(int i = 0; i < N; i++) {
+            fast_flash_read(qspi, address, size_in_bytes[i]/4, (unsigned *)(target_address[i]), 0);
+            address += size_in_bytes[i];
+        }
         chanend_out_end_token(c_flash);
     } else if (cmd == FLASH_SERVER_INIT) {
         ; // TODO
@@ -125,14 +136,19 @@ void f_server(chanend_t c_flash[], flash_t headers[], int n_flash,
 void f_client(chanend_t c_flash, int kill) {
     int b[20];
     int a[20];
-    int *data_ptrs1[1] = {a};
-    int *data_ptrs2[1] = {b};
-    int data_sizes_in_words[1] = {20};
-    load_weights_synchronous(c_flash, data_ptrs1, data_sizes_in_words, 1, 68, 4, NULL);
-    load_weights_asynchronous(c_flash, data_ptrs2, data_sizes_in_words, 1, 68, 4);
+    int c[10];
+    int d[10];
+    int *data_ptrs1[2] = {a, c};
+    int *data_ptrs2[2] = {b, d};
+    int data_sizes_in_words[2] = {20, 10};
+    load_weights_synchronous(c_flash, data_ptrs1, data_sizes_in_words, 2, 68, 4, NULL);
+    load_weights_asynchronous(c_flash, data_ptrs2, data_sizes_in_words, 2, 68, 4);
     load_weights_asynchronous_wait(c_flash);
     for(int i = 0; i < 20; i++) {
         printf("%08x %08x\n", a[i], b[i]);
+    }
+    for(int i = 0; i < 10; i++) {
+        printf("%08x %08x\n", c[i], d[i]);
     }
     if (kill) {
         load_weights_quit(c_flash);

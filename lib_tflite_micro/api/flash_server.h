@@ -26,9 +26,8 @@ typedef struct flash {
 typedef enum flash_command {
   FLASH_READ_PARAMETERS =
       0, ///< Read a set of parameters.   // TODO: share with lib_tflite_micro
-  FLASH_READ_MODEL = 1, ///< Read a whole model.
-  FLASH_READ_OPERATORS =
-      2, ///< Read the binary for an operator - future extension
+  FLASH_READ_PARAMETERS_ASYNC = 1, ///< Read parameters asynchronously.
+  FLASH_READ_SYNCHRONIZE      = 2, ///< Complete async read.
   FLASH_READ_XIP =
       3, ///< Read code to execute-in-place throught L2 cache - future extension
   FLASH_SERVER_QUIT = 4,

@@ -3,6 +3,7 @@
 
 #include <quadflash.h>
 
+#ifdef __XC__
 /** Fast flash library.
  * Before calling any of the functions in here, lib_quad_flash must be initialised as normal by using
  * fl_connectToDevice(qspi, flash_spec, n_flash_spec).
@@ -43,5 +44,10 @@ int fast_flash_init(fl_QSPIPorts &qspi);
  * \param      c_out_data  optional channel end over which data is out() instead.
  */
 void fast_flash_read(fl_QSPIPorts &qspi, unsigned addr, unsigned word_count, unsigned read_data[], chanend ?c_data_out);
+
+#else
+int fast_flash_init(fl_QSPIPorts *qspi);
+void fast_flash_read(fl_QSPIPorts *qspi, unsigned addr, unsigned word_count, unsigned read_data[], chanend_t c_data_out);
+#endif
 
 #endif

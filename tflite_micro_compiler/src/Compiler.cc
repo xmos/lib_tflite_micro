@@ -278,6 +278,8 @@ bool tflmc::Compiler::init(const void *modelData) {
           has_tflite_custom_ops = true;
         } else if (regInfo.custom_name == "XC_conv2d_v2") {
           has_xc_conv_ops = true;
+        } else if (regInfo.custom_name == "XC_ld_weights_async") {
+          has_xc_async_ops = true;
         }
         has_custom_ops = true;
       }
@@ -1043,10 +1045,33 @@ TfLiteTensor* )"
      << prefix_ << R"(output(int index) {
   return &ctx.tensors[outTensorIndices[index]];
 }
+)";
 
+if (has_xc_async_ops) {
+wr << R"(
+#ifdef __xcore__
+// Confirm that weights_data_ptr/channel end is on the same tile 
+// if the model has async ops
+#include <xcore/chanend.h>
+#endif
+)";
+}
+wr << R"(
 #pragma stackfunction 1000
 TfLiteStatus )"
-     << prefix_ << R"(init(void *weights_data_ptr) {
+     << prefix_ << R"(init(void *weights_data_ptr) {)";
+  if (has_xc_async_ops) {
+  wr << R"(
+  #ifdef __xcore__
+  // Confirm that weights_data_ptr/channel end is on the same tile 
+  // if the model has async ops )
+  assert(chanend_test_dest_local((unsigned) weights_data_ptr) == 1 
+          && "Model must be on the same tile as the flash server when the model has async ops!");
+  #endif
+  )";
+  }
+  wr << R"(
+  
   // Clear and initialize
   scratch_buffer_idx = 0;
   persistentBufferPtr = tensor_arena + kTensorArenaSize;

@@ -14,6 +14,7 @@
 extern "C" {
 #include "memory_parallel_transport.h"
 #include "nn_op_utils.h"
+#include "load_weights.h"
 }
 #endif
 
@@ -75,73 +76,24 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
                    ((int8_t *)xc_config->weights_data_ptr) + op_data->addr,
                    op_data->sizes[0]);
   } else {
-      // ALL THIS TO BE REPLACED WITH A CALL TO
-      // load_weights_synchronous
-    // Any latency with flash might cause dropping of words.
-    // We initialize the data_ptrs here so that they are ready
-    // before we enter the flash data read loop.
-#define MAX_OUTPUTS 4
-    int8_t *data_ptrs[MAX_OUTPUTS];
-    int8_t *data_ptr;
-    assert(node->outputs->size < MAX_OUTPUTS);
-    for (int i = 0; i < node->outputs->size; ++i) {
-      TfLiteEvalTensor *output = tflite_micro::micro::GetEvalOutput(context, node, i);
-      data_ptrs[i] = tflite_micro::micro::GetTensorData<int8_t>(output);
-    }
 
     chanend_t c_flash_or_tile = (chanend_t) static_cast<int>(
         reinterpret_cast<intptr_t>(xc_config->weights_data_ptr));
-    chan_out_word(c_flash_or_tile, 0); // TODO: share with aiserver.
 
-    // Parallel mode is for reading weights from another tile
-    int use_parallel_mode = chan_in_word(c_flash_or_tile);
-    if (!use_parallel_mode) {
-      chan_out_word(c_flash_or_tile, op_data->addr);
+#define MAX_OUTPUTS 4
+    int *data_ptrs[MAX_OUTPUTS];
+    int data_sizes_in_words[MAX_OUTPUTS];
 
-      int32_t total_size = 0;
-      for (int i = 0; i < node->outputs->size; ++i) {
-        total_size += op_data->sizes[i];
-      }
-      chan_out_word(c_flash_or_tile, total_size);
-
-      for (int i = 0; i < node->outputs->size; ++i) {
-        data_ptr = data_ptrs[i];
-        // The sizes are in bytes and we read from flash in words
-        int op_data_size_in_words = op_data->sizes[i] / 4;
-#pragma clang loop unroll_count(4)
-        for (int j = 0; j < op_data_size_in_words; j++) {
-          // We are reading directly from flash chanend here.
-          // We use chanend_in_word() instead of chan_in_word() to
-          // avoid handshake.
-          // Adding something like a printf() within this loop
-          // might slow it down enough to corrupt the received data.
-          ((uint32_t *)data_ptr)[j] = chanend_in_word(c_flash_or_tile);
-        }
-      }
-      // As there is no handshake, we have to accept the end token
-      // to close the chanend
-      chanend_check_end_token(c_flash_or_tile);
-    } else {
-      // The parallel mode uses four threads and can only work if
-      // the model has been compiled with at least four threads.
-      assert(xc_config->model_thread_count >= 4 &&
-             "At least four threads are required for parallel read from "
-             "another tile!");
-      chan_out_word(c_flash_or_tile, op_data->addr);
-      chan_out_word(c_flash_or_tile, op_data->sizes[0]);
-      memory_parallel_receive_thread_call(c_flash_or_tile, (uint32_t *)data_ptrs[0],
-                                          op_data->sizes[0], tif);
-      for (int i = 1; i < node->outputs->size; ++i) {
-        chan_out_word(c_flash_or_tile, 0);
-        chan_in_word(c_flash_or_tile);
-        chan_out_word(c_flash_or_tile, op_data->addr + op_data->sizes[i - 1]);
-        chan_out_word(c_flash_or_tile, op_data->sizes[i]);
-        memory_parallel_receive_thread_call(c_flash_or_tile, (uint32_t *)data_ptrs[i],
-                                            op_data->sizes[i], tif);
-      }
+    assert(node->outputs->size < MAX_OUTPUTS);
+    for (int i = 0; i < node->outputs->size; ++i) {
+      TfLiteEvalTensor *output = tflite_micro::micro::GetEvalOutput(context, node, i);
+      data_ptrs[i] = (int*)tflite_micro::micro::GetTensorData<int8_t>(output);
+      data_sizes_in_words[i] = op_data->sizes[i]/4;
     }
-  }
 
+    load_weights_synchronous(c_flash_or_tile, data_ptrs, data_sizes_in_words,
+                              node->outputs->size, op_data->addr, xc_config->model_thread_count, tif);
+  }
 #else
   int addr_offset = 0;
 

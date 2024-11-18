@@ -44,7 +44,7 @@ void load_weights_synchronous(chanend_t c_flash_or_tile, int *data_ptr[], int da
  * @param  model_thread_count  number of threads available
  */ 
 void load_weights_asynchronous(chanend_t c_flash_or_tile, int *data_ptr[], int data_sizes_in_words[],
-                               int N, int external_addr, int model_thread_count);
+                               int N, int external_addr);
 
 /**
  * Function that connects to a flash server and waits for the last outstanding load to complete

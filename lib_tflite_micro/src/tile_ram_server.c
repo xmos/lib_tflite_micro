@@ -40,8 +40,6 @@ void tile_ram_server(chanend_t *c_tile_ram, flash_t *headers, int n_tile_ram,
             byte_address = chan_in_word(c_tile_ram[i]);
             number_bytes   = chan_in_word(c_tile_ram[i]);
             byte_address = headers[i].parameters_start + byte_address;
-        } else if (cmd == FLASH_READ_OPERATORS) {
-            ;
         } else if (cmd == FLASH_SERVER_INIT) {
             ;  // NO init required
         } else if (cmd == FLASH_SERVER_QUIT) {

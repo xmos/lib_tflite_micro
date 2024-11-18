@@ -38,7 +38,7 @@ static int flash_server_operate(chanend_t c_flash, flash_t *headers, fl_QSPIPort
         address = chan_in_word(c_flash);
         bytes   = chan_in_word(c_flash);
         address = headers->parameters_start + address;
-        fast_flash_read(qspi, address, bytes/4, /*not using this arg*/(unsigned*)address, c_flash);
+        fast_flash_read(qspi, address, bytes/4, /*not using this arg*/NULL, c_flash);
     } else if (cmd == FLASH_READ_PARAMETERS_ASYNC) {
         int N;
         int target_address[LOAD_WEIGHTS_MAX_BLOCKS];
@@ -52,7 +52,8 @@ static int flash_server_operate(chanend_t c_flash, flash_t *headers, fl_QSPIPort
         }
         address = headers->parameters_start + address;
         for(int i = 0; i < N; i++) {
-            fast_flash_read(qspi, address, size_in_bytes[i]/4, (unsigned *)(target_address[i]), 0);
+            fast_flash_read(qspi, address, size_in_bytes[i]/4, (unsigned *)(target_address[i])
+                , /*When zero, data is directly written into target address*/0);
             address += size_in_bytes[i];
         }
         chanend_out_end_token(c_flash);

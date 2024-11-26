@@ -110,39 +110,13 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
 
 TfLiteStatus Eval_Wait(TfLiteContext *context, TfLiteNode *node) {
 #ifdef __xcore__
-MicroContext *micro_context = GetMicroContext(context);
+  MicroContext *micro_context = GetMicroContext(context);
   xc_context_config_t *xc_config = reinterpret_cast<xc_context_config_t *>(
       micro_context->external_context());
  chanend_t c_flash_or_tile = (chanend_t) static_cast<int>(
         reinterpret_cast<intptr_t>(xc_config->weights_data_ptr));
   load_weights_asynchronous_wait(c_flash_or_tile);
 #endif
-
-#define MAX_INPUTS 4
-  assert(node->inputs->size < MAX_INPUTS);
-  assert(node->inputs->size == node->outputs->size);
-  for (int i = 0; i < node->inputs->size; i++) {
-    const TfLiteEvalTensor *input_tensor =
-      tflite_micro::micro::GetEvalInput(context, node, i);
-    int8_t *input_data =
-        (int8_t *)tflite_micro::micro::GetTensorData<int8_t>(input_tensor);
-
-    TfLiteEvalTensor *output_tensor =
-      tflite_micro::micro::GetEvalOutput(context, node, i);
-    int8_t *output_data =
-      (int8_t *)tflite_micro::micro::GetTensorData<int8_t>(output_tensor);
-
-    
-    // printf("\n%08x\n", ((int32_t*)input_data)[0]);
-
-
-    size_t sizeof_tensor_type;
-    TfLiteTypeSizeOf(input_tensor->type, &sizeof_tensor_type);
-    int size = tflite_micro::micro::GetTensorShape(input_tensor).FlatSize();
-    memcpy((int8_t *)output_data, (int8_t *)input_data,
-           size * sizeof_tensor_type);
-  }
-
   return kTfLiteOk;
 }
 

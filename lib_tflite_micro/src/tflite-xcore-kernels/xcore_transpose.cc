@@ -43,12 +43,12 @@ TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
 TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   auto *op_data = static_cast<TransposeOpData *>(node->user_data);
 
+  const int32_t *t_shape = op_data->t_shape;
+  const int32_t *offsets = op_data->offsets;
+
   const int8_t *input_data =
       GetTensorData<int8_t>(GetEvalInput(context, node, 0));
   int8_t *output_data = GetTensorData<int8_t>(GetEvalOutput(context, node, 0));
-
-  const int32_t *t_shape = op_data->t_shape;
-  const int32_t *offsets = op_data->offsets;
 
   // TODO: 1. Optimise by pre-computing increments
   // TODO: 2. Dereference t_shape in advance

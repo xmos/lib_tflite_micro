@@ -36,6 +36,7 @@ constexpr const char *XC_mul_OpCode = "XC_mul";
 constexpr const char *XC_mean_OpCode = "XC_mean";
 constexpr const char *XC_meani16_OpCode = "XC_meani16";
 constexpr const char *XC_expand_8_to_16_OpCode = "XC_expand_8_to_16";
+constexpr const char *XC_no_op_OpCode = "XC_no_op";
 // Binarized ops
 constexpr const char *XC_bsign_8_OpCode = "XC_bsign_8";
 
@@ -66,6 +67,7 @@ TFLMRegistration *Register_XC_mul();
 TFLMRegistration *Register_XC_mean();
 TFLMRegistration *Register_XC_meani16();
 TFLMRegistration *Register_XC_expand_8_to_16();
+TFLMRegistration *Register_XC_no_op();
 // Binarized ops
 TFLMRegistration *Register_XC_bsign_8();
 

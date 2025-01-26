@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <cstring>
+#include <cstdarg>
 #include <algorithm>
 
 #if defined __GNUC__

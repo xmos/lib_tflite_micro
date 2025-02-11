@@ -14,8 +14,7 @@ namespace xcore {
 namespace meani16 {
 
 // This is the struct that contains the data required by the operator
-struct MeanI16OpData
-    : XCoreOpData { // Inherits the operator name field from XCoreOpData
+struct MeanI16OpData {
   int start_dim_size;
   int mean_dim_size;
   int end_dim_size;
@@ -24,7 +23,6 @@ struct MeanI16OpData
 
 void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   auto op_data = construct_persistent_object<MeanI16OpData>(context);
-  op_data->name = "XC_meani16";
 
   auto parser = CustomOptionParser(buffer, length);
   op_data->start_dim_size = parser.parseNamedCustomOption("s").AsInt32();

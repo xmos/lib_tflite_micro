@@ -39,8 +39,7 @@ void lookup16_thread_worker(void *shared, void *start, void *end) {
 }
 }
 // This is the struct that contains the data required by the operator
-struct LookupOpData
-    : XCoreOpData { // Inherits the operator name field from XCoreOpData
+struct LookupOpData {
   int tc;
   int s[XCORE_MAX_NUM_THREADS];
   int e[XCORE_MAX_NUM_THREADS];
@@ -48,7 +47,6 @@ struct LookupOpData
 
 void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   auto op_data = construct_persistent_object<LookupOpData>(context);
-  op_data->name = "XC_lookup";
   return op_data;
 }
 

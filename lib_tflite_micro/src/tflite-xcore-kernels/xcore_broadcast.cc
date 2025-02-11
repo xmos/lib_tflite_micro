@@ -15,8 +15,7 @@ namespace micro {
 namespace xcore {
 namespace broadcast {
 
-struct BroadcastOpData
-    : XCoreOpData { // Inherits the operator name field from XCoreOpData
+struct BroadcastOpData {
   int32_t size;
   int32_t num_copies;
   int32_t num_broadcasts;
@@ -29,7 +28,6 @@ void memmove_wrapper(void *dst, const void *src, unsigned size) {
 
 void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   auto op_data = construct_persistent_object<BroadcastOpData>(context);
-  op_data->name = "XC_broadcast";
   auto parser = CustomOptionParser(buffer, length);
   op_data->size = parser.parseNamedCustomOption("s").AsInt32();
   op_data->num_copies = parser.parseNamedCustomOption("n").AsInt32();

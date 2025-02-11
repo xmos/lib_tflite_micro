@@ -12,11 +12,6 @@
 namespace tflite_micro {
 namespace ops {
 namespace micro {
-
-struct XCoreOpData {
-  const char *name;
-};
-
 namespace xcore {
 /* Unpack an integer data type from a byte array
  *  T  data type to unpack

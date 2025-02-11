@@ -14,14 +14,13 @@ using tflite_micro::micro::GetTensorData;
 
 constexpr int kTransposeDims = 4; // Exactly 4 dimensions as specified
 
-struct TransposeOpData : XCoreOpData {
+struct TransposeOpData {
   int32_t t_shape[kTransposeDims];
   int32_t offsets[kTransposeDims];
 };
 
 void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   auto op_data = construct_persistent_object<TransposeOpData>(context);
-  op_data->name = "XC_Transpose";
   auto parser = CustomOptionParser(buffer, length);
 
   auto t_shape_vector = parser.parseNamedCustomOption("s").AsVector();

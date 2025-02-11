@@ -712,9 +712,6 @@ TfLiteTensor tflTensors[] =
 
       wr << t->bytes << ", ";
 
-      wr << tflmc::to_string(t->allocation_type) << ", ";
-      wr << t->is_variable << ", ";
-
       wr << "},\n";
     }
   }
@@ -904,6 +901,29 @@ static void *GetScratchBuffer(struct TfLiteContext *context,
   return tensor_arena + scratch_buffer_offsets[buffer_idx];
 }
 
+static bool IsConstantTensor(struct TfLiteContext *context,
+                                       TfLiteTensor* tensor) {
+  bool constant = true;
+  if(tensor->data.data > &tensor_arena && tensor->data.data < &tensor_arena[kTensorArenaSize - 1]){
+    constant = false;
+  }
+  return constant;
+}
+)";
+
+wr << R"(
+static bool IsVariableTensor(struct TfLiteContext *context,
+                                       TfLiteTensor* tensor) {
+  bool found = false;
+  for (int i = 0; i < )"
+    << varTensors_count << R"(; i++) {
+    if(tensor == &tflTensors[varTensors_index[i]]){
+      found = true;
+    }
+  }
+  return found;
+}
+
 static TfLiteTensor* mc_AllocateTempInputTensor(const TfLiteNode* node, int index) {
       if (node->inputs->data[index] < 0) {
         return nullptr;
@@ -1056,10 +1076,11 @@ wr << R"(
 #endif
 )";
 }
+
 wr << R"(
 #pragma stackfunction 1000
 TfLiteStatus )"
-     << prefix_ << R"(init(void *weights_data_ptr) {)";
+     << prefix_ << R"(init_with_paging(void *weights_data_ptr, void *paging_ptr) {)";
   if (has_xc_async_ops) {
   wr << R"(
   #ifdef __xcore__
@@ -1078,6 +1099,8 @@ TfLiteStatus )"
 
   // Set weights data ptr in xcore context config
   xc_config.weights_data_ptr = weights_data_ptr;
+  // Set paging ptr in xcore context config
+  xc_config.paging_ptr = paging_ptr;
   // Set thread count specified in the compiler
   xc_config.model_thread_count = )"
      << numXCThreads_ << R"(;
@@ -1104,7 +1127,9 @@ TfLiteStatus )"
   ctx.GetEvalTensor = &GetEvalTensor;
   ctx.RequestScratchBufferInArena = &RequestScratchBufferInArena;
   ctx.GetScratchBuffer = &GetScratchBuffer;
-  
+  ctx.IsConstantTensor = &IsConstantTensor;
+  ctx.IsVariableTensor = &IsVariableTensor;
+
   // Set microcontext as the context ptr
   ctx.impl_ = (void*)&mc;
   ctx.tensors = tflTensors;
@@ -1228,9 +1253,17 @@ TfLiteStatus )"
 #endif
 
   return kTfLiteOk;
-}
+})";
+wr << R"(
 
 #pragma stackfunction 1000
+TfLiteStatus )"
+     << prefix_ << R"(init(void *weights_data_ptr) {
+  return )" << prefix_ << R"(init_with_paging(weights_data_ptr, nullptr);
+}
+
+)";
+wr<<R"(#pragma stackfunction 1000
 TfLiteStatus )"
      << prefix_ << R"(invoke() {
   thread_init_)"
@@ -1392,6 +1425,8 @@ void tflmc::Compiler::writeHeader(std::ostream &out) {
 
 // Sets up the model with init and prepare steps.
 TfLiteStatus %PREFIX%init(void *weights_data_ptr);
+// Sets up model init with paging.
+TfLiteStatus %PREFIX%init_with_paging(void *weights_data_ptr, void *paging_ptr);
 // Returns the input tensor with the given index.
 TfLiteTensor *%PREFIX%input(int index);
 // Returns the output tensor with the given index.

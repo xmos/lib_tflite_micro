@@ -303,18 +303,23 @@ index 9c895b2f..cee68ccd 100644
  
  #endif  // TENSORFLOW_LITE_CORE_API_FLATBUFFER_CONVERSIONS_H_
 diff --git a/tensorflow/lite/core/api/tensor_utils.cc b/tensorflow/lite/core/api/tensor_utils.cc
-index 18a643c7..277808d9 100644
+index 18a643c7..4ef9cdee 100644
 --- a/tensorflow/lite/core/api/tensor_utils.cc
 +++ b/tensorflow/lite/core/api/tensor_utils.cc
-@@ -19,7 +19,7 @@ limitations under the License.
+@@ -19,10 +19,10 @@ limitations under the License.
  
  #include "tensorflow/lite/core/c/common.h"
  
 -namespace tflite {
 +namespace tflite_micro {
  
- TfLiteStatus ResetVariableTensor(TfLiteTensor* tensor) {
-   if (!tensor->is_variable) {
+-TfLiteStatus ResetVariableTensor(TfLiteTensor* tensor) {
+-  if (!tensor->is_variable) {
++TfLiteStatus ResetVariableTensor(TfLiteContext* context, TfLiteTensor* tensor) {
++  if (!context->IsVariableTensor(context, tensor)) {
+     return kTfLiteOk;
+   }
+   // TODO(b/115961645): Implement - If a variable tensor has a buffer, reset it
 @@ -47,4 +47,4 @@ TfLiteStatus ResetVariableTensor(TfLiteTensor* tensor) {
    return kTfLiteOk;
  }
@@ -322,7 +327,7 @@ index 18a643c7..277808d9 100644
 -}  // namespace tflite
 +}  // namespace tflite_micro
 diff --git a/tensorflow/lite/core/api/tensor_utils.h b/tensorflow/lite/core/api/tensor_utils.h
-index 440da8ab..4527a1c4 100644
+index 440da8ab..7c49135a 100644
 --- a/tensorflow/lite/core/api/tensor_utils.h
 +++ b/tensorflow/lite/core/api/tensor_utils.h
 @@ -18,11 +18,11 @@ limitations under the License.
@@ -333,7 +338,8 @@ index 440da8ab..4527a1c4 100644
 +namespace tflite_micro {
  
  // Resets a variable tensor to the default value.
- TfLiteStatus ResetVariableTensor(TfLiteTensor* tensor);
+-TfLiteStatus ResetVariableTensor(TfLiteTensor* tensor);
++TfLiteStatus ResetVariableTensor(TfLiteContext* context, TfLiteTensor* tensor);
  
 -}  // namespace tflite
 +}  // namespace tflite_micro
@@ -363,7 +369,7 @@ index 3a6594da..a26f482d 100644
  
    /// Generally referring to issues when the TF Lite model has ops that cannot
 diff --git a/tensorflow/lite/core/c/common.cc b/tensorflow/lite/core/c/common.cc
-index a2046fc8..d9757bd9 100644
+index a2046fc8..89beecc7 100644
 --- a/tensorflow/lite/core/c/common.cc
 +++ b/tensorflow/lite/core/c/common.cc
 @@ -106,78 +106,78 @@ void TfLiteVarArrayFree(T* a) {
@@ -648,56 +654,245 @@ index a2046fc8..d9757bd9 100644
    if (!delegate) return nullptr;
  
    // The following cast is safe only because this code is part of the
-@@ -421,7 +421,7 @@ void* TfLiteOpaqueDelegateGetData(const TfLiteOpaqueDelegate* delegate) {
+@@ -421,73 +421,76 @@ void* TfLiteOpaqueDelegateGetData(const TfLiteOpaqueDelegate* delegate) {
  }
  
  // Returns a tensor data allocation strategy.
 -TfLiteAllocationStrategy TfLiteTensorGetAllocationStrategy(
 +TfLiteAllocationStrategy TfliteMicroTensorGetAllocationStrategy(
      const TfLiteTensor* const t) {
-   switch (t->allocation_type) {
-     case kTfLiteMemNone:
-@@ -445,7 +445,7 @@ TfLiteAllocationStrategy TfLiteTensorGetAllocationStrategy(
+-  switch (t->allocation_type) {
+-    case kTfLiteMemNone:
+-      return kTfLiteAllocationStrategyNone;
+-    case kTfLiteMmapRo:
+-      return kTfLiteAllocationStrategyMMap;
+-    case kTfLiteArenaRw:
+-      return kTfLiteAllocationStrategyArena;
+-    case kTfLiteArenaRwPersistent:
+-      return kTfLiteAllocationStrategyArena;
+-    case kTfLiteDynamic:
+-      return kTfLiteAllocationStrategyMalloc;
+-    case kTfLitePersistentRo:
+-      return kTfLiteAllocationStrategyUnknown;
+-    case kTfLiteCustom:
+-      return kTfLiteAllocationStrategyUnknown;
+-    case kTfLiteVariantObject:
+-      return kTfLiteAllocationStrategyNew;
+-  }
++  assert(false && "Disabled function!");
++  // switch (t->allocation_type) {
++  //   case kTfLiteMemNone:
++  //     return kTfLiteAllocationStrategyNone;
++  //   case kTfLiteMmapRo:
++  //     return kTfLiteAllocationStrategyMMap;
++  //   case kTfLiteArenaRw:
++  //     return kTfLiteAllocationStrategyArena;
++  //   case kTfLiteArenaRwPersistent:
++  //     return kTfLiteAllocationStrategyArena;
++  //   case kTfLiteDynamic:
++  //     return kTfLiteAllocationStrategyMalloc;
++  //   case kTfLitePersistentRo:
++  //     return kTfLiteAllocationStrategyUnknown;
++  //   case kTfLiteCustom:
++  //     return kTfLiteAllocationStrategyUnknown;
++  //   case kTfLiteVariantObject:
++  //     return kTfLiteAllocationStrategyNew;
++  // }
+   return kTfLiteAllocationStrategyUnknown;
  }
  
  // Returns how stable a tensor data buffer address is across runs.
 -TfLiteRunStability TfLiteTensorGetBufferAddressStability(
 +TfLiteRunStability TfliteMicroTensorGetBufferAddressStability(
      const TfLiteTensor* const t) {
-   switch (t->allocation_type) {
-     case kTfLiteMemNone:
-@@ -469,7 +469,7 @@ TfLiteRunStability TfLiteTensorGetBufferAddressStability(
+-  switch (t->allocation_type) {
+-    case kTfLiteMemNone:
+-      return kTfLiteRunStabilityAcrossRuns;
+-    case kTfLiteMmapRo:
+-      return kTfLiteRunStabilityAcrossRuns;
+-    case kTfLiteArenaRw:
+-      return kTfLiteRunStabilityUnstable;
+-    case kTfLiteArenaRwPersistent:
+-      return kTfLiteRunStabilityUnstable;
+-    case kTfLiteDynamic:
+-      return kTfLiteRunStabilitySingleRun;
+-    case kTfLitePersistentRo:
+-      return kTfLiteRunStabilitySingleRun;
+-    case kTfLiteCustom:
+-      return kTfLiteRunStabilityUnknown;
+-    case kTfLiteVariantObject:
+-      return kTfLiteRunStabilityAcrossRuns;
+-  }
++  assert(false && "Disabled function!");
++  // switch (t->allocation_type) {
++  //   case kTfLiteMemNone:
++  //     return kTfLiteRunStabilityAcrossRuns;
++  //   case kTfLiteMmapRo:
++  //     return kTfLiteRunStabilityAcrossRuns;
++  //   case kTfLiteArenaRw:
++  //     return kTfLiteRunStabilityUnstable;
++  //   case kTfLiteArenaRwPersistent:
++  //     return kTfLiteRunStabilityUnstable;
++  //   case kTfLiteDynamic:
++  //     return kTfLiteRunStabilitySingleRun;
++  //   case kTfLitePersistentRo:
++  //     return kTfLiteRunStabilitySingleRun;
++  //   case kTfLiteCustom:
++  //     return kTfLiteRunStabilityUnknown;
++  //   case kTfLiteVariantObject:
++  //     return kTfLiteRunStabilityAcrossRuns;
++  // }
+   return kTfLiteRunStabilityUnknown;
  }
  
  // Returns how stable a tensor data values are across runs.
 -TfLiteRunStability TfLiteTensorGetDataStability(const TfLiteTensor* const t) {
+-  switch (t->allocation_type) {
+-    case kTfLiteMemNone:
+-      return kTfLiteRunStabilityAcrossRuns;
+-    case kTfLiteMmapRo:
+-      return kTfLiteRunStabilityAcrossRuns;
+-    case kTfLiteArenaRw:
+-      return kTfLiteRunStabilitySingleRun;
+-    case kTfLiteArenaRwPersistent:
+-      return kTfLiteRunStabilityAcrossRuns;
+-    case kTfLiteDynamic:
+-      return kTfLiteRunStabilitySingleRun;
+-    case kTfLitePersistentRo:
+-      return kTfLiteRunStabilitySingleRun;
+-    case kTfLiteCustom:
+-      return kTfLiteRunStabilityUnknown;
+-    case kTfLiteVariantObject:
+-      return kTfLiteRunStabilitySingleRun;
+-  }
 +TfLiteRunStability TfliteMicroTensorGetDataStability(const TfLiteTensor* const t) {
-   switch (t->allocation_type) {
-     case kTfLiteMemNone:
-       return kTfLiteRunStabilityAcrossRuns;
-@@ -495,7 +495,7 @@ TfLiteRunStability TfLiteTensorGetDataStability(const TfLiteTensor* const t) {
++  assert(false && "Disabled function!");
++  // switch (t->allocation_type) {
++  //   case kTfLiteMemNone:
++  //     return kTfLiteRunStabilityAcrossRuns;
++  //   case kTfLiteMmapRo:
++  //     return kTfLiteRunStabilityAcrossRuns;
++  //   case kTfLiteArenaRw:
++  //     return kTfLiteRunStabilitySingleRun;
++  //   case kTfLiteArenaRwPersistent:
++  //     return kTfLiteRunStabilityAcrossRuns;
++  //   case kTfLiteDynamic:
++  //     return kTfLiteRunStabilitySingleRun;
++  //   case kTfLitePersistentRo:
++  //     return kTfLiteRunStabilitySingleRun;
++  //   case kTfLiteCustom:
++  //     return kTfLiteRunStabilityUnknown;
++  //   case kTfLiteVariantObject:
++  //     return kTfLiteRunStabilitySingleRun;
++  // }
+   return kTfLiteRunStabilityUnknown;
+ }
+ 
+@@ -495,25 +498,26 @@ TfLiteRunStability TfLiteTensorGetDataStability(const TfLiteTensor* const t) {
  //
  // Some operations can precompute their results before the evaluation step. This
  // makes the data available earlier for subsequent operations.
 -TfLiteRunStep TfLiteTensorGetDataKnownStep(const TfLiteTensor* t) {
+-  switch (t->allocation_type) {
+-    case kTfLiteMemNone:
+-      return kTfLiteRunStepInit;
+-    case kTfLiteMmapRo:
+-      return kTfLiteRunStepInit;
+-    case kTfLiteArenaRw:
+-      return kTfLiteRunStepEval;
+-    case kTfLiteArenaRwPersistent:
+-      return kTfLiteRunStepEval;
+-    case kTfLiteDynamic:
+-      return kTfLiteRunStepEval;
+-    case kTfLitePersistentRo:
+-      return kTfLiteRunStepPrepare;
+-    case kTfLiteCustom:
+-      return kTfLiteRunStepUnknown;
+-    case kTfLiteVariantObject:
+-      return kTfLiteRunStepEval;
+-  }
 +TfLiteRunStep TfliteMicroTensorGetDataKnownStep(const TfLiteTensor* t) {
-   switch (t->allocation_type) {
-     case kTfLiteMemNone:
-       return kTfLiteRunStepInit;
-@@ -522,7 +522,7 @@ TfLiteRunStep TfLiteTensorGetDataKnownStep(const TfLiteTensor* t) {
++  assert(false && "Disabled function!");
++  // switch (t->allocation_type) {
++  //   case kTfLiteMemNone:
++  //     return kTfLiteRunStepInit;
++  //   case kTfLiteMmapRo:
++  //     return kTfLiteRunStepInit;
++  //   case kTfLiteArenaRw:
++  //     return kTfLiteRunStepEval;
++  //   case kTfLiteArenaRwPersistent:
++  //     return kTfLiteRunStepEval;
++  //   case kTfLiteDynamic:
++  //     return kTfLiteRunStepEval;
++  //   case kTfLitePersistentRo:
++  //     return kTfLiteRunStepPrepare;
++  //   case kTfLiteCustom:
++  //     return kTfLiteRunStepUnknown;
++  //   case kTfLiteVariantObject:
++  //     return kTfLiteRunStepEval;
++  // }
+   return kTfLiteRunStepUnknown;
+ }
+ 
+@@ -522,25 +526,26 @@ TfLiteRunStep TfLiteTensorGetDataKnownStep(const TfLiteTensor* t) {
  // Some operations can precompute the shape of their results before the
  // evaluation step. This makes the shape available earlier for subsequent
  // operations.
 -TfLiteRunStep TfLiteTensorGetShapeKnownStep(const TfLiteTensor* t) {
+-  switch (t->allocation_type) {
+-    case kTfLiteMemNone:
+-      return kTfLiteRunStepInit;
+-    case kTfLiteMmapRo:
+-      return kTfLiteRunStepInit;
+-    case kTfLiteArenaRw:
+-      return kTfLiteRunStepPrepare;
+-    case kTfLiteArenaRwPersistent:
+-      return kTfLiteRunStepPrepare;
+-    case kTfLiteDynamic:
+-      return kTfLiteRunStepEval;
+-    case kTfLitePersistentRo:
+-      return kTfLiteRunStepPrepare;
+-    case kTfLiteCustom:
+-      return kTfLiteRunStepUnknown;
+-    case kTfLiteVariantObject:
+-      return kTfLiteRunStepEval;
+-  }
 +TfLiteRunStep TfliteMicroTensorGetShapeKnownStep(const TfLiteTensor* t) {
-   switch (t->allocation_type) {
-     case kTfLiteMemNone:
-       return kTfLiteRunStepInit;
++  assert(false && "Disabled function!");
++  // switch (t->allocation_type) {
++  //   case kTfLiteMemNone:
++  //     return kTfLiteRunStepInit;
++  //   case kTfLiteMmapRo:
++  //     return kTfLiteRunStepInit;
++  //   case kTfLiteArenaRw:
++  //     return kTfLiteRunStepPrepare;
++  //   case kTfLiteArenaRwPersistent:
++  //     return kTfLiteRunStepPrepare;
++  //   case kTfLiteDynamic:
++  //     return kTfLiteRunStepEval;
++  //   case kTfLitePersistentRo:
++  //     return kTfLiteRunStepPrepare;
++  //   case kTfLiteCustom:
++  //     return kTfLiteRunStepUnknown;
++  //   case kTfLiteVariantObject:
++  //     return kTfLiteRunStepEval;
++  // }
+   return kTfLiteRunStepUnknown;
+ }
+ 
 diff --git a/tensorflow/lite/core/c/common.h b/tensorflow/lite/core/c/common.h
-index d9abf9ea..e3bdc817 100644
+index d9abf9ea..5f6a397e 100644
 --- a/tensorflow/lite/core/c/common.h
 +++ b/tensorflow/lite/core/c/common.h
-@@ -107,28 +107,28 @@ typedef struct TfLiteIntArray {
+@@ -47,6 +47,7 @@ limitations under the License.
+ #include <stdbool.h>
+ #include <stddef.h>
+ #include <stdint.h>
++#include <assert.h>
+ 
+ #include "tensorflow/lite/core/c/c_api_types.h"  // IWYU pragma: export
+ 
+@@ -107,28 +108,28 @@ typedef struct TfLiteIntArray {
  
  // Given the size (number of elements) in a TfLiteIntArray, calculate its size
  // in bytes.
@@ -732,7 +927,7 @@ index d9abf9ea..e3bdc817 100644
  #endif  // TF_LITE_STATIC_MEMORY
  
  // Fixed size list of floats. Used for per-channel quantization.
-@@ -156,14 +156,14 @@ int TfLiteFloatArrayGetSizeInBytes(int size);
+@@ -156,14 +157,14 @@ int TfLiteFloatArrayGetSizeInBytes(int size);
  #ifndef TF_LITE_STATIC_MEMORY
  // Create a array of a given `size` (uninitialized entries).
  // This returns a pointer, that you must free using TfLiteFloatArrayFree().
@@ -750,7 +945,7 @@ index d9abf9ea..e3bdc817 100644
  #endif  // TF_LITE_STATIC_MEMORY
  
  // Since we must not depend on any libraries, define a minimal subset of
-@@ -238,8 +238,8 @@ void TfLiteFloatArrayFree(TfLiteFloatArray* a);
+@@ -238,8 +239,8 @@ void TfLiteFloatArrayFree(TfLiteFloatArray* a);
    do {                                                                     \
      if ((a) != (b)) {                                                      \
        TF_LITE_KERNEL_LOG((context), "%s:%d %s != %s (%s != %s)", __FILE__, \
@@ -761,7 +956,7 @@ index d9abf9ea..e3bdc817 100644
        return kTfLiteError;                                                 \
      }                                                                      \
    } while (0)
-@@ -279,7 +279,7 @@ typedef struct TfLiteFloat16 {
+@@ -279,7 +280,7 @@ typedef struct TfLiteFloat16 {
  } TfLiteFloat16;
  
  // Return the name of a given type, for error reporting purposes.
@@ -770,7 +965,7 @@ index d9abf9ea..e3bdc817 100644
  
  // SupportedQuantizationTypes.
  typedef enum TfLiteQuantizationType {
-@@ -472,7 +472,7 @@ typedef struct TfLiteTensor {
+@@ -472,7 +473,7 @@ typedef struct TfLiteTensor {
    // bytes = sizeof(float) * 3 * 2 = 4 * 3 * 2 = 24.
    size_t bytes;
  
@@ -779,7 +974,7 @@ index d9abf9ea..e3bdc817 100644
    const void* allocation;
  
    // Null-terminated name of this tensor.
-@@ -570,13 +570,6 @@ typedef struct TfLiteNode {
+@@ -570,13 +571,6 @@ typedef struct TfLiteNode {
  // - name
  // - sparsity
  typedef struct TfLiteTensor {
@@ -793,35 +988,44 @@ index d9abf9ea..e3bdc817 100644
    // A union of data pointers. The appropriate type should be used for a typed
    // tensor based on `type`.
    TfLitePtrUnion data;
-@@ -586,16 +579,23 @@ typedef struct TfLiteTensor {
+@@ -586,25 +580,22 @@ typedef struct TfLiteTensor {
    // and the element datatype size should be equal to `bytes` below.
    TfLiteIntArray* dims;
  
-+  // The data type specification for data stored in `data`. This affects
-+  // what member of `data` union should be used.
-+  TfLiteType type;
-+
+-  // The number of bytes required to store the data of this Tensor. I.e.
+-  // (bytes of each element) * dims[0] * ... * dims[n-1].  For example, if
+-  // type is kTfLiteFloat32 and dims = {3, 2} then
+-  // bytes = sizeof(float) * 3 * 2 = 4 * 3 * 2 = 24.
+-  size_t bytes;
+-
+   // The data type specification for data stored in `data`. This affects
+   // what member of `data` union should be used.
+   TfLiteType type;
+ 
+-  // How memory is mapped
+-  //  kTfLiteMmapRo: Memory mapped read only.
+-  //  i.e. weights
+-  //  kTfLiteArenaRw: Arena allocated read write memory
+-  //  (i.e. temporaries, outputs).
+-  TfLiteAllocationType allocation_type;
 +  // TODO(b/155784997): Consider consolidating these quantization fields:
 +  // Quantization information. Replaces params field above.
 +  TfLiteQuantization quantization;
-+
+ 
+-  // True if the tensor is a variable.
+-  bool is_variable;
 +  // Quantization information.
 +  TfLiteQuantizationParams params;
 +
-   // The number of bytes required to store the data of this Tensor. I.e.
-   // (bytes of each element) * dims[0] * ... * dims[n-1].  For example, if
-   // type is kTfLiteFloat32 and dims = {3, 2} then
-   // bytes = sizeof(float) * 3 * 2 = 4 * 3 * 2 = 24.
-   size_t bytes;
++  // The number of bytes required to store the data of this Tensor. I.e.
++  // (bytes of each element) * dims[0] * ... * dims[n-1].  For example, if
++  // type is kTfLiteFloat32 and dims = {3, 2} then
++  // bytes = sizeof(float) * 3 * 2 = 4 * 3 * 2 = 24.
++  size_t bytes;
+ } TfLiteTensor;
  
--  // The data type specification for data stored in `data`. This affects
--  // what member of `data` union should be used.
--  TfLiteType type;
--
-   // How memory is mapped
-   //  kTfLiteMmapRo: Memory mapped read only.
-   //  i.e. weights
-@@ -621,10 +621,6 @@ typedef struct TfLiteNode {
+ // Specific reduced TfLiteNode struct for TF Micro runtime. This struct contains
+@@ -621,10 +612,6 @@ typedef struct TfLiteNode {
    // Outputs to this node expressed as indices into the simulator's tensors.
    TfLiteIntArray* outputs;
  
@@ -832,7 +1036,7 @@ index d9abf9ea..e3bdc817 100644
    // Opaque data provided by the node implementer through `Registration.init`.
    void* user_data;
  
-@@ -634,7 +630,6 @@ typedef struct TfLiteNode {
+@@ -634,7 +621,6 @@ typedef struct TfLiteNode {
  
    // Custom initial data. This is the opaque data provided in the flatbuffer.
    // WARNING: This is an experimental interface that is subject to change.
@@ -840,7 +1044,7 @@ index d9abf9ea..e3bdc817 100644
    int custom_initial_data_size;
  } TfLiteNode;
  #endif  // TF_LITE_STATIC_MEMORY
-@@ -662,10 +657,10 @@ typedef struct TfLiteEvalTensor {
+@@ -662,10 +648,10 @@ typedef struct TfLiteEvalTensor {
  void TfLiteTensorDataFree(TfLiteTensor* t);
  
  // Free quantization data.
@@ -853,7 +1057,24 @@ index d9abf9ea..e3bdc817 100644
  
  // Free memory of tensor `t`.
  void TfLiteTensorFree(TfLiteTensor* t);
-@@ -1316,8 +1311,8 @@ typedef struct TfLiteOpaqueDelegateBuilder {
+@@ -911,6 +897,16 @@ typedef struct TfLiteContext {
+   TfLiteEvalTensor* (*GetEvalTensor)(const struct TfLiteContext* context,
+                                      int tensor_idx);
+ 
++  // TODO
++  // New interface to avoid storing an is_variable bool
++  bool (*IsVariableTensor)(struct TfLiteContext* context,
++                                    TfLiteTensor* tensor);
++
++  // TODO
++  // New interface to avoid storing allocation type in TfLiteTensor
++  bool (*IsConstantTensor)(struct TfLiteContext* context,
++                                    TfLiteTensor* tensor);
++
+   // Retrieves named metadata buffer from the TFLite model.
+   // Returns kTfLiteOk if metadata is successfully obtained from the flatbuffer
+   // Model: that is, there exists a `metadata` entry with given `name` string.
+@@ -1316,8 +1312,8 @@ typedef struct TfLiteOpaqueDelegateBuilder {
  // the objects pointed to by any of the fields within the
  // 'opaque_delegate_builder' must outlive the returned
  // 'TfLiteOpaqueDelegate' and any 'TfLiteInterpreter',
@@ -864,6 +1085,17 @@ index d9abf9ea..e3bdc817 100644
  // address should be passed to 'TfLiteOpaqueDelegateDelete' for deletion.  If
  // 'opaque_delegate_builder' is a null pointer, then a null pointer will be
  // returned.
+@@ -1493,7 +1489,9 @@ TfLiteStatus TfLiteTensorVariantRealloc(TfLiteTensor* t,
+     new_vd = new VariantType(std::forward<VariantArgs>(args)...);
+   }
+   t->data.data = static_cast<VariantData*>(new_vd);
+-  t->allocation_type = kTfLiteVariantObject;
++
++  assert(false && "Disabled function!");
++  // t->allocation_type = kTfLiteVariantObject;
+   return kTfLiteOk;
+ }
+ 
 diff --git a/tensorflow/lite/kernels/internal/common.cc b/tensorflow/lite/kernels/internal/common.cc
 index 1654ab84..8cbbf0c7 100644
 --- a/tensorflow/lite/kernels/internal/common.cc
@@ -2916,7 +3148,7 @@ index f2cc1603..bddd87b5 100644
  
  #endif  // TENSORFLOW_LITE_KERNELS_INTERNAL_TYPES_H_
 diff --git a/tensorflow/lite/kernels/kernel_util.cc b/tensorflow/lite/kernels/kernel_util.cc
-index 58fd99f8..41f15b61 100644
+index 58fd99f8..f01a0425 100644
 --- a/tensorflow/lite/kernels/kernel_util.cc
 +++ b/tensorflow/lite/kernels/kernel_util.cc
 @@ -38,7 +38,7 @@ limitations under the License.
@@ -2928,6 +3160,15 @@ index 58fd99f8..41f15b61 100644
  
  namespace {
  
+@@ -124,7 +124,7 @@ TfLiteTensor* GetVariableInput(TfLiteContext* context, const TfLiteNode* node,
+                                int index) {
+   TfLiteTensor* tensor = GetMutableInput(context, node, index);
+   if (tensor == nullptr) return nullptr;
+-  return tensor->is_variable ? tensor : nullptr;
++  return context->IsVariableTensor(context, tensor) ? tensor : nullptr;
+ }
+ 
+ TfLiteTensor* GetOutput(TfLiteContext* context, const TfLiteNode* node,
 @@ -411,7 +411,7 @@ TfLiteStatus CalculateActivationRangeQuantized(TfLiteContext* context,
  }
  
@@ -2971,10 +3212,18 @@ index 58fd99f8..41f15b61 100644
 -}  // namespace tflite
 +}  // namespace tflite_micro
 diff --git a/tensorflow/lite/kernels/kernel_util.h b/tensorflow/lite/kernels/kernel_util.h
-index e318118f..89db28ae 100644
+index e318118f..4ca74708 100644
 --- a/tensorflow/lite/kernels/kernel_util.h
 +++ b/tensorflow/lite/kernels/kernel_util.h
-@@ -28,7 +28,7 @@ limitations under the License.
+@@ -16,6 +16,7 @@ limitations under the License.
+ #define TENSORFLOW_LITE_KERNELS_KERNEL_UTIL_H_
+ 
+ #include <stdint.h>
++#include <assert.h>
+ 
+ #include <limits>
+ #ifndef TF_LITE_STATIC_MEMORY
+@@ -28,7 +29,7 @@ limitations under the License.
  #include "tensorflow/lite/kernels/op_macros.h"
  #endif
  
@@ -2983,7 +3232,39 @@ index e318118f..89db28ae 100644
  
  // A fair number of functions in this header have historically been inline.
  // It is ok to change functions to not be inline if the latency with
-@@ -336,6 +336,6 @@ bool IsMobilePlatform();
+@@ -200,19 +201,27 @@ inline int64_t NumElements(const TfLiteTensor* t) {
+ // persistent-read-only, which would be useful for most tensor kernels that
+ // are potentially dynamic based on the input tensor value availability at the
+ // time of prepare.
+-inline bool IsConstantTensor(const TfLiteTensor* tensor) {
++inline bool IsConstantTensor(TfLiteContext *context, TfLiteTensor* tensor) {
++  #ifndef NO_INTERPRETER
+   return tensor->allocation_type == kTfLiteMmapRo;
++  #else
++  return context->IsConstantTensor(context, tensor);
++  #endif
+ }
+ 
+ inline bool IsConstantOrPersistentTensor(const TfLiteTensor* tensor) {
+-  return IsConstantTensor(tensor) ||
+-         (tensor->allocation_type == kTfLitePersistentRo);
++  assert(false && "Disabled function!");
++  return false;
++  // return IsConstantTensor(tensor) ||
++        //  (tensor->allocation_type == kTfLitePersistentRo);
+ }
+ 
+ // Determines whether tensor is dynamic. Note that a tensor can be non-const and
+ // not dynamic. This function specifically checks for a dynamic tensor.
+ inline bool IsDynamicTensor(const TfLiteTensor* tensor) {
+-  return tensor->allocation_type == kTfLiteDynamic;
++  assert(false && "Disabled function!");
++  return false;
++  // return tensor->allocation_type == kTfLiteDynamic;
+ }
+ #ifndef TF_LITE_STATIC_MEMORY
+ // Sets tensor to dynamic.
+@@ -336,6 +345,6 @@ bool IsMobilePlatform();
  // Returns whether there is unspecified dimension in the tensor's dim signature.
  bool HasUnspecifiedDimension(const TfLiteTensor* tensor);
  
@@ -8219,7 +8500,7 @@ index bd99bd1a..b4f5dfa7 100644
 -}  // namespace tflite
 +}  // namespace tflite_micro
 diff --git a/tensorflow/lite/micro/kernels/batch_matmul.cc b/tensorflow/lite/micro/kernels/batch_matmul.cc
-index 9ecc4fc3..2f8317ff 100644
+index 9ecc4fc3..f9dffabc 100644
 --- a/tensorflow/lite/micro/kernels/batch_matmul.cc
 +++ b/tensorflow/lite/micro/kernels/batch_matmul.cc
 @@ -28,7 +28,7 @@ limitations under the License.
@@ -8277,6 +8558,17 @@ index 9ecc4fc3..2f8317ff 100644
    RuntimeShape shape(transposed_shape);
    TransposeParams params;
    const int rank = shape.DimensionsCount();
+@@ -325,8 +325,8 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
+   OpData* op_data = op_context.op_data;
+   // If the RHS is constant, we only transpose once.
+   op_data->rhs_is_transposed = false;
+-  op_data->lhs_is_constant_tensor = IsConstantTensor(lhs_data);
+-  op_data->rhs_is_constant_tensor = IsConstantTensor(rhs_data);
++  op_data->lhs_is_constant_tensor = IsConstantTensor(context, lhs_data);
++  op_data->rhs_is_constant_tensor = IsConstantTensor(context, rhs_data);
+ 
+   // Note that quantized inference requires that all tensors have their
+   // parameters set. This is usually done during quantized training.
 @@ -415,9 +415,9 @@ TfLiteStatus EvalInt8(TfLiteContext* context, const OpData& data,
  
    // Note we pass RHS args first, LHS args second. See note for Eval.
@@ -21190,7 +21482,7 @@ index 224e4e49..ad224a90 100644
  }
  
 diff --git a/tensorflow/lite/micro/kernels/lstm_eval.cc b/tensorflow/lite/micro/kernels/lstm_eval.cc
-index 93d6bc7e..90941eca 100644
+index 93d6bc7e..b1485889 100644
 --- a/tensorflow/lite/micro/kernels/lstm_eval.cc
 +++ b/tensorflow/lite/micro/kernels/lstm_eval.cc
 @@ -26,7 +26,7 @@ limitations under the License.
@@ -21202,6 +21494,22 @@ index 93d6bc7e..90941eca 100644
  
  LstmTensors::LstmTensors(TfLiteContext* context, TfLiteNode* node) {
    micro_context_ = GetMicroContext(context);
+@@ -59,13 +59,13 @@ TfLiteStatus LstmTensors::ValidateTensorStatus(TfLiteContext* context) const {
+   // hidden state
+   TF_LITE_ENSURE(context, internal_tensors_[kLstmOutputStateTensor] != nullptr);
+   TF_LITE_ENSURE(context,
+-                 internal_tensors_[kLstmOutputStateTensor]->is_variable);
++                 context->IsVariableTensor(context, internal_tensors_[kLstmOutputStateTensor]));
+   // hidden state becomes input so they must have the same type
+   TF_LITE_ENSURE_EQ(context, internal_tensors_[kLstmOutputStateTensor]->type,
+                     internal_tensors_[kLstmInputTensor]->type);
+   // cell state
+   TF_LITE_ENSURE(context, internal_tensors_[kLstmCellStateTensor] != nullptr);
+-  TF_LITE_ENSURE(context, internal_tensors_[kLstmCellStateTensor]->is_variable);
++  TF_LITE_ENSURE(context, context->IsVariableTensor(context, internal_tensors_[kLstmCellStateTensor]));
+   // output
+   TF_LITE_ENSURE(context, output_tensor_ != nullptr);
+   // output type is the same as the input type (activations)
 @@ -133,8 +133,8 @@ void Sigmoid(const RuntimeShape& data_shape, int16_t* data) {
    reference_integer_ops::Logistic(
        0 /*data->input_multiplier*/, 0 /*data->input_left_shift */,
@@ -23682,7 +23990,7 @@ index 09422176..99a680d5 100644
        output_shape, golden, output_data);
  }
 diff --git a/tensorflow/lite/micro/kernels/pad.cc b/tensorflow/lite/micro/kernels/pad.cc
-index f8d40ade..c1d49a6d 100644
+index f8d40ade..d5b3c553 100644
 --- a/tensorflow/lite/micro/kernels/pad.cc
 +++ b/tensorflow/lite/micro/kernels/pad.cc
 @@ -24,7 +24,7 @@ limitations under the License.
@@ -23804,6 +24112,15 @@ index f8d40ade..c1d49a6d 100644
        return kTfLiteError;
    }
    return kTfLiteOk;
+@@ -162,7 +162,7 @@ TfLiteStatus PadPrepare(TfLiteContext* context, TfLiteNode* node) {
+   // On Micro, outputs must be properly sized by the converter.
+   // NOTE: This data is only available because the paddings buffer is stored in
+   // the flatbuffer:
+-  TF_LITE_ENSURE(context, IsConstantTensor(paddings));
++  TF_LITE_ENSURE(context, IsConstantTensor(context, paddings));
+   const int32_t* paddings_data = GetTensorData<int32_t>(paddings);
+   for (int i = 0; i < output->dims->size; i++) {
+     int output_dim = output->dims->data[i];
 @@ -218,12 +218,12 @@ TfLiteStatus PadPrepare(TfLiteContext* context, TfLiteNode* node) {
  }
  
@@ -26737,7 +27054,7 @@ index d78d9fa9..f1912202 100644
        expected_output_no_shape_len, expected_dims, expected_dims_len, false);
  }
 diff --git a/tensorflow/lite/micro/kernels/resize_bilinear.cc b/tensorflow/lite/micro/kernels/resize_bilinear.cc
-index e701e03b..2344daeb 100644
+index e701e03b..72be3a4b 100644
 --- a/tensorflow/lite/micro/kernels/resize_bilinear.cc
 +++ b/tensorflow/lite/micro/kernels/resize_bilinear.cc
 @@ -23,7 +23,7 @@ limitations under the License.
@@ -26749,6 +27066,15 @@ index e701e03b..2344daeb 100644
  namespace {
  
  constexpr int kInputTensor = 0;
+@@ -49,7 +49,7 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
+   TF_LITE_ENSURE_EQ(context, size->type, kTfLiteInt32);
+   output->type = input->type;
+ 
+-  TF_LITE_ENSURE_MSG(context, IsConstantTensor(size),
++  TF_LITE_ENSURE_MSG(context, IsConstantTensor(context, size),
+                      "Non constant size tensor not supported");
+ 
+   // Ensure params are valid.
 @@ -71,34 +71,34 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
        reinterpret_cast<TfLiteResizeBilinearParams*>(node->builtin_data);
  
@@ -26924,7 +27250,7 @@ index b52cebeb..5c3dddef 100644
        output_dims, output_data, &params, /*tolerance=*/1);
  }
 diff --git a/tensorflow/lite/micro/kernels/resize_nearest_neighbor.cc b/tensorflow/lite/micro/kernels/resize_nearest_neighbor.cc
-index 46b6ea16..2a5d7189 100644
+index 46b6ea16..be16733f 100644
 --- a/tensorflow/lite/micro/kernels/resize_nearest_neighbor.cc
 +++ b/tensorflow/lite/micro/kernels/resize_nearest_neighbor.cc
 @@ -23,7 +23,7 @@ limitations under the License.
@@ -26936,6 +27262,15 @@ index 46b6ea16..2a5d7189 100644
  
  namespace {
  
+@@ -53,7 +53,7 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
+ 
+   output->type = input->type;
+ 
+-  if (!IsConstantTensor(size)) {
++  if (!IsConstantTensor(context, size)) {
+     MicroPrintf("Dynamic tensors are unsupported in tfmicro.");
+     return kTfLiteError;
+   }
 @@ -70,43 +70,43 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
        reinterpret_cast<TfLiteResizeNearestNeighborParams*>(node->builtin_data);
  
@@ -28616,7 +28951,7 @@ index 1fd7d10e..a5c2f3e6 100644
                                       static_cast<void*>(&op_params));
    TF_LITE_MICRO_EXPECT_EQ(kTfLiteOk, runner.InitAndPrepare());
 diff --git a/tensorflow/lite/micro/kernels/split.cc b/tensorflow/lite/micro/kernels/split.cc
-index aa877201..b72e6dca 100644
+index aa877201..390e8eea 100644
 --- a/tensorflow/lite/micro/kernels/split.cc
 +++ b/tensorflow/lite/micro/kernels/split.cc
 @@ -20,7 +20,7 @@ limitations under the License.
@@ -28652,6 +28987,15 @@ index aa877201..b72e6dca 100644
        const int copy_size = output_dims->data[axis] * base_inner_size;
        T* output_ptr = output_data + k * copy_size;
        for (int j = 0; j < copy_size; ++j) output_ptr[j] = input_ptr[j];
+@@ -75,7 +75,7 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
+   // Dynamic output tensors are needed if axis tensor is not constant.
+   // But Micro doesn't support dynamic memory allocation, so we only support
+   // constant axis tensor for now.
+-  TF_LITE_ENSURE_MSG(context, IsConstantTensor(axis),
++  TF_LITE_ENSURE_MSG(context, IsConstantTensor(context, axis),
+                      "Non constant axis tensor not supported");
+ 
+   micro_context->DeallocateTempTfLiteTensor(axis);
 @@ -83,10 +83,10 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
  }
  
@@ -28816,7 +29160,7 @@ index e3bf37d0..cdaae07c 100644
        output2_shape, golden2, output1_data, output2_data);
  }
 diff --git a/tensorflow/lite/micro/kernels/split_v.cc b/tensorflow/lite/micro/kernels/split_v.cc
-index 6aed6f7f..c2f7c61d 100644
+index 6aed6f7f..056c1edb 100644
 --- a/tensorflow/lite/micro/kernels/split_v.cc
 +++ b/tensorflow/lite/micro/kernels/split_v.cc
 @@ -21,7 +21,7 @@ limitations under the License.
@@ -28862,7 +29206,15 @@ index 6aed6f7f..c2f7c61d 100644
        const int copy_size =
            output_tensor->dims->data[axis_value] * base_inner_size;
        T* output_ptr = output_data + k * copy_size;
-@@ -86,10 +86,10 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
+@@ -79,17 +79,17 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
+   // But Micro doesn't support dynamic memory allocation, so we only support
+   // constant axis tensor for now.
+   TfLiteTensor* axis = micro_context->AllocateTempInputTensor(node, 2);
+-  TF_LITE_ENSURE_MSG(context, IsConstantTensor(axis),
++  TF_LITE_ENSURE_MSG(context, IsConstantTensor(context, axis),
+                      "Non constant axis tensor not supported");
+   micro_context->DeallocateTempTfLiteTensor(axis);
+   return kTfLiteOk;
  }
  
  TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
@@ -30711,7 +31063,7 @@ index a05a9b4e..469f8c57 100644
  
  #endif  // TENSORFLOW_LITE_MICRO_KERNELS_SVDF_H_
 diff --git a/tensorflow/lite/micro/kernels/svdf_common.cc b/tensorflow/lite/micro/kernels/svdf_common.cc
-index d7dd963f..025047e6 100644
+index d7dd963f..71f4c155 100644
 --- a/tensorflow/lite/micro/kernels/svdf_common.cc
 +++ b/tensorflow/lite/micro/kernels/svdf_common.cc
 @@ -27,7 +27,7 @@ limitations under the License.
@@ -30814,6 +31166,15 @@ index d7dd963f..025047e6 100644
  
    // Left shift the activation_state.
    {
+@@ -433,7 +433,7 @@ TfLiteStatus PrepareSvdf(TfLiteContext* context, TfLiteNode* node) {
+   TF_LITE_ENSURE_EQ(context, activation_state->dims->data[1],
+                     memory_size * num_filters);
+   // Since is_variable is not part of TFLiteEvalTensor, check is_variable here.
+-  TF_LITE_ENSURE_EQ(context, activation_state->is_variable, true);
++  TF_LITE_ENSURE_EQ(context, context->IsVariableTensor(context, activation_state), true);
+ 
+   TF_LITE_ENSURE_EQ(context, node->inputs->size, 5);
+ 
 @@ -514,4 +514,4 @@ TfLiteStatus PrepareSvdf(TfLiteContext* context, TfLiteNode* node) {
    return kTfLiteOk;
  }
@@ -31454,7 +31815,7 @@ index 3edf4200..671bbb00 100644
  
  #endif  // TENSORFLOW_LITE_MICRO_KERNELS_TESTDATA_LSTM_TEST_DATA_H_
 diff --git a/tensorflow/lite/micro/kernels/transpose.cc b/tensorflow/lite/micro/kernels/transpose.cc
-index 710bfca4..fe27b79c 100644
+index 710bfca4..5522bde8 100644
 --- a/tensorflow/lite/micro/kernels/transpose.cc
 +++ b/tensorflow/lite/micro/kernels/transpose.cc
 @@ -21,7 +21,7 @@ limitations under the License.
@@ -31475,7 +31836,7 @@ index 710bfca4..fe27b79c 100644
    const int32_t* perm_data = perm_tensor->data.i32;
    const int size = perm_tensor->dims->data[0];
    TransposeParams params;
-@@ -87,27 +87,33 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+@@ -87,27 +87,38 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
    // on each cell. It's safe to implement per size of scalar type and this
    // trick keeps the total code size in a reasonable range.
    const TfLiteEvalTensor* input =
@@ -31485,6 +31846,11 @@ index 710bfca4..fe27b79c 100644
 -      tflite::micro::GetEvalOutput(context, node, kOutputTensor);
 +      tflite_micro::micro::GetEvalOutput(context, node, kOutputTensor);
    switch (input->type) {
++    case kTfLiteInt32:
++      reference_ops::Transpose(params, tflite_micro::micro::GetTensorShape(input),
++                               tflite_micro::micro::GetTensorData<int32_t>(input),
++                               tflite_micro::micro::GetTensorShape(output),
++                               tflite_micro::micro::GetTensorData<int32_t>(output));
      case kTfLiteFloat32:
 -      reference_ops::Transpose(params, tflite::micro::GetTensorShape(input),
 -                               tflite::micro::GetTensorData<float>(input),
@@ -31520,7 +31886,7 @@ index 710bfca4..fe27b79c 100644
        return kTfLiteError;
    }
  
-@@ -117,6 +123,6 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+@@ -117,6 +128,6 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  }  // namespace
  
  TFLMRegistration Register_TRANSPOSE() {
@@ -35080,7 +35446,7 @@ index 4bcff1aa..4d854c68 100644
 +}  // namespace tflite_micro
  #endif  // TENSORFLOW_LITE_KERNELS_LSTM_SHARED_H_
 diff --git a/tensorflow/lite/micro/kernels/xtensa/pad.cc b/tensorflow/lite/micro/kernels/xtensa/pad.cc
-index 86d0ab3a..afa07395 100644
+index 86d0ab3a..415aeb6b 100644
 --- a/tensorflow/lite/micro/kernels/xtensa/pad.cc
 +++ b/tensorflow/lite/micro/kernels/xtensa/pad.cc
 @@ -26,7 +26,7 @@ limitations under the License.
@@ -35092,6 +35458,15 @@ index 86d0ab3a..afa07395 100644
  
  namespace {
  
+@@ -91,7 +91,7 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
+   // On Micro, outputs must be properly sized by the converter.
+   // NOTE: This data is only available because the paddings buffer is stored in
+   // the flatbuffer:
+-  TF_LITE_ENSURE(context, IsConstantTensor(paddings));
++  TF_LITE_ENSURE(context, context.IsConstantTensor(context, paddings));
+   const int32_t* paddings_data = GetTensorData<int32_t>(paddings);
+   for (int i = 0; i < output->dims->size; i++) {
+     int output_dim = output->dims->data[i];
 @@ -159,31 +159,31 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
  #endif
  
@@ -43263,8 +43638,21 @@ index b6005854..d0ca67b0 100644
 -}  // namespace tflite
 +}  // namespace tflite_micro
  #endif  // TENSORFLOW_LITE_PORTABLE_TYPE_TO_TFLITETYPE_H_
+diff --git a/tensorflow/lite/schema/schema.fbs b/tensorflow/lite/schema/schema.fbs
+index 993c069e..e9f99a94 100644
+--- a/tensorflow/lite/schema/schema.fbs
++++ b/tensorflow/lite/schema/schema.fbs
+@@ -812,7 +812,7 @@ table Conv2DOptions {
+   dilation_h_factor:int = 1;
+   // Parameters for Conv2D version 8 or above.
+   // When set, quantized_bias_type defines the dtype for both bias and accumulator.
+-  quantized_bias_type: TensorType;
++  quantized_bias_type: TensorType = INT32;
+ }
+ 
+ // Options for both Conv3D and Conv3DTranspose.
 diff --git a/tensorflow/lite/schema/schema_generated.h b/tensorflow/lite/schema/schema_generated.h
-index e8adbfd8..40f6c14c 100755
+index e8adbfd8..2446f9e0 100755
 --- a/tensorflow/lite/schema/schema_generated.h
 +++ b/tensorflow/lite/schema/schema_generated.h
 @@ -13,7 +13,7 @@ static_assert(FLATBUFFERS_VERSION_MAJOR == 2 &&
@@ -47363,7 +47751,7 @@ index e8adbfd8..40f6c14c 100755
    int32_t dilation_w_factor = 1;
    int32_t dilation_h_factor = 1;
 -  tflite::TensorType quantized_bias_type = tflite::TensorType_FLOAT32;
-+  tflite_micro::TensorType quantized_bias_type = tflite_micro::TensorType_FLOAT32;
++  tflite_micro::TensorType quantized_bias_type = tflite_micro::TensorType_INT32;
  };
  
  struct Conv2DOptions FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {

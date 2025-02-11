@@ -24,8 +24,7 @@ void interleaved_memcpy(int8_t *dst, int8_t *src1, int8_t* src2, int channels_by
 }
 
 // This is the struct that contains the data required by the operator
-struct Beta_ConcatF32OpData
-    : XCoreOpData { // Inherits the operator name field from XCoreOpData
+struct Beta_ConcatF32OpData {
   int tc;
   int s[XCORE_MAX_NUM_THREADS];
   int e[XCORE_MAX_NUM_THREADS];
@@ -49,7 +48,6 @@ void beta_concatf32_thread_worker(void *shared, void *samples_start, void *sampl
 
 void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   auto op_data = construct_persistent_object<Beta_ConcatF32OpData>(context);
-  op_data->name = "XC_beta_concatf32";
   return op_data;
 }
 

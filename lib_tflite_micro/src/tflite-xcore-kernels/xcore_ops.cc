@@ -52,6 +52,8 @@ void RegisterXCOps(MicroOpResolver *res) {
   resolver->AddCustom(XC_meani16_OpCode, Register_XC_meani16());
   resolver->AddCustom(XC_expand_8_to_16_OpCode, Register_XC_expand_8_to_16());
   resolver->AddCustom(XC_no_op_OpCode, Register_XC_no_op());
+  resolver->AddCustom(XC_store_tensor_OpCode, Register_XC_store_tensor());
+  resolver->AddCustom(XC_load_tensor_OpCode, Register_XC_load_tensor());
 }
 
 } // namespace xcore

@@ -58,8 +58,7 @@ struct MaxPool2DThreadInfo {
 // That means it must contain:
 // - T sets of work, i.e. a list of jobs for each thread.
 // - T scratch allocations, i.e. an amount of scratch memory for each thread.
-struct MaxPool2DOpData
-    : XCoreOpData { // Inherits the operator name field from XCoreOpData
+struct MaxPool2DOpData {
   size_t thread_count;
   size_t scratch_size;
   MaxPool2DThreadInfo *threads;
@@ -73,7 +72,6 @@ struct MaxPool2DOpData
 void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   TFLITE_DCHECK(buffer != nullptr);
   auto op_data = construct_persistent_object<MaxPool2DOpData>(context);
-  op_data->name = "XC_MaxPool2D";
   auto parser = CustomOptionParser(buffer, length);
 
   const uint8_t *memcpy_fn_data =

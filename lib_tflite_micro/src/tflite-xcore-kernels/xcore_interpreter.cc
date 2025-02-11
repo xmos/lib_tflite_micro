@@ -54,14 +54,14 @@ const char *XCoreInterpreter::node_name(int sub_idx, int i) {
   TfLiteIntArray *arg = NULL;
   ctx.GetExecutionPlan(&ctx, &arg);
   MicroInterpreterGraph *graph = (MicroInterpreterGraph *)arg;
-  void *user_data =
-      graph->GetAllocations()[sub_idx].node_and_registrations[i].node.user_data;
+  // void *user_data =
+  //     graph->GetAllocations()[sub_idx].node_and_registrations[i].node.user_data;
 
-  if (user_data != NULL) {
-    struct tflite_micro::ops::micro::XCoreOpData *x =
-        (struct tflite_micro::ops::micro::XCoreOpData *)user_data;
-    return x->name;
-  }
+  // if (user_data != NULL) {
+  //   struct tflite_micro::ops::micro::XCoreOpData *x =
+  //       (struct tflite_micro::ops::micro::XCoreOpData *)user_data;
+  //   return x->name;
+  // }
   return NULL;
 }
 

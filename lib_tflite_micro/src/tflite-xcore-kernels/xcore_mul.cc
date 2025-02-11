@@ -13,14 +13,12 @@ namespace xcore {
 namespace mul {
 
 // This is the struct that contains the data required by the operator
-struct MulOpData
-    : XCoreOpData { // Inherits the operator name field from XCoreOpData
+struct MulOpData {
   nn_mul_params_t *mp_params;
 };
 
 void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   auto op_data = construct_persistent_object<MulOpData>(context);
-  op_data->name = "XC_mul";
 
   auto parser = CustomOptionParser(buffer, length);
   op_data->mp_params = (nn_mul_params_t *)parser.parseNamedCustomOption("mp").AsBlob().data();

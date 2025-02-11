@@ -16,7 +16,7 @@ set(TOP_DIR
     "${CMAKE_CURRENT_SOURCE_DIR}")
 include(${TOP_DIR}/cmakefiles/xtflm.cmake)
 
-add_library(${LIB_NAME})
+add_library(${LIB_NAME} STATIC)
 
 set(header_list "")
 foreach(DIR ${ALL_INCLUDES})
@@ -67,6 +67,14 @@ if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL XCORE_XS3A)
     else()
         list(APPEND BUILD_FLAGS "-O3")
     endif()
+elseif(${CMAKE_SYSTEM_PROCESSOR} STREQUAL XCORE_XS)
+    set(BUILD_FLAGS
+        "-g"
+        "-O0"
+    )
+    SET(CMAKE_OSX_DEPLOYMENT_TARGET 12.0)
+
+    list(APPEND DEFINITIONS "NN_USE_REF" "FLATBUFFERS_LOCALE_INDEPENDENT=0")
 else()
     set(BUILD_FLAGS
         "-g"

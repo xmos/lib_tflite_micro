@@ -12,6 +12,7 @@ struct xc_context_config_t {
   int model_thread_count;
   thread_info_t thread_info;
   void *UNSAFE weights_data_ptr; // DDR ptr or channel to flash/tile server.
+  void *UNSAFE paging_ptr; // DDR ptr for paging in/out tensor arena.
 };
 
 #endif // XCORE_CONFIG_H_

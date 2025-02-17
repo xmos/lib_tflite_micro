@@ -386,11 +386,8 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   if (partial_output_tensor) {
     int8_t *partial_output =
         (int8_t *)tflite_micro::micro::GetTensorData<int8_t>(partial_output_tensor);
-    size_t sizeof_tensor_type;
-    TfLiteTypeSizeOf(partial_output_tensor->type, &sizeof_tensor_type);
-    int size = tflite_micro::micro::GetTensorShape(partial_output_tensor).FlatSize();
-    memcpy((int8_t *)output, (int8_t *)partial_output,
-           size * sizeof_tensor_type);
+    int size = EvalTensorBytes(partial_output_tensor);
+    memcpy((int8_t *)output, (int8_t *)partial_output, size);
   }
 
   const TfLiteEvalTensor *scratch_buffer_tensor =

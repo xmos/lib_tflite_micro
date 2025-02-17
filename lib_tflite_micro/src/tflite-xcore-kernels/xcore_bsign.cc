@@ -84,7 +84,7 @@ TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
   TfLiteTensor *input = micro_context->AllocateTempInputTensor(node, 0);
   TF_LITE_ENSURE(context, input != nullptr);
 
-  const int32_t input_size = input->bytes / sizeof(int8_t);
+  const int32_t input_size = EvalTensorBytes((const TfLiteEvalTensor*)input) / sizeof(int8_t);
   bsign_8_prepare(op_data->jobs.begin(), op_data->args.zero_point_vec,
                   input_size, input->params.zero_point, op_data->jobs.size());
 

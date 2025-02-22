@@ -155,10 +155,6 @@ bool tflmc::Compiler::init(const void *modelData) {
   quantMap_.resize(subgraphs->size());
 
   mainGraph_ = (*subgraphs)[0];
-  if (mainGraph_->inputs()->size() == 0 || mainGraph_->outputs()->size() == 0) {
-    std::cerr << "No inputs or no outputs found in model\n";
-    return false;
-  }
   for (int g = 0; g < subgraphs->size(); g++) {
     auto sg = (*subgraphs)[g];
     for (auto inIndex : *sg->inputs()) {

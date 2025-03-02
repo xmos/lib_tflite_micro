@@ -11,7 +11,7 @@ init:
 	pip3 install -r requirements.txt
 
 test:
-	(. .venv/bin/activate && cd host_cmd_line_interpreter && make test)
+	(cd host_cmd_line_interpreter && make test)
 	@echo ""
 	@echo "All tests PASS"
 	@echo ""

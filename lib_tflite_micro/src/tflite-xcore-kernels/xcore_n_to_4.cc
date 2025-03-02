@@ -11,10 +11,10 @@ namespace tflite_micro {
 namespace ops {
 namespace micro {
 namespace xcore {
-namespace pad_3_to_4 {
+namespace pad_n_to_4 {
 
 struct OpData {
-  uint32_t n_3;
+  uint32_t n;
   uint32_t pad_val;
 };
 
@@ -34,11 +34,11 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
   TFLITE_DCHECK(shape.DimensionsCount() == 4 && shape.DimsData()[0] == 1);
   int number_of_pixels = shape.DimsData()[1] * shape.DimsData()[2];
   OpData* op_data = static_cast<OpData*>(node->user_data);
-  op_data->n_3 = number_of_pixels;
+  op_data->n = number_of_pixels;
   return kTfLiteOk;
 }
 
-TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
+TfLiteStatus Eval3To4(TfLiteContext* context, TfLiteNode* node) {
   TFLITE_DCHECK(node->user_data != nullptr);
   const OpData* data = static_cast<const OpData*>(node->user_data);
 
@@ -53,9 +53,33 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
   int8_t *input_p =
       const_cast<int8_t *>(tflite_micro::micro::GetTensorData<int8_t>(input));
 
+  // The function takes the number of pixels as data->n
   pad_3_to_4_run(output_p,
           input_p,
-          data->n_3, data->pad_val);
+          data->n, data->pad_val);
+
+  return kTfLiteOk;
+}
+
+TfLiteStatus Eval1To4(TfLiteContext* context, TfLiteNode* node) {
+  TFLITE_DCHECK(node->user_data != nullptr);
+  const OpData* data = static_cast<const OpData*>(node->user_data);
+
+  const TfLiteEvalTensor* input =
+      tflite_micro::micro::GetEvalInput(context, node, /*index=*/0);
+
+  TfLiteEvalTensor* output =
+      tflite_micro::micro::GetEvalOutput(context, node, /*index=*/0);
+
+  int8_t *output_p =
+      const_cast<int8_t *>(tflite_micro::micro::GetTensorData<int8_t>(output));
+  int8_t *input_p =
+      const_cast<int8_t *>(tflite_micro::micro::GetTensorData<int8_t>(input));
+
+  // The function takes the number of 4 byte chunks, hence data->n/4
+  pad_1_to_4_run(output_p,
+          input_p,
+          data->n/4, data->pad_val);
 
   return kTfLiteOk;
 }
@@ -63,7 +87,12 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
 }  // namespace pad
 
 TFLMRegistration *Register_XC_pad_3_to_4() {
-  static TFLMRegistration r = {pad_3_to_4::Init, nullptr, pad_3_to_4::Prepare, pad_3_to_4::Eval};
+  static TFLMRegistration r = {pad_n_to_4::Init, nullptr, pad_n_to_4::Prepare, pad_n_to_4::Eval3To4};
+  return &r;
+}
+
+TFLMRegistration *Register_XC_pad_1_to_4() {
+  static TFLMRegistration r = {pad_n_to_4::Init, nullptr, pad_n_to_4::Prepare, pad_n_to_4::Eval1To4};
   return &r;
 }
 

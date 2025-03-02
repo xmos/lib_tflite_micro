@@ -76,10 +76,11 @@ TfLiteStatus Eval1To4(TfLiteContext* context, TfLiteNode* node) {
   int8_t *input_p =
       const_cast<int8_t *>(tflite_micro::micro::GetTensorData<int8_t>(input));
 
-  // The function takes the number of 4 byte chunks, hence data->n/4
+  // The function takes the number of 4 byte chunks, hence aligned number of pixels/4
+  int n = (data->n + 3) / 4;
   pad_1_to_4_run(output_p,
           input_p,
-          data->n/4, data->pad_val);
+          n, data->pad_val);
 
   return kTfLiteOk;
 }

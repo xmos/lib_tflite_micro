@@ -276,6 +276,8 @@ bool tflmc::Compiler::init(const void *modelData) {
           has_xc_conv_ops = true;
         } else if (regInfo.custom_name == "XC_ld_weights_async") {
           has_xc_async_ops = true;
+        } else if (regInfo.custom_name == "XC_load_tensor" || regInfo.custom_name == "XC_store_tensor") {
+          has_xc_paging_ops = true;
         }
         has_custom_ops = true;
       }
@@ -1422,7 +1424,7 @@ void )"
 void tflmc::Compiler::writeHeader(std::ostream &out) {
   tflmc::CodeWriter wr(out, mainGraph_);
 
-  std::string code = R"(
+  std::string code1 = R"(
 #ifndef %PREFIX%GEN_H
 #define %PREFIX%GEN_H
 
@@ -1438,11 +1440,18 @@ void tflmc::Compiler::writeHeader(std::ostream &out) {
                      std::to_string(arenaBufferSize_) + R"(
   #endif
 #endif
+)";
 
+std::string code2 = R"(
 // Sets up the model with init and prepare steps.
-TfLiteStatus %PREFIX%init(void *weights_data_ptr);
+TfLiteStatus %PREFIX%init(void *weights_data_ptr);)";
+if(has_xc_paging_ops){
+  code2 = R"(
 // Sets up model init with paging.
-TfLiteStatus %PREFIX%init_with_paging(void *weights_data_ptr, void *paging_ptr);
+TfLiteStatus %PREFIX%init_with_paging(void *weights_data_ptr, void *paging_ptr);)";
+}
+
+std::string code3 = R"(
 // Returns the input tensor with the given index.
 TfLiteTensor *%PREFIX%input(int index);
 // Returns the output tensor with the given index.
@@ -1512,9 +1521,13 @@ TfLiteStatus model_ioserver(unsigned io_channel);
 )";
 
   static std::regex rePrefix("%PREFIX%");
-  code = std::regex_replace(code, rePrefix, prefix_);
+  code1 = std::regex_replace(code1, rePrefix, prefix_);
+  code2 = std::regex_replace(code2, rePrefix, prefix_);
+  code3 = std::regex_replace(code3, rePrefix, prefix_);
 
-  wr << code;
+  wr << code1;
+  wr << code2;
+  wr << code3;
 }
 
 std::string tflmc::Compiler::getTensorName(int tensorIndex, int sg) const {

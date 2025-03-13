@@ -30,8 +30,7 @@ void expand_8_to_16_thread_worker(void *shared, void *start, void *count) {
 }
 
 // This is the struct that contains the data required by the operator
-struct Expand_8_To_16OpData
-    : XCoreOpData { // Inherits the operator name field from XCoreOpData
+struct Expand_8_To_16OpData {
   int tc;
   int start[XCORE_MAX_NUM_THREADS];
   int count[XCORE_MAX_NUM_THREADS];
@@ -39,7 +38,6 @@ struct Expand_8_To_16OpData
 
 void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   auto op_data = construct_persistent_object<Expand_8_To_16OpData>(context);
-  op_data->name = "XC_expand_8_to_16";
   return op_data;
 }
 

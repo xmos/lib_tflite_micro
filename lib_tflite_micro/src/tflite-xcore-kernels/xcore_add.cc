@@ -13,14 +13,12 @@ namespace xcore {
 namespace add {
 
 // This is the struct that contains the data required by the operator
-struct AddOpData
-    : XCoreOpData { // Inherits the operator name field from XCoreOpData
+struct AddOpData {
   nn_add_params_t params;
 };
 
 void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   auto op_data = construct_persistent_object<AddOpData>(context);
-  op_data->name = "XC_Add";
 
   auto parser = CustomOptionParser(buffer, length);
   int m1 = parser.parseNamedCustomOption("m1").AsInt32();

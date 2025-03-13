@@ -42,8 +42,7 @@ void non_linear_activation(float *out, float *in, int type, int start, int end) 
 }
 
 // This is the struct that contains the data required by the operator
-struct Beta_ActivationF32OpData
-    : XCoreOpData { // Inherits the operator name field from XCoreOpData
+struct Beta_ActivationF32OpData {
   int tc;
   int s[XCORE_MAX_NUM_THREADS];
   int e[XCORE_MAX_NUM_THREADS];
@@ -67,7 +66,6 @@ void beta_activationf32_thread_worker(void *shared, void *d_start, void *d_end) 
 
 void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   auto op_data = construct_persistent_object<Beta_ActivationF32OpData>(context);
-  op_data->name = "XC_beta_activationf32";
 
   auto parser = CustomOptionParser(buffer, length);
   op_data->type = parser.parseNamedCustomOption("type").AsInt32();

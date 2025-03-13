@@ -33,8 +33,7 @@ void softmax_thread_worker(void *shared, void *start, void *count) {
 }
 
 // This is the struct that contains the data required by the operator
-struct SoftmaxBatchedOpData
-    : XCoreOpData { // Inherits the operator name field from XCoreOpData
+struct SoftmaxBatchedOpData {
   int tc;
   int softmax_size;
   int starts[XCORE_MAX_NUM_THREADS];
@@ -43,7 +42,6 @@ struct SoftmaxBatchedOpData
 
 void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   auto op_data = construct_persistent_object<SoftmaxBatchedOpData>(context);
-  op_data->name = "XC_softmax_batched";
   return op_data;
 }
 

@@ -37,8 +37,7 @@ void binaryi16_thread_worker(void *shared, void *start, void *end) {
 }
 
 // This is the struct that contains the data required by the operator
-struct BinaryI16OpData
-    : XCoreOpData { // Inherits the operator name field from XCoreOpData
+struct BinaryI16OpData {
   int tc;
   int s[XCORE_MAX_NUM_THREADS];
   int e[XCORE_MAX_NUM_THREADS];
@@ -47,7 +46,6 @@ struct BinaryI16OpData
 
 void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   auto op_data = construct_persistent_object<BinaryI16OpData>(context);
-  op_data->name = "XC_binaryi16";
 
   auto parser = CustomOptionParser(buffer, length);
   op_data->opType = parser.parseNamedCustomOption("type").AsInt32();

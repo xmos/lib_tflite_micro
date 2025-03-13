@@ -11,19 +11,19 @@
 #if !defined(XTFLM_DISABLED)
 
 tflite_micro::MicroMutableOpResolver<XTFLM_OPERATORS> *
-inference_engine_initialize(inference_engine *ie, uint32_t memory_primary[],
-                            uint32_t n_primary, uint32_t memory_secondary[],
-                            uint32_t n_secondary,
+inference_engine_initialize(inference_engine *ie, uint32_t tensor_arena[],
+                            uint32_t tensor_arena_size, uint32_t external_memory[],
+                            uint32_t external_memory_size,
                             struct tflite_micro_objects *xtflmo) {
   // First initialise the structure with the three memory objects
   // internal memory, external memory, and XTFLM objects.
   memset(ie, 0, sizeof(*ie));
   xtflmo->interpreter = nullptr;
   ie->xtflm = xtflmo;
-  ie->memory_primary = memory_primary;
-  ie->memory_secondary = memory_secondary;
-  ie->memory_primary_bytes = n_primary;
-  ie->memory_secondary_bytes = n_secondary;
+  ie->tensor_arena = tensor_arena;
+  ie->external_memory = external_memory;
+  ie->tensor_arena_size = tensor_arena_size;
+  ie->external_memory_size = external_memory_size;
   ie->xtflm->error_reporter.Init((char *)ie->debug_log_buffer,
                                  MAX_DEBUG_LOG_LENGTH);
   // Now add all the operators that we need
@@ -117,16 +117,12 @@ int inference_engine_load_model(inference_engine *ie, uint32_t model_bytes,
   }
 
   // Now work out where the tensor arena goes
-  uint8_t *kTensorArena = (uint8_t *)ie->memory_primary;
-  int kTensorArenaSize = ie->memory_primary_bytes;
+  uint8_t *kTensorArena = (uint8_t *)ie->tensor_arena;
+  int kTensorArenaSize = ie->tensor_arena_size;
 
-  bool isModelInPrimaryMemory = false;
-  if (model_data != ie->memory_secondary) {
-    uint32_t model_ints = (model_bytes + 3) & ~0x03; // Align 4
-    kTensorArena += model_ints;
-    kTensorArenaSize -= model_ints;
-    isModelInPrimaryMemory = true;
-  }
+  uint32_t model_ints = (model_bytes + 3) & ~0x03; // Align 4
+  kTensorArena += model_ints;
+  kTensorArenaSize -= model_ints;
 
   int stackWordsPerThread = 256; // TODO: calculate
   int bytesForStack = ie->num_threads * stackWordsPerThread * 4 + 4;
@@ -145,6 +141,7 @@ int inference_engine_load_model(inference_engine *ie, uint32_t model_bytes,
       (uint8_t *)ie->xtflm->interpreter_buffer, ie->xtflm->model,
       ie->xtflm->resolver, kTensorArena, kTensorArenaSize, true, &ie->xtflm->xcore_profiler);
   ie->xc_config.model_thread_count = ie->num_threads;
+  ie->xc_config.paging_ptr = ie->external_memory;
   ie->xc_config.weights_data_ptr = weights_data_ptr;
   ie->xc_config.thread_info.nstackwords = stackWordsPerThread;
   ie->xc_config.thread_info.stacks = (void *)sp;
@@ -203,9 +200,7 @@ int inference_engine_load_model(inference_engine *ie, uint32_t model_bytes,
       ie->xtflm->interpreter->arena_used_bytes() + bytesForStack;
   ie->arena_needed_bytes +=
       16; // buffers are aligned to 16 bytes so we add this to be safe
-  if (isModelInPrimaryMemory) {
-    ie->arena_needed_bytes += model_bytes;
-  }
+  ie->arena_needed_bytes += model_bytes;
 
   return 0;
 }

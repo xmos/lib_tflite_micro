@@ -16,8 +16,7 @@ namespace xcore {
 namespace beta_convf32 {
 
 // This is the struct that contains the data required by the operator
-struct Beta_ConvF32OpData
-    : XCoreOpData { // Inherits the operator name field from XCoreOpData
+struct Beta_ConvF32OpData {
   int tc;
   int s[XCORE_MAX_NUM_THREADS];
   int e[XCORE_MAX_NUM_THREADS];
@@ -51,7 +50,6 @@ void beta_convf32_thread_worker(void *shared, void *d_start, void *d_end) {
 
 void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   auto op_data = construct_persistent_object<Beta_ConvF32OpData>(context);
-  op_data->name = "XC_beta_convf32";
 
   return op_data;
 }

@@ -8,15 +8,11 @@
 #include "tensorflow/lite/c/common.h"
 #include "tensorflow/lite/micro/kernels/kernel_util.h"
 #include "tensorflow/lite/micro/memory_helpers.h"
+#include "tensorflow/lite/micro/micro_utils.h"
 
 namespace tflite_micro {
 namespace ops {
 namespace micro {
-
-struct XCoreOpData {
-  const char *name;
-};
-
 namespace xcore {
 /* Unpack an integer data type from a byte array
  *  T  data type to unpack
@@ -58,7 +54,7 @@ static inline TfLiteStatus request_scratch_if_needed(TfLiteContext *context,
 static inline TfLiteStatus request_scratch_if_needed(TfLiteContext *context,
                                                      const TfLiteTensor *tensor,
                                                      int &scratch_idx) {
-  return request_scratch_if_needed(context, tensor->data.data, tensor->bytes,
+  return request_scratch_if_needed(context, tensor->data.data, tflite_micro::EvalTensorBytes((const TfLiteEvalTensor*)tensor),
                                    scratch_idx);
 }
 

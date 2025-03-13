@@ -60,10 +60,9 @@ struct tflite_micro_objects;
  */
 typedef struct inference_engine {
   uint32_t *UNSAFE
-      memory_primary; ///< Pointer to space for tensor arena and optional model
+      tensor_arena; ///< Pointer to space for tensor arena
   uint32_t *UNSAFE
-      memory_secondary; ///< Pointer to secondary space. If null,
-                        // use the primary for model and tensor arena
+      external_memory; ///< Pointer to external memory
   uint32_t
       outputs; ///< Number of output tensors, initialised on loading a model.
   uint32_t inputs; ///< Number of input tensors, initialised on loading a model.
@@ -78,9 +77,9 @@ typedef struct inference_engine {
   uint32_t output_size; ///< Total size of all outputs - TODO: obsolete?
   uint32_t input_size;  ///< Total size of all inputs - TODO: obsolete?
   uint32_t
-      memory_primary_bytes; ///< Number of bytes available in primary memory
+      tensor_arena_size; ///< Number of bytes availabe to be used for tensor_arena
   uint32_t
-      memory_secondary_bytes; ///< Number of bytes available in secondary memory
+      external_memory_size; ///< Number of bytes available in external memory
   uint32_t
       output_times_size; ///< Number of bytes available to store profiling data
   uint32_t operators_size;       ///< ???

@@ -15,8 +15,7 @@ namespace micro {
 namespace xcore {
 namespace pad {
 
-struct PadOpData
-    : XCoreOpData { // Inherits the operator name field from XCoreOpData
+struct PadOpData {
   int32_t start;
   int32_t pad_size;
   int32_t size;
@@ -32,7 +31,6 @@ void memmove_wrapper(void *dst, const void *src, unsigned size) {
 
 void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   auto op_data = construct_persistent_object<PadOpData>(context);
-  op_data->name = "XC_Pad";
   auto parser = CustomOptionParser(buffer, length);
   op_data->start = parser.parseNamedCustomOption("s").AsInt32();
   op_data->pad_size = parser.parseNamedCustomOption("p").AsInt32();

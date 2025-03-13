@@ -13,13 +13,14 @@
 uint32_t model_content[MAX_MODEL_CONTENT_SIZE / sizeof(uint32_t)];
 uint32_t params_content[MAX_MODEL_CONTENT_SIZE / sizeof(uint32_t)];
 uint32_t arena[MAX_ARENA_SIZE / sizeof(uint32_t)];
+uint32_t external_memory[MAX_ARENA_SIZE / sizeof(uint32_t)];
 
 struct tflite_micro_objects s0;
 
 void inference_engine_initialize(inference_engine_t *ie) {
   s0.interpreter = nullptr;
   auto *resolver =
-      inference_engine_initialize(ie, arena, MAX_ARENA_SIZE, nullptr, 0, &s0);
+      inference_engine_initialize(ie, arena, MAX_ARENA_SIZE, external_memory, MAX_ARENA_SIZE, &s0);
   resolver->AddDequantize();
   resolver->AddSoftmax();
   resolver->AddMean();

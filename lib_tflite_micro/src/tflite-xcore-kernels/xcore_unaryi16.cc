@@ -47,8 +47,7 @@ enum OpType {
 };
 
 // This is the struct that contains the data required by the operator
-struct UnaryI16OpData
-    : XCoreOpData { // Inherits the operator name field from XCoreOpData
+struct UnaryI16OpData {
   int tc;
   int s[XCORE_MAX_NUM_THREADS];
   int e[XCORE_MAX_NUM_THREADS];
@@ -57,7 +56,6 @@ struct UnaryI16OpData
 
 void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   auto op_data = construct_persistent_object<UnaryI16OpData>(context);
-  op_data->name = "XC_unaryi16";
 
   auto parser = CustomOptionParser(buffer, length);
   op_data->opType = parser.parseNamedCustomOption("type").AsInt32();

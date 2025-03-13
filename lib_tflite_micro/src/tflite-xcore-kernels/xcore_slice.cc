@@ -13,8 +13,7 @@ namespace micro {
 namespace xcore {
 namespace slice {
 
-struct SliceOpData
-    : XCoreOpData { // Inherits the operator name field from XCoreOpData
+struct SliceOpData {
   int32_t start;
   int32_t offset;
   int32_t size;
@@ -28,7 +27,6 @@ void memmove_wrapper(void *dst, const void *src, unsigned size) {
 
 void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   auto op_data = construct_persistent_object<SliceOpData>(context);
-  op_data->name = "XC_Slice";
   auto parser = CustomOptionParser(buffer, length);
   op_data->start = parser.parseNamedCustomOption("s").AsInt32();
   op_data->offset = parser.parseNamedCustomOption("o").AsInt32();

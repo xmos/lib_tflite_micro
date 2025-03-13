@@ -127,6 +127,7 @@ class Compiler {
   bool has_custom_ops = false;
   bool has_xc_conv_ops = false;
   bool has_xc_async_ops = false;
+  bool has_xc_paging_ops = false;
   bool has_tflite_custom_ops = false;
   bool has_quantization = false;
 };

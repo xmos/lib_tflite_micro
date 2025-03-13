@@ -44,15 +44,13 @@ void exp_div_thread_worker(void *shared, void *idx, void *useless) {
 }
 
 // This is the struct that contains the data required by the operator
-struct SoftmaxOpData
-    : XCoreOpData { // Inherits the operator name field from XCoreOpData
+struct SoftmaxOpData {
   int tc;
   SoftmaxIdx idx[XCORE_MAX_NUM_THREADS];
 };
 
 void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   auto op_data = construct_persistent_object<SoftmaxOpData>(context);
-  op_data->name = "XC_softmax";
   return op_data;
 }
 

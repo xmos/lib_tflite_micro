@@ -16,8 +16,7 @@ namespace xcore {
 namespace beta_fcf32 {
 
 // This is the struct that contains the data required by the operator
-struct Beta_FcF32OpData
-    : XCoreOpData { // Inherits the operator name field from XCoreOpData
+struct Beta_FcF32OpData {
   int tc;
   int s[XCORE_MAX_NUM_THREADS];
   int e[XCORE_MAX_NUM_THREADS];
@@ -48,7 +47,6 @@ void beta_fcf32_thread_worker(void *shared, void *start, void *end) {
 
 void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   auto op_data = construct_persistent_object<Beta_FcF32OpData>(context);
-  op_data->name = "XC_beta_fcf32";
 
   return op_data;
 }

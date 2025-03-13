@@ -86,8 +86,7 @@ struct Conv2DThreadInfo {
 // That means it must contain:
 // - T sets of work, i.e. a list of jobs for each thread.
 // - T scratch allocations, i.e. an amount of scratch memory for each thread.
-struct Conv2DOpData
-    : XCoreOpData { // Inherits the operator name field from XCoreOpData
+struct Conv2DOpData {
   size_t thread_count;
   size_t scratch_size;
 #ifdef TFLMC_CONV2D_PROFILE
@@ -270,7 +269,6 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
           op_data, context, memcpy_fn_data, agg_fn_data,
           ot_fn_data, ak_params_vec);
     }
-    op_data->name = "XC_Conv2DValidDir";
   } break;
   case Conv2DValidIndirect_t: {
     if (ot_type == Channelwise) {
@@ -285,7 +283,6 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
           op_data, context, memcpy_fn_data, agg_fn_data,
           ot_fn_data, ak_params_vec);
     }
-    op_data->name = "XC_Conv2DValidInd";
   } break;
   case Conv2DPaddedIndirect_t: {
     if (ot_type == Channelwise) {
@@ -300,7 +297,6 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
           op_data, context, memcpy_fn_data, agg_fn_data,
           ot_fn_data, ak_params_vec);
     }
-    op_data->name = "XC_Conv2DPadInd";
   } break;
   case DepthwiseConv2DValidDirect_t: {
     if (ot_type == Channelwise) {
@@ -316,7 +312,6 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
                                                  memcpy_fn_data, agg_fn_data,
                                                  ot_fn_data, ak_params_vec);
     }
-    op_data->name = "XC_DWConv2DValidInd";
   } break;
   case DepthwiseConv2DPaddedIndirect_t: {
     if (ot_type == Channelwise) {
@@ -332,14 +327,12 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
                                                  memcpy_fn_data, agg_fn_data,
                                                  ot_fn_data, ak_params_vec);
     }
-    op_data->name = "XC_DWConv2DPadInd";
   } break;
   case BNNConv2DValidDirectBinary_t: {
     ConstructFilter2Ds<nn::memcpyfn_deref_params_t, nn::mat_mul_direct_params_t,
                        std::nullptr_t, /*binaryOutput=*/true>(
         op_data, context, memcpy_fn_data, agg_fn_data, ot_fn_data,
         ak_params_vec);
-    op_data->name = "XC_BNNValidDirBin";
   } break;
   case BNNConv2DValidIndirectBinary_t: {
     ConstructFilter2Ds<nn::memcpyfn_imtocol_valid_params_t,
@@ -347,14 +340,12 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
                        /*binaryOutput=*/true>(op_data, context,
                                               memcpy_fn_data, agg_fn_data,
                                               ot_fn_data, ak_params_vec);
-    op_data->name = "XC_BNNValidIndBin";
   } break;
   case BNNConv2DValidDirectInt8_t: {
     ConstructFilter2Ds<nn::memcpyfn_deref_params_t, nn::mat_mul_direct_params_t,
                        nn::otfn_int8_clamped_params_t, /*binaryOutput=*/true>(
         op_data, context, memcpy_fn_data, agg_fn_data, ot_fn_data,
         ak_params_vec);
-    op_data->name = "XC_BNNValidDirInt8";
   } break;
   case BNNConv2DValidIndirectInt8_t: {
     ConstructFilter2Ds<nn::memcpyfn_imtocol_valid_params_t,
@@ -362,14 +353,12 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
                        nn::otfn_int8_clamped_params_t, /*binaryOutput=*/true>(
         op_data, context, memcpy_fn_data, agg_fn_data, ot_fn_data,
         ak_params_vec);
-    op_data->name = "XC_BNNValidIndInt8";
   } break;
   case Conv2DValidDirectI16_t: {
     ConstructFilter2Ds<nn::memcpyfn_deref_params_t, nn::mat_mul_direct_params_t,
                        otfn_int16_params_t>(
         op_data, context, memcpy_fn_data, agg_fn_data, ot_fn_data,
         ak_params_vec, /*isI16Conv=*/true);
-    op_data->name = "XC_Conv2DValidDirI16";
   } break;
   }
   return op_data;
@@ -397,11 +386,8 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   if (partial_output_tensor) {
     int8_t *partial_output =
         (int8_t *)tflite_micro::micro::GetTensorData<int8_t>(partial_output_tensor);
-    size_t sizeof_tensor_type;
-    TfLiteTypeSizeOf(partial_output_tensor->type, &sizeof_tensor_type);
-    int size = tflite_micro::micro::GetTensorShape(partial_output_tensor).FlatSize();
-    memcpy((int8_t *)output, (int8_t *)partial_output,
-           size * sizeof_tensor_type);
+    int size = EvalTensorBytes(partial_output_tensor);
+    memcpy((int8_t *)output, (int8_t *)partial_output, size);
   }
 
   const TfLiteEvalTensor *scratch_buffer_tensor =

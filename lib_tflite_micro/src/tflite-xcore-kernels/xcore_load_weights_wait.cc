@@ -34,8 +34,7 @@ constexpr int kMaxOutputNum = 10; // Maximum number of output tensors
 
 // This is the struct that contains the data required to fully describe the work
 // that the operator will perform.
-struct FlashOpData
-    : XCoreOpData { // Inherits the operator name field from XCoreOpData
+struct FlashOpData {
   uint32_t addr;
   uint32_t sizes[kMaxOutputNum];
   uint32_t op_type;
@@ -56,13 +55,6 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
 
   op_data->op_type = parser.parseNamedCustomOption("t").AsInt32();
 
-  if (op_data->op_type == OpType::Async) {
-    op_data->name = "XC_Load_Weights_Async";
-  } else if (op_data->op_type == OpType::DDR) {
-    op_data->name = "XC_Load_Weights_DDR";
-  } else {
-    op_data->name = "XC_Load_Weights_Sync";
-  }
   return op_data;
 }
 

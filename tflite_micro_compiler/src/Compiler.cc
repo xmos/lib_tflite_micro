@@ -155,10 +155,6 @@ bool tflmc::Compiler::init(const void *modelData) {
   quantMap_.resize(subgraphs->size());
 
   mainGraph_ = (*subgraphs)[0];
-  if (mainGraph_->inputs()->size() == 0 || mainGraph_->outputs()->size() == 0) {
-    std::cerr << "No inputs or no outputs found in model\n";
-    return false;
-  }
   for (int g = 0; g < subgraphs->size(); g++) {
     auto sg = (*subgraphs)[g];
     for (auto inIndex : *sg->inputs()) {
@@ -280,6 +276,8 @@ bool tflmc::Compiler::init(const void *modelData) {
           has_xc_conv_ops = true;
         } else if (regInfo.custom_name == "XC_ld_weights_async") {
           has_xc_async_ops = true;
+        } else if (regInfo.custom_name == "XC_load_tensor" || regInfo.custom_name == "XC_store_tensor") {
+          has_xc_paging_ops = true;
         }
         has_custom_ops = true;
       }
@@ -457,6 +455,7 @@ void tflmc::Compiler::writeSource(std::ostream &out) {
 #include "tensorflow/lite/micro/kernels/reduce.h"
 #include "tensorflow/lite/micro/kernels/softmax.h"
 #include "tensorflow/lite/micro/micro_context.h"
+#include "tensorflow/lite/micro/memory_helpers.h"
 
 // #define TFLMC_XCORE_PROFILE
 // #define TFLMC_CONV2D_PROFILE
@@ -710,11 +709,6 @@ TfLiteTensor tflTensors[] =
         wr << "{kTfLiteNoQuantization, nullptr }, {0,0},";
       }
 
-      wr << t->bytes << ", ";
-
-      wr << tflmc::to_string(t->allocation_type) << ", ";
-      wr << t->is_variable << ", ";
-
       wr << "},\n";
     }
   }
@@ -904,6 +898,40 @@ static void *GetScratchBuffer(struct TfLiteContext *context,
   return tensor_arena + scratch_buffer_offsets[buffer_idx];
 }
 
+static bool IsConstantTensor(struct TfLiteContext *context,
+                                       TfLiteTensor* tensor) {
+  bool constant = true;
+  if(tensor->data.data > &tensor_arena && tensor->data.data < &tensor_arena[kTensorArenaSize - 1]){
+    constant = false;
+  }
+  return constant;
+}
+)";
+
+wr << R"(
+static bool IsVariableTensor(struct TfLiteContext *context,
+                                       TfLiteTensor* tensor) {
+  bool found = false;
+  for (int i = 0; i < )"
+    << varTensors_count << R"(; i++) {
+    if(tensor == &tflTensors[varTensors_index[i]]){
+      found = true;
+    }
+  }
+  return found;
+}
+
+static size_t TensorBytes(TfLiteTensor *tensor) {
+  int element_count = 1;
+  for (int i = 0; i < tensor->dims->size; ++i) {
+    element_count *= tensor->dims->data[i];
+  }
+
+  size_t bytes_per_element;
+  tflite_micro::TfLiteTypeSizeOf(tensor->type, &bytes_per_element);
+  return element_count * bytes_per_element;
+}
+
 static TfLiteTensor* mc_AllocateTempInputTensor(const TfLiteNode* node, int index) {
       if (node->inputs->data[index] < 0) {
         return nullptr;
@@ -964,8 +992,8 @@ printf("[\n");
     for (int j = 0; j < tflNodes[i].inputs->size; j++) {
       // -1 such as in case of no bias tensor for conv
       if (tflNodes[i].inputs->data[j] != -1) {
-        printf("tensor %d, input %d, %d bytes, checksum %d\n", tflNodes[i].inputs->data[j], j, tflTensors[tflNodes[i].inputs->data[j]].bytes, checksum(tflTensors[tflNodes[i].inputs->data[j]].data.raw, tflTensors[tflNodes[i].inputs->data[j]].bytes));
-        for (int k = 0; k < tflTensors[tflTensors_subgraph_index[g] + tflNodes[i].inputs->data[j]].bytes; k++) {
+        printf("tensor %d, input %d, %d bytes, checksum %d\n", tflNodes[i].inputs->data[j], j, TensorBytes(&tflTensors[tflNodes[i].inputs->data[j]]), checksum(tflTensors[tflNodes[i].inputs->data[j]].data.raw, TensorBytes(&tflTensors[tflNodes[i].inputs->data[j]])));
+        for (int k = 0; k < TensorBytes(&tflTensors[tflTensors_subgraph_index[g] + tflNodes[i].inputs->data[j]]); k++) {
           printf("%d,", (int8_t)tflTensors[tflTensors_subgraph_index[g] + tflNodes[i].inputs->data[j]].data.raw[k]);
         }
         printf("\n");
@@ -1004,11 +1032,11 @@ printf("[\n");
     // print every output tensor
     printf("{\"node\" : \"%d\", \"op\" : \"%s\", \"data\" : [\n", i, op_strs[used_ops[i]]);
     for (int j = 0; j < tflNodes[i].outputs->size; j++) {
-      printf("{\"tensor\" : %d, \"output\" : %d, \"offset\" : %d, \"bytes\" : %d, \"checksum\" : %d,\n", tflNodes[i].outputs->data[j], j, tflTensors[tflNodes[i].outputs->data[j]].data.uint8 - tensor_arena, tflTensors[tflNodes[i].outputs->data[j]].bytes, checksum(tflTensors[tflNodes[i].outputs->data[j]].data.raw, tflTensors[tflNodes[i].outputs->data[j]].bytes));
+      printf("{\"tensor\" : %d, \"output\" : %d, \"offset\" : %d, \"bytes\" : %d, \"checksum\" : %d,\n", tflNodes[i].outputs->data[j], j, tflTensors[tflNodes[i].outputs->data[j]].data.uint8 - tensor_arena, TensorBytes(&tflTensors[tflNodes[i].outputs->data[j]]), checksum(tflTensors[tflNodes[i].outputs->data[j]].data.raw, TensorBytes(&tflTensors[tflNodes[i].outputs->data[j]])));
       printf("\"val\" : [");
-      for (int k = 0; k < tflTensors[tflTensors_subgraph_index[g] + tflNodes[i].outputs->data[j]].bytes; k++) {
+      for (int k = 0; k < TensorBytes(&tflTensors[tflTensors_subgraph_index[g] + tflNodes[i].outputs->data[j]]); k++) {
         printf("%d", (int8_t)tflTensors[tflTensors_subgraph_index[g] + tflNodes[i].outputs->data[j]].data.raw[k]);
-        if (k < tflTensors[tflTensors_subgraph_index[g] + tflNodes[i].outputs->data[j]].bytes - 1) {
+        if (k < TensorBytes(&tflTensors[tflTensors_subgraph_index[g] + tflNodes[i].outputs->data[j]]) - 1) {
           printf(",");
         }
       }
@@ -1045,8 +1073,18 @@ TfLiteTensor* )"
      << prefix_ << R"(output(int index) {
   return &ctx.tensors[outTensorIndices[index]];
 }
-)";
 
+size_t )"
+     << prefix_ << R"(input_size(int index) {
+  return TensorBytes(model_input(index));
+}
+
+size_t )"
+     << prefix_ << R"(output_size(int index) {
+  return TensorBytes(model_output(index));
+}
+
+)";
 if (has_xc_async_ops) {
 wr << R"(
 #ifdef __xcore__
@@ -1056,10 +1094,11 @@ wr << R"(
 #endif
 )";
 }
+
 wr << R"(
 #pragma stackfunction 1000
 TfLiteStatus )"
-     << prefix_ << R"(init(void *weights_data_ptr) {)";
+     << prefix_ << R"(init_with_paging(void *weights_data_ptr, void *paging_ptr) {)";
   if (has_xc_async_ops) {
   wr << R"(
   #ifdef __xcore__
@@ -1078,6 +1117,8 @@ TfLiteStatus )"
 
   // Set weights data ptr in xcore context config
   xc_config.weights_data_ptr = weights_data_ptr;
+  // Set paging ptr in xcore context config
+  xc_config.paging_ptr = paging_ptr;
   // Set thread count specified in the compiler
   xc_config.model_thread_count = )"
      << numXCThreads_ << R"(;
@@ -1104,7 +1145,9 @@ TfLiteStatus )"
   ctx.GetEvalTensor = &GetEvalTensor;
   ctx.RequestScratchBufferInArena = &RequestScratchBufferInArena;
   ctx.GetScratchBuffer = &GetScratchBuffer;
-  
+  ctx.IsConstantTensor = &IsConstantTensor;
+  ctx.IsVariableTensor = &IsVariableTensor;
+
   // Set microcontext as the context ptr
   ctx.impl_ = (void*)&mc;
   ctx.tensors = tflTensors;
@@ -1138,7 +1181,7 @@ TfLiteStatus )"
   // Allocate persistent buffers for variable tensors
   for (int i = 0; i < )"
      << varTensors_count << R"(; i++) {
-    tflTensors[varTensors_index[i]].data.data = AllocatePersistentBuffer(&ctx, tflTensors[varTensors_index[i]].bytes);
+    tflTensors[varTensors_index[i]].data.data = AllocatePersistentBuffer(&ctx, TensorBytes(&tflTensors[varTensors_index[i]]));
   }
 
 #ifdef TFLMC_XCORE_PROFILE
@@ -1228,9 +1271,17 @@ TfLiteStatus )"
 #endif
 
   return kTfLiteOk;
-}
+})";
+wr << R"(
 
 #pragma stackfunction 1000
+TfLiteStatus )"
+     << prefix_ << R"(init(void *weights_data_ptr) {
+  return )" << prefix_ << R"(init_with_paging(weights_data_ptr, nullptr);
+}
+
+)";
+wr<<R"(#pragma stackfunction 1000
 TfLiteStatus )"
      << prefix_ << R"(invoke() {
   thread_init_)"
@@ -1295,7 +1346,7 @@ TfLiteStatus )"
   // Reset variable tensors
   for (int i = 0; i < )"
      << varTensors_count << R"(; i++) {
-    memset(tflTensors[varTensors_index[i]].data.data, tflTensors[varTensors_index[i]].params.zero_point, tflTensors[varTensors_index[i]].bytes);
+    memset(tflTensors[varTensors_index[i]].data.data, tflTensors[varTensors_index[i]].params.zero_point, TensorBytes(&tflTensors[varTensors_index[i]]));
   }
   return kTfLiteOk;
 }
@@ -1320,7 +1371,7 @@ void )"
                 c, (unsigned int *) )"
      << prefix_ << R"(input(tensor_num)->data.u32,
                 ()"
-     << prefix_ << R"(input(tensor_num)->bytes + 3) / sizeof(int));
+     << prefix_ << R"(input_size(tensor_num) + 3) / sizeof(int));
             break;
         }
         case IOSERVER_TENSOR_SEND_OUTPUT: {
@@ -1328,7 +1379,7 @@ void )"
                 c, (unsigned int*) )"
      << prefix_ << R"(output(tensor_num)->data.u32, 
                 ()"
-     << prefix_ << R"(output(tensor_num)->bytes + 3) / sizeof(int));
+     << prefix_ << R"(output_size(tensor_num) + 3) / sizeof(int));
             break;
         }
         case IOSERVER_INVOKE: {
@@ -1373,7 +1424,7 @@ void )"
 void tflmc::Compiler::writeHeader(std::ostream &out) {
   tflmc::CodeWriter wr(out, mainGraph_);
 
-  std::string code = R"(
+  std::string code1 = R"(
 #ifndef %PREFIX%GEN_H
 #define %PREFIX%GEN_H
 
@@ -1389,9 +1440,18 @@ void tflmc::Compiler::writeHeader(std::ostream &out) {
                      std::to_string(arenaBufferSize_) + R"(
   #endif
 #endif
+)";
 
+std::string code2 = R"(
 // Sets up the model with init and prepare steps.
-TfLiteStatus %PREFIX%init(void *weights_data_ptr);
+TfLiteStatus %PREFIX%init(void *weights_data_ptr);)";
+if(has_xc_paging_ops){
+  code2 = R"(
+// Sets up model init with paging.
+TfLiteStatus %PREFIX%init_with_paging(void *weights_data_ptr, void *paging_ptr);)";
+}
+
+std::string code3 = R"(
 // Returns the input tensor with the given index.
 TfLiteTensor *%PREFIX%input(int index);
 // Returns the output tensor with the given index.
@@ -1416,9 +1476,7 @@ inline size_t %PREFIX%outputs() {
 inline void *%PREFIX%input_ptr(int index) {
   return %PREFIX%input(index)->data.data;
 }
-inline size_t %PREFIX%input_size(int index) {
-  return %PREFIX%input(index)->bytes;
-}
+size_t %PREFIX%input_size(int index);
 inline int %PREFIX%input_dims_len(int index) {
   return %PREFIX%input(index)->dims->data[0];
 }
@@ -1429,9 +1487,7 @@ inline int *%PREFIX%input_dims(int index) {
 inline void *%PREFIX%output_ptr(int index) {
   return %PREFIX%output(index)->data.data;
 }
-inline size_t %PREFIX%output_size(int index) {
-  return %PREFIX%output(index)->bytes;
-}
+size_t %PREFIX%output_size(int index);
 inline int %PREFIX%output_dims_len(int index) {
   return %PREFIX%output(index)->dims->data[0];
 }
@@ -1465,9 +1521,13 @@ TfLiteStatus model_ioserver(unsigned io_channel);
 )";
 
   static std::regex rePrefix("%PREFIX%");
-  code = std::regex_replace(code, rePrefix, prefix_);
+  code1 = std::regex_replace(code1, rePrefix, prefix_);
+  code2 = std::regex_replace(code2, rePrefix, prefix_);
+  code3 = std::regex_replace(code3, rePrefix, prefix_);
 
-  wr << code;
+  wr << code1;
+  wr << code2;
+  wr << code3;
 }
 
 std::string tflmc::Compiler::getTensorName(int tensorIndex, int sg) const {

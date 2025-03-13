@@ -23,8 +23,7 @@ using tflite_micro::micro::GetEvalInput;
 using tflite_micro::micro::GetEvalOutput;
 using tflite_micro::micro::GetTensorData;
 
-struct ConcatOpData
-    : XCoreOpData { // Inherits the operator name field from XCoreOpData
+struct ConcatOpData {
   int32_t num_copies;
   int32_t sizes[kMaxNumInputs];
   int32_t num_inputs;
@@ -83,7 +82,6 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
   MicroContext *micro_context = GetMicroContext(context);
   xc_context_config_t *xc_config = reinterpret_cast<xc_context_config_t *>(
       micro_context->external_context());
-  op_data->name = "XC_Concat";
   auto parser = CustomOptionParser(buffer, length);
   op_data->num_copies = parser.parseNamedCustomOption("n").AsInt32();
   op_data->tc = calculateAlignedThreadSplit(xc_config->model_thread_count, op_data->num_copies, op_data->s,

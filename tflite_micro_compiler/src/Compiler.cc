@@ -1371,7 +1371,7 @@ void )"
                 c, (unsigned int *) )"
      << prefix_ << R"(input(tensor_num)->data.u32,
                 ()"
-     << prefix_ << R"(input(tensor_num)->bytes + 3) / sizeof(int));
+     << prefix_ << R"(input_size(tensor_num) + 3) / sizeof(int));
             break;
         }
         case IOSERVER_TENSOR_SEND_OUTPUT: {
@@ -1379,7 +1379,7 @@ void )"
                 c, (unsigned int*) )"
      << prefix_ << R"(output(tensor_num)->data.u32, 
                 ()"
-     << prefix_ << R"(output(tensor_num)->bytes + 3) / sizeof(int));
+     << prefix_ << R"(output_size(tensor_num) + 3) / sizeof(int));
             break;
         }
         case IOSERVER_INVOKE: {

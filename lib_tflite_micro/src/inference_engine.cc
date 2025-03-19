@@ -52,6 +52,7 @@ int inference_engine_load_model(inference_engine *ie, uint32_t model_bytes,
   unsigned model_version = ie->xtflm->model->version();
 
   // Retrieve shared metadata
+  shared_config::xcore_metadata_t * shared_config_ptr;
   for (int i = 0; i < ie->xtflm->model->metadata()->size(); ++i) {
     auto metadata = ie->xtflm->model->metadata()->Get(i);
     if (strncmp(metadata->name()->c_str(), shared_config::xcoreMetadataName,
@@ -60,41 +61,41 @@ int inference_engine_load_model(inference_engine *ie, uint32_t model_bytes,
       auto *buffer = (*ie->xtflm->model->buffers())[buf];
       auto *array = buffer->data();
 
-      auto *ptr = (shared_config::xcore_metadata *)array->data();
+      shared_config_ptr = (shared_config::xcore_metadata_t *)array->data();
       // Check version with metadata version
       // If major version is zero, then minor versions must match
       // Otherwise, major versions must match and binary minor version
       // must be less or equal to runtime minor version
       // Check if lib_tflite_micro version matches with metadata version
-      if ((ptr->lib_tflite_micro_major_version == 0 &&
+      if ((shared_config_ptr->lib_tflite_micro_major_version == 0 &&
            lib_tflite_micro::major_version == 0 &&
-           ptr->lib_tflite_micro_minor_version !=
+           shared_config_ptr->lib_tflite_micro_minor_version !=
                lib_tflite_micro::minor_version) ||
-          (ptr->lib_tflite_micro_major_version !=
+          (shared_config_ptr->lib_tflite_micro_major_version !=
            lib_tflite_micro::major_version) ||
-          (ptr->lib_tflite_micro_minor_version >
+          (shared_config_ptr->lib_tflite_micro_minor_version >
            lib_tflite_micro::minor_version)) {
         TF_LITE_REPORT_ERROR(&ie->xtflm->error_reporter,
                              "Model provided has lib_tflite_micro version "
                              "%d.%d not supported on "
                              "runtime lib_tflite_micro version %u.%u .",
-                             ptr->lib_tflite_micro_major_version,
-                             ptr->lib_tflite_micro_minor_version,
+                             shared_config_ptr->lib_tflite_micro_major_version,
+                             shared_config_ptr->lib_tflite_micro_minor_version,
                              lib_tflite_micro::major_version,
                              lib_tflite_micro::minor_version);
         return 1;
       }
 
       // Check if lib_nn version matches with metadata version
-      if ((ptr->lib_nn_major_version == 0 && lib_nn::major_version == 0 &&
-           ptr->lib_nn_minor_version != lib_nn::minor_version) ||
-          (ptr->lib_nn_major_version != lib_nn::major_version) ||
-          (ptr->lib_nn_minor_version > lib_nn::minor_version)) {
+      if ((shared_config_ptr->lib_nn_major_version == 0 && lib_nn::major_version == 0 &&
+        shared_config_ptr->lib_nn_minor_version != lib_nn::minor_version) ||
+          (shared_config_ptr->lib_nn_major_version != lib_nn::major_version) ||
+          (shared_config_ptr->lib_nn_minor_version > lib_nn::minor_version)) {
         TF_LITE_REPORT_ERROR(
             &ie->xtflm->error_reporter,
             "Model provided has lib_nn version %d.%d not supported on "
             "runtime lib_nn version %u.%u .",
-            ptr->lib_nn_major_version, ptr->lib_nn_minor_version,
+            shared_config_ptr->lib_nn_major_version, shared_config_ptr->lib_nn_minor_version,
             lib_nn::major_version, lib_nn::minor_version);
         return 1;
       }
@@ -104,7 +105,7 @@ int inference_engine_load_model(inference_engine *ie, uint32_t model_bytes,
       // then the xformer version doesn't matter as the model should execute
 
       // Get thread count required from the runtime by the xformer
-      ie->num_threads = ptr->required_thread_count;
+      ie->num_threads = shared_config_ptr->required_thread_count;
     }
   }
 
@@ -164,6 +165,16 @@ int inference_engine_load_model(inference_engine *ie, uint32_t model_bytes,
   ie->operators_size =
       ie->xtflm->model->subgraphs()->Get(0)->operators()->size();
 
+  // Make maps of input/output indexes to shared config data if present
+  std::unordered_map<int, shared_config::tensor_info_t*> orig_index_input_map;
+  std::unordered_map<int, shared_config::tensor_info_t*> orig_index_output_map;
+  for (int i=0; i <shared_config_ptr->num_external_input_tensors; i++ ){
+    orig_index_input_map[shared_config_ptr->external_input_tensors_data[i].index] = &shared_config_ptr->external_input_tensors_data[i];
+  }
+  for (int i=0; i <shared_config_ptr->num_external_output_tensors; i++ ){
+    orig_index_output_map[shared_config_ptr->external_output_tensors_data[i].index] = &shared_config_ptr->external_output_tensors_data[i];
+  }
+
   // Obtain pointers to the model's input and output tensors.
   ie->inputs = ie->xtflm->interpreter->inputs_size();
   ie->input_size = 0;
@@ -171,12 +182,22 @@ int inference_engine_load_model(inference_engine *ie, uint32_t model_bytes,
     TF_LITE_REPORT_ERROR(&ie->xtflm->error_reporter, "Too many input tensors");
     return 3;
   }
+
   for (int i = 0; i < ie->inputs; i++) {
-    ie->input_buffers[i] =
-        (uint32_t *)(ie->xtflm->interpreter->input(i)->data.raw);
+    if(orig_index_input_map.count(i)){
+      if (ie->xtflm->interpreter->input(i)->bytes != orig_index_input_map[i]->size) {
+        TF_LITE_REPORT_ERROR(&ie->xtflm->error_reporter, "External input tensor size doesn't match!");
+        return 6;
+      }
+      ie->input_buffers[i] = (uint32_t *)(((int8_t *)ie->external_memory) + orig_index_input_map[i]->external_address);
+    } else {
+      ie->input_buffers[i] =
+      (uint32_t *)(ie->xtflm->interpreter->input(i)->data.raw);
+    }
     ie->input_sizes[i] = ie->xtflm->interpreter->input(i)->bytes;
     ie->input_size += ie->input_sizes[i];
   }
+
   ie->outputs = ie->xtflm->interpreter->outputs_size();
   ie->output_size = 0;
   if (ie->outputs > NUM_OUTPUT_TENSORS) {
@@ -187,6 +208,20 @@ int inference_engine_load_model(inference_engine *ie, uint32_t model_bytes,
   for (int i = 0; i < ie->outputs; i++) {
     ie->output_buffers[i] =
         (uint32_t *)(ie->xtflm->interpreter->output(i)->data.raw);
+    ie->output_sizes[i] = ie->xtflm->interpreter->output(i)->bytes;
+    ie->output_size += ie->output_sizes[i];
+  }
+  for (int i = 0; i < ie->outputs; i++) {
+    if(orig_index_output_map.count(i)){
+      if (ie->xtflm->interpreter->output(i)->bytes != orig_index_output_map[i]->size) {
+        TF_LITE_REPORT_ERROR(&ie->xtflm->error_reporter, "External output tensor size doesn't match!");
+        return 6;
+      }
+      ie->output_buffers[i] = (uint32_t *)(((int8_t *)ie->external_memory) + orig_index_output_map[i]->external_address);
+    } else {
+      ie->output_buffers[i] =
+      (uint32_t *)(ie->xtflm->interpreter->output(i)->data.raw);
+    }
     ie->output_sizes[i] = ie->xtflm->interpreter->output(i)->bytes;
     ie->output_size += ie->output_sizes[i];
   }

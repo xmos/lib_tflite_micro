@@ -8,22 +8,35 @@ namespace shared_config {
 // between xformer and lib_tflite_micro in the flatbuffer
 constexpr char xcoreMetadataName[] = "xcoreSharedConfig";
 
-struct xcore_metadata {
-  // Dummy variable for aligning the metadata struct to 16 bytes
-  // We cannot use alignas(16) yet in xcore
-  int32_t padding[2];
+constexpr int xcoreMaxNumOfTensors = 25;
+
+struct tensor_info_t {
+  uint32_t index;
+  uint32_t external_address;
+  uint32_t size;
+};
+
+// The metadata struct must be aligned to 16 bytes
+// We cannot use alignas(16) yet in xcore
+struct xcore_metadata_t {
   // Versions of libraries used to build the model
-  int32_t lib_nn_major_version;
-  int32_t lib_nn_minor_version;
-  int32_t lib_nn_patch_version;
-  int32_t lib_tflite_micro_major_version;
-  int32_t lib_tflite_micro_minor_version;
-  int32_t lib_tflite_micro_patch_version;
-  int32_t xformer_major_version;
-  int32_t xformer_minor_version;
-  int32_t xformer_patch_version;
+  uint32_t lib_nn_major_version;
+  uint32_t lib_nn_minor_version;
+  uint32_t lib_nn_patch_version;
+  uint32_t lib_tflite_micro_major_version;
+  uint32_t lib_tflite_micro_minor_version;
+  uint32_t lib_tflite_micro_patch_version;
+  uint32_t xformer_major_version;
+  uint32_t xformer_minor_version;
+  uint32_t xformer_patch_version;
   // Number of threads required from the runtime to execute the model
-  int32_t required_thread_count;
+  uint32_t required_thread_count;
+  // Number of input tensors loaded from external memory
+  uint32_t num_external_input_tensors;
+  // Number of output tensors loaded from external memory
+  uint32_t num_external_output_tensors;
+  tensor_info_t external_input_tensors_data[xcoreMaxNumOfTensors];
+  tensor_info_t external_output_tensors_data[xcoreMaxNumOfTensors];
 };
 
 } // namespace shared_config

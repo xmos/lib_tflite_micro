@@ -6,7 +6,7 @@ namespace tflmc {
 
 TFLMC_Compiler::TFLMC_Compiler(
     const void *modelData,
-    const struct shared_config::xcore_metadata *sharedCfg,
+    const struct shared_config::xcore_metadata_t *sharedCfg,
     const std::string &prefix, const bool debugPrint) {
   compiler_ = new Compiler(modelData, sharedCfg, prefix, debugPrint);
 }

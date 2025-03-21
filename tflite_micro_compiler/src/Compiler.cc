@@ -1418,6 +1418,7 @@ extern int read_sswitch_reg(unsigned tile, unsigned reg, unsigned *data);
 extern int write_sswitch_reg(unsigned tile, unsigned reg, unsigned data);
 }
 
+#pragma stackfunction 1000
 void )"
      << prefix_ << R"(ioserver(chanend_t c) {
     unsigned tensor_num = 0;
@@ -1459,8 +1460,8 @@ void )"
           hwtimer_t timer = hwtimer_alloc();
           hwtimer_delay(timer, 100000);
           hwtimer_free(timer);
-          read_sswitch_reg(tile[USB_TILE], XS1_SSWITCH_PLL_CTL_NUM, &pll_ctrl);
-          write_sswitch_reg(tile[USB_TILE], XS1_SSWITCH_PLL_CTL_NUM, pll_ctrl);
+          read_sswitch_reg(USB_TILE, XS1_SSWITCH_PLL_CTL_NUM, &pll_ctrl);
+          write_sswitch_reg(USB_TILE, XS1_SSWITCH_PLL_CTL_NUM, pll_ctrl);
           return;
         }
         default: {

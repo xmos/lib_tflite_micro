@@ -1130,12 +1130,14 @@ TfLiteTensor* )"
 
 size_t )"
      << prefix_ << R"(input_size(int index) {
-  return TensorBytes(model_input(index));
+  return TensorBytes()"
+     << prefix_ << R"(input(index));
 }
 
 size_t )"
      << prefix_ << R"(output_size(int index) {
-  return TensorBytes(model_output(index));
+  return TensorBytes()"
+     << prefix_ << R"(output(index));
 }
 
 )";

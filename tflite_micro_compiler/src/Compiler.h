@@ -39,7 +39,7 @@ class Compiler {
            const bool debugPrint = false);
 
   Compiler(const void *modelData,
-           const struct shared_config::xcore_metadata *sharedCfg,
+           const struct shared_config::xcore_metadata_t *sharedCfg,
            const std::string &prefix = "model_", const bool debugPrint = false);
 
   void writeSource(std::ostream &out);
@@ -58,8 +58,8 @@ class Compiler {
 
  private:
   struct TensorInfo {
-    TensorInfo(const TfLiteTensor *tensor_ptr) : tensor(tensor_ptr) {}
-    const TfLiteTensor *tensor = nullptr;
+    TensorInfo(TfLiteTensor *tensor_ptr) : tensor(tensor_ptr) {}
+    TfLiteTensor *tensor = nullptr;
   };
   struct RegistrationInfo {
     const TFLMRegistration *reg = nullptr;
@@ -96,7 +96,7 @@ class Compiler {
 
  private:
   std::string prefix_;
-  const struct shared_config::xcore_metadata *sharedCfg_ = nullptr;
+  const struct shared_config::xcore_metadata_t *sharedCfg_ = nullptr;
   int numXCThreads_ = 1;
   const tflite_micro::Model *model_ = nullptr;
   const tflite_micro::SubGraph *mainGraph_ = nullptr;
@@ -112,6 +112,8 @@ class Compiler {
   std::vector<std::vector<NodeInfo>> nodes_;
   std::vector<std::vector<int32_t>> inputTensorIndices_;
   std::vector<std::vector<int32_t>> outputTensorIndices_;
+  std::vector<int32_t> externalInOutTensorIndices_;
+  std::vector<int32_t> externalInOutTensorOffsets_;
   std::vector<RegistrationInfo> registrations_;
   std::vector<int32_t> scratchBufferOffsets_;
 

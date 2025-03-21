@@ -113,7 +113,7 @@ tflmc::Compiler::Compiler(const void *modelData, const std::string &prefix,
     : Compiler(modelData, nullptr, prefix, debugPrint) {}
 
 tflmc::Compiler::Compiler(const void *modelData,
-                          const struct shared_config::xcore_metadata *sharedCfg,
+                          const struct shared_config::xcore_metadata_t *sharedCfg,
                           const std::string &prefix, const bool debugPrint)
     : sharedCfg_(sharedCfg), prefix_(prefix) {
   debugPrint_ = debugPrint;
@@ -215,6 +215,32 @@ bool tflmc::Compiler::init(const void *modelData) {
     }
   }
 
+  // Fix up externally allocated input/output tensors
+  // Make maps of input/output indexes to shared config data if present
+  std::unordered_map<int, const shared_config::tensor_info_t*> orig_index_input_map;
+  std::unordered_map<int, const shared_config::tensor_info_t*> orig_index_output_map;
+  for (int i=0; i <sharedCfg_->num_external_input_tensors; i++ ){
+    orig_index_input_map[sharedCfg_->external_input_tensors_data[i].index] = &sharedCfg_->external_input_tensors_data[i];
+  }
+  for (int i=0; i <sharedCfg_->num_external_output_tensors; i++ ){
+    orig_index_output_map[sharedCfg_->external_output_tensors_data[i].index] = &sharedCfg_->external_output_tensors_data[i];
+  }
+  for (int i=0; i<inputTensorIndices_[0].size(); i++) {
+    if(orig_index_input_map.count(i)) {
+      auto tensorIndex = inputTensorIndices_[0][i];
+      externalInOutTensorIndices_.push_back(tensorIndex);
+      externalInOutTensorOffsets_.push_back(orig_index_input_map[i]->external_address);
+    }
+  }
+  for (int i=0; i<outputTensorIndices_[0].size(); i++) {
+    if(orig_index_output_map.count(i)) {
+      auto tensorIndex = outputTensorIndices_[0][i];
+      externalInOutTensorIndices_.push_back(tensorIndex);
+      externalInOutTensorOffsets_.push_back(orig_index_output_map[i]->external_address);
+    }
+  }
+  assert(externalInOutTensorIndices_.size() == sharedCfg_->num_external_input_tensors + sharedCfg_->num_external_output_tensors && "External allocated number of tensors mismatch!");
+
   // Iterate through all subgraphs and find allocated offsets for tensors
   ptrdiff_t ramTensorBufferSize = 0;
   ptrdiff_t romOffset = 0;
@@ -237,13 +263,17 @@ bool tflmc::Compiler::init(const void *modelData) {
         romOffset += tensor->bytes;
       } else {
         auto t = GetEvalTensor(interpreter_.get(), i, g);
-        ptrdiff_t offset = (uint8_t *)t->data.data - arena_buf_.data();
-        DEBUG_LOG(("%d,", offset));
-        // double word align tensor bytes
-        int aligned_bytes = ((tensor->bytes + 7) / 8) * 8;
-        ptrdiff_t highSize = offset + aligned_bytes;
-        ramTensorBufferSize = std::max(ramTensorBufferSize, highSize);
-        memMap_.recordRAM(offset, tensor->bytes, getTensorName(i, g));
+        // We don't want to include externally allocated input/output tensor in RAM calculations
+        // They will be accounted for anyway via the tensors for load/store tensor ops
+        if(t->data.data != nullptr) {
+          ptrdiff_t offset = (uint8_t *)t->data.data - arena_buf_.data();
+          DEBUG_LOG(("%d,", offset));
+          // double word align tensor bytes
+          int aligned_bytes = ((tensor->bytes + 7) / 8) * 8;
+          ptrdiff_t highSize = offset + aligned_bytes;
+          ramTensorBufferSize = std::max(ramTensorBufferSize, highSize);
+          memMap_.recordRAM(offset, tensor->bytes, getTensorName(i, g));
+        }
       }
       // determine whether we need to individually set these properties for each
       // tensor
@@ -818,6 +848,21 @@ static const int outTensorIndices[] = {
   }
   wr << R"(
 };
+
+static const int externalInOutTensorIndices[] = {
+  )";
+  for (auto index : externalInOutTensorIndices_) {
+    wr << index << ", ";
+  }
+  wr << R"(
+};
+static const int externalInOutTensorOffsets[] = {
+  )";
+  for (auto index : externalInOutTensorOffsets_) {
+    wr << index << ", ";
+  }
+  wr << R"(
+};
 )";
 
   wr << "\n// Indices into inTensors and outTensors for subgraphs";
@@ -1062,6 +1107,15 @@ printf("]\n");
   return kTfLiteOk;
 }
 
+
+void InitExternalTensors(void *paging_ptr){
+  int len = sizeof(externalInOutTensorIndices) / sizeof(int);
+  for (int n = 0; n < len; ++n) {
+    auto t = &tflTensors[externalInOutTensorIndices[n]];
+    t->data.data = (int32_t *)(((int8_t *)paging_ptr) + externalInOutTensorOffsets[n]);
+  }
+}
+
 } // namespace
 
 TfLiteTensor* )"
@@ -1076,12 +1130,14 @@ TfLiteTensor* )"
 
 size_t )"
      << prefix_ << R"(input_size(int index) {
-  return TensorBytes(model_input(index));
+  return TensorBytes()"
+     << prefix_ << R"(input(index));
 }
 
 size_t )"
      << prefix_ << R"(output_size(int index) {
-  return TensorBytes(model_output(index));
+  return TensorBytes()"
+     << prefix_ << R"(output(index));
 }
 
 )";
@@ -1125,6 +1181,9 @@ TfLiteStatus )"
   // Set thread info
   xc_config.thread_info.nstackwords = kStackWordsPerThread;
   xc_config.thread_info.stacks = &xcThreadsStack[threadsStackSizeInUint64 - 1];
+
+  // Initialize externally allocated input/output tensors with paging_ptr
+  InitExternalTensors(paging_ptr);
 
   // Setup microcontext functions
   mc.AllocateTempInputTensor = &mc_AllocateTempInputTensor;
@@ -1359,6 +1418,7 @@ extern int read_sswitch_reg(unsigned tile, unsigned reg, unsigned *data);
 extern int write_sswitch_reg(unsigned tile, unsigned reg, unsigned data);
 }
 
+#pragma stackfunction 1000
 void )"
      << prefix_ << R"(ioserver(chanend_t c) {
     unsigned tensor_num = 0;
@@ -1400,8 +1460,8 @@ void )"
           hwtimer_t timer = hwtimer_alloc();
           hwtimer_delay(timer, 100000);
           hwtimer_free(timer);
-          read_sswitch_reg(tile[USB_TILE], XS1_SSWITCH_PLL_CTL_NUM, &pll_ctrl);
-          write_sswitch_reg(tile[USB_TILE], XS1_SSWITCH_PLL_CTL_NUM, pll_ctrl);
+          read_sswitch_reg(USB_TILE, XS1_SSWITCH_PLL_CTL_NUM, &pll_ctrl);
+          write_sswitch_reg(USB_TILE, XS1_SSWITCH_PLL_CTL_NUM, pll_ctrl);
           return;
         }
         default: {

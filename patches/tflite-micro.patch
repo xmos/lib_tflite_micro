@@ -38299,10 +38299,10 @@ index a087b236..0a45d270 100644
 -}  // namespace tflite
 +}  // namespace tflite_micro
 diff --git a/tensorflow/lite/micro/memory_planner/greedy_memory_planner.h b/tensorflow/lite/micro/memory_planner/greedy_memory_planner.h
-index b2cdb617..f789fbcb 100644
+index b2cdb617..954798c8 100644
 --- a/tensorflow/lite/micro/memory_planner/greedy_memory_planner.h
 +++ b/tensorflow/lite/micro/memory_planner/greedy_memory_planner.h
-@@ -19,7 +19,7 @@ limitations under the License.
+@@ -19,9 +19,11 @@ limitations under the License.
  #include "tensorflow/lite/micro/compatibility.h"
  #include "tensorflow/lite/micro/memory_planner/micro_memory_planner.h"
  
@@ -38310,8 +38310,12 @@ index b2cdb617..f789fbcb 100644
 +namespace tflite_micro {
  
  constexpr int kOnlinePlannedBuffer = -1;
++// We are using this to mark a buffer explicitly as externally offline allocated 
++constexpr int kXcoreOfflinePlannedBuffer = -111;
  
-@@ -112,6 +112,8 @@ class GreedyMemoryPlanner : public MicroMemoryPlanner {
+ // A memory planner that uses a greedy algorithm to arrange buffers in memory
+ // to minimize the overall arena size needed.
+@@ -112,6 +114,8 @@ class GreedyMemoryPlanner : public MicroMemoryPlanner {
    // that aren't being used during a phase of invocation are overwritten.
    bool preserves_all_tensors() const override { return false; }
  
@@ -38320,7 +38324,7 @@ index b2cdb617..f789fbcb 100644
   private:
    // Whether a buffer is active in a given time range.
    bool DoesEntryOverlapInTime(const ListEntry* entry, const int first_time_used,
-@@ -161,10 +163,8 @@ class GreedyMemoryPlanner : public MicroMemoryPlanner {
+@@ -161,10 +165,8 @@ class GreedyMemoryPlanner : public MicroMemoryPlanner {
  
    // Whether buffers have been added since the last plan was calculated.
    bool need_to_calculate_offsets_;
@@ -38643,7 +38647,7 @@ index 5ccd469f..4f44e2db 100644
    TF_LITE_MICRO_EXPECT_EQ(static_cast<size_t>(0),
                            planner.GetMaximumMemorySize());
 diff --git a/tensorflow/lite/micro/micro_allocation_info.cc b/tensorflow/lite/micro/micro_allocation_info.cc
-index a89a5e6c..fccc50ca 100644
+index a89a5e6c..fefa23ed 100644
 --- a/tensorflow/lite/micro/micro_allocation_info.cc
 +++ b/tensorflow/lite/micro/micro_allocation_info.cc
 @@ -24,7 +24,7 @@ limitations under the License.
@@ -38655,7 +38659,20 @@ index a89a5e6c..fccc50ca 100644
  
  namespace {
  constexpr char kOfflineMemAllocMetadata[] = "OfflineMemoryAllocation";
-@@ -372,4 +372,4 @@ TfLiteStatus AllocationInfoBuilder::GetOfflinePlannedOffsets(
+@@ -206,6 +206,12 @@ TfLiteStatus AllocationInfoBuilder::InitializeAllocationInfo(
+       if (offline_offsets) {
+         current->offline_offset = offline_offsets[offline_index++];
+ 
++        // Mark offline planned externally allocated tensors.
++        if (current->offline_offset == kXcoreOfflinePlannedBuffer) {
++          current->offline_offset = 0;
++          current->needs_allocating = false;
++        }
++
+         // Mark offline planned variable tensors so they can get an offline
+         // offset and be handled offline.
+         if (subgraph->tensors()->Get(i)->is_variable() &&
+@@ -372,4 +378,4 @@ TfLiteStatus AllocationInfoBuilder::GetOfflinePlannedOffsets(
    return kTfLiteOk;
  }
  

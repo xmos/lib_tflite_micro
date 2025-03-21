@@ -225,16 +225,18 @@ bool tflmc::Compiler::init(const void *modelData) {
   for (int i=0; i <sharedCfg_->num_external_output_tensors; i++ ){
     orig_index_output_map[sharedCfg_->external_output_tensors_data[i].index] = &sharedCfg_->external_output_tensors_data[i];
   }
-  for (auto inIndex : inputTensorIndices_[0]) {
-    if(orig_index_input_map.count(inIndex)) {
-      externalInOutTensorIndices_.push_back(inIndex);
-      externalInOutTensorOffsets_.push_back(orig_index_input_map[inIndex]->external_address);
+  for (int i=0; i<inputTensorIndices_[0].size(); i++) {
+    if(orig_index_input_map.count(i)) {
+      auto tensorIndex = inputTensorIndices_[0][i];
+      externalInOutTensorIndices_.push_back(tensorIndex);
+      externalInOutTensorOffsets_.push_back(orig_index_input_map[i]->external_address);
     }
   }
-  for (auto outIndex : outputTensorIndices_[0]) {
-    if(orig_index_output_map.count(outIndex)) {
-      externalInOutTensorIndices_.push_back(outIndex);
-      externalInOutTensorOffsets_.push_back(orig_index_output_map[outIndex]->external_address);
+  for (int i=0; i<outputTensorIndices_[0].size(); i++) {
+    if(orig_index_output_map.count(i)) {
+      auto tensorIndex = outputTensorIndices_[0][i];
+      externalInOutTensorIndices_.push_back(tensorIndex);
+      externalInOutTensorOffsets_.push_back(orig_index_output_map[i]->external_address);
     }
   }
   assert(externalInOutTensorIndices_.size() == sharedCfg_->num_external_input_tensors + sharedCfg_->num_external_output_tensors && "External allocated number of tensors mismatch!");

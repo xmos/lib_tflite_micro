@@ -1,5 +1,7 @@
 // Copyright (c) 2023, XMOS Ltd, All rights reserved
 
+#include "../thread_call.h"
+#include "xcore_config.h"
 #include "xcore_custom_options.h"
 #include "xcore_utils.h"
 extern "C" {
@@ -12,9 +14,28 @@ namespace micro {
 namespace xcore {
 namespace add {
 
+struct AddShared {
+  int8_t *Y;
+  int8_t *X1;
+  int8_t *X2;
+  nn_add_params_t *blob;
+};
+
+extern "C" {
+void add_thread_worker(void *shared, void *start, void *end) {
+  int *s = static_cast<int *>(start);
+  int *e = static_cast<int *>(end);
+  auto sd = static_cast<AddShared *>(shared);
+  add_elementwise(sd->Y, sd->X1, sd->X2, sd->blob, *s, *e - *s);
+}
+}
+
 // This is the struct that contains the data required by the operator
 struct AddOpData {
   nn_add_params_t params;
+  int tc;
+  int s[XCORE_MAX_NUM_THREADS];
+  int e[XCORE_MAX_NUM_THREADS];
 };
 
 void *Init(TfLiteContext *context, const char *buffer, size_t length) {
@@ -42,6 +63,14 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
 
 // Does all the requests for scratches
 TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
+  auto *op_data = static_cast<AddOpData *>(node->user_data);
+  MicroContext *micro_context = GetMicroContext(context);
+  xc_context_config_t *xc_config = reinterpret_cast<xc_context_config_t *>(
+      micro_context->external_context());
+  const TfLiteEvalTensor *output =
+      tflite_micro::micro::GetEvalOutput(context, node, 0);
+  int output_size = tflite_micro::micro::GetTensorShape(output).FlatSize();
+  op_data->tc = calculateAlignedThreadSplit(xc_config->model_thread_count, output_size, op_data->s, op_data->e);
   return kTfLiteOk;
 }
 
@@ -61,8 +90,22 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
       const_cast<int8_t *>(tflite_micro::micro::GetTensorData<int8_t>(input2));
   int8_t *out_data = tflite_micro::micro::GetTensorData<int8_t>(output);
 
-  int output_size = tflite_micro::micro::GetTensorShape(output).FlatSize();
-  add_elementwise(out_data, in1_data, in2_data, &op_data->params, 0, output_size);
+  MicroContext *micro_context = GetMicroContext(context);
+  xc_context_config_t *xc_config = reinterpret_cast<xc_context_config_t *>(
+      micro_context->external_context());
+  const int tc = op_data->tc;
+  AddShared shared_data;
+  shared_data.Y = out_data;
+  shared_data.X1 = in1_data;
+  shared_data.X2 = in2_data;
+  shared_data.blob = &op_data->params;
+  for (int t = 0; t < tc - 1; t++) {
+    thread_variable_setup((void *)&op_data->s[t], (void *)&op_data->e[t],
+                          xc_config->thread_info.thread_ids.id[t]);
+  }
+  thread_call((void *)&shared_data, &op_data->s[tc - 1], &op_data->e[tc - 1],
+              (thread_function_pointer_t)add_thread_worker,
+              &xc_config->thread_info);
 
   return kTfLiteOk;
 }

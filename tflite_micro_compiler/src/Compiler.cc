@@ -948,7 +948,7 @@ static void *GetScratchBuffer(struct TfLiteContext *context,
 static bool IsConstantTensor(struct TfLiteContext *context,
                                        TfLiteTensor* tensor) {
   bool constant = true;
-  if(tensor->data.data > &tensor_arena && tensor->data.data < &tensor_arena[kTensorArenaSize - 1]){
+  if(tensor->data.data > &tensor_arena[0] && tensor->data.data < &tensor_arena[kTensorArenaSize - 1]){
     constant = false;
   }
   return constant;

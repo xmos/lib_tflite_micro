@@ -13,6 +13,8 @@ class TFLMC_Compiler {
  public:
   TFLMC_Compiler(const void *modelData,
                  const struct shared_config::xcore_metadata_t *sharedCfg,
+                 const std::string &versionString,
+                 const std::string &argsString,
                  const std::string &prefix = "model_",
                  const bool debugPrint = false);
 

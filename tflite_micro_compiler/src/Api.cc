@@ -7,8 +7,8 @@ namespace tflmc {
 TFLMC_Compiler::TFLMC_Compiler(
     const void *modelData,
     const struct shared_config::xcore_metadata_t *sharedCfg,
-    const std::string &prefix, const bool debugPrint) {
-  compiler_ = new Compiler(modelData, sharedCfg, prefix, debugPrint);
+    const std::string &versionString, const std::string &argsString, const std::string &prefix, const bool debugPrint) {
+  compiler_ = new Compiler(modelData, sharedCfg, versionString, argsString, prefix, debugPrint);
 }
 
 TFLMC_Compiler::~TFLMC_Compiler() { delete compiler_; }

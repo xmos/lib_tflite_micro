@@ -110,12 +110,12 @@ bool tflmc::CompileFile(const std::string &modelFileName,
 
 tflmc::Compiler::Compiler(const void *modelData, const std::string &prefix,
                           const bool debugPrint)
-    : Compiler(modelData, nullptr, prefix, debugPrint) {}
+    : Compiler(modelData, nullptr, "", "", prefix, debugPrint) {}
 
 tflmc::Compiler::Compiler(const void *modelData,
                           const struct shared_config::xcore_metadata_t *sharedCfg,
-                          const std::string &prefix, const bool debugPrint)
-    : sharedCfg_(sharedCfg), prefix_(prefix) {
+                          const std::string &versionString, const std::string &argsString, const std::string &prefix, const bool debugPrint)
+    : sharedCfg_(sharedCfg), versionString_(versionString), argsString_(argsString), prefix_(prefix) {
   debugPrint_ = debugPrint;
   if (sharedCfg_) {
     numXCThreads_ = sharedCfg_->required_thread_count;
@@ -472,6 +472,8 @@ void tflmc::Compiler::writeSource(std::ostream &out) {
 
   CodeWriter wr(out, mainGraph_);
 
+  wr << "// Compiler version: " << versionString_ << "\n";
+  wr << "// Args: " << argsString_;
   wr << R"(
 
 #include "lib_tflite_micro/api/xcore_config.h"
@@ -946,7 +948,7 @@ static void *GetScratchBuffer(struct TfLiteContext *context,
 static bool IsConstantTensor(struct TfLiteContext *context,
                                        TfLiteTensor* tensor) {
   bool constant = true;
-  if(tensor->data.data > &tensor_arena && tensor->data.data < &tensor_arena[kTensorArenaSize - 1]){
+  if(tensor->data.data > &tensor_arena[0] && tensor->data.data < &tensor_arena[kTensorArenaSize - 1]){
     constant = false;
   }
   return constant;

@@ -40,7 +40,7 @@ class Compiler {
 
   Compiler(const void *modelData,
            const struct shared_config::xcore_metadata_t *sharedCfg,
-           const std::string &prefix = "model_", const bool debugPrint = false);
+           const std::string &versionString, const std::string &argsString, const std::string &prefix = "model_", const bool debugPrint = false);
 
   void writeSource(std::ostream &out);
   void writeHeader(std::ostream &out);
@@ -96,6 +96,8 @@ class Compiler {
 
  private:
   std::string prefix_;
+  std::string versionString_;
+  std::string argsString_;
   const struct shared_config::xcore_metadata_t *sharedCfg_ = nullptr;
   int numXCThreads_ = 1;
   const tflite_micro::Model *model_ = nullptr;

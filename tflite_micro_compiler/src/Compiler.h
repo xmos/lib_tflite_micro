@@ -56,6 +56,20 @@ class Compiler {
 
   void deDuplicateData();
 
+  bool isTfliteOutputTensorDimsModifyingOp(tflite_micro::BuiltinOperator code) {
+   if (code == tflite_micro::BuiltinOperator_BATCH_MATMUL
+              || code == tflite_micro::BuiltinOperator_DEPTH_TO_SPACE
+              || code == tflite_micro::BuiltinOperator_EMBEDDING_LOOKUP
+              || code == tflite_micro::BuiltinOperator_GATHER
+              || code == tflite_micro::BuiltinOperator_GATHER_ND
+              || code == tflite_micro::BuiltinOperator_RESHAPE
+              || code == tflite_micro::BuiltinOperator_L2_POOL_2D
+              || code == tflite_micro::BuiltinOperator_SPACE_TO_DEPTH) {
+    return true;
+    }
+    return false;
+  }
+
  private:
   struct TensorInfo {
     TensorInfo(TfLiteTensor *tensor_ptr) : tensor(tensor_ptr) {}
@@ -133,6 +147,7 @@ class Compiler {
   bool has_xc_async_ops = false;
   bool has_xc_paging_ops = false;
   bool has_tflite_custom_ops = false;
+  bool has_tflite_output_tensor_dims_modifying_ops = false;
   bool has_quantization = false;
 };
 

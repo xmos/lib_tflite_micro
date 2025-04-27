@@ -225,18 +225,20 @@ bool tflmc::Compiler::init(const void *modelData) {
   for (int i=0; i <sharedCfg_->num_external_output_tensors; i++ ){
     orig_index_output_map[sharedCfg_->external_output_tensors_data[i].index] = &sharedCfg_->external_output_tensors_data[i];
   }
-  for (int i=0; i<inputTensorIndices_[0].size(); i++) {
-    if(orig_index_input_map.count(i)) {
-      auto tensorIndex = inputTensorIndices_[0][i];
-      externalInOutTensorIndices_.push_back(tensorIndex);
-      externalInOutTensorOffsets_.push_back(orig_index_input_map[i]->external_address);
+  for (int g = 0; g < subgraphs->size(); g++) {
+    for (int i=0; i<inputTensorIndices_[g].size(); i++) {
+      if(orig_index_input_map.count(i)) {
+        auto tensorIndex = inputTensorIndices_[g][i];
+        externalInOutTensorIndices_.push_back(tensorIndex);
+        externalInOutTensorOffsets_.push_back(orig_index_input_map[i]->external_address);
+      }
     }
-  }
-  for (int i=0; i<outputTensorIndices_[0].size(); i++) {
-    if(orig_index_output_map.count(i)) {
-      auto tensorIndex = outputTensorIndices_[0][i];
-      externalInOutTensorIndices_.push_back(tensorIndex);
-      externalInOutTensorOffsets_.push_back(orig_index_output_map[i]->external_address);
+    for (int i=0; i<outputTensorIndices_[g].size(); i++) {
+      if(orig_index_output_map.count(i)) {
+        auto tensorIndex = outputTensorIndices_[g][i];
+        externalInOutTensorIndices_.push_back(tensorIndex);
+        externalInOutTensorOffsets_.push_back(orig_index_output_map[i]->external_address);
+      }
     }
   }
   assert(externalInOutTensorIndices_.size() == sharedCfg_->num_external_input_tensors + sharedCfg_->num_external_output_tensors && "External allocated number of tensors mismatch!");
@@ -310,6 +312,8 @@ bool tflmc::Compiler::init(const void *modelData) {
           has_xc_paging_ops = true;
         }
         has_custom_ops = true;
+      } else if (isTfliteOutputTensorDimsModifyingOp(code)) {
+          has_tflite_output_tensor_dims_modifying_ops = true;
       }
       auto itOp =
           std::find(registrations_.begin(), registrations_.end(), regInfo);
@@ -884,6 +888,46 @@ static const int externalInOutTensorOffsets[] = {
   }
   wr << "};";
 
+  wr << "\n// Indices for output tensors that are modified by certain TFLite ops and";
+  wr << "\n// have to be reset in model_init() if the tensor arena gets trashed";
+  wr << "\nstatic const int tfliteModifiedOutputTensorIndices[] = {";
+  index = 0;
+  for (size_t g = 0; g < tensors_.size(); g++) {
+    for (size_t i = 0; i < nodes_[g].size(); i++) {
+      auto &node = nodes_[g][i].node;
+      auto &regInfo = registrations_[nodes_[g][i].regIndex];
+      if (isTfliteOutputTensorDimsModifyingOp(regInfo.code)) {
+        for (int ot = 0; ot < node.outputs->size; ot++) {
+          wr << index + node.outputs->data[ot] << ", ";
+        }
+      }
+    }
+    index += tensors_[g].size();
+  }
+  wr << "};";
+
+  wr << "\nTfLiteIntArray* tfliteModifiedOutputTensorOriginalDims[] = {";
+  for (size_t g = 0; g < tensors_.size(); g++) {
+    for (size_t i = 0; i < nodes_[g].size(); i++) {
+      auto &node = nodes_[g][i].node;
+      auto &regInfo = registrations_[nodes_[g][i].regIndex];
+      if (isTfliteOutputTensorDimsModifyingOp(regInfo.code)) {
+        for (int ot = 0; ot < node.outputs->size; ot++) {
+          int tensorDim = node.outputs->data[ot];
+          // if duplicate, point to same tensor dim
+          if (tensorDimMap_[g].count(tensorDim)) {
+            wr << "(TfLiteIntArray*)&g" << g << ".tensor_dimension"
+              << tensorDimMap_[g][tensorDim] << ", ";
+          } else {
+            wr << "(TfLiteIntArray*)&g" << g << ".tensor_dimension" << tensorDim << ", ";
+          }
+        }
+      }
+    }
+  }
+  wr << "};";
+  wr << "\n";
+
   // TODO: This code assumes that persistent allocations are made from the end
   // (which is true for the current implementation)
   wr << R"(
@@ -1118,6 +1162,14 @@ void InitExternalTensors(void *paging_ptr){
   }
 }
 
+void ResetModifiedTFLiteOutputTensorDims(){
+  int len = sizeof(tfliteModifiedOutputTensorIndices) / sizeof(int);
+  for (int n = 0; n < len; ++n) {
+    auto t = &tflTensors[tfliteModifiedOutputTensorIndices[n]];
+    t->dims = tfliteModifiedOutputTensorOriginalDims[n];
+  }
+}
+
 } // namespace
 
 TfLiteTensor* )"
@@ -1186,6 +1238,10 @@ TfLiteStatus )"
 
   // Initialize externally allocated input/output tensors with paging_ptr
   InitExternalTensors(paging_ptr);
+
+  // Reset output tensor dims that are modified by certain TFLite ops and
+  // have to be reset if the tensor arena gets trashed
+  ResetModifiedTFLiteOutputTensorDims();
 
   // Setup microcontext functions
   mc.AllocateTempInputTensor = &mc_AllocateTempInputTensor;

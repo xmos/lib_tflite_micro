@@ -18,7 +18,7 @@ int xc_fc_float_ref(float *outputs, float *inputs, float *kernels,
   return cnt;
 }
 
-#ifndef NN_USE_REF
+#if !defined(NN_USE_REF) && !defined(__VX4A__)
 int xc_fc_float_opt(float *outputs, float *inputs, float *kernels,
                     int out_features, int input_features, int out_f_start,
                     int out_f_end) {
@@ -77,7 +77,7 @@ int xc_conv2d_float_kw5xh2_stride_w3_ref(float *outputs, float *inputs,
   return cnt;
 }
 
-#ifndef NN_USE_REF
+#if !defined(NN_USE_REF) && !defined(__VX4A__)
 void xc_conv2d_float_kw5xh2_stride_w3_opt(float *outputs, float *inputs,
                                           float *kernels, float *biases,
                                           int out_w, int out_h, int out_depth,
@@ -220,7 +220,7 @@ int xc_transpose_conv2d_float_kw5xh2_stride_h3_ref(
   return cnt;
 }
 
-#ifndef NN_USE_REF
+#if !defined(NN_USE_REF) && !defined(__VX4A__)
 void xc_transpose_conv2d_float_kw5xh2_stride_h3_opt(
     float *outputs, float *inputs, float *kernels, float *biases, int out_w,
     int out_h, int out_depth, int input_w, int input_h, int input_depth,

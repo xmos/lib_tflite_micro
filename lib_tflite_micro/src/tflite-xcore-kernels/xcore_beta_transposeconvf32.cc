@@ -37,7 +37,7 @@ void beta_transposeconvf32_thread_worker(void *shared, void *d_start,
   int *s = static_cast<int *>(d_start);
   int *e = static_cast<int *>(d_end);
   auto sd = static_cast<Beta_TransposeConvF32Shared *>(shared);
-#ifdef NN_USE_REF
+#if defined(NN_USE_REF) || defined(__VX4A__)
   xc_transpose_conv2d_float_kw5xh2_stride_h3_ref(
       sd->out, sd->in, sd->kernels, sd->biases, sd->out_w, sd->out_h, sd->out_d,
       sd->in_w, sd->in_h, sd->in_d);

@@ -482,6 +482,7 @@ void tflmc::Compiler::writeSource(std::ostream &out) {
 
 #include "lib_tflite_micro/api/xcore_config.h"
 #include "lib_nn/api/version.h"
+#include "lib_nn/api/nn_arch.h"
 #include "lib_tflite_micro/api/version.h"
 #include "tensorflow/lite/c/builtin_op_data.h"
 #include "tensorflow/lite/c/common.h"
@@ -492,6 +493,10 @@ void tflmc::Compiler::writeSource(std::ostream &out) {
 #include "tensorflow/lite/micro/kernels/softmax.h"
 #include "tensorflow/lite/micro/micro_context.h"
 #include "tensorflow/lite/micro/memory_helpers.h"
+
+#ifdef __xcore__
+#include <xcore/hwtimer.h>
+#endif
 
 // #define TFLMC_XCORE_PROFILE
 // #define TFLMC_CONV2D_PROFILE
@@ -509,6 +514,13 @@ void tflmc::Compiler::writeSource(std::ostream &out) {
 
   if (sharedCfg_) {
     wr << R"(
+// Check target arch
+#ifdef __XS3A__
+static_assert()" << sharedCfg_->target_arch << R"( == )"<< nn_target_arch_t::XS3A << R"(, "Model has not been compiled for XS3A!");
+#elif __VX4A__
+static_assert()" << sharedCfg_->target_arch << R"( == )"<< nn_target_arch_t::VX4A << R"(, "Model has not been compiled for VX4A!");
+#endif
+
 // Check lib_nn and lib_tflite_micro versions
 // NOTE: xformer version is saved for debugging purposes
 // If lib_nn and lib_tflite_micro versions are as expected,
@@ -888,7 +900,7 @@ static const int externalInOutTensorOffsets[] = {
   }
   wr << "};";
 
-  wr << "\n// Indices for output tensors that are modified by certain TFLite ops and";
+  wr << "\n\n// Indices for output tensors that are modified by certain TFLite ops and";
   wr << "\n// have to be reset in model_init() if the tensor arena gets trashed";
   wr << "\nstatic const int tfliteModifiedOutputTensorIndices[] = {";
   index = 0;
@@ -926,7 +938,6 @@ static const int externalInOutTensorOffsets[] = {
     }
   }
   wr << "};";
-  wr << "\n";
 
   // TODO: This code assumes that persistent allocations are made from the end
   // (which is true for the current implementation)
@@ -1095,7 +1106,7 @@ printf("[\n");
 
 #ifdef TFLMC_XCORE_PROFILE
 #ifdef __xcore__
-    asm volatile ("gettime %0" : "=r" (time_t0));
+    time_t0 = get_reference_time();
 #endif
 #endif
 
@@ -1112,7 +1123,7 @@ printf("[\n");
 
 #ifdef TFLMC_XCORE_PROFILE
 #ifdef __xcore__
-    asm volatile ("gettime %0" : "=r" (time_t1));
+    time_t1 = get_reference_time();
 #endif
     op_times[used_ops[i]] += time_t1 - time_t0;
     op_counts[used_ops[i]] += 1;
@@ -1220,7 +1231,18 @@ TfLiteStatus )"
   )";
   }
   wr << R"(
-  
+
+// Set target arch based on the compiled model
+  SetNNTargetArch()";
+  if(sharedCfg_->target_arch == nn_target_arch_t::XS3A){
+    wr << R"(nn_target_arch_t::XS3A);)";
+  } else if(sharedCfg_->target_arch == nn_target_arch_t::XS3A) {
+    wr << R"(nn_target_arch_t::VX4A);)";
+  } else {
+    assert(false && "Arch not defined!");
+  }
+  wr << R"(
+
   // Clear and initialize
   scratch_buffer_idx = 0;
   persistentBufferPtr = tensor_arena + kTensorArenaSize;
@@ -1315,7 +1337,7 @@ TfLiteStatus )"
 
 #ifdef TFLMC_XCORE_PROFILE
 #ifdef __xcore__
-      asm volatile ("gettime %0" : "=r" (time_t0));
+      time_t0 = get_reference_time();
 #endif
 #endif
 
@@ -1325,7 +1347,7 @@ TfLiteStatus )"
 
 #ifdef TFLMC_XCORE_PROFILE
 #ifdef __xcore__
-      asm volatile ("gettime %0" : "=r" (time_t1));
+      time_t1 = get_reference_time();
 #endif
       op_times[used_ops[i]] += time_t1 - time_t0;
       printf("node %-5d %-32s %-12d\n", i, op_strs[used_ops[i]], time_t1 - time_t0);
@@ -1356,7 +1378,7 @@ TfLiteStatus )"
 
 #ifdef TFLMC_XCORE_PROFILE
 #ifdef __xcore__
-      asm volatile ("gettime %0" : "=r" (time_t0));
+      time_t0 = get_reference_time();
 #endif
 #endif
 
@@ -1364,7 +1386,7 @@ TfLiteStatus )"
 
 #ifdef TFLMC_XCORE_PROFILE
 #ifdef __xcore__
-      asm volatile ("gettime %0" : "=r" (time_t1));
+      time_t1 = get_reference_time();
 #endif
       op_times[used_ops[i]] += time_t1 - time_t0;
       printf("node %-5d %-32s %-12d\n", i, op_strs[used_ops[i]], time_t1 - time_t0);

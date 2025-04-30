@@ -106,6 +106,15 @@ int inference_engine_load_model(inference_engine *ie, uint32_t model_bytes,
 
       // Get thread count required from the runtime by the xformer
       ie->num_threads = shared_config_ptr->required_thread_count;
+
+      // Set target arch based on the compiled model
+      if(shared_config_ptr->target_arch == nn_target_arch_t::XS3A){
+        SetNNTargetArch(nn_target_arch_t::XS3A);
+      } else if(shared_config_ptr->target_arch == nn_target_arch_t::VX4A) {
+        SetNNTargetArch(nn_target_arch_t::VX4A);
+      } else {
+        assert(false && "Arch not defined!");
+      }
     }
   }
 

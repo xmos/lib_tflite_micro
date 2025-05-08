@@ -516,9 +516,9 @@ void tflmc::Compiler::writeSource(std::ostream &out) {
     wr << R"(
 // Check target arch
 #ifdef __XS3A__
-static_assert()" << sharedCfg_->target_arch << R"( == )"<< nn_target_arch_t::XS3A << R"(, "Model has not been compiled for XS3A!");
+static_assert()" << sharedCfg_->target_arch << R"( == )"<< nn_target_arch_t::TARGET_ARCH_XS3A << R"(, "Model has not been compiled for XS3A!");
 #elif __VX4A__
-static_assert()" << sharedCfg_->target_arch << R"( == )"<< nn_target_arch_t::VX4A << R"(, "Model has not been compiled for VX4A!");
+static_assert()" << sharedCfg_->target_arch << R"( == )"<< nn_target_arch_t::TARGET_ARCH_VX4A << R"(, "Model has not been compiled for VX4A!");
 #endif
 
 // Check lib_nn and lib_tflite_micro versions
@@ -1234,10 +1234,10 @@ TfLiteStatus )"
 
 // Set target arch based on the compiled model
   SetNNTargetArch()";
-  if(sharedCfg_->target_arch == nn_target_arch_t::XS3A){
-    wr << R"(nn_target_arch_t::XS3A);)";
-  } else if(sharedCfg_->target_arch == nn_target_arch_t::VX4A) {
-    wr << R"(nn_target_arch_t::VX4A);)";
+  if(sharedCfg_->target_arch == nn_target_arch_t::TARGET_ARCH_XS3A){
+    wr << R"(nn_target_arch_t::TARGET_ARCH_XS3A);)";
+  } else if(sharedCfg_->target_arch == nn_target_arch_t::TARGET_ARCH_VX4A) {
+    wr << R"(nn_target_arch_t::TARGET_ARCH_VX4A);)";
   } else {
     assert(false && "Arch not defined!");
   }

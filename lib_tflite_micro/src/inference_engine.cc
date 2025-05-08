@@ -108,10 +108,10 @@ int inference_engine_load_model(inference_engine *ie, uint32_t model_bytes,
       ie->num_threads = shared_config_ptr->required_thread_count;
 
       // Set target arch based on the compiled model
-      if(shared_config_ptr->target_arch == nn_target_arch_t::XS3A){
-        SetNNTargetArch(nn_target_arch_t::XS3A);
-      } else if(shared_config_ptr->target_arch == nn_target_arch_t::VX4A) {
-        SetNNTargetArch(nn_target_arch_t::VX4A);
+      if(shared_config_ptr->target_arch == nn_target_arch_t::TARGET_ARCH_XS3A){
+        SetNNTargetArch(nn_target_arch_t::TARGET_ARCH_XS3A);
+      } else if(shared_config_ptr->target_arch == nn_target_arch_t::TARGET_ARCH_VX4A) {
+        SetNNTargetArch(nn_target_arch_t::TARGET_ARCH_VX4A);
       } else {
         assert(false && "Arch not defined!");
       }

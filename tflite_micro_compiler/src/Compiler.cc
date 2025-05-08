@@ -1236,7 +1236,7 @@ TfLiteStatus )"
   SetNNTargetArch()";
   if(sharedCfg_->target_arch == nn_target_arch_t::XS3A){
     wr << R"(nn_target_arch_t::XS3A);)";
-  } else if(sharedCfg_->target_arch == nn_target_arch_t::XS3A) {
+  } else if(sharedCfg_->target_arch == nn_target_arch_t::VX4A) {
     wr << R"(nn_target_arch_t::VX4A);)";
   } else {
     assert(false && "Arch not defined!");

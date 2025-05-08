@@ -1,6 +1,6 @@
 #define STACK_WORDS_PER_THREAD 1024
 #define STACK_BYTES_PER_THREAD 4096
-#ifndef NO_INTERPRETER
+#ifdef NO_INTERPRETER
 
 
 #if defined(__XS3A__) || defined(__XS2A__)

@@ -18,6 +18,7 @@ void thread_variable_setup(void *arg1, void *arg2, uint32_t thread_id) {
 void thread_client(thread_info_t *ptr, int n) {
     ptr->thread_ids.id[n] = n;
 }
+
 void thread_call(void *arg0, void *arg1, void *arg2,
                  thread_function_pointer_t fp, thread_info_t *ptr) {
   (*fp)(arg0, arg1, arg2);

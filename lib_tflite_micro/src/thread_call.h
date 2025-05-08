@@ -26,8 +26,6 @@ typedef struct { // THIS STRUCT MUST BE IN SYNC WITH ASSEMBLY CODE.
     uint32_t id[4];         // Actual IDs
   } thread_ids;             // ids of at most 4 threads - live during invoke
   uint32_t synchroniser;    // synchroniser for threads - live during invoke
-  uint32_t nstackwords;     // nstackwords per stack   - live after load model
-  void *UNSAFE stacks;      // pointer to top of stack - live after load model
 } thread_info_t;
 
 

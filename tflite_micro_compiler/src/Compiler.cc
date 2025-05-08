@@ -966,11 +966,6 @@ static_assert(()"
      << numXCThreads_ << R"( == 1),
              "Only one thread can be used when using USE_DDR_FIX! Please recompile with one thread!");
 #endif
-constexpr int kStackWordsPerThread = 256;
-constexpr int threadsStackSizeInUint64 = )"
-     << numXCThreads_ << R"( * kStackWordsPerThread/2;
-// We use uint64_t for xcThreadsStack so that it is aligned to 8 bytes
-uint64_t xcThreadsStack[threadsStackSizeInUint64];
 
 // Persistent buffer ptr
 // Initialized to the tail end of the tensor arena
@@ -1254,9 +1249,6 @@ TfLiteStatus )"
   // Set thread count specified in the compiler
   xc_config.model_thread_count = )"
      << numXCThreads_ << R"(;
-  // Set thread info
-  xc_config.thread_info.nstackwords = kStackWordsPerThread;
-  xc_config.thread_info.stacks = &xcThreadsStack[threadsStackSizeInUint64 - 1];
 
   // Initialize externally allocated input/output tensors with paging_ptr
   InitExternalTensors(paging_ptr);

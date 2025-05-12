@@ -2,6 +2,8 @@
 #ifndef XCORE_SHARED_CONFIG_H_
 #define XCORE_SHARED_CONFIG_H_
 
+#include "lib_nn/api/nn_arch.h"
+
 namespace shared_config {
 
 // This string is used as a key to store the shared config
@@ -19,6 +21,8 @@ struct tensor_info_t {
 // The metadata struct must be aligned to 16 bytes
 // We cannot use alignas(16) yet in xcore
 struct xcore_metadata_t {
+  // Target arch can be XS3A = 0, or VX4A = 1
+  nn_target_arch_t target_arch;
   // Versions of libraries used to build the model
   uint32_t lib_nn_major_version;
   uint32_t lib_nn_minor_version;

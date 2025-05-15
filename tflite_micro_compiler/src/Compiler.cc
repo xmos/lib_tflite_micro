@@ -1411,12 +1411,33 @@ TfLiteStatus )"
   return )" << prefix_ << R"(init_with_paging(weights_data_ptr, nullptr);
 }
 
+#ifdef __VX4A__
+#define STACKFUNCTION(FN, BYTES) \
+  asm(".globl " # FN ); \
+  asm(".resource_list_empty " # FN ", \"callees\""); \
+  asm(".resource_list_empty " # FN ", \"tail_callees\""); \
+  asm(".resource_list_empty " # FN ", \"parallel_callees\""); \
+  asm(".resource_const " # FN ", \"stack_frame_bytes\", " # BYTES);
+
+STACKFUNCTION(_Z22model_init_with_pagingPvS_, 1000);
+// STACKFUNCTION(_Z12model_invokev, 1000);
+STACKFUNCTION(__call_exitprocs_impl, 1000);
+STACKFUNCTION(invoke_subgraph_c_trampoline, 1000);
+// STACKFUNCTION(_Z10model_initPv);
+#endif
+
+TfLiteStatus mg_status;
+extern "C" void invoke_subgraph_c_trampoline(){
+  mg_status = mg_InvokeSubgraph(0);
+}
+
+extern "C" void par_invoke_)"
+     << numXCThreads_ << R"((void *thread_info);
+
 )";
 wr<<R"(#pragma stackfunction 1000
 TfLiteStatus )"
      << prefix_ << R"(invoke() {
-  thread_init_)"
-     << numXCThreads_ << R"((&xc_config.thread_info);
 
 #ifdef TFLMC_XCORE_PROFILE
   printf("\n\n\nProfiling invoke()...\n");
@@ -1425,12 +1446,11 @@ TfLiteStatus )"
   op_times_summed = 0;
 #endif
 
-  TfLiteStatus status = mg_InvokeSubgraph(0);
-  if (status != kTfLiteOk) {
-    return status;
+  par_invoke_)"
+     << numXCThreads_ << R"((&xc_config.thread_info);
+  if (mg_status != kTfLiteOk) {
+    return mg_status;
   }
-
-  thread_destroy(&xc_config.thread_info);
 )";
   if (has_xc_conv_ops) {
     wr << R"(

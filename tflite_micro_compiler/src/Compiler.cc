@@ -966,11 +966,6 @@ static_assert(()"
      << numXCThreads_ << R"( == 1),
              "Only one thread can be used when using USE_DDR_FIX! Please recompile with one thread!");
 #endif
-constexpr int kStackWordsPerThread = 256;
-constexpr int threadsStackSizeInUint64 = )"
-     << numXCThreads_ << R"( * kStackWordsPerThread/2;
-// We use uint64_t for xcThreadsStack so that it is aligned to 8 bytes
-uint64_t xcThreadsStack[threadsStackSizeInUint64];
 
 // Persistent buffer ptr
 // Initialized to the tail end of the tensor arena
@@ -1254,9 +1249,6 @@ TfLiteStatus )"
   // Set thread count specified in the compiler
   xc_config.model_thread_count = )"
      << numXCThreads_ << R"(;
-  // Set thread info
-  xc_config.thread_info.nstackwords = kStackWordsPerThread;
-  xc_config.thread_info.stacks = &xcThreadsStack[threadsStackSizeInUint64 - 1];
 
   // Initialize externally allocated input/output tensors with paging_ptr
   InitExternalTensors(paging_ptr);
@@ -1419,12 +1411,33 @@ TfLiteStatus )"
   return )" << prefix_ << R"(init_with_paging(weights_data_ptr, nullptr);
 }
 
+#ifdef __VX4A__
+#define STACKFUNCTION(FN, BYTES) \
+  asm(".globl " # FN ); \
+  asm(".resource_list_empty " # FN ", \"callees\""); \
+  asm(".resource_list_empty " # FN ", \"tail_callees\""); \
+  asm(".resource_list_empty " # FN ", \"parallel_callees\""); \
+  asm(".resource_const " # FN ", \"stack_frame_bytes\", " # BYTES);
+
+STACKFUNCTION(_Z22model_init_with_pagingPvS_, 1000);
+// STACKFUNCTION(_Z12model_invokev, 1000);
+STACKFUNCTION(__call_exitprocs_impl, 1000);
+STACKFUNCTION(invoke_subgraph_c_trampoline, 1000);
+// STACKFUNCTION(_Z10model_initPv);
+#endif
+
+TfLiteStatus mg_status;
+extern "C" void invoke_subgraph_c_trampoline(){
+  mg_status = mg_InvokeSubgraph(0);
+}
+
+extern "C" void par_invoke_)"
+     << numXCThreads_ << R"((void *thread_info);
+
 )";
 wr<<R"(#pragma stackfunction 1000
 TfLiteStatus )"
      << prefix_ << R"(invoke() {
-  thread_init_)"
-     << numXCThreads_ << R"((&xc_config.thread_info);
 
 #ifdef TFLMC_XCORE_PROFILE
   printf("\n\n\nProfiling invoke()...\n");
@@ -1433,12 +1446,11 @@ TfLiteStatus )"
   op_times_summed = 0;
 #endif
 
-  TfLiteStatus status = mg_InvokeSubgraph(0);
-  if (status != kTfLiteOk) {
-    return status;
+  par_invoke_)"
+     << numXCThreads_ << R"((&xc_config.thread_info);
+  if (mg_status != kTfLiteOk) {
+    return mg_status;
   }
-
-  thread_destroy(&xc_config.thread_info);
 )";
   if (has_xc_conv_ops) {
     wr << R"(

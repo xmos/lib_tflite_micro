@@ -1,6 +1,7 @@
 
 #include "thread_call.h"
 
+#ifdef NO_INTERPRETER
 
 #if defined(__xcore__) || defined(__riscv_xxcore)
 #include <xcore/parallel.h>
@@ -83,3 +84,5 @@ void par_invoke_5(thread_info_t *ti) {
   main_task(ti, 0);
 #endif
 }
+
+#endif

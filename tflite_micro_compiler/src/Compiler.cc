@@ -1427,12 +1427,13 @@ STACKFUNCTION(invoke_subgraph_c_trampoline, 1000);
 #endif
 
 TfLiteStatus mg_status;
+#pragma stackfunction 1000
 extern "C" void invoke_subgraph_c_trampoline(){
   mg_status = mg_InvokeSubgraph(0);
 }
 
 extern "C" void par_invoke_)"
-     << numXCThreads_ << R"((void *thread_info);
+     << numXCThreads_ << R"((thread_info_t *thread_info);
 
 )";
 wr<<R"(#pragma stackfunction 1000

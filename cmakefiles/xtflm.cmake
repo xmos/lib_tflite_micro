@@ -63,6 +63,7 @@ list(APPEND XTFLIB_XCORE_SOURCES "${XTFLIB_SRC_DIR}/../memory_transport_ll.S")
 list(APPEND XTFLIB_XCORE_SOURCES "${XTFLIB_SRC_DIR}/../thread_call.S")
 list(APPEND XTFLIB_XCORE_SOURCES "${XTFLIB_SRC_DIR}/../tile_ram_server.c")
 
+list(APPEND XTFLIB_KERNEL_SOURCES  "${XTFLIB_SRC_DIR}/../par_invoke_funcs.c")
 list(APPEND XTFLIB_KERNEL_SOURCES  "${XTFLIB_SRC_DIR}/../thread_call_host_emulation.c")
 list(APPEND XTFLIB_KERNEL_SOURCES  "${XTFLIB_SRC_DIR}/xcore_common.cc")
 list(APPEND XTFLIB_KERNEL_SOURCES  "${XTFLIB_SRC_DIR}/xcore_custom_options.cc")

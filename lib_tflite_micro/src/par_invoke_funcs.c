@@ -1,15 +1,12 @@
 
-#include "/Users/deepakpanickal/code/ai_tools/.venv/lib/python3.10/site-packages/xmos_ai_tools/runtime/include/lib_tflite_micro/src/thread_call.h"
-// #include "xcore/parallel.h"
+#include "thread_call.h"
 
+#ifdef NO_INTERPRETER
 
 #if defined(__xcore__) || defined(__riscv_xxcore)
 #include <xcore/parallel.h>
 DECLARE_JOB(main_task, (thread_info_t *, synchronizer_t));
 DECLARE_JOB(client_task, (thread_info_t *, int));
-#if defined(__xcore__)
-asm(".linkset __xcore_ugs_shim_main_task.nstackwords, 1024");
-#endif
 #endif
 
 extern void invoke_subgraph_c_trampoline();
@@ -87,3 +84,5 @@ void par_invoke_5(thread_info_t *ti) {
   main_task(ti, 0);
 #endif
 }
+
+#endif

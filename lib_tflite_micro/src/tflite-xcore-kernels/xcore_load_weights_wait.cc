@@ -72,13 +72,21 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   // If DDR, we can do a direct copy with the VPU
   // If not DDR, the weights will be in flash or on another tile
   if (op_data->op_type == OpType::DDR) {
-    assert(node->outputs->size == 1 && "DDR loads have only one output!");
-    TfLiteEvalTensor *output = tflite_micro::micro::GetEvalOutput(context, node, 0);
-    int8_t *data_ptr = tflite_micro::micro::GetTensorData<int8_t>(output);
-    vpu_memcpy_ext((void *)data_ptr,
-                   ((int8_t *)xc_config->weights_data_ptr) + op_data->addr,
-                   op_data->sizes[0]);
+    int addr_offset = 0;
+    for (int i = 0; i < node->outputs->size; ++i) {
+      TfLiteEvalTensor *output = tflite_micro::micro::GetEvalOutput(context, node, i);
+      int8_t *data_ptr = tflite_micro::micro::GetTensorData<int8_t>(output);
+      vpu_memcpy_ext((void *)data_ptr,
+                    ((int8_t *)xc_config->weights_data_ptr) + op_data->addr +
+                    addr_offset,
+                    op_data->sizes[i]);
+      addr_offset += op_data->sizes[i];
+    }
   } else {
+    // Assert that the pointer is a chanend itself by testing the last two bits
+    // of the address. The last two bits should be 10, which is 2 in decimal.
+    assert(((uintptr_t)xc_config->weights_data_ptr & 3) == 2 &&
+           "The weights_data_ptr should be a chanend!");
 
     chanend_t c_flash_or_tile = (chanend_t) static_cast<int>(
         reinterpret_cast<intptr_t>(xc_config->weights_data_ptr));

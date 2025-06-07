@@ -3,6 +3,12 @@
 
 #include <quadflash.h>
 
+#ifdef __cplusplus
+#define EXTERN_C extern "C"
+#else
+#define EXTERN_C
+#endif
+
 /** Struct holding the "file system" meta information for each client
  * The flash is partitioned and each client has a section in the flash
  * that stores data relevant to that particular client. For example, models
@@ -65,7 +71,7 @@ void flash_server(chanend c_flash_clients[], flash_t headers[],
                   int n_flash_clients, fl_QSPIPorts &qspi,
                   fl_QuadDeviceSpec flash_spec[], int n_flash_spec);
 #else
-void flash_server(chanend_t *c_flash_clients, flash_t *headers,
+EXTERN_C void flash_server(chanend_t *c_flash_clients, flash_t *headers,
                   int n_flash_clients, fl_QSPIPorts *qspi,
                   fl_QuadDeviceSpec *flash_spec, int n_flash_spec);
 #endif

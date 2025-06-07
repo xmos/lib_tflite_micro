@@ -1,9 +1,21 @@
 #ifndef _FAST_FLASH_H_
 #define _FAST_FLASH_H_
 
+#include <xcore/chanend.h>
 #include <quadflash.h>
 
-#ifdef __XC__
+// typedef struct {
+//   unsigned qspiCS;
+//   unsigned qspiSCLK;
+//   unsigned qspiSIO;
+//   unsigned qspiClkblk;
+// } fl_QSPIPorts;
+
+// typedef struct {
+//   unsigned int byte_address;  // Address in flash
+//   unsigned int byte_count;    // Number of bytes to read/write
+// } fl_QuadDeviceSpec;
+
 /** Fast flash library.
  * Before calling any of the functions in here, lib_quad_flash must be initialised as normal by using
  * fl_connectToDevice(qspi, flash_spec, n_flash_spec).
@@ -30,7 +42,7 @@
  * \returns    a negative value of -1..-5 if the window is too small (size 0..4)
  *             zero if successful
  */
-int fast_flash_init(fl_QSPIPorts &qspi);
+int fast_flash_init(fl_QSPIPorts *qspi);
 
 /** Function that reads a sequential set of bytes from memory.
  * This function assumes that nibbles have been reversed ((x << 4) & 0xf0 | (x >> 4) & 0x0f)
@@ -43,11 +55,6 @@ int fast_flash_init(fl_QSPIPorts &qspi);
  * \param      read_data   array to store data in to.
  * \param      c_out_data  optional channel end over which data is out() instead.
  */
-void fast_flash_read(fl_QSPIPorts &qspi, unsigned addr, unsigned word_count, unsigned read_data[], chanend ?c_data_out);
-
-#else
-int fast_flash_init(fl_QSPIPorts *qspi);
 void fast_flash_read(fl_QSPIPorts *qspi, unsigned addr, unsigned word_count, unsigned read_data[], chanend_t c_data_out);
-#endif
 
 #endif

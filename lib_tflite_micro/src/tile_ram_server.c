@@ -20,6 +20,7 @@
 
 void tile_ram_server(chanend_t *c_tile_ram, flash_t *headers, int n_tile_ram,
                      const int8_t *tile_ram) {
+    #ifdef __XS3A__
     uint32_t tmp = ((uint32_t*)tile_ram)[0];
     if ((tmp ^ VERSION_LITTLE_ENDING) != 0) {
         printstr("version check error");
@@ -49,4 +50,7 @@ void tile_ram_server(chanend_t *c_tile_ram, flash_t *headers, int n_tile_ram,
             memory_parallel_send(c_tile_ram[i], &((uint8_t *)tile_ram)[byte_address], number_bytes);
         }
     }
+    #elif defined(__VX4A__)
+    assert(0 && "Tile Ram server not supported on VX4A!");
+    #endif
 }

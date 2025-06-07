@@ -1420,6 +1420,7 @@ TfLiteStatus )"
   asm(".resource_const " # FN ", \"stack_frame_bytes\", " # BYTES);
 
 STACKFUNCTION(_Z22model_init_with_pagingPvS_, 1000);
+STACKFUNCTION(fast_read_loop, 1000);
 // STACKFUNCTION(_Z12model_invokev, 1000);
 STACKFUNCTION(__call_exitprocs_impl, 1000);
 STACKFUNCTION(invoke_subgraph_c_trampoline, 1000);

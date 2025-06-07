@@ -74,7 +74,13 @@ elseif(${CMAKE_SYSTEM_PROCESSOR} STREQUAL XCORE_XS)
     )
     enable_language(CXX C ASM)
 
+    target_sources(${LIB_NAME}
+        PRIVATE ${XTFLIB_XCORE_SOURCES}
+    )
+
     SET(CMAKE_OSX_DEPLOYMENT_TARGET 12.0)
+    set_property(TARGET ${LIB_NAME} PROPERTY CXX_STANDARD 14)
+
 
     list(APPEND DEFINITIONS "FLATBUFFERS_LOCALE_INDEPENDENT=0")
 else()
@@ -116,6 +122,7 @@ add_custom_target(project-install DEPENDS ${LIB_NAME}
     COMMAND rm -rf "${CMAKE_BINARY_DIR}/include/lib_nn"
     COMMAND mv "${CMAKE_BINARY_DIR}/include/temp_lnn" "${CMAKE_BINARY_DIR}/include/lib_nn"
     COMMAND mv "${CMAKE_BINARY_DIR}/include/lib_tflite_micro/api/flash_server.h" "${CMAKE_BINARY_DIR}/include"
+    COMMAND mv "${CMAKE_BINARY_DIR}/include/lib_tflite_micro/api/fast_flash.h" "${CMAKE_BINARY_DIR}/include"
     COMMAND mv "${CMAKE_BINARY_DIR}/include/lib_tflite_micro/api/ioserver.h" "${CMAKE_BINARY_DIR}/include"
     COMMAND mv "${CMAKE_BINARY_DIR}/include/lib_tflite_micro/api/tile_ram_server.h" "${CMAKE_BINARY_DIR}/include"
     )

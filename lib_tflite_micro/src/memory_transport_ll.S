@@ -1,3 +1,4 @@
+ #ifdef __XS3A__
     .issue_mode dual
     .cc_top transmit_tx.function,transmit_tx
     .globl transmit_tx
@@ -49,3 +50,4 @@ rx_loop:
     { chkct res[r1], 1            ; retsp 0 }
     .cc_bottom receive_rx.function
     
+#endif

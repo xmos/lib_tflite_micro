@@ -1,3 +1,5 @@
+#ifdef __XS3A__
+
 	.text
 
     .globl fast_read_loop
@@ -103,3 +105,5 @@ EndOfFunction:
 	.set	fast_read_loop.maxchanends,0
 .Ltmp2:
 	.size	fast_read_loop, .Ltmp2-fast_read_loop
+
+#endif

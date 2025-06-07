@@ -1,7 +1,7 @@
 #ifndef _flash_server_h_
 #define _flash_server_h_
 
-#include <quadflash.h>
+#include "fast_flash.h"
 
 #ifdef __cplusplus
 #define EXTERN_C extern "C"

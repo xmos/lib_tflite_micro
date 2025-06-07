@@ -35,6 +35,7 @@ void load_weights_synchronous(chanend_t c_flash_or_tile, int *data_ptrs[], int d
         // to close the chanend
         chanend_check_end_token(c_flash_or_tile);
     } else {
+        #ifdef __XS3A__
         // The parallel mode uses four threads and can only work if
         // the model has been compiled with at least four threads.
         assert(model_thread_count >= 4 &&
@@ -54,6 +55,9 @@ void load_weights_synchronous(chanend_t c_flash_or_tile, int *data_ptrs[], int d
             memory_parallel_receive_thread_call(c_flash_or_tile, (uint32_t *)data_ptrs[i],
                                                 4*data_sizes_in_words[i], tif);
         }
+        #elif defined(__VX4A__)
+        assert(0 && "Parallel mode/Tile Ram server not supported on VX4A!");
+        #endif
     }
 }
 

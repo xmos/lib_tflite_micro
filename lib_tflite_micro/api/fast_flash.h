@@ -1,7 +1,12 @@
 #ifndef _FAST_FLASH_H_
 #define _FAST_FLASH_H_
 
+#ifdef __XC__
+#define chanend_t chanend
+#else
 #include <xcore/chanend.h>
+#endif
+
 #include <quadflash.h>
 
 // typedef struct {

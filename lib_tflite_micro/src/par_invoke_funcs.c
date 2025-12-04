@@ -21,7 +21,7 @@ void client_task(thread_info_t *t, int n) {
 }
 
 void par_invoke_1(thread_info_t *ti) {
-#ifdef __xcore__
+#if defined(__xcore__) || defined(__riscv_xxcore)
   PAR_JOBS(
      PJOB(main_task, (ti, PAR_SYNC)));
 #else
@@ -30,7 +30,7 @@ void par_invoke_1(thread_info_t *ti) {
 }
 
 void par_invoke_2(thread_info_t *ti) {
-#ifdef __xcore__
+#if defined(__xcore__) || defined(__riscv_xxcore)
   PAR_JOBS(
      PJOB(main_task, (ti, PAR_SYNC)),
      PJOB(client_task, (ti, 0)));
@@ -41,7 +41,7 @@ void par_invoke_2(thread_info_t *ti) {
 }
 
 void par_invoke_3(thread_info_t *ti) {
-#ifdef __xcore__
+#if defined(__xcore__) || defined(__riscv_xxcore)
   PAR_JOBS(
      PJOB(main_task, (ti, PAR_SYNC)),
      PJOB(client_task, (ti, 0)),
@@ -54,7 +54,7 @@ void par_invoke_3(thread_info_t *ti) {
 }
 
 void par_invoke_4(thread_info_t *ti) {
-#ifdef __xcore__
+#if defined(__xcore__) || defined(__riscv_xxcore)
   PAR_JOBS(
      PJOB(main_task, (ti, PAR_SYNC)),
      PJOB(client_task, (ti, 0)),
@@ -69,7 +69,7 @@ void par_invoke_4(thread_info_t *ti) {
 }
 
 void par_invoke_5(thread_info_t *ti) {
-#ifdef __xcore__
+#if defined(__xcore__) || defined(__riscv_xxcore)
   PAR_JOBS(
      PJOB(main_task, (ti, PAR_SYNC)),
      PJOB(client_task, (ti, 0)),

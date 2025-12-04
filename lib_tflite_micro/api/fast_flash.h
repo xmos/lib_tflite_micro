@@ -7,19 +7,25 @@
 #include <xcore/chanend.h>
 #endif
 
+#ifdef __XS3A__
 #include <quadflash.h>
+#elif defined(__VX4A__) || defined(__VX4B__)
 
-// typedef struct {
-//   unsigned qspiCS;
-//   unsigned qspiSCLK;
-//   unsigned qspiSIO;
-//   unsigned qspiClkblk;
-// } fl_QSPIPorts;
+typedef struct {
+  unsigned qspiCS;
+  unsigned qspiSCLK;
+  unsigned qspiSIO;
+  unsigned qspiClkblk;
+} fl_QSPIPorts;
 
-// typedef struct {
-//   unsigned int byte_address;  // Address in flash
-//   unsigned int byte_count;    // Number of bytes to read/write
-// } fl_QuadDeviceSpec;
+typedef struct {
+  unsigned int byte_address;  // Address in flash
+  unsigned int byte_count;    // Number of bytes to read/write
+} fl_QuadDeviceSpec;
+
+int fl_connectToDevice(fl_QSPIPorts *QSPI, const fl_QuadDeviceSpec spec[], unsigned n) { return -1; }
+
+#endif
 
 /** Fast flash library.
  * Before calling any of the functions in here, lib_quad_flash must be initialised as normal by using

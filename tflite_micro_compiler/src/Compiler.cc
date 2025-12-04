@@ -494,7 +494,7 @@ void tflmc::Compiler::writeSource(std::ostream &out) {
 #include "tensorflow/lite/micro/micro_context.h"
 #include "tensorflow/lite/micro/memory_helpers.h"
 
-#ifdef __xcore__
+#if defined(__xcore__) || defined(__riscv_xxcore)
 #include <xcore/hwtimer.h>
 #endif
 
@@ -517,7 +517,7 @@ void tflmc::Compiler::writeSource(std::ostream &out) {
 // Check target arch
 #ifdef __XS3A__
 static_assert()" << sharedCfg_->target_arch << R"( == )"<< nn_target_arch_t::TARGET_ARCH_XS3A << R"(, "Model has not been compiled for XS3A!");
-#elif __VX4A__
+#elif __VX4A__ || __VX4B__
 static_assert()" << sharedCfg_->target_arch << R"( == )"<< nn_target_arch_t::TARGET_ARCH_VX4A << R"(, "Model has not been compiled for VX4A!");
 #endif
 
@@ -1100,7 +1100,7 @@ printf("[\n");
 #endif
 
 #ifdef TFLMC_XCORE_PROFILE
-#ifdef __xcore__
+#if defined(__xcore__) || defined(__riscv_xxcore)
     time_t0 = get_reference_time();
 #endif
 #endif
@@ -1117,7 +1117,7 @@ printf("[\n");
     }
 
 #ifdef TFLMC_XCORE_PROFILE
-#ifdef __xcore__
+#if defined(__xcore__) || defined(__riscv_xxcore)
     time_t1 = get_reference_time();
 #endif
     op_times[used_ops[i]] += time_t1 - time_t0;
@@ -1203,7 +1203,7 @@ size_t )"
 )";
 if (has_xc_async_ops) {
 wr << R"(
-#ifdef __xcore__
+#if defined(__xcore__) || defined(__riscv_xxcore)
 // Confirm that weights_data_ptr/channel end is on the same tile 
 // if the model has async ops
 #include <xcore/chanend.h>
@@ -1217,7 +1217,7 @@ TfLiteStatus )"
      << prefix_ << R"(init_with_paging(void *weights_data_ptr, void *paging_ptr) {)";
   if (has_xc_async_ops) {
   wr << R"(
-  #ifdef __xcore__
+  #if defined(__xcore__) || defined(__riscv_xxcore)
   // Confirm that weights_data_ptr/channel end is on the same tile 
   // if the model has async ops )
   assert(chanend_test_dest_local((unsigned) weights_data_ptr) == 1 
@@ -1328,7 +1328,7 @@ TfLiteStatus )"
     if (registrations[used_ops[i]].init) {
 
 #ifdef TFLMC_XCORE_PROFILE
-#ifdef __xcore__
+#if defined(__xcore__) || defined(__riscv_xxcore)
       time_t0 = get_reference_time();
 #endif
 #endif
@@ -1338,7 +1338,7 @@ TfLiteStatus )"
   wr << R"();
 
 #ifdef TFLMC_XCORE_PROFILE
-#ifdef __xcore__
+#if defined(__xcore__) || defined(__riscv_xxcore)
       time_t1 = get_reference_time();
 #endif
       op_times[used_ops[i]] += time_t1 - time_t0;
@@ -1369,7 +1369,7 @@ TfLiteStatus )"
     if (registrations[used_ops[i]].prepare) {
 
 #ifdef TFLMC_XCORE_PROFILE
-#ifdef __xcore__
+#if defined(__xcore__) || defined(__riscv_xxcore)
       time_t0 = get_reference_time();
 #endif
 #endif
@@ -1377,7 +1377,7 @@ TfLiteStatus )"
       TfLiteStatus status = registrations[used_ops[i]].prepare(&ctx, &tflNodes[i]);
 
 #ifdef TFLMC_XCORE_PROFILE
-#ifdef __xcore__
+#if defined(__xcore__) || defined(__riscv_xxcore)
       time_t1 = get_reference_time();
 #endif
       op_times[used_ops[i]] += time_t1 - time_t0;
@@ -1411,9 +1411,15 @@ TfLiteStatus )"
   return )" << prefix_ << R"(init_with_paging(weights_data_ptr, nullptr);
 }
 
-#ifdef __VX4A__
+#if defined(__VX4A__) || defined(__VX4B__)
 #define STACKFUNCTION(FN, BYTES) \
   asm(".globl " # FN ); \
+  asm(".resource_list_empty " # FN ", \"callees\""); \
+  asm(".resource_list_empty " # FN ", \"tail_callees\""); \
+  asm(".resource_list_empty " # FN ", \"parallel_callees\""); \
+  asm(".resource_const " # FN ", \"stack_frame_bytes\", " # BYTES);
+
+#define STACKFUNCTION_STATIC(FN, BYTES) \
   asm(".resource_list_empty " # FN ", \"callees\""); \
   asm(".resource_list_empty " # FN ", \"tail_callees\""); \
   asm(".resource_list_empty " # FN ", \"parallel_callees\""); \
@@ -1423,7 +1429,7 @@ STACKFUNCTION(_Z22model_init_with_pagingPvS_, 1000);
 STACKFUNCTION(fast_read_loop, 1000);
 // STACKFUNCTION(_Z12model_invokev, 1000);
 STACKFUNCTION(__call_exitprocs_impl, 1000);
-STACKFUNCTION(invoke_subgraph_c_trampoline, 1000);
+STACKFUNCTION_STATIC(_ZN12_GLOBAL__N_117mg_InvokeSubgraphEi, 1000);
 // STACKFUNCTION(_Z10model_initPv);
 #endif
 

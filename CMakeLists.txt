@@ -70,8 +70,13 @@ if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL XCORE_XS3A)
 elseif(${CMAKE_SYSTEM_PROCESSOR} STREQUAL XCORE_XS)
     set(BUILD_FLAGS
         "-g"
-        "-O0"
     )
+    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+        list(APPEND BUILD_FLAGS "-00")
+    else()
+        list(APPEND BUILD_FLAGS "-Os")
+    endif()
+
     enable_language(CXX C ASM)
 
     target_sources(${LIB_NAME}

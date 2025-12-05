@@ -18,7 +18,7 @@ int xc_fc_float_ref(float *outputs, float *inputs, float *kernels,
   return cnt;
 }
 
-#if !defined(NN_USE_REF) && !defined(__VX4A__) && !defined(__VX4B__)
+#if !defined(NN_USE_REF) && defined(__XS3A__)
 int xc_fc_float_opt(float *outputs, float *inputs, float *kernels,
                     int out_features, int input_features, int out_f_start,
                     int out_f_end) {

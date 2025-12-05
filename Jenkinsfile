@@ -1,4 +1,4 @@
-@Library('xmos_jenkins_shared_library@v0.32.0') _
+@Library('xmos_jenkins_shared_library@v0.43.1') _
 
 getApproval()
 
@@ -7,7 +7,6 @@ pipeline {
         label "xcore.ai"
     }
     options {
-
         // skipDefaultCheckout()
         buildDiscarder(xmosDiscardBuildSettings(onlyArtifacts=false))
         timestamps()
@@ -19,19 +18,20 @@ pipeline {
     stages {
             stage('Build') {
                 steps {
+                    createVenv(reqFile: "requirements.txt")
                     withVenv {
                         sh 'git submodule update --depth=1 --init --recursive --jobs 8'
                         sh 'make init'
-			sh 'make patch'
-			sh 'make build'
+                        sh 'make patch'
+                        sh 'make build'
                     }
                 }
             }
             stage("Test") {
                 steps {
                     withVenv {
-			sh 'make init'
-			sh 'make test'
+                        sh 'make init'
+                        sh 'make test'
                     }
                 }
             }
@@ -42,26 +42,3 @@ pipeline {
         }
     }
 }
-        // stage("Checkout repo") {
-        //     steps {
-        //         dir('lib_tflite_micro') {
-        //             checkout scm
-        //             stash includes: '**/*', name: 'lib_tflite_micro', useDefaultExcludes: false
-        //             script {
-        //                 def short_hash = sh(returnStdout: true, script: "git log -n 1 --pretty=format:'%h'").trim()
-        //                 currentBuild.displayName = '#' + BUILD_NUMBER + '-' + short_hash
-        //             }
-        //         }                        
-        //     }
-        //     post {
-        //         cleanup {
-        //             deleteDir()
-        //         }
-        //     }
-        // }
-/*        stage("Cleanup2") {
-            steps {
-                // The Jenkins command deleteDir() doesn't seem very reliable, so we're using the basic form
-//                sh("rm -rf *")
-            }
-        }*/

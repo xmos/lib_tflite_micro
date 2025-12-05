@@ -65,7 +65,7 @@ static void ports_clocks_setup(fl_QSPIPorts *qspi)
     unsigned int ref_clk_div;
     #ifdef __XS3A__
     read_sswitch_reg(get_local_tile_id(), XS1_SSWITCH_REF_CLK_DIVIDER_NUM, &ref_clk_div);
-    #elif __VX4A__
+    #elif __VX4A__ || __VX4B__
     ref_clk_div = 6;
     #endif
     clk_divider = (ref_clk_div + 1)/2;
@@ -101,7 +101,7 @@ static void ports_clocks_setup(fl_QSPIPorts *qspi)
     asm volatile ("setc res[%0], %1" :: "r" (qspi->qspiSCLK), "r" (PORT_PAD_CTL));
     asm volatile ("setc res[%0], %1" :: "r" (qspi->qspiSIO), "r" (PORT_PAD_CTL));
     asm volatile ("setc res[%0], %1" :: "r" (qspi->qspiCS), "r" (PORT_PAD_CTL));
-    #elif __VX4A__
+    #elif defined(__VX4A__) || defined(__VX4B__)
     asm volatile ("xm.setc %0, %1" :: "r" (qspi->qspiSCLK), "r" (PORT_PAD_CTL));
     asm volatile ("xm.setc %0, %1" :: "r" (qspi->qspiSIO), "r" (PORT_PAD_CTL));
     asm volatile ("xm.setc %0, %1" :: "r" (qspi->qspiCS), "r" (PORT_PAD_CTL));
@@ -125,7 +125,7 @@ int fast_flash_init(fl_QSPIPorts *qspi) {
     #ifdef __XS3A__
     data_offset = fl_getDataPartitionBase();
     printf("Data partition base: %d\n", data_offset);
-    #elif __VX4A__
+    #elif __VX4A__ || __VX4B__
     data_offset = 4194304;// TODO fl_getDataPartitionBase();
     #endif
 

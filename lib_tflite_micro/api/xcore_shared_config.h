@@ -3,6 +3,7 @@
 #define XCORE_SHARED_CONFIG_H_
 
 #include "lib_nn/api/nn_arch.h"
+#include <cstdint>
 
 namespace shared_config {
 

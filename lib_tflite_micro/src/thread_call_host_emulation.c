@@ -1,5 +1,4 @@
-#ifndef __xcore__
-
+#if !defined(__xcore__) && !defined(__riscv_xxcore)
 #include "thread_call.h"
 #include <assert.h>
 #include <stdio.h>

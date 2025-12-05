@@ -109,7 +109,7 @@ thread_call:
 
 
 
-#if defined(__VX4A__)
+#if defined(__VX4A__) || defined(__VX4B__)
 
     .globl  thread_client
     .resource_list_empty thread_client, "callees"

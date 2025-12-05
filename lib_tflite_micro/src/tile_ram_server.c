@@ -50,7 +50,7 @@ void tile_ram_server(chanend_t *c_tile_ram, flash_t *headers, int n_tile_ram,
             memory_parallel_send(c_tile_ram[i], &((uint8_t *)tile_ram)[byte_address], number_bytes);
         }
     }
-    #elif defined(__VX4A__)
+    #elif defined(__VX4A__) || defined(__VX4B__)
     assert(0 && "Tile Ram server not supported on VX4A!");
     #endif
 }

@@ -2,7 +2,7 @@
 #define __micro_thread_library_h__
 
 #include <stdint.h>
-#ifdef __xcore__
+#if defined(__xcore__) && defined(__riscv_xxcore)
 #include <xcore/parallel.h>
 #else
 typedef unsigned synchronizer_t;
@@ -56,9 +56,9 @@ static inline void thread_store_sync(thread_info_t *ptr, uint32_t s) {
  * \param arg2      Third argument for the thread function
  * \param thread_id The thread_id to initialise; one of ptr[0]..ptr[3] above
  */
-#ifdef __xcore__
+#if defined(__xcore__) || defined(__riscv_xxcore)
 static inline void thread_variable_setup(void * arg1, void * arg2, uint32_t thread_id) {
-#ifdef __VX4A__
+#if defined(__VX4A__) || defined(__VX4B__)
     asm volatile("xm.tsetr %0, 11, %1" :: "r" (thread_id), "r" (arg1));
     asm volatile("xm.tsetr %0, 12, %1" :: "r" (thread_id), "r" (arg2));
     asm volatile("xm.tsetr %0, 24, %1" :: "r" (thread_id), "r" (1));

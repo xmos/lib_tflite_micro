@@ -3,8 +3,7 @@ patch:
 
 build:
 	(cd lib_tflite_micro && ../version_check.sh)
-	mkdir -p build
-	(cd build && cmake .. && make -j8)
+	(cmake -B build && make -j$(nproc) -C build)
 
 init:
 	python3 fetch_dependencies.py

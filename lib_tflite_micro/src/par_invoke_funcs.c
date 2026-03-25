@@ -9,6 +9,8 @@ DECLARE_JOB(main_task, (thread_info_t *, synchronizer_t));
 DECLARE_JOB(client_task, (thread_info_t *, int));
 #endif
 
+typedef void (*voidfunc)(void);
+
 void main_task(thread_info_t *t, voidfunc f, synchronizer_t sync) {
    thread_store_sync(t, sync);
    (*f)();

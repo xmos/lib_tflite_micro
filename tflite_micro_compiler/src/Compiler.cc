@@ -1435,12 +1435,12 @@ STACKFUNCTION_STATIC(_ZN12_GLOBAL__N_117mg_InvokeSubgraphEi, 1000);
 
 TfLiteStatus mg_status;
 #pragma stackfunction 1000
-extern "C" void invoke_subgraph_c_trampoline(){
+extern "C" void )" << prefix_ << R"(invoke_subgraph_c_trampoline(){
   mg_status = mg_InvokeSubgraph(0);
 }
 
 extern "C" void par_invoke_)"
-     << numXCThreads_ << R"((thread_info_t *thread_info);
+     << numXCThreads_ << R"((thread_info_t *thread_info, )" << prefix_ << R"(invoke_subgraph_c_trampoline);
 
 )";
 wr<<R"(#pragma stackfunction 1000

@@ -1440,7 +1440,7 @@ extern "C" void )" << prefix_ << R"(invoke_subgraph_c_trampoline(){
 }
 
 extern "C" void par_invoke_)"
-     << numXCThreads_ << R"((thread_info_t *thread_info, )" << prefix_ << R"(invoke_subgraph_c_trampoline);
+     << numXCThreads_ << R"((thread_info_t *thread_info, void (*f)());
 
 )";
 wr<<R"(#pragma stackfunction 1000
@@ -1455,7 +1455,7 @@ TfLiteStatus )"
 #endif
 
   par_invoke_)"
-     << numXCThreads_ << R"((&xc_config.thread_info);
+     << numXCThreads_ << R"((&xc_config.thread_info, )" << prefix_ << R"(invoke_subgraph_c_trampoline);
   if (mg_status != kTfLiteOk) {
     return mg_status;
   }

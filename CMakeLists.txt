@@ -69,7 +69,7 @@ if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL XCORE_XS3A)
     endif()
 elseif(${CMAKE_SYSTEM_PROCESSOR} STREQUAL XCORE_XS)
     set(BUILD_FLAGS
-        "-g"
+        "-g" "-Wno-fptrgroup"
     )
     if (CMAKE_BUILD_TYPE STREQUAL "Debug")
         list(APPEND BUILD_FLAGS "-00")

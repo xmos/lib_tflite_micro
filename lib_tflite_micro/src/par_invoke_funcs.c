@@ -1,15 +1,15 @@
 
 #include "thread_call.h"
 
+typedef void (*voidfunc)(void);
+
 #ifdef NO_INTERPRETER
 
 #if defined(__xcore__) || defined(__riscv_xxcore)
 #include <xcore/parallel.h>
-DECLARE_JOB(main_task, (thread_info_t *, synchronizer_t));
+DECLARE_JOB(main_task, (thread_info_t *, voidfunc, synchronizer_t));
 DECLARE_JOB(client_task, (thread_info_t *, int));
 #endif
-
-typedef void (*voidfunc)(void);
 
 void main_task(thread_info_t *t, voidfunc f, synchronizer_t sync) {
    thread_store_sync(t, sync);

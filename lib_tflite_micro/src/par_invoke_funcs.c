@@ -11,10 +11,27 @@ DECLARE_JOB(main_task, (thread_info_t *, voidfunc, synchronizer_t));
 DECLARE_JOB(client_task, (thread_info_t *, int));
 #endif
 
+#if defined(__VX4A__) || defined(__VX4B__)
+#define STACKFUNCTION(FN, BYTES) \
+  asm(".globl " # FN ); \
+  asm(".resource_list_empty " # FN ", \"callees\""); \
+  asm(".resource_list_empty " # FN ", \"tail_callees\""); \
+  asm(".resource_list_empty " # FN ", \"parallel_callees\""); \
+  asm(".resource_const " # FN ", \"stack_frame_bytes\", " # BYTES);
+
+STACKFUNCTION(main_task, 1000);
 void main_task(thread_info_t *t, voidfunc f, synchronizer_t sync) {
    thread_store_sync(t, sync);
    (*f)();
 }
+#elif defined(__XS3A__)
+#pragma stackfunction 1000
+void main_task(thread_info_t *t, voidfunc f, synchronizer_t sync) {
+   thread_store_sync(t, sync);
+   (*f)();
+}
+#endif
+
 
 void client_task(thread_info_t *t, int n) {
   thread_client(t, n);

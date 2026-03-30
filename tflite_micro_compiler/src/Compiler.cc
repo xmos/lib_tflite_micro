@@ -1429,14 +1429,13 @@ TfLiteStatus )"
 STACKFUNCTION(fast_read_loop, 1000);
 // STACKFUNCTION(_Z12model_invokev, 1000);
 STACKFUNCTION(__call_exitprocs_impl, 1000);
+STACKFUNCTION_STATIC(_ZN12_GLOBAL__N_117mg_InvokeSubgraphEi, 1000);
 // STACKFUNCTION(_Z10model_initPv);
 #endif
 
 TfLiteStatus mg_status;
 #if defined(__xcore__)
 #pragma stackfunction 1000
-#elif defined(__riscv_xxcore__)
-STACKFUNCTION_STATIC()" << prefix_ << R"(invoke_subgraph_c_trampoline, 1000);
 #endif
 __attribute__((fptrgroup("_c_trampoline")))
 void )" << prefix_ << R"(invoke_subgraph_c_trampoline(){

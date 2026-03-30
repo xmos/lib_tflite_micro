@@ -1425,7 +1425,7 @@ TfLiteStatus )"
   asm(".resource_list_empty " # FN ", \"parallel_callees\""); \
   asm(".resource_const " # FN ", \"stack_frame_bytes\", " # BYTES);
 
-STACKFUNCTION(_Z22model_init_with_pagingPvS_, 1000);
+// STACKFUNCTION(_Z22model_init_with_pagingPvS_, 1000);
 STACKFUNCTION(fast_read_loop, 1000);
 // STACKFUNCTION(_Z12model_invokev, 1000);
 STACKFUNCTION(__call_exitprocs_impl, 1000);
@@ -1434,8 +1434,8 @@ STACKFUNCTION_STATIC(_ZN12_GLOBAL__N_117mg_InvokeSubgraphEi, 1000);
 #endif
 
 TfLiteStatus mg_status;
-#pragma stackfunction 1000
-extern "C" void )" << prefix_ << R"(invoke_subgraph_c_trampoline(){
+__attribute__((fptrgroup("_c_trampoline")))
+void )" << prefix_ << R"(invoke_subgraph_c_trampoline(){
   mg_status = mg_InvokeSubgraph(0);
 }
 

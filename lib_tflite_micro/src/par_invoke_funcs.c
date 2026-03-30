@@ -12,7 +12,10 @@ DECLARE_JOB(client_task, (thread_info_t *, int));
 #endif
 
 void main_task(thread_info_t *t, voidfunc fptr, synchronizer_t sync) {
-  __attribute__((fptrgroup("_c_trampoline"))) voidfunc trampoline_fn = fptr;
+  #if defined(__xcore__) || defined(__riscv_xxcore)
+  __attribute__((fptrgroup("_c_trampoline")))
+  #endif
+  voidfunc trampoline_fn = fptr;
   thread_store_sync(t, sync);
   trampoline_fn();
 }

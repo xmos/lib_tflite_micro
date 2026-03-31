@@ -1433,7 +1433,7 @@ STACKFUNCTION_STATIC(_ZN12_GLOBAL__N_117mg_InvokeSubgraphEi, 1000);
 // STACKFUNCTION(_Z10model_initPv);
 #endif
 
-TfLiteStatus mg_status;
+static TfLiteStatus mg_status;
 #if defined(__xcore__)
 #pragma stackfunction 1000
 #endif

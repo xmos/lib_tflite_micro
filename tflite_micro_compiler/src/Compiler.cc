@@ -1412,35 +1412,26 @@ TfLiteStatus )"
 }
 
 #if defined(__VX4A__) || defined(__VX4B__)
-#define STACKFUNCTION(FN, BYTES) \
-  asm(".globl " # FN ); \
-  asm(".resource_list_empty " # FN ", \"callees\""); \
-  asm(".resource_list_empty " # FN ", \"tail_callees\""); \
-  asm(".resource_list_empty " # FN ", \"parallel_callees\""); \
-  asm(".resource_const " # FN ", \"stack_frame_bytes\", " # BYTES);
-
 #define STACKFUNCTION_STATIC(FN, BYTES) \
   asm(".resource_list_empty " # FN ", \"callees\""); \
   asm(".resource_list_empty " # FN ", \"tail_callees\""); \
   asm(".resource_list_empty " # FN ", \"parallel_callees\""); \
   asm(".resource_const " # FN ", \"stack_frame_bytes\", " # BYTES);
 
-STACKFUNCTION(_Z22model_init_with_pagingPvS_, 1000);
-STACKFUNCTION(fast_read_loop, 1000);
-// STACKFUNCTION(_Z12model_invokev, 1000);
-STACKFUNCTION(__call_exitprocs_impl, 1000);
 STACKFUNCTION_STATIC(_ZN12_GLOBAL__N_117mg_InvokeSubgraphEi, 1000);
-// STACKFUNCTION(_Z10model_initPv);
 #endif
 
-TfLiteStatus mg_status;
+static TfLiteStatus mg_status;
+#if defined(__xcore__)
 #pragma stackfunction 1000
-extern "C" void invoke_subgraph_c_trampoline(){
+#endif
+__attribute__((fptrgroup("_c_trampoline")))
+void )" << prefix_ << R"(invoke_subgraph_c_trampoline(){
   mg_status = mg_InvokeSubgraph(0);
 }
 
 extern "C" void par_invoke_)"
-     << numXCThreads_ << R"((thread_info_t *thread_info);
+     << numXCThreads_ << R"((thread_info_t *thread_info, void (*f)());
 
 )";
 wr<<R"(#pragma stackfunction 1000
@@ -1455,7 +1446,7 @@ TfLiteStatus )"
 #endif
 
   par_invoke_)"
-     << numXCThreads_ << R"((&xc_config.thread_info);
+     << numXCThreads_ << R"((&xc_config.thread_info, )" << prefix_ << R"(invoke_subgraph_c_trampoline);
   if (mg_status != kTfLiteOk) {
     return mg_status;
   }

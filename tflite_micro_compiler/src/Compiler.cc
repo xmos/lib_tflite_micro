@@ -1411,26 +1411,14 @@ TfLiteStatus )"
   return )" << prefix_ << R"(init_with_paging(weights_data_ptr, nullptr);
 }
 
-#if defined(__riscv_xxcore__)
-#define STACKFUNCTION(FN, BYTES) \
-  asm(".globl " # FN ); \
-  asm(".resource_list_empty " # FN ", \"callees\""); \
-  asm(".resource_list_empty " # FN ", \"tail_callees\""); \
-  asm(".resource_list_empty " # FN ", \"parallel_callees\""); \
-  asm(".resource_const " # FN ", \"stack_frame_bytes\", " # BYTES);
-
+#if defined(__VX4A__) || defined(__VX4B__)
 #define STACKFUNCTION_STATIC(FN, BYTES) \
   asm(".resource_list_empty " # FN ", \"callees\""); \
   asm(".resource_list_empty " # FN ", \"tail_callees\""); \
   asm(".resource_list_empty " # FN ", \"parallel_callees\""); \
   asm(".resource_const " # FN ", \"stack_frame_bytes\", " # BYTES);
 
-// STACKFUNCTION(_Z22model_init_with_pagingPvS_, 1000);
-STACKFUNCTION(fast_read_loop, 1000);
-// STACKFUNCTION(_Z12model_invokev, 1000);
-STACKFUNCTION(__call_exitprocs_impl, 1000);
 STACKFUNCTION_STATIC(_ZN12_GLOBAL__N_117mg_InvokeSubgraphEi, 1000);
-// STACKFUNCTION(_Z10model_initPv);
 #endif
 
 static TfLiteStatus mg_status;

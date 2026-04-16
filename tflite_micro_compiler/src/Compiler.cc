@@ -1212,7 +1212,7 @@ wr << R"(
 }
 
 wr << R"(
-#pragma stackfunction 1000
+static __attribute__((always_inline))
 TfLiteStatus )"
      << prefix_ << R"(init_with_paging(void *weights_data_ptr, void *paging_ptr) {)";
   if (has_xc_async_ops) {
@@ -1419,6 +1419,8 @@ TfLiteStatus )"
   asm(".resource_const " # FN ", \"stack_frame_bytes\", " # BYTES);
 
 STACKFUNCTION_STATIC(_ZN12_GLOBAL__N_117mg_InvokeSubgraphEi, 1000);
+STACKFUNCTION_STATIC(_Z)" << (prefix_.size() + 4) << prefix_ << R"(initPv, 1024);
+
 #endif
 
 static TfLiteStatus mg_status;

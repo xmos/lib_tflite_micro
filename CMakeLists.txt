@@ -12,8 +12,7 @@ set(LIB_NAME "xtflitemicro" CACHE STRING "Name of the library to be built")
 # **********************
 # Targets
 # **********************
-set(TOP_DIR
-    "${CMAKE_CURRENT_SOURCE_DIR}")
+set(TOP_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 include(${TOP_DIR}/cmakefiles/xtflm.cmake)
 
 add_library(${LIB_NAME} STATIC)
@@ -109,33 +108,53 @@ target_compile_definitions(${LIB_NAME} PUBLIC
 target_include_directories(${LIB_NAME}
     PRIVATE ${ALL_INCLUDES}
 )
-install(TARGETS ${LIB_NAME} DESTINATION "${CMAKE_BINARY_DIR}/lib"
-    FILE_SET HEADERS DESTINATION "${CMAKE_BINARY_DIR}/include")
+install(TARGETS ${LIB_NAME} DESTINATION "${CMAKE_BINARY_DIR}/lib")
 
-# Move headers to clean up include directory
+# Install headers directly to their final destinations
+install(
+    DIRECTORY "${TOP_DIR}/lib_tflite_micro/submodules/tflite-micro/tensorflow"
+    DESTINATION "${CMAKE_BINARY_DIR}/include"
+)
+install(
+    DIRECTORY "${TOP_DIR}/lib_tflite_micro/submodules/tflite-micro/signal"
+    DESTINATION "${CMAKE_BINARY_DIR}/include"
+)
+install(
+    DIRECTORY "${TOP_DIR}/lib_tflite_micro/submodules/flatbuffers/include/flatbuffers"
+    DESTINATION "${CMAKE_BINARY_DIR}/include"
+)
+install(
+    DIRECTORY "${TOP_DIR}/lib_tflite_micro/"
+    DESTINATION "${CMAKE_BINARY_DIR}/include/lib_tflite_micro"
+    FILES_MATCHING PATTERN "*.h"
+    PATTERN "submodules" EXCLUDE
+    PATTERN "api" EXCLUDE
+)
+install(
+    DIRECTORY "${TOP_DIR}/../lib_nn/lib_nn/"
+    DESTINATION "${CMAKE_BINARY_DIR}/include/lib_nn"
+    FILES_MATCHING PATTERN "*.h"
+)
+install(
+    FILES
+    "${TOP_DIR}/lib_tflite_micro/api/flash_server.h"
+    "${TOP_DIR}/lib_tflite_micro/api/fast_flash.h"
+    "${TOP_DIR}/lib_tflite_micro/api/ioserver.h"
+    "${TOP_DIR}/lib_tflite_micro/api/tile_ram_server.h"
+    DESTINATION "${CMAKE_BINARY_DIR}/include"
+)
+
 add_custom_target(project-install DEPENDS ${LIB_NAME}
-    COMMAND rm -rf "${CMAKE_BINARY_DIR}/include" "${CMAKE_BINARY_DIR}/lib"
+    COMMAND "${CMAKE_COMMAND}" -E rm -rf "${CMAKE_BINARY_DIR}/include" "${CMAKE_BINARY_DIR}/lib"
     COMMAND "${CMAKE_COMMAND}" --build "${PROJECT_BINARY_DIR}" --target install
-    COMMAND mv "${CMAKE_BINARY_DIR}/include/lib_tflite_micro/lib_tflite_micro/submodules/tflite-micro/tensorflow" "${CMAKE_BINARY_DIR}/include"
-    COMMAND mv "${CMAKE_BINARY_DIR}/include/lib_tflite_micro/lib_tflite_micro/submodules/tflite-micro/signal" "${CMAKE_BINARY_DIR}/include"
-    COMMAND mv "${CMAKE_BINARY_DIR}/include/lib_tflite_micro/lib_tflite_micro/submodules/flatbuffers/include/flatbuffers" "${CMAKE_BINARY_DIR}/include"
-    COMMAND rm -rf "${CMAKE_BINARY_DIR}/include/lib_tflite_micro/lib_tflite_micro/submodules"
-    COMMAND mv "${CMAKE_BINARY_DIR}/include/lib_tflite_micro/lib_tflite_micro" "${CMAKE_BINARY_DIR}/include/temp_ltm"
-    COMMAND rm -rf "${CMAKE_BINARY_DIR}/include/lib_tflite_micro"
-    COMMAND mv "${CMAKE_BINARY_DIR}/include/temp_ltm" "${CMAKE_BINARY_DIR}/include/lib_tflite_micro"
-    COMMAND mv "${CMAKE_BINARY_DIR}/include/lib_nn/lib_nn" "${CMAKE_BINARY_DIR}/include/temp_lnn"
-    COMMAND rm -rf "${CMAKE_BINARY_DIR}/include/lib_nn"
-    COMMAND mv "${CMAKE_BINARY_DIR}/include/temp_lnn" "${CMAKE_BINARY_DIR}/include/lib_nn"
-    COMMAND mv "${CMAKE_BINARY_DIR}/include/lib_tflite_micro/api/flash_server.h" "${CMAKE_BINARY_DIR}/include"
-    COMMAND mv "${CMAKE_BINARY_DIR}/include/lib_tflite_micro/api/fast_flash.h" "${CMAKE_BINARY_DIR}/include"
-    COMMAND mv "${CMAKE_BINARY_DIR}/include/lib_tflite_micro/api/ioserver.h" "${CMAKE_BINARY_DIR}/include"
-    COMMAND mv "${CMAKE_BINARY_DIR}/include/lib_tflite_micro/api/tile_ram_server.h" "${CMAKE_BINARY_DIR}/include"
     )
 
 # Create zip of lib and headers
-add_custom_target(create_zip DEPENDS project-install COMMAND
-    ${CMAKE_COMMAND} -E tar "cfv" "release_archive.zip" --format=zip
-    "${CMAKE_BINARY_DIR}/lib" "${CMAKE_BINARY_DIR}/include")
+add_custom_target(
+    create_zip DEPENDS project-install
+    COMMAND ${CMAKE_COMMAND} -E tar "cfv" "release_archive.zip" --format=zip "lib" "include"
+    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+)
 
 if(EXISTS "${CMAKE_BINARY_DIR}/compile_commands.json")
   file(COPY "${CMAKE_BINARY_DIR}/compile_commands.json"

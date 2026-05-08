@@ -76,7 +76,7 @@ TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
   op_data->tc = calculateAlignedThreadSplit(
     xc_config->model_thread_count, op_data->start_dim_size, s, e);
   // Turn start and end into input and output offset
-  for (int t = 1; t < op_data->tc; ++t) {
+  for (int t = 0; t < op_data->tc; ++t) {
     op_data->arg0[t].input_offset = s[t] * op_data->mean_dim_size * op_data->end_dim_size;
     op_data->arg0[t].output_offset = s[t] * op_data->end_dim_size;
     op_data->arg0[t].start_dim_size = e[t]-s[t];
@@ -100,7 +100,7 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   xc_context_config_t *xc_config = reinterpret_cast<xc_context_config_t *>(
       micro_context->external_context());
   const int tc = op_data->tc;
-  if (tc == 1) {
+  if (tc == 1 && input->type == kTfLiteInt8) {
     mean_int8(in_data, out_data, op_data->start_dim_size, op_data->mean_dim_size,
               op_data->end_dim_size, op_data->in_zero_point,
               op_data->out_zero_point, op_data->scale_mul);

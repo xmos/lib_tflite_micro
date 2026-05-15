@@ -93,7 +93,7 @@ elseif(${CMAKE_SYSTEM_PROCESSOR} STREQUAL XCORE_XS)
 
     list(APPEND DEFINITIONS "FLATBUFFERS_LOCALE_INDEPENDENT=0")
 
-else() # host app
+else()
     set(BUILD_FLAGS
         "-g"
         "-O0"

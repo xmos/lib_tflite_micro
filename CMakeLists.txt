@@ -1,5 +1,11 @@
 cmake_minimum_required(VERSION 3.23)
 
+option(
+    ENABLE_SIZE_OPT
+    "Enable function/data section splitting and linker garbage collection"
+    OFF
+)
+
 # **********************
 # Disable in-source build.
 # **********************
@@ -42,7 +48,6 @@ set(DEFINITIONS
 )
 
 if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL XCORE_XS3A)
-    # # Set the target
     set(XCORE_TARGET "XCORE-AI-EXPLORER")
 
     enable_language(CXX C ASM)
@@ -85,8 +90,8 @@ elseif(${CMAKE_SYSTEM_PROCESSOR} STREQUAL XCORE_XS)
     SET(CMAKE_OSX_DEPLOYMENT_TARGET 12.0)
     set_property(TARGET ${LIB_NAME} PROPERTY CXX_STANDARD 14)
 
-
     list(APPEND DEFINITIONS "FLATBUFFERS_LOCALE_INDEPENDENT=0")
+
 else()
     set(BUILD_FLAGS
         "-g"
@@ -97,6 +102,10 @@ else()
     list(APPEND DEFINITIONS "NN_USE_REF" "FLATBUFFERS_LOCALE_INDEPENDENT=0")
 
     target_compile_features(${LIB_NAME} PUBLIC cxx_std_17)
+endif()
+
+if(ENABLE_SIZE_OPT)
+    list(APPEND BUILD_FLAGS -ffunction-sections -fdata-sections -Wl,--gc-sections)
 endif()
 
 target_compile_options(${LIB_NAME} PRIVATE ${BUILD_FLAGS})

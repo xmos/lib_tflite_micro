@@ -1405,7 +1405,9 @@ TfLiteStatus )"
 })";
 wr << R"(
 
+#if defined(__xcore__)
 #pragma stackfunction 1000
+#endif
 TfLiteStatus )"
      << prefix_ << R"(init(void *weights_data_ptr) {
   return )" << prefix_ << R"(init_with_paging(weights_data_ptr, nullptr);
@@ -1436,7 +1438,9 @@ extern "C" void par_invoke_)"
      << numXCThreads_ << R"((thread_info_t *thread_info, void (*f)());
 
 )";
-wr<<R"(#pragma stackfunction 1000
+wr<<R"(#if defined(__xcore__)
+#pragma stackfunction 1000
+#endif
 TfLiteStatus )"
      << prefix_ << R"(invoke() {
 

@@ -31,7 +31,6 @@ list(APPEND NN_SOURCES  "${NN_SRC_DIR}/cpp/filt2d/geom/Filter2dGeometry.cpp")
 list(APPEND NN_SOURCES  "${NN_SRC_DIR}/cpp/filt2d/geom/ImageGeometry.cpp")
 list(APPEND NN_SOURCES  "${NN_SRC_DIR}/cpp/filt2d/geom/WindowGeometry.cpp")
 list(APPEND NN_SOURCES  "${NN_SRC_DIR}/cpp/filt2d/geom/WindowLocation.cpp")
-list(APPEND NN_SOURCES  "${NN_SRC_DIR}/asm/asm_constants.c")
 
 list(APPEND TFLITE_SOURCES  "${TFLITE_SRC_DIR}/core/c/common.cc")
 list(APPEND TFLITE_SOURCES  "${TFLITE_SRC_DIR}/core/api/error_reporter.cc")

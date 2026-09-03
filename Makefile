@@ -2,9 +2,8 @@ patch:
 	(cd lib_tflite_micro/submodules/tflite-micro && git reset --hard && git apply ../../../patches/tflite-micro.patch)
 
 build:
-	cd lib_tflite_micro
-	cmake -B build 
-	make -j8 -C build
+	(cd lib_tflite_micro && ../version_check.sh)
+	(cmake -B build && make -j8 -C build)
 
 init:
 	python3 fetch_dependencies.py

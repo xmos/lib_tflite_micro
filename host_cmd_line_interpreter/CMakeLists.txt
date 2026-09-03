@@ -40,6 +40,7 @@ add_executable(xtflm_interpreter_cmdline)
 target_compile_options(xtflm_interpreter_cmdline PRIVATE ${BUILD_FLAGS})
 target_link_options(xtflm_interpreter_cmdline PRIVATE ${BUILD_FLAGS})
 target_link_libraries(xtflm_interpreter_cmdline PRIVATE "-lpthread")
+target_link_libraries(xtflm_interpreter_cmdline PRIVATE lib_nn)
 
 set(TOP_DIR
   "${CMAKE_CURRENT_SOURCE_DIR}/..")

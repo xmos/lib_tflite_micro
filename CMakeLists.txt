@@ -33,7 +33,6 @@ endforeach()
 target_sources(${LIB_NAME}
     PRIVATE ${TFLM_KERNEL_SOURCES}
     PRIVATE ${TFLITE_SOURCES}
-    PRIVATE ${NN_SOURCES}
     PRIVATE ${XTFLIB_KERNEL_SOURCES}
     PUBLIC FILE_SET HEADERS
     BASE_DIRS "${TOP_DIR}/.."
@@ -105,15 +104,15 @@ else()
     target_compile_features(${LIB_NAME} PUBLIC cxx_std_17)
 endif()
 
+target_link_libraries(${LIB_NAME} PUBLIC lib_nn)
+
 if(ENABLE_SIZE_OPT)
     list(APPEND BUILD_FLAGS -ffunction-sections -fdata-sections -Wl,--gc-sections)
 endif()
 
 target_compile_options(${LIB_NAME} PRIVATE ${BUILD_FLAGS})
 target_link_options(${LIB_NAME} PRIVATE ${BUILD_FLAGS})
-target_compile_definitions(${LIB_NAME} PUBLIC
-    ${DEFINITIONS}
-)
+target_compile_definitions(${LIB_NAME} PUBLIC ${DEFINITIONS})
 
 target_include_directories(${LIB_NAME}
     PRIVATE ${ALL_INCLUDES}

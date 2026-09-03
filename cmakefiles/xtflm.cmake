@@ -4,6 +4,8 @@ set(TFLIB_DIR
 set(NNLIB_DIR
   "${TOP_DIR}/../lib_nn/lib_nn")
 
+add_subdirectory("${NNLIB_DIR}" "${CMAKE_BINARY_DIR}/lib_nn")
+
 set(XTFLIB_SRC_DIR
   "${TFLIB_DIR}/src/tflite-xcore-kernels")
 
@@ -12,27 +14,6 @@ set(TFLITE_SRC_DIR
 
 set(TFLM_SRC_DIR
   "${TFLITE_SRC_DIR}/micro")
-
-set(NN_SRC_DIR
-  "${TOP_DIR}/../lib_nn/lib_nn/src")
-
-file(GLOB_RECURSE NN_SOURCES "${NN_SRC_DIR}/c/*.c")
-file(GLOB_RECURSE NN_ASM_SOURCES "${NN_SRC_DIR}/asm/*.S")
-
-list(APPEND NN_SOURCES ${NN_ASM_SOURCES})
-list(APPEND NN_SOURCES  "${NN_SRC_DIR}/asm/stubs.c")
-list(APPEND NN_SOURCES  "${NN_SRC_DIR}/cpp/AggregateFn.cpp")
-list(APPEND NN_SOURCES  "${NN_SRC_DIR}/cpp/AggregateFn_DW.cpp")
-list(APPEND NN_SOURCES  "${NN_SRC_DIR}/cpp/Filter2D.cpp")
-list(APPEND NN_SOURCES  "${NN_SRC_DIR}/cpp/MemCpyFn.cpp")
-list(APPEND NN_SOURCES  "${NN_SRC_DIR}/cpp/OutputTransformFn.cpp")
-list(APPEND NN_SOURCES  "${NN_SRC_DIR}/cpp/filt2d/conv2d_utils.cpp")
-list(APPEND NN_SOURCES  "${NN_SRC_DIR}/cpp/filt2d/util.cpp")
-list(APPEND NN_SOURCES  "${NN_SRC_DIR}/cpp/filt2d/geom/Filter2dGeometry.cpp")
-list(APPEND NN_SOURCES  "${NN_SRC_DIR}/cpp/filt2d/geom/ImageGeometry.cpp")
-list(APPEND NN_SOURCES  "${NN_SRC_DIR}/cpp/filt2d/geom/WindowGeometry.cpp")
-list(APPEND NN_SOURCES  "${NN_SRC_DIR}/cpp/filt2d/geom/WindowLocation.cpp")
-list(APPEND NN_SOURCES  "${NN_SRC_DIR}/asm/asm_constants.c")
 
 list(APPEND TFLITE_SOURCES  "${TFLITE_SRC_DIR}/core/c/common.cc")
 list(APPEND TFLITE_SOURCES  "${TFLITE_SRC_DIR}/core/api/error_reporter.cc")
@@ -239,7 +220,6 @@ list(APPEND ALL_SOURCES  "${TFLM_SRC_DIR}/kernels/assign_variable.cc")
 list(APPEND ALL_SOURCES  "${TOP_DIR}/lib_tflite_micro/submodules/flatbuffers/src/util.cpp")
 
 # Append all sources to ALL_SOURCES
-list(APPEND ALL_SOURCES ${NN_SOURCES})
 list(APPEND ALL_SOURCES ${TFLITE_SOURCES})
 list(APPEND ALL_SOURCES ${XTFLIB_SOURCES})
 list(APPEND ALL_SOURCES ${XTFLIB_KERNEL_SOURCES})

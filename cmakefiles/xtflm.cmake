@@ -1,31 +1,25 @@
-set(TFLIB_DIR
-  "${TOP_DIR}/lib_tflite_micro")
+# Paths
+set(LIB_TFLITE_MICRO_ROOT   "${CMAKE_CURRENT_LIST_DIR}/..")
 
-set(NNLIB_DIR
-  "${TOP_DIR}/../lib_nn/lib_nn")
+set(DEPENDENCIES_DIR        "${LIB_TFLITE_MICRO_ROOT}/..")
+set(LIB_NN_ROOT_DIR         "${DEPENDENCIES_DIR}/lib_nn")
+set(LIB_XUD_ROOT_DIR        "${DEPENDENCIES_DIR}/lib_xud")
+set(LIB_NN_SOURCE_DIR       "${LIB_NN_ROOT_DIR}/lib_nn")
+set(LIB_XUD_SOURCE_DIR      "${LIB_XUD_ROOT_DIR}/lib_xud")
 
-if(NOT IS_DIRECTORY "${TOP_DIR}/../lib_nn")
-  include(FetchContent)
-  FetchContent_Declare(
-    lib_nn
-    GIT_REPOSITORY "https://github.com/xmos/lib_nn.git"
-    GIT_TAG develop
-    SOURCE_DIR "${TOP_DIR}/../lib_nn"
-  )
-  FetchContent_Populate(lib_nn)
+set(TFLIB_DIR               "${LIB_TFLITE_MICRO_ROOT}/lib_tflite_micro")
+set(XTFLIB_SRC_DIR          "${TFLIB_DIR}/src/tflite-xcore-kernels")
+set(TFLITE_SRC_DIR          "${TFLIB_DIR}/submodules/tflite-micro/tensorflow/lite")
+set(TFLM_SRC_DIR            "${TFLITE_SRC_DIR}/micro")
+
+# Dependencies
+include("${LIB_TFLITE_MICRO_ROOT}/deps.cmake")
+
+if(NOT TARGET lib_nn)
+  add_subdirectory("${LIB_NN_SOURCE_DIR}" "${CMAKE_BINARY_DIR}/lib_nn")
 endif()
 
-add_subdirectory("${NNLIB_DIR}" "${CMAKE_BINARY_DIR}/lib_nn")
-
-set(XTFLIB_SRC_DIR
-  "${TFLIB_DIR}/src/tflite-xcore-kernels")
-
-set(TFLITE_SRC_DIR
-  "${TOP_DIR}/lib_tflite_micro/submodules/tflite-micro/tensorflow/lite")
-
-set(TFLM_SRC_DIR
-  "${TFLITE_SRC_DIR}/micro")
-
+# Sources
 list(APPEND TFLITE_SOURCES  "${TFLITE_SRC_DIR}/core/c/common.cc")
 list(APPEND TFLITE_SOURCES  "${TFLITE_SRC_DIR}/core/api/error_reporter.cc")
 list(APPEND TFLITE_SOURCES  "${TFLITE_SRC_DIR}/core/api/tensor_utils.cc")
@@ -221,6 +215,8 @@ list(APPEND TFLM_KERNEL_SOURCES  "${TFLM_SRC_DIR}/kernels/if.cc")
 list(APPEND TFLM_KERNEL_SOURCES  "${TFLM_SRC_DIR}/kernels/while.cc")
 list(APPEND TFLM_KERNEL_SOURCES  "${TFLM_SRC_DIR}/kernels/call_once.cc")
 
+# All sources
+
 # We dont support these kernels yet for compiled models
 # They need micro resource variable support
 list(APPEND ALL_SOURCES  "${TFLM_SRC_DIR}/kernels/var_handle.cc")
@@ -228,15 +224,15 @@ list(APPEND ALL_SOURCES  "${TFLM_SRC_DIR}/kernels/read_variable.cc")
 list(APPEND ALL_SOURCES  "${TFLM_SRC_DIR}/kernels/assign_variable.cc")
 
 # link error on Linux
-list(APPEND ALL_SOURCES  "${TOP_DIR}/lib_tflite_micro/submodules/flatbuffers/src/util.cpp")
+list(APPEND ALL_SOURCES  "${LIB_TFLITE_MICRO_ROOT}/lib_tflite_micro/submodules/flatbuffers/src/util.cpp")
 
-# Append all sources to ALL_SOURCES
 list(APPEND ALL_SOURCES ${TFLITE_SOURCES})
 list(APPEND ALL_SOURCES ${XTFLIB_SOURCES})
 list(APPEND ALL_SOURCES ${XTFLIB_KERNEL_SOURCES})
 list(APPEND ALL_SOURCES ${TFLM_SOURCES})
 list(APPEND ALL_SOURCES ${TFLM_KERNEL_SOURCES})
 
+# Include directories
 set(ALL_INCLUDES "")
 
 list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/src")
@@ -246,8 +242,7 @@ list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/submodules/tflite-micro")
 list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/submodules/gemmlowp")
 list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/submodules/ruy")
 list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/submodules/flatbuffers/include")
-list(APPEND ALL_INCLUDES  "${NNLIB_DIR}/api")
-list(APPEND ALL_INCLUDES  "${NNLIB_DIR}/..")
-list(APPEND ALL_INCLUDES  "${NNLIB_DIR}/../../lib_xud/lib_xud/api")
-list(APPEND ALL_INCLUDES  "${NNLIB_DIR}/../../lib_xud/lib_xud/src/user")
+list(APPEND ALL_INCLUDES  "${DEPENDENCIES_DIR}")
+list(APPEND ALL_INCLUDES  "${LIB_XUD_SOURCE_DIR}/api")
+list(APPEND ALL_INCLUDES  "${LIB_XUD_SOURCE_DIR}/src/user")
 list(APPEND ALL_INCLUDES  "${XMOS_TOOL_PATH}/target/include/")

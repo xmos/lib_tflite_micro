@@ -4,7 +4,6 @@ cmake_minimum_required(VERSION 3.21)
 # Setup XMOS toolchain
 # **********************
 project(model_runner VERSION 1.0.0)
-set(TOP_DIR "${CMAKE_CURRENT_SOURCE_DIR}/..")
 
 enable_language(CXX C)
 
@@ -40,7 +39,7 @@ target_compile_options(xtflm_interpreter_cmdline PRIVATE ${BUILD_FLAGS})
 target_link_options(xtflm_interpreter_cmdline PRIVATE ${BUILD_FLAGS})
 target_link_libraries(xtflm_interpreter_cmdline PRIVATE "-lpthread")
 
-include(../cmakefiles/xtflm.cmake)
+include("${CMAKE_CURRENT_SOURCE_DIR}/../cmakefiles/xtflm.cmake")
 
 target_link_libraries(xtflm_interpreter_cmdline PRIVATE lib_nn)
 

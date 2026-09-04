@@ -16,22 +16,8 @@ if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
     message(FATAL_ERROR "In-source build is not allowed! Please specify a build folder.\n\tex:cmake -B build")
 endif()
 
-# Dependencies
-set(NNLIB_DIR "${CMAKE_CURRENT_LIST_DIR}/../lib_nn")
-if(NOT IS_DIRECTORY "${NNLIB_DIR}")
-    include(FetchContent)
-    FetchContent_Declare(
-        lib_nn
-        GIT_REPOSITORY "https://github.com/xmos/lib_nn.git"
-        GIT_TAG develop
-        SOURCE_DIR "${NNLIB_DIR}"
-    )
-    FetchContent_Populate(lib_nn)
-endif()
-
 # Targets
-set(TOP_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
-include(${TOP_DIR}/cmakefiles/xtflm.cmake)
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmakefiles/xtflm.cmake")
 
 add_library(${LIB_NAME} STATIC)
 
@@ -46,7 +32,7 @@ target_sources(${LIB_NAME}
     PRIVATE ${TFLITE_SOURCES}
     PRIVATE ${XTFLIB_KERNEL_SOURCES}
     PUBLIC FILE_SET HEADERS
-    BASE_DIRS "${TOP_DIR}/.."
+    BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/.."
     FILES ${header_list}
 )
 

@@ -2,9 +2,7 @@
 set(LIB_TFLITE_MICRO_ROOT   "${CMAKE_CURRENT_LIST_DIR}/..")
 
 set(DEPENDENCIES_DIR        "${LIB_TFLITE_MICRO_ROOT}/..")
-set(LIB_NN_ROOT_DIR         "${DEPENDENCIES_DIR}/lib_nn")
 set(LIB_XUD_ROOT_DIR        "${DEPENDENCIES_DIR}/lib_xud")
-set(LIB_NN_SOURCE_DIR       "${LIB_NN_ROOT_DIR}/lib_nn")
 set(LIB_XUD_SOURCE_DIR      "${LIB_XUD_ROOT_DIR}/lib_xud")
 
 set(TFLIB_DIR               "${LIB_TFLITE_MICRO_ROOT}/lib_tflite_micro")
@@ -13,10 +11,19 @@ set(TFLITE_SRC_DIR          "${TFLIB_DIR}/submodules/tflite-micro/tensorflow/lit
 set(TFLM_SRC_DIR            "${TFLITE_SRC_DIR}/micro")
 
 # Dependencies
-include("${LIB_TFLITE_MICRO_ROOT}/deps.cmake")
-if(NOT TARGET lib_nn)
-  add_subdirectory("${LIB_NN_SOURCE_DIR}" "${CMAKE_BINARY_DIR}/lib_nn")
-endif()
+set(LIB_NN_REPOSITORY "https://github.com/xmos/lib_nn.git")
+set(LIB_NN_TAG "develop")
+
+include(FetchContent)
+FetchContent_Declare(
+	lib_nn
+	GIT_REPOSITORY "${LIB_NN_REPOSITORY}"
+	GIT_TAG "${LIB_NN_TAG}"
+	SOURCE_SUBDIR lib_nn
+)
+FetchContent_MakeAvailable(lib_nn)
+FetchContent_GetProperties(lib_nn SOURCE_DIR LIB_NN_ROOT_DIR)
+target_include_directories(lib_nn INTERFACE "$<BUILD_INTERFACE:${LIB_NN_ROOT_DIR}>") # neeeded for use of relative includes
 
 # Sources
 list(APPEND TFLITE_SOURCES  "${TFLITE_SRC_DIR}/core/c/common.cc")
@@ -241,7 +248,6 @@ list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/submodules/tflite-micro")
 list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/submodules/gemmlowp")
 list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/submodules/ruy")
 list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/submodules/flatbuffers/include")
-list(APPEND ALL_INCLUDES  "${LIB_NN_ROOT_DIR}")
 list(APPEND ALL_INCLUDES  "${LIB_XUD_SOURCE_DIR}/api")
 list(APPEND ALL_INCLUDES  "${LIB_XUD_SOURCE_DIR}/src/user")
 list(APPEND ALL_INCLUDES  "${XMOS_TOOL_PATH}/target/include/")

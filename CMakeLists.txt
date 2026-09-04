@@ -11,15 +11,15 @@ option(
     OFF
 )
 
-# Disable in-source buil
+# Disable in-source build
 if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
     message(FATAL_ERROR "In-source build is not allowed! Please specify a build folder.\n\tex:cmake -B build")
 endif()
 
 # Dependencies
-include(FetchContent)
 set(NNLIB_DIR "${CMAKE_CURRENT_LIST_DIR}/../lib_nn")
-if(NOT EXISTS "${NNLIB_DIR}/lib_nn/CMakeLists.txt")
+if(NOT IS_DIRECTORY "${NNLIB_DIR}")
+    include(FetchContent)
     FetchContent_Declare(
         lib_nn
         GIT_REPOSITORY "https://github.com/xmos/lib_nn.git"

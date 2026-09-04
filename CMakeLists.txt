@@ -1,26 +1,23 @@
-cmake_minimum_required(VERSION 3.23)
 
+# Project Definition
+cmake_minimum_required(VERSION 3.23)
+project(lib_tflite_micro)
+set(LIB_NAME "xtflitemicro" CACHE STRING "Name of the library to be built")
+
+# Enable size optimization option
 option(
     ENABLE_SIZE_OPT
     "Enable function/data section splitting and linker garbage collection"
     OFF
 )
 
-# **********************
-# Disable in-source build.
-# **********************
+# Disable in-source build
 if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
     message(FATAL_ERROR "In-source build is not allowed! Please specify a build folder.\n\tex:cmake -B build")
 endif()
 
-set(LIB_NAME "xtflitemicro" CACHE STRING "Name of the library to be built")
-
-# **********************
 # Targets
-# **********************
-set(TOP_DIR
-    "${CMAKE_CURRENT_SOURCE_DIR}")
-include(${TOP_DIR}/cmakefiles/xtflm.cmake)
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmakefiles/xtflm.cmake")
 
 add_library(${LIB_NAME} STATIC)
 
@@ -33,10 +30,9 @@ endforeach()
 target_sources(${LIB_NAME}
     PRIVATE ${TFLM_KERNEL_SOURCES}
     PRIVATE ${TFLITE_SOURCES}
-    PRIVATE ${NN_SOURCES}
     PRIVATE ${XTFLIB_KERNEL_SOURCES}
     PUBLIC FILE_SET HEADERS
-    BASE_DIRS "${TOP_DIR}/.."
+    BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/.."
     FILES ${header_list}
 )
 
@@ -48,6 +44,7 @@ set(DEFINITIONS
     "TF_LITE_STRIP_ERROR_STRINGS"
 )
 
+# Target specific
 if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL XCORE_XS3A)
     set(XCORE_TARGET "XCORE-AI-EXPLORER")
 
@@ -109,15 +106,14 @@ if(ENABLE_SIZE_OPT)
     list(APPEND BUILD_FLAGS -ffunction-sections -fdata-sections -Wl,--gc-sections)
 endif()
 
+# Link and compile options
+target_link_libraries(${LIB_NAME} PUBLIC lib_nn)
 target_compile_options(${LIB_NAME} PRIVATE ${BUILD_FLAGS})
 target_link_options(${LIB_NAME} PRIVATE ${BUILD_FLAGS})
-target_compile_definitions(${LIB_NAME} PUBLIC
-    ${DEFINITIONS}
-)
+target_compile_definitions(${LIB_NAME} PUBLIC ${DEFINITIONS})
+target_include_directories(${LIB_NAME} PRIVATE ${ALL_INCLUDES})
 
-target_include_directories(${LIB_NAME}
-    PRIVATE ${ALL_INCLUDES}
-)
+# Project install
 install(TARGETS ${LIB_NAME} DESTINATION "${CMAKE_BINARY_DIR}/lib"
     FILE_SET HEADERS DESTINATION "${CMAKE_BINARY_DIR}/include")
 

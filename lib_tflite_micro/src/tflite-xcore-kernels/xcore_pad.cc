@@ -5,8 +5,8 @@
 #include <string.h>
 
 extern "C" {
-#include "vpu_memmove_word_aligned.h"
-#include "vpu_memset_256.h"
+#include "vpu_memmove.h"
+#include "vpu_memset.h"
 }
 
 namespace tflite_micro {

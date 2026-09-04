@@ -1,39 +1,19 @@
-set(TFLIB_DIR
-  "${TOP_DIR}/lib_tflite_micro")
+# Paths
+set(LIB_TFLITE_MICRO_ROOT   "${CMAKE_CURRENT_LIST_DIR}/..")
 
-set(NNLIB_DIR
-  "${TOP_DIR}/../lib_nn/lib_nn")
+set(DEPENDENCIES_DIR        "${LIB_TFLITE_MICRO_ROOT}/..")
+set(LIB_XUD_ROOT_DIR        "${DEPENDENCIES_DIR}/lib_xud")
+set(LIB_XUD_SOURCE_DIR      "${LIB_XUD_ROOT_DIR}/lib_xud")
 
-set(XTFLIB_SRC_DIR
-  "${TFLIB_DIR}/src/tflite-xcore-kernels")
+set(TFLIB_DIR               "${LIB_TFLITE_MICRO_ROOT}/lib_tflite_micro")
+set(XTFLIB_SRC_DIR          "${TFLIB_DIR}/src/tflite-xcore-kernels")
+set(TFLITE_SRC_DIR          "${TFLIB_DIR}/submodules/tflite-micro/tensorflow/lite")
+set(TFLM_SRC_DIR            "${TFLITE_SRC_DIR}/micro")
 
-set(TFLITE_SRC_DIR
-  "${TOP_DIR}/lib_tflite_micro/submodules/tflite-micro/tensorflow/lite")
+# Dependencies
+include("${CMAKE_CURRENT_LIST_DIR}/deps.cmake")
 
-set(TFLM_SRC_DIR
-  "${TFLITE_SRC_DIR}/micro")
-
-set(NN_SRC_DIR
-  "${TOP_DIR}/../lib_nn/lib_nn/src")
-
-file(GLOB_RECURSE NN_SOURCES "${NN_SRC_DIR}/c/*.c")
-file(GLOB_RECURSE NN_ASM_SOURCES "${NN_SRC_DIR}/asm/*.S")
-
-list(APPEND NN_SOURCES ${NN_ASM_SOURCES})
-list(APPEND NN_SOURCES  "${NN_SRC_DIR}/asm/stubs.c")
-list(APPEND NN_SOURCES  "${NN_SRC_DIR}/cpp/AggregateFn.cpp")
-list(APPEND NN_SOURCES  "${NN_SRC_DIR}/cpp/AggregateFn_DW.cpp")
-list(APPEND NN_SOURCES  "${NN_SRC_DIR}/cpp/Filter2D.cpp")
-list(APPEND NN_SOURCES  "${NN_SRC_DIR}/cpp/MemCpyFn.cpp")
-list(APPEND NN_SOURCES  "${NN_SRC_DIR}/cpp/OutputTransformFn.cpp")
-list(APPEND NN_SOURCES  "${NN_SRC_DIR}/cpp/filt2d/conv2d_utils.cpp")
-list(APPEND NN_SOURCES  "${NN_SRC_DIR}/cpp/filt2d/util.cpp")
-list(APPEND NN_SOURCES  "${NN_SRC_DIR}/cpp/filt2d/geom/Filter2dGeometry.cpp")
-list(APPEND NN_SOURCES  "${NN_SRC_DIR}/cpp/filt2d/geom/ImageGeometry.cpp")
-list(APPEND NN_SOURCES  "${NN_SRC_DIR}/cpp/filt2d/geom/WindowGeometry.cpp")
-list(APPEND NN_SOURCES  "${NN_SRC_DIR}/cpp/filt2d/geom/WindowLocation.cpp")
-list(APPEND NN_SOURCES  "${NN_SRC_DIR}/asm/asm_constants.c")
-
+# Sources
 list(APPEND TFLITE_SOURCES  "${TFLITE_SRC_DIR}/core/c/common.cc")
 list(APPEND TFLITE_SOURCES  "${TFLITE_SRC_DIR}/core/api/error_reporter.cc")
 list(APPEND TFLITE_SOURCES  "${TFLITE_SRC_DIR}/core/api/tensor_utils.cc")
@@ -229,6 +209,8 @@ list(APPEND TFLM_KERNEL_SOURCES  "${TFLM_SRC_DIR}/kernels/if.cc")
 list(APPEND TFLM_KERNEL_SOURCES  "${TFLM_SRC_DIR}/kernels/while.cc")
 list(APPEND TFLM_KERNEL_SOURCES  "${TFLM_SRC_DIR}/kernels/call_once.cc")
 
+# All sources
+
 # We dont support these kernels yet for compiled models
 # They need micro resource variable support
 list(APPEND ALL_SOURCES  "${TFLM_SRC_DIR}/kernels/var_handle.cc")
@@ -236,16 +218,15 @@ list(APPEND ALL_SOURCES  "${TFLM_SRC_DIR}/kernels/read_variable.cc")
 list(APPEND ALL_SOURCES  "${TFLM_SRC_DIR}/kernels/assign_variable.cc")
 
 # link error on Linux
-list(APPEND ALL_SOURCES  "${TOP_DIR}/lib_tflite_micro/submodules/flatbuffers/src/util.cpp")
+list(APPEND ALL_SOURCES  "${LIB_TFLITE_MICRO_ROOT}/lib_tflite_micro/submodules/flatbuffers/src/util.cpp")
 
-# Append all sources to ALL_SOURCES
-list(APPEND ALL_SOURCES ${NN_SOURCES})
 list(APPEND ALL_SOURCES ${TFLITE_SOURCES})
 list(APPEND ALL_SOURCES ${XTFLIB_SOURCES})
 list(APPEND ALL_SOURCES ${XTFLIB_KERNEL_SOURCES})
 list(APPEND ALL_SOURCES ${TFLM_SOURCES})
 list(APPEND ALL_SOURCES ${TFLM_KERNEL_SOURCES})
 
+# Include directories
 set(ALL_INCLUDES "")
 
 list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/src")
@@ -255,8 +236,6 @@ list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/submodules/tflite-micro")
 list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/submodules/gemmlowp")
 list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/submodules/ruy")
 list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/submodules/flatbuffers/include")
-list(APPEND ALL_INCLUDES  "${NNLIB_DIR}/api")
-list(APPEND ALL_INCLUDES  "${NNLIB_DIR}/..")
-list(APPEND ALL_INCLUDES  "${NNLIB_DIR}/../../lib_xud/lib_xud/api")
-list(APPEND ALL_INCLUDES  "${NNLIB_DIR}/../../lib_xud/lib_xud/src/user")
+list(APPEND ALL_INCLUDES  "${LIB_XUD_SOURCE_DIR}/api")
+list(APPEND ALL_INCLUDES  "${LIB_XUD_SOURCE_DIR}/src/user")
 list(APPEND ALL_INCLUDES  "${XMOS_TOOL_PATH}/target/include/")

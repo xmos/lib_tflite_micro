@@ -22,9 +22,7 @@ set(BUILD_FLAGS
 #**********************
 # Targets
 #**********************
-set(TOP_DIR
-  "${CMAKE_CURRENT_SOURCE_DIR}/..")
-include(${TOP_DIR}/cmakefiles/xtflm.cmake)
+include("${CMAKE_CURRENT_LIST_DIR}/../../cmakefiles/xtflm.cmake")
 
 add_library(xtflitemicro SHARED)
 set(DEFINTIONS
@@ -36,6 +34,7 @@ set(DEFINTIONS
 )
 target_compile_options(xtflitemicro PRIVATE ${BUILD_FLAGS})
 target_link_options(xtflitemicro PRIVATE ${BUILD_FLAGS})
+target_link_libraries(xtflitemicro PRIVATE lib_nn)
 target_compile_definitions(xtflitemicro PUBLIC
     ${DEFINTIONS}
 )
@@ -43,7 +42,6 @@ target_compile_features(xtflitemicro PUBLIC cxx_std_11)
 target_sources(xtflitemicro
   PRIVATE ${TFLM_KERNEL_SOURCES}
   PRIVATE ${TFLITE_SOURCES}
-  PRIVATE ${NN_SOURCES}
   PRIVATE ${XTFLIB_KERNEL_SOURCES}
 )
 target_include_directories(xtflitemicro
@@ -63,6 +61,7 @@ set(DEFINTIONS
 )
 target_compile_options(tflite_micro_compiler PRIVATE ${BUILD_FLAGS})
 target_link_options(tflite_micro_compiler PRIVATE ${BUILD_FLAGS})
+target_link_libraries(tflite_micro_compiler PRIVATE lib_nn)
 file(GLOB_RECURSE COMPILER_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h")
 file(GLOB_RECURSE COMPILER_SRCS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cc")
 target_compile_definitions(tflite_micro_compiler PUBLIC

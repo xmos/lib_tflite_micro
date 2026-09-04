@@ -2,8 +2,8 @@
 
 #include <cstdint>
 extern "C" {
-#include "vpu_memmove_word_aligned.h"
-#include "vpu_memset_256.h"
+#include "vpu_memmove.h"
+#include "vpu_memset.h"
 }
 
 #include "xcore_custom_options.h"

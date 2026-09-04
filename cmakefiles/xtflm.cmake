@@ -14,7 +14,6 @@ set(TFLM_SRC_DIR            "${TFLITE_SRC_DIR}/micro")
 
 # Dependencies
 include("${LIB_TFLITE_MICRO_ROOT}/deps.cmake")
-
 if(NOT TARGET lib_nn)
   add_subdirectory("${LIB_NN_SOURCE_DIR}" "${CMAKE_BINARY_DIR}/lib_nn")
 endif()
@@ -242,7 +241,7 @@ list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/submodules/tflite-micro")
 list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/submodules/gemmlowp")
 list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/submodules/ruy")
 list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/submodules/flatbuffers/include")
-list(APPEND ALL_INCLUDES  "${DEPENDENCIES_DIR}")
+list(APPEND ALL_INCLUDES  "${LIB_NN_ROOT_DIR}")
 list(APPEND ALL_INCLUDES  "${LIB_XUD_SOURCE_DIR}/api")
 list(APPEND ALL_INCLUDES  "${LIB_XUD_SOURCE_DIR}/src/user")
 list(APPEND ALL_INCLUDES  "${XMOS_TOOL_PATH}/target/include/")

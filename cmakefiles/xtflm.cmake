@@ -11,19 +11,7 @@ set(TFLITE_SRC_DIR          "${TFLIB_DIR}/submodules/tflite-micro/tensorflow/lit
 set(TFLM_SRC_DIR            "${TFLITE_SRC_DIR}/micro")
 
 # Dependencies
-set(LIB_NN_REPOSITORY "https://github.com/xmos/lib_nn.git")
-set(LIB_NN_TAG "develop")
-
-include(FetchContent)
-FetchContent_Declare(
-	lib_nn
-	GIT_REPOSITORY "${LIB_NN_REPOSITORY}"
-	GIT_TAG "${LIB_NN_TAG}"
-	SOURCE_SUBDIR lib_nn
-)
-FetchContent_MakeAvailable(lib_nn)
-FetchContent_GetProperties(lib_nn SOURCE_DIR LIB_NN_ROOT_DIR)
-target_include_directories(lib_nn INTERFACE "$<BUILD_INTERFACE:${LIB_NN_ROOT_DIR}>") # neeeded for use of relative includes
+include("${CMAKE_CURRENT_LIST_DIR}/deps.cmake")
 
 # Sources
 list(APPEND TFLITE_SOURCES  "${TFLITE_SRC_DIR}/core/c/common.cc")

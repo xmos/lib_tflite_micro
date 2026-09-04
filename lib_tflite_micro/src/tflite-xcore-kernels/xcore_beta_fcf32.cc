@@ -37,7 +37,7 @@ void beta_fcf32_thread_worker(void *shared, void *start, void *end) {
   auto sd = static_cast<Beta_FcF32Shared *>(shared);
   #if defined(NN_USE_REF) || defined(__VX4A__) || defined(__VX4B__)
   xc_fc_float_ref(sd->out, sd->in, sd->kernels, sd->out_f,
-                  sd->in_f);
+                  sd->in_f, *s, *e);
   #else
   xc_fc_float_opt(sd->out, sd->in, sd->kernels, sd->out_f,
                   sd->in_f, *s, *e);

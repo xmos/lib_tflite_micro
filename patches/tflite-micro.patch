@@ -14,7 +14,7 @@ index 53efe8e3..b3d50706 100644
      ThrowValueError(err_str.c_str());
    }
 diff --git a/python/tflite_micro/python_ops_resolver.cc b/python/tflite_micro/python_ops_resolver.cc
-index ab67bd4a..127c4ee9 100644
+index ab67bd4a..db369a04 100644
 --- a/python/tflite_micro/python_ops_resolver.cc
 +++ b/python/tflite_micro/python_ops_resolver.cc
 @@ -39,28 +39,28 @@ PythonOpsResolver::PythonOpsResolver() {
@@ -95,15 +95,17 @@ index ab67bd4a..127c4ee9 100644
    AddSub();
    AddSum();
    AddSvdf();
-@@ -130,7 +130,7 @@ PythonOpsResolver::PythonOpsResolver() {
+@@ -130,8 +130,9 @@ PythonOpsResolver::PythonOpsResolver() {
    AddUnpack();
    AddVarHandle();
    AddWhile();
 -  AddWindow();
 +  //AddWindow();
    AddZerosLike();
++  AddBatchMatMul();
  }
  
+ }  // namespace tflite
 diff --git a/python/tflite_micro/python_ops_resolver.h b/python/tflite_micro/python_ops_resolver.h
 index ae0a7566..709e7e6f 100644
 --- a/python/tflite_micro/python_ops_resolver.h
@@ -8514,7 +8516,7 @@ index bd99bd1a..b4f5dfa7 100644
 -}  // namespace tflite
 +}  // namespace tflite_micro
 diff --git a/tensorflow/lite/micro/kernels/batch_matmul.cc b/tensorflow/lite/micro/kernels/batch_matmul.cc
-index 9ecc4fc3..f9dffabc 100644
+index 9ecc4fc3..bd34b88a 100644
 --- a/tensorflow/lite/micro/kernels/batch_matmul.cc
 +++ b/tensorflow/lite/micro/kernels/batch_matmul.cc
 @@ -28,7 +28,7 @@ limitations under the License.
@@ -8550,15 +8552,47 @@ index 9ecc4fc3..f9dffabc 100644
                                   context, output, output_eval));
  
    // Fill in any broadcast dimensions.
-@@ -165,7 +165,7 @@ TfLiteEvalTensor* AllocInitTransposeTensorFromTfLiteTensor(
+@@ -157,7 +157,7 @@ TfLiteEvalTensor* AllocInitTransposeTensorFromTfLiteTensor(
+     TfLiteContext* context, const TfLiteTensor& tensor) {
+   MicroContext* micro_context = GetMicroContext(context);
+   TfLiteEvalTensor* eval_tensor = static_cast<TfLiteEvalTensor*>(
+-      micro_context->AllocatePersistentBuffer(sizeof(TfLiteEvalTensor)));
++      context->AllocatePersistentBuffer(context, sizeof(TfLiteEvalTensor)));
+   if (eval_tensor == nullptr) {
+     return nullptr;
+   }
+@@ -165,9 +165,9 @@ TfLiteEvalTensor* AllocInitTransposeTensorFromTfLiteTensor(
    eval_tensor->type = tensor.type;
  
    const int tensor_rank = NumDimensions(&tensor);
 -  const size_t eval_dims_size = TfLiteIntArrayGetSizeInBytes(tensor_rank);
 +  const size_t eval_dims_size = TfLiteMicroIntArrayGetSizeInBytes(tensor_rank);
    eval_tensor->dims = static_cast<TfLiteIntArray*>(
-       micro_context->AllocatePersistentBuffer(eval_dims_size));
+-      micro_context->AllocatePersistentBuffer(eval_dims_size));
++      context->AllocatePersistentBuffer(context, eval_dims_size));
    if (eval_tensor->dims == nullptr) {
+     return nullptr;
+   }
+@@ -182,7 +182,7 @@ TfLiteEvalTensor* AllocInitTransposeTensorFromTfLiteTensor(
+   const size_t eval_data_size = static_cast<size_t>(NumElements(&tensor)) *
+                                 TfLiteTypeGetSize(tensor.type);
+   eval_tensor->data.data =
+-      micro_context->AllocatePersistentBuffer(eval_data_size);
++      context->AllocatePersistentBuffer(context, eval_data_size);
+   if (eval_tensor->data.data == nullptr) {
+     return nullptr;
+   }
+@@ -206,8 +206,8 @@ TfLiteStatus InitializeTemporaries(TfLiteContext* context, TfLiteNode* node,
+ 
+   if (lhs->type == kTfLiteInt8 || lhs->type == kTfLiteInt16) {
+     op_data->quantization = static_cast<decltype(op_data->quantization)>(
+-        micro_context->AllocatePersistentBuffer(
+-            sizeof(*op_data->quantization)));
++        context->AllocatePersistentBuffer(
++            context, sizeof(*op_data->quantization)));
+     TF_LITE_ENSURE(context, op_data->quantization != nullptr);
+   }
+ 
 @@ -234,9 +234,9 @@ TfLiteStatus InitializeTemporaries(TfLiteContext* context, TfLiteNode* node,
  template <typename Scalar>
  void TransposeRowsColumnsImpl(const TfLiteEvalTensor& tensor_in,
@@ -8572,14 +8606,23 @@ index 9ecc4fc3..f9dffabc 100644
    RuntimeShape shape(transposed_shape);
    TransposeParams params;
    const int rank = shape.DimensionsCount();
+@@ -285,7 +285,7 @@ void* Init(TfLiteContext* context, const char* buffer, size_t length) {
+   // Eval().
+   TFLITE_DCHECK(context->AllocatePersistentBuffer != nullptr);
+   MicroContext* micro_context = GetMicroContext(context);
+-  return micro_context->AllocatePersistentBuffer(sizeof(OpData));
++  return context->AllocatePersistentBuffer(context, sizeof(OpData));
+ }
+ 
+ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
 @@ -325,8 +325,8 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
    OpData* op_data = op_context.op_data;
    // If the RHS is constant, we only transpose once.
    op_data->rhs_is_transposed = false;
 -  op_data->lhs_is_constant_tensor = IsConstantTensor(lhs_data);
 -  op_data->rhs_is_constant_tensor = IsConstantTensor(rhs_data);
-+  op_data->lhs_is_constant_tensor = IsConstantTensor(context, lhs_data);
-+  op_data->rhs_is_constant_tensor = IsConstantTensor(context, rhs_data);
++  op_data->lhs_is_constant_tensor = IsConstantTensor(context, const_cast<TfLiteTensor*>(lhs_data));
++  op_data->rhs_is_constant_tensor = IsConstantTensor(context, const_cast<TfLiteTensor*>(rhs_data));
  
    // Note that quantized inference requires that all tensors have their
    // parameters set. This is usually done during quantized training.

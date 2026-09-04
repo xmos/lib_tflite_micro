@@ -40,6 +40,7 @@ constexpr const char *XC_expand_8_to_16_OpCode = "XC_expand_8_to_16";
 constexpr const char *XC_no_op_OpCode = "XC_no_op";
 constexpr const char *XC_store_tensor_OpCode = "XC_store_tensor";
 constexpr const char *XC_load_tensor_OpCode = "XC_load_tensor";
+constexpr const char *XC_batch_matmul_OpCode = "XC_batch_matmul";
 
 // Binarized ops
 constexpr const char *XC_bsign_8_OpCode = "XC_bsign_8";

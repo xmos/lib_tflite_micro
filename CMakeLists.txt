@@ -1,5 +1,5 @@
 
-# Project Defitition
+# Project Definition
 cmake_minimum_required(VERSION 3.23)
 project(lib_tflite_micro)
 set(LIB_NAME "xtflitemicro" CACHE STRING "Name of the library to be built")

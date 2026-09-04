@@ -4,6 +4,17 @@ set(TFLIB_DIR
 set(NNLIB_DIR
   "${TOP_DIR}/../lib_nn/lib_nn")
 
+if(NOT IS_DIRECTORY "${TOP_DIR}/../lib_nn")
+  include(FetchContent)
+  FetchContent_Declare(
+    lib_nn
+    GIT_REPOSITORY "https://github.com/xmos/lib_nn.git"
+    GIT_TAG develop
+    SOURCE_DIR "${TOP_DIR}/../lib_nn"
+  )
+  FetchContent_Populate(lib_nn)
+endif()
+
 add_subdirectory("${NNLIB_DIR}" "${CMAKE_BINARY_DIR}/lib_nn")
 
 set(XTFLIB_SRC_DIR

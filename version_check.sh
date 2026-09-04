@@ -1,13 +1,18 @@
 #!/bin/bash
 
 CUR_DIR=$(pwd)
+LIB_NN_ROOT="../../lib_nn"
 
-cd ../../lib_nn/lib_nn
+if ! git -C "${LIB_NN_ROOT}" fetch --tags --force; then
+    exit 1
+fi
+
+cd "${LIB_NN_ROOT}/lib_nn" || exit 1
 if ! ../version_check.sh; then
     exit 1
 fi
 
-cd $CUR_DIR
+cd "${CUR_DIR}" || exit 1
 printf "\nRunning version check for lib_tflite_micro..."
 
 # in lib_tflite_micro/lib_tflite_micro folder

@@ -31,9 +31,7 @@ pipeline {
                 steps {
                     withVenv {
                         sh 'make init'
-                        catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
-                            sh 'make test'
-                        }
+                        sh 'make test'
                     }
                 }
             }

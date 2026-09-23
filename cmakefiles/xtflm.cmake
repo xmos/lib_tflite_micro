@@ -7,6 +7,7 @@ set(TFLM_SRC_DIR            "${TFLITE_SRC_DIR}/micro")
 
 # Dependencies
 include("${CMAKE_CURRENT_LIST_DIR}/deps.cmake")
+set(LIB_NN_SOURCE_DIR       "${LIB_NN_ROOT_DIR}/lib_nn")
 set(LIB_XUD_SOURCE_DIR      "${LIB_XUD_ROOT_DIR}/lib_xud")
 
 # Sources
@@ -229,7 +230,7 @@ list(APPEND ALL_INCLUDES  "${LIB_NN_ROOT_DIR}")
 list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/src")
 list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/src/tflite-xcore-kernels")
 list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/api")
-list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/submodules/tflite-micro")
+list(APPEND ALL_INCLUDES  "${LIB_NN_SOURCE_DIR}/api")
 list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/submodules/gemmlowp")
 list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/submodules/ruy")
 list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/submodules/flatbuffers/include")

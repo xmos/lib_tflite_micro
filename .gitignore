@@ -16,3 +16,4 @@ flash_builder/flash_builder.egg-info/
 build/
 .cache
 compile_commands.json
+build*

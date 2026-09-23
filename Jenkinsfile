@@ -42,31 +42,35 @@ pipeline {
             }
         }
 
-        stage('Build Native') {
-            steps {
-                dir(REPO) {
-                    withVenv {
-                        sh 'make build'
+        stage('Builds') {
+            parallel {
+                stage('Build Native') {
+                    steps {
+                        dir(REPO) {
+                            withVenv {
+                                sh 'make build'
+                            }
+                        }
                     }
                 }
-            }
-        }
 
-        stage('Build XS3') {
-            steps {
-                dir(REPO) {
-                    withTools(params.TOOLS_VERSION_XS) {
-                        sh 'make build_xs3'
+                stage('Build XS3') {
+                    steps {
+                        dir(REPO) {
+                            withTools(params.TOOLS_VERSION_XS) {
+                                sh 'make build_xs3'
+                            }
+                        }
                     }
                 }
-            }
-        }
 
-        stage('Build VX4') {
-            steps {
-                dir(REPO) {
-                    withTools(params.TOOLS_VERSION_VX) {
-                        sh 'make build_vx4'
+                stage('Build VX4') {
+                    steps {
+                        dir(REPO) {
+                            withTools(params.TOOLS_VERSION_VX) {
+                                sh 'make build_vx4'
+                            }
+                        }
                     }
                 }
             }

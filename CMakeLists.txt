@@ -2,14 +2,10 @@
 # Project Definition
 cmake_minimum_required(VERSION 3.23)
 project(lib_tflite_micro)
-set(LIB_NAME "xtflitemicro" CACHE STRING "Name of the library to be built")
+enable_language(C CXX ASM)
 
-# Enable size optimization option
-option(
-    ENABLE_SIZE_OPT
-    "Enable function/data section splitting and linker garbage collection"
-    OFF
-)
+set(LIB_NAME "xtflitemicro" CACHE STRING "Name of the library to be built")
+set(LIB_OUTPUT_DIR "${CMAKE_CURRENT_LIST_DIR}/lib")
 
 # Disable in-source build
 if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
@@ -20,6 +16,7 @@ endif()
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmakefiles/xtflm.cmake")
 
 add_library(${LIB_NAME} STATIC)
+set_target_properties(${LIB_NAME} PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${LIB_OUTPUT_DIR}")
 
 set(header_list "")
 foreach(DIR ${ALL_INCLUDES})
@@ -44,66 +41,40 @@ set(DEFINITIONS
     "TF_LITE_STRIP_ERROR_STRINGS"
 )
 
-# Target specific
-if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL XCORE_XS3A)
-    set(XCORE_TARGET "XCORE-AI-EXPLORER")
+# Build flags
+set(BUILD_FLAGS "-g")
 
-    enable_language(CXX C ASM)
-
-    target_sources(${LIB_NAME}
-        PRIVATE ${XTFLIB_XCORE_SOURCES}
-    )
-
-    set(BUILD_FLAGS
-        "-g"
-        "-fcomment-asm"
+# XS3
+if(CMAKE_SYSTEM_PROCESSOR STREQUAL XCORE_XS3A)
+    target_sources(${LIB_NAME} PRIVATE ${XTFLIB_XCORE_SOURCES})
+    set_target_properties(${LIB_NAME} PROPERTIES OUTPUT_NAME "${LIB_NAME}_xs3a")
+    list(APPEND BUILD_FLAGS
         "-mcmodel=large"
-        "-fxscope"
         "-Wno-xcore-fptrgroup"
-        "-Wno-unknown-pragmas"
         "-Wno-bidirectional-buffered-port"
     )
-
-    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-        list(APPEND BUILD_FLAGS "-00")
-    else()
-        list(APPEND BUILD_FLAGS "-O3")
-    endif()
-elseif(${CMAKE_SYSTEM_PROCESSOR} STREQUAL XCORE_XS)
-    set(BUILD_FLAGS
-        "-g" "-Wno-fptrgroup"
+# VX4
+elseif(${CMAKE_SYSTEM_PROCESSOR} STREQUAL XCORE_VX4)
+    target_sources(${LIB_NAME} PRIVATE ${XTFLIB_XCORE_SOURCES})
+    set_target_properties(${LIB_NAME} PROPERTIES OUTPUT_NAME "${LIB_NAME}_vx4b")    
+    list(APPEND BUILD_FLAGS 
+        "-Wno-fptrgroup"
+        "-ffunction-sections"
+        "-fdata-sections"
+        "-Wl,--gc-sections"
     )
-    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-        list(APPEND BUILD_FLAGS "-00")
-    else()
-        list(APPEND BUILD_FLAGS "-Os")
-    endif()
-
-    enable_language(CXX C ASM)
-
-    target_sources(${LIB_NAME}
-        PRIVATE ${XTFLIB_XCORE_SOURCES}
-    )
-
-    SET(CMAKE_OSX_DEPLOYMENT_TARGET 12.0)
-    set_property(TARGET ${LIB_NAME} PROPERTY CXX_STANDARD 14)
-
-    list(APPEND DEFINITIONS "FLATBUFFERS_LOCALE_INDEPENDENT=0")
-
+# Native
 else()
-    set(BUILD_FLAGS
-        "-g"
-        "-O0"
-    )
-    SET(CMAKE_OSX_DEPLOYMENT_TARGET 12.0)
-
+    set(CMAKE_OSX_DEPLOYMENT_TARGET 12.0)
     list(APPEND DEFINITIONS "NN_USE_REF" "FLATBUFFERS_LOCALE_INDEPENDENT=0")
-
     target_compile_features(${LIB_NAME} PUBLIC cxx_std_17)
 endif()
 
-if(ENABLE_SIZE_OPT)
-    list(APPEND BUILD_FLAGS -ffunction-sections -fdata-sections -Wl,--gc-sections)
+# Debug
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    list(APPEND BUILD_FLAGS "-00")
+else()
+    list(APPEND BUILD_FLAGS "-O3")
 endif()
 
 # Link and compile options
@@ -114,12 +85,14 @@ target_compile_definitions(${LIB_NAME} PUBLIC ${DEFINITIONS})
 target_include_directories(${LIB_NAME} PRIVATE ${ALL_INCLUDES})
 
 # Project install
-install(TARGETS ${LIB_NAME} DESTINATION "${CMAKE_BINARY_DIR}/lib"
-    FILE_SET HEADERS DESTINATION "${CMAKE_BINARY_DIR}/include")
+install(TARGETS ${LIB_NAME} 
+    ARCHIVE DESTINATION "${LIB_OUTPUT_DIR}"
+    FILE_SET HEADERS DESTINATION "${CMAKE_BINARY_DIR}/include"
+)
 
 # Move headers to clean up include directory
 add_custom_target(project-install DEPENDS ${LIB_NAME}
-    COMMAND rm -rf "${CMAKE_BINARY_DIR}/include" "${CMAKE_BINARY_DIR}/lib"
+    COMMAND rm -rf "${CMAKE_BINARY_DIR}/include"
     COMMAND "${CMAKE_COMMAND}" --build "${PROJECT_BINARY_DIR}" --target install
     COMMAND mv "${CMAKE_BINARY_DIR}/include/lib_tflite_micro/lib_tflite_micro/submodules/tflite-micro/tensorflow" "${CMAKE_BINARY_DIR}/include"
     COMMAND mv "${CMAKE_BINARY_DIR}/include/lib_tflite_micro/lib_tflite_micro/submodules/tflite-micro/signal" "${CMAKE_BINARY_DIR}/include"
@@ -138,11 +111,11 @@ add_custom_target(project-install DEPENDS ${LIB_NAME}
     )
 
 # Create zip of lib and headers
-add_custom_target(create_zip DEPENDS project-install COMMAND
-    ${CMAKE_COMMAND} -E tar "cfv" "release_archive.zip" --format=zip
-    "${CMAKE_BINARY_DIR}/lib" "${CMAKE_BINARY_DIR}/include")
-
-if(EXISTS "${CMAKE_BINARY_DIR}/compile_commands.json")
-  file(COPY "${CMAKE_BINARY_DIR}/compile_commands.json"
-       DESTINATION "${CMAKE_SOURCE_DIR}")
-endif()
+set(PACKAGE_DIR "${CMAKE_BINARY_DIR}/package")
+add_custom_target(create_zip
+    COMMAND ${CMAKE_COMMAND} -E rm -rf "${PACKAGE_DIR}"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${PACKAGE_DIR}"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory "${LIB_OUTPUT_DIR}" "${PACKAGE_DIR}/lib"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_BINARY_DIR}/include" "${PACKAGE_DIR}/include"
+    COMMAND ${CMAKE_COMMAND} -E chdir "${PACKAGE_DIR}" ${CMAKE_COMMAND} -E tar "cfv" "${CMAKE_BINARY_DIR}/release_archive.zip" --format=zip lib include
+    DEPENDS project-install)

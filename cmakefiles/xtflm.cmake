@@ -1,10 +1,5 @@
 # Paths
 set(LIB_TFLITE_MICRO_ROOT   "${CMAKE_CURRENT_LIST_DIR}/..")
-
-set(DEPENDENCIES_DIR        "${LIB_TFLITE_MICRO_ROOT}/..")
-set(LIB_XUD_ROOT_DIR        "${DEPENDENCIES_DIR}/lib_xud")
-set(LIB_XUD_SOURCE_DIR      "${LIB_XUD_ROOT_DIR}/lib_xud")
-
 set(TFLIB_DIR               "${LIB_TFLITE_MICRO_ROOT}/lib_tflite_micro")
 set(XTFLIB_SRC_DIR          "${TFLIB_DIR}/src/tflite-xcore-kernels")
 set(TFLITE_SRC_DIR          "${TFLIB_DIR}/submodules/tflite-micro/tensorflow/lite")
@@ -12,6 +7,7 @@ set(TFLM_SRC_DIR            "${TFLITE_SRC_DIR}/micro")
 
 # Dependencies
 include("${CMAKE_CURRENT_LIST_DIR}/deps.cmake")
+set(LIB_XUD_SOURCE_DIR      "${LIB_XUD_ROOT_DIR}/lib_xud")
 
 # Sources
 list(APPEND TFLITE_SOURCES  "${TFLITE_SRC_DIR}/core/c/common.cc")
@@ -229,6 +225,7 @@ list(APPEND ALL_SOURCES ${TFLM_KERNEL_SOURCES})
 # Include directories
 set(ALL_INCLUDES "")
 
+list(APPEND ALL_INCLUDES  "${LIB_NN_ROOT_DIR}")
 list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/src")
 list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/src/tflite-xcore-kernels")
 list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/api")

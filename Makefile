@@ -5,7 +5,6 @@ patch:
 
 build:
 	cmake -B build
-	cmake -E chdir lib_tflite_micro ../version_check.sh
 	make -j8 -C build
 
 build_xs3:

@@ -2,9 +2,10 @@
 # Project Definition
 cmake_minimum_required(VERSION 3.23)
 project(lib_tflite_micro)
+enable_language(C CXX ASM)
+
 set(LIB_NAME "xtflitemicro" CACHE STRING "Name of the library to be built")
 set(LIB_OUTPUT_DIR "${CMAKE_CURRENT_LIST_DIR}/lib")
-enable_language(C CXX ASM)
 
 # Enable size optimization option
 option(

@@ -35,7 +35,6 @@ pipeline {
             steps {
                 dir(REPO) {
                     checkoutScmShallow()
-                    createVenv(reqFile: 'requirements.txt')
                     sh 'git submodule update --depth=1 --init --recursive --jobs 8'
                     sh 'make patch'
                 }
@@ -66,9 +65,7 @@ pipeline {
         stage('Build Native') {
             steps {
                 dir(REPO) {
-                    withVenv {
-                        sh 'make build'
-                    }
+                    sh 'make build'
                 }
             }
         }
@@ -76,9 +73,7 @@ pipeline {
         stage('Test') {
             steps {
                 dir(REPO) {
-                    withVenv {
-                        sh 'make test'
-                    }
+                    sh 'make test'
                 }
             }
         }

@@ -1,9 +1,9 @@
 install:
-	mkdir -p build
-	(cd build && cmake .. && make install -j4)
+	cmake -B build
+	make install -j8 -C build
 
 clean:
 	rm -rf build
 
 test: install
-	(cd tests && make test)
+	make test -C tests

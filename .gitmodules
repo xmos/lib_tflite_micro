@@ -1,6 +1,6 @@
 [submodule "lib_tflite_micro/submodules/tflite-micro"]
 	path = lib_tflite_micro/submodules/tflite-micro
-	url = git@github.com:tensorflow/tflite-micro.git
+	url = https://github.com/xmosforks/tflite-micro.git
 [submodule "lib_tflite_micro/submodules/flatbuffers"]
 	path = lib_tflite_micro/submodules/flatbuffers
 	url = git@github.com:google/flatbuffers.git

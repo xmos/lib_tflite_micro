@@ -72,6 +72,17 @@ pipeline {
                 }
             }
         }
+
+        stage('Test') {
+            steps {
+                dir(REPO) {
+                    withVenv {
+                        sh 'make test'
+                    }
+                }
+            }
+        }
+
     }
 
     post {

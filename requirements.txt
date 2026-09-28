@@ -1,5 +1,7 @@
+# pip_version 25.*
 # python_version 3.12
-numpy>=1.20
+
+numpy>=1.20,<=2.0
 opencv-python>=4.4
 flatbuffers<2.0,>=1.12
 tflite==2.4.0

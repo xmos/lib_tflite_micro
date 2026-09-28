@@ -35,7 +35,6 @@ pipeline {
             steps {
                 dir(REPO) {
                     checkoutScmShallow()
-                    createVenv(reqFile: 'requirements.txt')
                     sh 'git submodule update --depth=1 --init --recursive --jobs 8'
                     sh 'make patch'
                 }
@@ -66,17 +65,27 @@ pipeline {
         stage('Build Native') {
             steps {
                 dir(REPO) {
-                    withVenv {
-                        sh 'make build'
-                    }
+                    sh 'make build'
                 }
             }
         }
+
+        stage('Test') {
+            steps {
+                dir(REPO) {
+                    sh 'make test'
+                }
+            }
+        }
+
     }
 
     post {
+        success {
+            archiveArtifacts artifacts: "${REPO}/build_xs3/release_archive.zip", fingerprint: true
+        }
         cleanup {
-            cleanWs()
+            xcoreCleanSandbox()
         }
     }
 }

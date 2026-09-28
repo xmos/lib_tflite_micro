@@ -2,9 +2,6 @@
 
 JOBS := $(shell nproc --ignore=1)
 
-patch:
-	(cd lib_tflite_micro/submodules/tflite-micro && git reset --hard && git apply ../../../patches/tflite-micro.patch)
-
 build:
 	cmake -B build
 	make -j$(JOBS) -C build
@@ -26,7 +23,7 @@ clean:
 	rm -f lib/*.a
 
 test:
-	(cd host_cmd_line_interpreter && make test)
+	make test -C host_cmd_line_interpreter
 	@echo ""
 	@echo "All tests PASS"
 	@echo ""

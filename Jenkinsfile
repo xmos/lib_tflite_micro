@@ -81,8 +81,11 @@ pipeline {
     }
 
     post {
+        success {
+            archiveArtifacts artifacts: "${REPO}/build_xs3/release_archive.zip", fingerprint: true
+        }
         cleanup {
-            cleanWs()
+            xcoreCleanSandbox()
         }
     }
 }

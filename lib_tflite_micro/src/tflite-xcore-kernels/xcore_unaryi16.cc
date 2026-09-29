@@ -4,11 +4,10 @@
 #include "xcore_config.h"
 #include "xcore_custom_options.h"
 #include "xcore_utils.h"
+
 extern "C" {
 #include "lib_nn/api/nn_operator.h"
-#include "lib_nn/api/quantize_int16.h"
-#include "lib_nn/api/multiply_int16.h"
-#include "lib_nn/api/dequantize_int16.h"
+#include "lib_nn/api/nn_layers.h"
 }
 
 namespace tflite_micro {

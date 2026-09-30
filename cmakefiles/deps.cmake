@@ -2,7 +2,7 @@
 include(FetchContent)
 
 set(LIB_NN_REPOSITORY       "https://github.com/xmos/lib_nn.git")
-set(LIB_NN_TAG              "feature/remove-headers")
+set(LIB_NN_TAG              "develop")
 set(LIB_XUD_REPOSITORY      "https://github.com/xmos/lib_xud.git")
 set(LIB_XUD_TAG             "v2.4.0")
 

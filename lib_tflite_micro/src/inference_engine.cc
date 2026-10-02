@@ -1,7 +1,8 @@
 // Copyright (c) 2021, XMOS Ltd, All rights reserved
 #include "lib_nn/api/version.h"
+#include "../api/version.h"
+
 #include "inference_engine.h"
-#include "version.h"
 #include "xcore_shared_config.h"
 #include "thread_call.h"
 #include <cstddef>

@@ -223,7 +223,8 @@ list(APPEND ALL_SOURCES ${TFLM_KERNEL_SOURCES})
 # Include directories
 set(ALL_INCLUDES "")
 
-list(APPEND ALL_INCLUDES  "${LIB_NN_ROOT_DIR}") # Required by host builds for lib_nn headers; do not remove.
+list(APPEND ALL_INCLUDES  "${LIB_NN_ROOT_DIR}")                 # Required by host; do not remove.
+list(APPEND ALL_INCLUDES  "${LIB_NN_ROOT_DIR}/lib_nn/api")      # Required by host; do not remove.
 list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/src")
 list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/src/tflite-xcore-kernels")
 list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/api")

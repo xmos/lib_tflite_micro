@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
+#include <unordered_map>
 
 #if !defined(XTFLM_DISABLED)
 

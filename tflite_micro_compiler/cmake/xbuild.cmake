@@ -42,6 +42,7 @@ target_compile_features(xtflitemicro PUBLIC cxx_std_11)
 target_sources(xtflitemicro
   PRIVATE ${TFLM_KERNEL_SOURCES}
   PRIVATE ${TFLITE_SOURCES}
+  PRIVATE ${XTFLIB_SOURCES}
   PRIVATE ${XTFLIB_KERNEL_SOURCES}
 )
 target_include_directories(xtflitemicro

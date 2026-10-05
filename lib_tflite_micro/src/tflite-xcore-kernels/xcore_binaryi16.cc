@@ -6,8 +6,7 @@
 #include "xcore_utils.h"
 extern "C" {
 #include "lib_nn/api/nn_operator.h"
-#include "lib_nn/api/add_int16.h"
-#include "lib_nn/api/multiply_int16.h"
+#include "lib_nn/api/nn_layers.h"
 }
 
 namespace tflite_micro {

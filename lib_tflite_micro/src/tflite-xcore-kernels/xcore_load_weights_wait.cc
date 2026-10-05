@@ -14,9 +14,10 @@
 extern "C" {
 #include "memory_parallel_transport.h"
 #include "nn_op_utils.h"
+#include "vpu_memcpy.h"
 #include "load_weights.h"
 }
-#endif
+#endif // __xcore__
 
 namespace tflite_micro {
 namespace ops {

@@ -4,8 +4,10 @@
 #include "xcore_config.h"
 #include "xcore_custom_options.h"
 #include "xcore_utils.h"
+
 extern "C" {
 #include "lib_nn/api/nn_operator.h"
+#include "lib_nn/api/xs3_vpu.h"
 }
 
 namespace tflite_micro {

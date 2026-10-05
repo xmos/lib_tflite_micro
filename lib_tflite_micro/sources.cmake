@@ -1,14 +1,11 @@
 # Paths
-set(LIB_TFLITE_MICRO_ROOT   "${CMAKE_CURRENT_LIST_DIR}/..")
-set(TFLIB_DIR               "${LIB_TFLITE_MICRO_ROOT}/lib_tflite_micro")
+set(TFLIB_DIR               "${CMAKE_CURRENT_LIST_DIR}")
 set(XTFLIB_SRC_DIR          "${TFLIB_DIR}/src/tflite-xcore-kernels")
 set(TFLITE_SRC_DIR          "${TFLIB_DIR}/submodules/tflite-micro/tensorflow/lite")
 set(TFLM_SRC_DIR            "${TFLITE_SRC_DIR}/micro")
 
 # Dependencies
 include("${CMAKE_CURRENT_LIST_DIR}/deps.cmake")
-set(LIB_NN_SOURCE_DIR       "${LIB_NN_ROOT_DIR}/lib_nn")
-set(LIB_XUD_SOURCE_DIR      "${LIB_XUD_ROOT_DIR}/lib_xud")
 
 # Sources
 list(APPEND TFLITE_SOURCES  "${TFLITE_SRC_DIR}/core/c/common.cc")
@@ -215,7 +212,7 @@ list(APPEND ALL_SOURCES  "${TFLM_SRC_DIR}/kernels/read_variable.cc")
 list(APPEND ALL_SOURCES  "${TFLM_SRC_DIR}/kernels/assign_variable.cc")
 
 # link error on Linux
-list(APPEND ALL_SOURCES  "${LIB_TFLITE_MICRO_ROOT}/lib_tflite_micro/submodules/flatbuffers/src/util.cpp")
+list(APPEND ALL_SOURCES  "${TFLIB_DIR}/submodules/flatbuffers/src/util.cpp")
 
 list(APPEND ALL_SOURCES ${TFLITE_SOURCES})
 list(APPEND ALL_SOURCES ${XTFLIB_SOURCES})
@@ -226,7 +223,8 @@ list(APPEND ALL_SOURCES ${TFLM_KERNEL_SOURCES})
 # Include directories
 set(ALL_INCLUDES "")
 
-list(APPEND ALL_INCLUDES  "${LIB_NN_ROOT_DIR}")
+list(APPEND ALL_INCLUDES  "${LIB_NN_ROOT_DIR}")                 # Required by host; do not remove.
+list(APPEND ALL_INCLUDES  "${LIB_NN_ROOT_DIR}/lib_nn/api")      # Required by host; do not remove.
 list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/src")
 list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/src/tflite-xcore-kernels")
 list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/api")
@@ -234,6 +232,6 @@ list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/submodules/tflite-micro")
 list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/submodules/gemmlowp")
 list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/submodules/ruy")
 list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/submodules/flatbuffers/include")
-list(APPEND ALL_INCLUDES  "${LIB_XUD_SOURCE_DIR}/api")
-list(APPEND ALL_INCLUDES  "${LIB_XUD_SOURCE_DIR}/src/user")
+list(APPEND ALL_INCLUDES  "${LIB_XUD_ROOT_DIR}/lib_xud/api")
+list(APPEND ALL_INCLUDES  "${LIB_XUD_ROOT_DIR}/lib_xud/src/user")
 list(APPEND ALL_INCLUDES  "${XMOS_TOOL_PATH}/target/include/")

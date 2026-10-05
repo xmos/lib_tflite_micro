@@ -111,6 +111,10 @@ int main(int argc, char *argv[]) {
   inference_engine_unload_model(&ie);
   int error = inference_engine_load_model(&ie, model_size, model_content,
                                           params_content);
+  if (error != 0) {
+    fprintf(stderr, "Failed to load model: error %d\n", error);
+    return error;
+  }
 
   if (strcmp(argv[carg], "-i") == 0) {
 

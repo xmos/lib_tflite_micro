@@ -1,7 +1,7 @@
 // Copyright (c) 2023, XMOS Ltd, All rights reserved
 
 extern "C" {
-#include "vpu_memmove_word_aligned.h"
+#include "vpu_memmove.h"
 }
 
 #include "xcore_custom_options.h"

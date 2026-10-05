@@ -1,13 +1,5 @@
 #!/bin/bash
 
-CUR_DIR=$(pwd)
-
-cd ../../lib_nn/lib_nn
-if ! ../version_check.sh; then
-    exit 1
-fi
-
-cd $CUR_DIR
 printf "\nRunning version check for lib_tflite_micro..."
 
 # in lib_tflite_micro/lib_tflite_micro folder

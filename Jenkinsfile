@@ -4,41 +4,88 @@ getApproval()
 
 pipeline {
     agent {
-        label "xcore.ai"
+        label 'linux && x86_64'
     }
-    options {
-        // skipDefaultCheckout()
-        buildDiscarder(xmosDiscardBuildSettings(onlyArtifacts=false))
-        timestamps()
-    }
+
     environment {
         REPO = 'lib_tflite_micro'
-        VIEW = getViewName(REPO)
     }
+
+    parameters {
+        string(
+            name: 'TOOLS_VERSION_XS',
+            defaultValue: '15.3.1',
+            description: 'XS XTC tools version'
+        )
+        string(
+            name: 'TOOLS_VERSION_VX',
+            defaultValue: '-j --repo arch_vx_slipgate -b master -a XTC 131',
+            description: 'VX XTC tools version'
+        )
+    }
+
+    options {
+        timestamps()
+        skipDefaultCheckout()
+        buildDiscarder(xmosDiscardBuildSettings())
+    }
+
     stages {
-            stage('Build') {
-                steps {
-                    createVenv(reqFile: "requirements.txt")
-                    withVenv {
-                        sh 'git submodule update --depth=1 --init --recursive --jobs 8'
-                        sh 'make init'
-                        sh 'make patch'
-                        sh 'make build'
+        stage('Setup') {
+            steps {
+                dir(REPO) {
+                    checkoutScmShallow()
+                    sh 'git submodule update --depth=1 --init --recursive --jobs 8'
+                    sh 'make patch'
+                }
+            }
+        }
+
+        stage('Build VX4') {
+            steps {
+                dir(REPO) {
+                    withTools(params.TOOLS_VERSION_VX) {
+                        sh 'make build_vx4'
                     }
                 }
             }
-            stage("Test") {
-                steps {
-                    withVenv {
-                        sh 'make init'
-                        sh 'make test'
+        }
+
+        stage('Build XS3') {
+            steps {
+                dir(REPO) {
+                    withTools(params.TOOLS_VERSION_XS) {
+                        sh 'make build_xs3'
+                        sh 'make build_install'
                     }
                 }
             }
+        }
+
+        stage('Build Native') {
+            steps {
+                dir(REPO) {
+                    sh 'make build'
+                }
+            }
+        }
+
+        stage('Test') {
+            steps {
+                dir(REPO) {
+                    sh 'make test'
+                }
+            }
+        }
+
     }
+
     post {
+        success {
+            archiveArtifacts artifacts: "${REPO}/build_xs3/release_archive.zip", fingerprint: true
+        }
         cleanup {
-            cleanWs()
+            xcoreCleanSandbox()
         }
     }
 }

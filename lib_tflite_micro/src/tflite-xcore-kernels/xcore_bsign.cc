@@ -9,7 +9,8 @@
 #include "xcore_utils.h"
 
 extern "C" {
-#include "lib_nn/api/nn_operator.h"
+#include "lib_nn/api/xs3_vpu.h"
+#include "lib_nn/api/nn_layers.h"
 }
 
 namespace tflite_micro {

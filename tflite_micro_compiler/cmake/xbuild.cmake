@@ -22,7 +22,7 @@ set(BUILD_FLAGS
 #**********************
 # Targets
 #**********************
-include("${CMAKE_CURRENT_LIST_DIR}/../../cmakefiles/xtflm.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/../../lib_tflite_micro/sources.cmake")
 
 add_library(xtflitemicro SHARED)
 set(DEFINTIONS
@@ -42,6 +42,7 @@ target_compile_features(xtflitemicro PUBLIC cxx_std_11)
 target_sources(xtflitemicro
   PRIVATE ${TFLM_KERNEL_SOURCES}
   PRIVATE ${TFLITE_SOURCES}
+  PRIVATE ${XTFLIB_SOURCES}
   PRIVATE ${XTFLIB_KERNEL_SOURCES}
 )
 target_include_directories(xtflitemicro

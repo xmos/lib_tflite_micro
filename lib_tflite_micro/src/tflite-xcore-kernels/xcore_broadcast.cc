@@ -1,9 +1,9 @@
 // Copyright (c) 2023, XMOS Ltd, All rights reserved
 
 #include <cstdint>
+
 extern "C" {
-#include "vpu_memmove.h"
-#include "vpu_memset.h"
+#include "vpu_mem.h"
 }
 
 #include "xcore_custom_options.h"

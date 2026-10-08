@@ -8,7 +8,7 @@
 
 extern "C" {
 #include "lib_nn/api/nn_operator.h"
-#include "vpu_memmove.h"
+#include "vpu_mem.h"
 }
 
 constexpr int kMaxNumInputs = 13;

@@ -176,6 +176,7 @@ bool tflmc::Compiler::init(const void *modelData) {
   arena_buf_.resize(SUFFICIENT_ARENA_SIZE);
 
   g_arena_size = SUFFICIENT_ARENA_SIZE;
+  // TODO: This looks unused?
   std::vector<uint8_t> arena_buf(g_arena_size);
   g_arenaPtr = arena_buf_.data();
 
@@ -382,13 +383,15 @@ bool tflmc::Compiler::init(const void *modelData) {
     }
   }
 
-  // This includes:
+  // Non-persistent arena consists of:
   // - Tensors
   // - Scratch buffers
+  nonPersistentArenaSize_ = ramTensorBufferSize;
+
+  // Persistent arena consists of:
   // - Persistent buffers
   // - Variable tensors (which are allocated as persistent buffers separately)
-  arenaBufferSize_ =
-      ramTensorBufferSize + totalRuntimeAllocSize + varTensorsSize;
+  persistentArenaSize_ = totalRuntimeAllocSize + varTensorsSize;
 
   if (debugPrint_) {
     interpreter_->allocator_.memory_planner()->PrintMemoryPlan();
@@ -594,14 +597,29 @@ namespace xcore {
   wr << R"(
 
 constexpr int kTensorArenaSize = )"
-     << arenaBufferSize_ << R"(;
-#ifndef SHARED_TENSOR_ARENA
+     << persistentArenaSize_ + nonPersistentArenaSize_ << R"(;
+
+#ifdef EXTERN_TENSOR_ARENA
+
+#ifdef SPLIT_PERSISTENT_TENSOR_ARENA
+constexpr int kPersistentTensorArenaSize = )"
+     << persistentArenaSize_ << R"(;
+extern uint8_t persistent_tensor_arena[];
+#endif // SPLIT_PERSISTENT_TENSOR_ARENA
+
+extern uint8_t tensor_arena[];
+
+#else
+
+#ifdef SPLIT_PERSISTENT_TENSOR_ARENA
+#error "Split persistent/non-persistent tensor arenas require externally defined tensor arenas (EXTERN_TENSOR_ARENA must be defined) "
+#endif
+
 namespace {
 uint8_t tensor_arena[kTensorArenaSize] ALIGN(8);
 }
-#else
-extern uint8_t tensor_arena[];
-#endif
+
+#endif // EXTERN_TENSOR_ARENA
 
 namespace {
 template <int SZ, class T> struct TfArray {
@@ -992,6 +1010,7 @@ static TfLiteStatus RequestScratchBufferInArena(struct TfLiteContext *context, s
 
 static void *GetScratchBuffer(struct TfLiteContext *context,
                                        int buffer_idx) {
+  // Scratch buffers are allocated in the non-persistent tensor arena
   return tensor_arena + scratch_buffer_offsets[buffer_idx];
 }
 
@@ -1240,7 +1259,12 @@ TfLiteStatus )"
 
   // Clear and initialize
   scratch_buffer_idx = 0;
+
+#ifdef SPLIT_PERSISTENT_TENSOR_ARENA
+  persistentBufferPtr = persistent_tensor_arena + kPersistentTensorArenaSize;
+#else
   persistentBufferPtr = tensor_arena + kTensorArenaSize;
+#endif
 
   // Set weights data ptr in xcore context config
   xc_config.weights_data_ptr = weights_data_ptr;
@@ -1587,14 +1611,35 @@ void tflmc::Compiler::writeHeader(std::ostream &out) {
 
 #include "tensorflow/lite/c/common.h"
 
-#ifdef SHARED_TENSOR_ARENA
-  #ifndef LARGEST_TENSOR_ARENA_SIZE
-    #define LARGEST_TENSOR_ARENA_SIZE )" +
-                     std::to_string(arenaBufferSize_) + R"(
-  #elif LARGEST_TENSOR_ARENA_SIZE < )" +
-                     std::to_string(arenaBufferSize_) + R"(
-    #define LARGEST_TENSOR_ARENA_SIZE )" +
-                     std::to_string(arenaBufferSize_) + R"(
+#ifdef EXTERN_TENSOR_ARENA
+  #ifdef SPLIT_PERSISTENT_TENSOR_ARENA
+    #ifndef LARGEST_TENSOR_ARENA_SIZE
+      #define LARGEST_TENSOR_ARENA_SIZE )" +
+                      std::to_string(nonPersistentArenaSize_) + R"(
+    #elif LARGEST_TENSOR_ARENA_SIZE < )" +
+                      std::to_string(nonPersistentArenaSize_) + R"(
+      #define LARGEST_TENSOR_ARENA_SIZE )" +
+                      std::to_string(nonPersistentArenaSize_) + R"(
+    #endif
+
+    #ifndef LARGEST_PERSISTENT_TENSOR_ARENA_SIZE
+      #define LARGEST_PERSISTENT_TENSOR_ARENA_SIZE )" +
+                      std::to_string(persistentArenaSize_) + R"(
+    #elif LARGEST_PERSISTENT_TENSOR_ARENA_SIZE < )" +
+                      std::to_string(persistentArenaSize_) + R"(
+      #define LARGEST_PERSISTENT_TENSOR_ARENA_SIZE )" +
+                      std::to_string(persistentArenaSize_) + R"(
+    #endif
+
+  #else
+    #ifndef LARGEST_TENSOR_ARENA_SIZE
+      #define LARGEST_TENSOR_ARENA_SIZE )" +
+                      std::to_string(persistentArenaSize_ + nonPersistentArenaSize_) + R"(
+    #elif LARGEST_TENSOR_ARENA_SIZE < )" +
+                      std::to_string(persistentArenaSize_ + nonPersistentArenaSize_) + R"(
+      #define LARGEST_TENSOR_ARENA_SIZE )" +
+                      std::to_string(persistentArenaSize_ + nonPersistentArenaSize_) + R"(
+    #endif
   #endif
 #endif
 )";

@@ -9,7 +9,7 @@
 #include "xcore_utils.h"
 
 extern "C" {
-#include "lib_nn/api/xs3_vpu.h"
+#include "lib_nn/api/vpu_defs.h"
 #include "lib_nn/api/nn_layers.h"
 }
 

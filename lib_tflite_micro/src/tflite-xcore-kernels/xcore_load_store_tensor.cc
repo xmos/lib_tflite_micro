@@ -6,7 +6,7 @@
 extern "C" {
 #include "nn_op_utils.h"
 #include "lib_nn/api/nn_layers.h"
-#include "lib_nn/api/vpu_memcpy.h"
+#include "lib_nn/api/vpu_mem.h"
 }
 
 namespace tflite_micro {

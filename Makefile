@@ -1,4 +1,4 @@
-.PHONY: patch build build_xs3 build_vx4 build_install clean test
+.PHONY: patch build build_xs3 build_vx4 build_rvx4 build_install clean test
 
 JOBS := 16
 
@@ -14,12 +14,16 @@ build_vx4:
 	cmake -G "Unix Makefiles" -B build_vx4 --toolchain=lib_tflite_micro/submodules/xmos_cmake_toolchain/vx4_xcc.cmake
 	cmake --build build_vx4 --parallel $(JOBS)
 
+build_rvx4:
+	cmake -G "Unix Makefiles" -B build_rvx4 --toolchain=lib_tflite_micro/submodules/xmos_cmake_toolchain/vx4_clang.cmake
+	cmake --build build_rvx4 --parallel $(JOBS)
+
 build_install:
 	cmake --build build_xs3 --target project-install --parallel $(JOBS)
 	cmake --build build_xs3 --target create_zip --parallel $(JOBS)
 
 clean:
-	rm -rf build build_xs3 build_vx4
+	rm -rf build build_xs3 build_vx4 build_rvx4
 	rm -f lib/*.a
 
 test:

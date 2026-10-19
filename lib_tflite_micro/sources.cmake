@@ -223,6 +223,13 @@ list(APPEND ALL_SOURCES ${TFLM_KERNEL_SOURCES})
 # Include directories
 set(ALL_INCLUDES "")
 
+# XUD
+if(CMAKE_SYSTEM_PROCESSOR STREQUAL XCORE_XS3A OR CMAKE_SYSTEM_PROCESSOR STREQUAL XCORE_VX4)
+    list(APPEND ALL_INCLUDES  "${LIB_XUD_ROOT_DIR}/lib_xud/api")
+    list(APPEND ALL_INCLUDES  "${LIB_XUD_ROOT_DIR}/lib_xud/src/user")
+endif()
+
+# TFLM
 list(APPEND ALL_INCLUDES  "${LIB_NN_ROOT_DIR}")                 # Required by host; do not remove.
 list(APPEND ALL_INCLUDES  "${LIB_NN_ROOT_DIR}/lib_nn/api")      # Required by host; do not remove.
 list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/src")
@@ -232,6 +239,4 @@ list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/submodules/tflite-micro")
 list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/submodules/gemmlowp")
 list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/submodules/ruy")
 list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/submodules/flatbuffers/include")
-list(APPEND ALL_INCLUDES  "${LIB_XUD_ROOT_DIR}/lib_xud/api")
-list(APPEND ALL_INCLUDES  "${LIB_XUD_ROOT_DIR}/lib_xud/src/user")
 list(APPEND ALL_INCLUDES  "${XMOS_TOOL_PATH}/target/include/")

@@ -8,7 +8,7 @@
 #include "xcore_custom_options.h"
 #include "xcore_utils.h"
 
-#ifdef __xcore__
+#if defined(__xcore__) || defined(__riscv_xxcore)
 #include <xcore/channel.h>
 #include <xcore/channel_transaction.h>
 extern "C" {
@@ -17,7 +17,7 @@ extern "C" {
 #include "vpu_mem.h"
 #include "load_weights.h"
 }
-#endif // __xcore__
+#endif // defined(__xcore__) || defined(__riscv_xxcore)
 
 namespace tflite_micro {
 namespace ops {
@@ -69,7 +69,7 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
   MicroContext *micro_context = GetMicroContext(context);
   xc_context_config_t *xc_config = reinterpret_cast<xc_context_config_t *>(
       micro_context->external_context());
-#ifdef __xcore__
+#if defined(__xcore__) || defined(__riscv_xxcore)
   // If DDR, we can do a direct copy with the VPU
   // If not DDR, the weights will be in flash or on another tile
   if (op_data->op_type == OpType::DDR) {
@@ -131,7 +131,7 @@ TfLiteStatus Eval(TfLiteContext *context, TfLiteNode *node) {
 }
 
 TfLiteStatus Eval_Wait(TfLiteContext *context, TfLiteNode *node) {
-#ifdef __xcore__
+#if defined(__xcore__) || defined(__riscv_xxcore)
   MicroContext *micro_context = GetMicroContext(context);
   xc_context_config_t *xc_config = reinterpret_cast<xc_context_config_t *>(
       micro_context->external_context());

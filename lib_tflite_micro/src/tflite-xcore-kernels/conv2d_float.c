@@ -1,5 +1,5 @@
 #include "conv2d_float.h"
-#include "api.h"
+#include "../../api/api.h"
 #include <assert.h>
 
 int xc_fc_float_ref(float *outputs, float *inputs, float *kernels,

@@ -57,6 +57,7 @@ TFLMRegistration *Register_XC_unaryi16();
 TFLMRegistration *Register_XC_conv2d_v2();
 TFLMRegistration *Register_XC_maxpool2d();
 TFLMRegistration *Register_XC_softmax();
+TFLMRegistration *Register_XC_batch_matmul();
 TFLMRegistration *Register_XC_batched_softmax();
 TFLMRegistration *Register_XC_ld_weights();
 TFLMRegistration *Register_XC_ld_weights_wait();

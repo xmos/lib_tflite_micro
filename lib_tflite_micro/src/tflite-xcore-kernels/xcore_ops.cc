@@ -54,6 +54,7 @@ void RegisterXCOps(MicroOpResolver *res) {
   resolver->AddCustom(XC_no_op_OpCode, Register_XC_no_op());
   resolver->AddCustom(XC_store_tensor_OpCode, Register_XC_store_tensor());
   resolver->AddCustom(XC_load_tensor_OpCode, Register_XC_load_tensor());
+  resolver->AddCustom(XC_batch_matmul_OpCode, Register_XC_batch_matmul());
 }
 
 } // namespace xcore

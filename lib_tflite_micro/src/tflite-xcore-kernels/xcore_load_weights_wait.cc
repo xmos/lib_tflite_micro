@@ -14,7 +14,7 @@
 extern "C" {
 #include "memory_parallel_transport.h"
 #include "nn_op_utils.h"
-#include "vpu_memcpy.h"
+#include "vpu_mem.h"
 #include "load_weights.h"
 }
 #endif // __xcore__

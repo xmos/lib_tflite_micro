@@ -1,7 +1,7 @@
 // Copyright (c) 2023, XMOS Ltd, All rights reserved
 
 #include "xcore_custom_options.h"
-#include "../thread_call.h"
+#include "thread_call.h"
 #include "xcore_config.h"
 #include "xcore_utils.h"
 #include "lib_nn/api/vpu.hpp"

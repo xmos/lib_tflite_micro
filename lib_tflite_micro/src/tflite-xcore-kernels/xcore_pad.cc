@@ -5,8 +5,7 @@
 #include <string.h>
 
 extern "C" {
-#include "vpu_memmove.h"
-#include "vpu_memset.h"
+#include "vpu_mem.h"
 }
 
 namespace tflite_micro {

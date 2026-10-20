@@ -23,7 +23,6 @@ struct BatchMatMulWorkerArg0 {
   int batch_size;
   int8_t vpu_buf0[VPU_INT8_EPV*2];
   int8_t vpu_buf1[VPU_INT8_EPV*2];
-  int8_t vpu_buf2[VPU_INT8_EPV*2];
 };
 
 // This is the struct that contains the data required by the operator
@@ -59,7 +58,7 @@ void batch_matmul_thread_worker(void *shared, void *arg0, void *arg1) {
   for (int b = 0; b < arg->batch_size; ++b) {
     mat_mul_real_int8(
       &op_data->mat_mul_params,
-      arg->vpu_buf0, arg->vpu_buf1, arg->vpu_buf2,
+      arg->vpu_buf0, arg->vpu_buf1,
       lhs + b * lhs_batch_offset, rhs + b * rhs_batch_offset,
       output + b * output_batch_offset);
   }

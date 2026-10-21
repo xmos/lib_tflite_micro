@@ -19,3 +19,4 @@ compile_commands.json
 build*
 lib/*
 .vscode/settings.json
+.vscode/tasks.json

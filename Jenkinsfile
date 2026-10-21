@@ -11,6 +11,16 @@ def withNativeTools(platform, Closure body) {
     }
 }
 
+def runtimeTests(target){
+    dir("tests"){
+        createVenv()
+        withVenv {
+            sh "pip install pytest"
+            sh "pytest -s --hw-target=${target}"
+        }
+    }
+}
+
 def buildAndTest(platform) {
     try {
         dir(env.REPO) {
@@ -43,12 +53,31 @@ def buildAndTest(platform) {
                 }
             }
 
-            stage('Test') {
+            stage('Host Interp. Test') {
                 withNativeTools(platform) {
                     sh 'make test'
                 }
             }
 
+            stage('Runtime Tests - VX4') {
+                withTools(params.TOOLS_VERSION_VX) {
+                    runtimeTests('vx4-xcc')
+                }
+            }
+
+            stage('Runtime Tests - XS3') {
+                withTools(params.TOOLS_VERSION_XS) {
+                    runtimeTests('xs3')
+                }
+            }
+
+            stage('Runtime Tests - Native') {
+                withNativeTools(platform) {
+                    runtimeTests('native')
+                }
+            }
+
+            // archive
             def archivePath = "build_xs3/release_archive_${platform}.zip"
             sh "cmake -E rename build_xs3/release_archive.zip ${archivePath}"
             archiveArtifacts artifacts: archivePath, fingerprint: true

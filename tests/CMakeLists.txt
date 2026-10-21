@@ -32,28 +32,26 @@ endif()
 add_library(xtflitemicro STATIC IMPORTED)
 set_target_properties(xtflitemicro PROPERTIES
   IMPORTED_LOCATION "${TFLITE_MICRO_DIR}/lib/${TFLITE_MICRO_ARCHIVE}"
-  INTERFACE_COMPILE_DEFINITIONS TF_LITE_STATIC_MEMORY
-  INTERFACE_COMPILE_FEATURES cxx_std_17
 )
-
-# Add executable
-set(TARGET_NAME avg_pool)
-set(COMMON_OPTIONS -Os -g -Wall)
-
-add_executable(${TARGET_NAME} avg_pool/main.cpp)
-target_include_directories(${TARGET_NAME} PRIVATE
+set(COMMON_DEFINITIONS TF_LITE_STATIC_MEMORY NO_INTERPRETER)
+set(COMMON_FEATURES cxx_std_17)
+set(COMMON_INCLUDES
+  "${TFLITE_MICRO_DIR}"
+  "${SANBOX_DIR}/lib_nn"
   "${TFLITE_MICRO_DIR}/lib_tflite_micro/submodules/tflite-micro"
   "${TFLITE_MICRO_DIR}/lib_tflite_micro/submodules/gemmlowp"
+  "${TFLITE_MICRO_DIR}/lib_tflite_micro/submodules/flatbuffers/include"
 )
-target_link_libraries(${TARGET_NAME} PRIVATE xtflitemicro)
-target_compile_options(${TARGET_NAME} PRIVATE ${COMMON_OPTIONS} ${XCORE_TARGET})
-target_link_options(${TARGET_NAME} PRIVATE ${XCORE_TARGET})
+if(MSVC)
+  set(COMMON_OPTIONS /O2 /Zi /W3 /UNDEBUG)
+else()
+  set(COMMON_OPTIONS -Os -g -Wall -UNDEBUG)
+endif()
 
 if(NOT NATIVE)
   find_program(XSIM_EXECUTABLE NAMES xsim REQUIRED)
-  set_property(TARGET ${TARGET_NAME} PROPERTY CROSSCOMPILING_EMULATOR "${XSIM_EXECUTABLE}")
 endif()
 
-# Add tests
 enable_testing()
-add_test(NAME avg_pool COMMAND ${TARGET_NAME})
+add_subdirectory(avg_pool avg_pool_test)
+add_subdirectory(hello_world)

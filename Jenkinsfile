@@ -29,21 +29,21 @@ def buildAndTest(platform) {
                 sh 'git submodule update --depth=1 --init --recursive --jobs 8'
             }
 
-            stage('Build XS3') {
-                withTools(params.TOOLS_VERSION_XS) {
-                    sh 'make build_xs3'
+            stage('Build Native') {
+                withNativeTools(platform) {
+                    sh 'make build'
                 }
             }
-
+            
             stage('Build VX4') {
                 withTools(params.TOOLS_VERSION_VX) {
                     sh 'make build_vx4'
                 }
             }
 
-            stage('Build Native') {
-                withNativeTools(platform) {
-                    sh 'make build'
+            stage('Build XS3') {
+                withTools(params.TOOLS_VERSION_XS) {
+                    sh 'make build_xs3'
                 }
             }
 
@@ -53,9 +53,17 @@ def buildAndTest(platform) {
                 }
             }
 
+            // ------------ TESTS ---------------
+
             stage('Host Interp. Test') {
                 withNativeTools(platform) {
                     sh 'make test'
+                }
+            }
+            
+            stage('Runtime Tests - Native') {
+                withNativeTools(platform) {
+                    runtimeTests('native')
                 }
             }
 
@@ -68,12 +76,6 @@ def buildAndTest(platform) {
             stage('Runtime Tests - XS3') {
                 withTools(params.TOOLS_VERSION_XS) {
                     runtimeTests('xs3')
-                }
-            }
-
-            stage('Runtime Tests - Native') {
-                withNativeTools(platform) {
-                    runtimeTests('native')
                 }
             }
 

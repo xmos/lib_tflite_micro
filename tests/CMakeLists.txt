@@ -33,6 +33,7 @@ add_library(xtflitemicro STATIC IMPORTED)
 set_target_properties(xtflitemicro PROPERTIES
   IMPORTED_LOCATION "${TFLITE_MICRO_DIR}/lib/${TFLITE_MICRO_ARCHIVE}"
   INTERFACE_COMPILE_DEFINITIONS TF_LITE_STATIC_MEMORY
+  INTERFACE_COMPILE_FEATURES cxx_std_17
 )
 
 # Add executable
@@ -45,7 +46,6 @@ target_include_directories(${TARGET_NAME} PRIVATE
   "${TFLITE_MICRO_DIR}/lib_tflite_micro/submodules/gemmlowp"
 )
 target_link_libraries(${TARGET_NAME} PRIVATE xtflitemicro)
-
 target_compile_options(${TARGET_NAME} PRIVATE ${COMMON_OPTIONS} ${XCORE_TARGET})
 target_link_options(${TARGET_NAME} PRIVATE ${XCORE_TARGET})
 

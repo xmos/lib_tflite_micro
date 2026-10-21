@@ -29,27 +29,27 @@ def buildAndTest(platform) {
                 sh 'git submodule update --depth=1 --init --recursive --jobs 8'
             }
 
-            stage('Build VX4') {
-                withTools(params.TOOLS_VERSION_VX) {
-                    sh 'make build_vx4'
-                }
-            }
-
             stage('Build XS3') {
                 withTools(params.TOOLS_VERSION_XS) {
                     sh 'make build_xs3'
                 }
             }
 
-            stage('Build Install') {
-                withTools(params.TOOLS_VERSION_XS) {
-                    sh 'make build_install'
+            stage('Build VX4') {
+                withTools(params.TOOLS_VERSION_VX) {
+                    sh 'make build_vx4'
                 }
             }
 
             stage('Build Native') {
                 withNativeTools(platform) {
                     sh 'make build'
+                }
+            }
+
+            stage('Build Install') {
+                withTools(params.TOOLS_VERSION_XS) {
+                    sh 'make build_install'
                 }
             }
 

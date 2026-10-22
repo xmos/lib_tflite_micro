@@ -120,6 +120,11 @@ pipeline {
             defaultValue: 'slipgate@develop',
             description: 'VX XTC tools version'
         )
+        string(
+            name: 'TOOLS_VERSION_RVX',
+            defaultValue: 'bob@develop',
+            description: 'VX clang tools version'
+        )
     }
 
     options {

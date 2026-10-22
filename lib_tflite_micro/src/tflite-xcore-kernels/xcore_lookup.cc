@@ -1,6 +1,6 @@
 // Copyright (c) 2023, XMOS Ltd, All rights reserved
 
-#include "../thread_call.h"
+#include "thread_call.h"
 #include "xcore_config.h"
 #include "xcore_utils.h"
 extern "C" {

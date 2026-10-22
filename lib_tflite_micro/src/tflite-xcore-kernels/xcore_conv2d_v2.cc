@@ -1,6 +1,6 @@
 // Copyright (c) 2023, XMOS Ltd, All rights reserved
 
-#include "../thread_call.h"
+#include "thread_call.h"
 #include "lib_nn/api/AbstractKernel.hpp"
 #include "lib_nn/api/AggregateFn.hpp"
 #include "lib_nn/api/MemCpyFn.hpp"

@@ -1,3 +1,6 @@
+#if defined(__xcore__)
+//NOTE: flash support is only enabled on xs3
+
 #include <stdio.h>
 #include <print.h>
 #include <stdint.h>
@@ -175,3 +178,5 @@ int main(void) {
         PJOB(f_client, (b.end_b, 0)));
 }
 #endif
+
+#endif // defined(__xcore__)

@@ -88,6 +88,10 @@ def buildAndTest(platform) {
             buildXcore('build_vx4', params.TOOLS_VERSION_VX)
             testXcore('vx4-xcc', params.TOOLS_VERSION_VX)
 
+            // VX4 Clang
+            buildXcore('build_rvx4', params.TOOLS_VERSION_RVX)
+            testXcore('vx4-clang', params.TOOLS_VERSION_RVX)
+
             // Install
             buildInstall(params.TOOLS_VERSION_XS)
 

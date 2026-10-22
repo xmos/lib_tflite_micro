@@ -48,6 +48,8 @@ def plot_results(angles, expected, predictions):
     return figure
 
 def test_hello_world(hw_target: str) -> None:
+    if hw_target == "vx4-clang":
+        pytest.xfail("VX4 Clang build and simulator support is not ready")
     if hw_target == "native" and sys.platform == "win32":
         pytest.skip("generated model code is not MSVC compatible")
     build_dir = CWD / "build" / hw_target

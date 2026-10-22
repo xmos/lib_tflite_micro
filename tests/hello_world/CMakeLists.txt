@@ -2,7 +2,7 @@ set(TARGET_NAME hello_world)
 
 # optimize the model with xcore-opt (from the xmos-ai-tools python package)
 find_program(XCORE_OPT_EXECUTABLE NAMES xcore-opt REQUIRED)
-if(CMAKE_SYSTEM_PROCESSOR STREQUAL "XCORE_VX4")
+if(CMAKE_SYSTEM_PROCESSOR STREQUAL "XCORE_VX4" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "riscv32")
   set(ARCH_STR "VX4A")
 else()
   set(ARCH_STR "XS3A")

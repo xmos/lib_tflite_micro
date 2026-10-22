@@ -1,3 +1,6 @@
+# python_version 3.11
+# pip_version 25.*
+
 pytest
 matplotlib
 numpy

@@ -3,7 +3,8 @@
 getApproval()
 
 def withNativeTools(platform, Closure body) {
-    if (platform == 'windows') {
+    if (platform == 'windows') 
+    {
         withVS() {body()}
     } 
     else {
@@ -20,6 +21,51 @@ def runtimeTests(target){
     }
 }
 
+def buildNative(platform) {
+    stage('Build Native') {
+        withNativeTools(platform) {
+            sh 'make build'
+        }
+    }
+}
+
+def testNative(platform) {
+    stage('Host Interp. Test') {
+        withNativeTools(platform) {
+            sh 'make test'
+        }
+    }
+    stage('Runtime Tests - Native') {
+        withNativeTools(platform) {
+            runtimeTests('native')
+        }
+    }
+}
+
+def buildXcore(makeTarget, toolsVersion) {
+    stage(makeTarget) {
+        withTools(toolsVersion) {
+            sh "make ${makeTarget}"
+        }
+    }
+}
+
+def testXcore(hwTarget, toolsVersion) {
+    stage("Test ${hwTarget}") {
+        withTools(toolsVersion) {
+            runtimeTests(hwTarget)
+        }
+    }
+}
+
+def buildInstall(toolsVersion) {
+    stage('Build Install') {
+        withTools(toolsVersion) {
+            sh 'make build_install'
+        }
+    }
+}
+
 def buildAndTest(platform) {
     try {
         dir(env.REPO) {
@@ -28,55 +74,22 @@ def buildAndTest(platform) {
                 sh 'git submodule update --depth=1 --init --recursive --jobs 8'
             }
 
-            stage('Build Native') {
-                withNativeTools(platform) {
-                    sh 'make build'
-                }
-            }
-            
-            stage('Build VX4') {
-                withTools(params.TOOLS_VERSION_VX) {
-                    sh 'make build_vx4'
-                }
-            }
+            // Native
+            buildNative(platform)
+            testNative(platform)
 
-            stage('Build XS3') {
-                withTools(params.TOOLS_VERSION_XS) {
-                    sh 'make build_xs3'
-                }
-            }
+            // XS3
+            buildXcore('build_xs3', params.TOOLS_VERSION_XS)
+            testXcore('xs3', params.TOOLS_VERSION_XS)
+            // uninstallTools(params.TOOLS_VERSION_XS)
 
-            stage('Build Install') {
-                withTools(params.TOOLS_VERSION_XS) {
-                    sh 'make build_install'
-                }
-            }
+            // VX4
+            buildXcore('build_vx4', params.TOOLS_VERSION_VX)
+            testXcore('vx4-xcc', params.TOOLS_VERSION_VX)
+            // uninstallTools(params.TOOLS_VERSION_VX)
 
-            // ------------ TESTS ---------------
-
-            stage('Host Interp. Test') {
-                withNativeTools(platform) {
-                    sh 'make test'
-                }
-            }
-            
-            stage('Runtime Tests - Native') {
-                withNativeTools(platform) {
-                    runtimeTests('native')
-                }
-            }
-
-            stage('Runtime Tests - VX4') {
-                withTools(params.TOOLS_VERSION_VX) {
-                    runtimeTests('vx4-xcc')
-                }
-            }
-
-            stage('Runtime Tests - XS3') {
-                withTools(params.TOOLS_VERSION_XS) {
-                    runtimeTests('xs3')
-                }
-            }
+            // Install
+            buildInstall(params.TOOLS_VERSION_XS)
 
             // archive
             def archivePath = "build_xs3/release_archive_${platform}.zip"

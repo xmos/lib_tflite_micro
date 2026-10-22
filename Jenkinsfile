@@ -3,11 +3,65 @@
 getApproval()
 
 def withNativeTools(platform, Closure body) {
-    if (platform == 'windows') {
+    if (platform == 'windows') 
+    {
         withVS() {body()}
     } 
     else {
         body()
+    }
+}
+
+def buildNative(platform) {
+    stage('build_native') {
+        withNativeTools(platform) {
+            sh 'make build'
+        }
+    }
+}
+
+def testNative(platform) {
+    stage('Test Host Interp.') {
+        withNativeTools(platform) {
+            sh 'make test'
+        }
+    }
+    stage('Tests Native') {
+        withNativeTools(platform) {
+            dir("tests"){
+                withVenv {
+                    sh "pytest -s --hw-target=native"
+                }
+            }
+        }
+    }
+}
+
+def buildXcore(makeTarget, toolsVersion) {
+    stage(makeTarget) {
+        withTools(toolsVersion) {
+            sh "make ${makeTarget}"
+        }
+    }
+}
+
+def testXcore(hwTarget, toolsVersion) {
+    stage("Test ${hwTarget}") {
+        withTools(toolsVersion) {
+            dir("tests"){
+                withVenv {
+                    sh "pytest -s --hw-target=${hwTarget}"
+                }
+            }
+        }
+    }
+}
+
+def buildInstall(toolsVersion) {
+    stage('Build Install') {
+        withTools(toolsVersion) {
+            sh 'make build_install'
+        }
     }
 }
 
@@ -17,38 +71,31 @@ def buildAndTest(platform) {
             stage('Setup') {
                 checkoutScmShallow()
                 sh 'git submodule update --depth=1 --init --recursive --jobs 8'
-            }
-
-            stage('Build VX4') {
-                withTools(params.TOOLS_VERSION_VX) {
-                    sh 'make build_vx4'
+                dir('tests') {
+                    createVenv(reqFile: 'requirements.txt')
                 }
             }
 
-            stage('Build XS3') {
-                withTools(params.TOOLS_VERSION_XS) {
-                    sh 'make build_xs3'
-                }
-            }
+            // Native
+            buildNative(platform)
+            testNative(platform)
 
-            stage('Build Install') {
-                withTools(params.TOOLS_VERSION_XS) {
-                    sh 'make build_install'
-                }
-            }
+            // XS3
+            buildXcore('build_xs3', params.TOOLS_VERSION_XS)
+            // testXcore('xs3', params.TOOLS_VERSION_XS)
 
-            stage('Build Native') {
-                withNativeTools(platform) {
-                    sh 'make build'
-                }
-            }
+            // VX4
+            buildXcore('build_vx4', params.TOOLS_VERSION_VX)
+            // testXcore('vx4-xcc', params.TOOLS_VERSION_VX)
 
-            stage('Test') {
-                withNativeTools(platform) {
-                    sh 'make test'
-                }
-            }
+            // VX4 Clang
+            buildXcore('build_rvx4', params.TOOLS_VERSION_RVX)
+            // testXcore('vx4-clang', params.TOOLS_VERSION_RVX)
 
+            // Install
+            buildInstall(params.TOOLS_VERSION_XS)
+
+            // archive
             def archivePath = "build_xs3/release_archive_${platform}.zip"
             sh "cmake -E rename build_xs3/release_archive.zip ${archivePath}"
             archiveArtifacts artifacts: archivePath, fingerprint: true
@@ -74,7 +121,12 @@ pipeline {
         )
         string(
             name: 'TOOLS_VERSION_VX',
-            defaultValue: '-j --repo arch_vx_slipgate -b master -a XTC 135',
+            defaultValue: 'slipgate@develop',
+            description: 'VX XTC tools version'
+        )
+        string(
+            name: 'TOOLS_VERSION_RVX',
+            defaultValue: 'bob@develop',
             description: 'VX XTC tools version'
         )
     }

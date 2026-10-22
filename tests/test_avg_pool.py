@@ -1,16 +1,13 @@
 from pathlib import Path
-import subprocess
 
+from conftest import build_run_sim
 
-def test_cmake(cmake_build_dir: Path) -> None:
-    subprocess.run(
-        ["cmake", "--build", str(cmake_build_dir), "--target", "avg_pool"],
-        check=True,
-    )
-    subprocess.run(
-        [
-            "ctest", "--test-dir", str(cmake_build_dir),
-            "--output-on-failure", "--no-tests=error", "-R", "^avg_pool$",
-        ],
-        check=True,
-    )
+CWD = Path(__file__).resolve().parent
+
+def test_avg_pool(hw_target: str):
+    build_dir = CWD / "build" / hw_target
+    test_dir = build_dir / "avg_pool_test"
+    build_run_sim(CWD, build_dir, test_dir, hw_target)    
+    
+if __name__ == "__main__":
+    test_avg_pool("native")

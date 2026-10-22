@@ -20,3 +20,4 @@ build*
 lib/*
 .vscode/settings.json
 .vscode/tasks.json
+tests/comparison.png

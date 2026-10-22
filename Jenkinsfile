@@ -13,9 +13,8 @@ def withNativeTools(platform, Closure body) {
 
 def runtimeTests(target){
     dir("tests"){
-        createVenv()
+        createVenv(reqFile: "requirements.txt")
         withVenv {
-            sh "pip install pytest"
             sh "pytest -s --hw-target=${target}"
         }
     }

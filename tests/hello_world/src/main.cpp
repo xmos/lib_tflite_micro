@@ -2,6 +2,9 @@
 #include <assert.h>
 #include <stdint.h>
 
+// This code runs in a loop the hello world tflite model from:
+// lib_tflite_micro/submodules/tflite-micro/tensorflow/lite/micro/examples/hello_world
+
 #include "hello_world_int8_opt.tflite.h"
 
 #define INPUT_FILE "input.bin"
@@ -23,6 +26,7 @@ void generic_run_model(void)
     assert(input_file != NULL);
     assert(output_file != NULL);
 
+    // read, invoke, write prediction
     while (fread(inputs, 1, input_size, input_file) == input_size) {
         status = model_invoke();
         assert(status == kTfLiteOk);

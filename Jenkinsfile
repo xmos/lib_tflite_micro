@@ -83,12 +83,10 @@ def buildAndTest(platform) {
             // XS3
             buildXcore('build_xs3', params.TOOLS_VERSION_XS)
             testXcore('xs3', params.TOOLS_VERSION_XS)
-            // uninstallTools(params.TOOLS_VERSION_XS)
 
             // VX4
             buildXcore('build_vx4', params.TOOLS_VERSION_VX)
             testXcore('vx4-xcc', params.TOOLS_VERSION_VX)
-            // uninstallTools(params.TOOLS_VERSION_VX)
 
             // Install
             buildInstall(params.TOOLS_VERSION_XS)

@@ -47,7 +47,7 @@ set(COMMON_INCLUDES
   "${TFLITE_MICRO_DIR}/lib_tflite_micro/submodules/flatbuffers/include"
 )
 if(MSVC)
-  set(COMMON_OPTIONS /O2 /Zi /W3 /UNDEBUG)
+  set(COMMON_OPTIONS /Od /Zi /W3 /UNDEBUG)
 else()
   set(COMMON_OPTIONS -Os -g -Wall -UNDEBUG)
 endif()

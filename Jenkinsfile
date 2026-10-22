@@ -21,15 +21,14 @@ def buildNative(platform) {
 }
 
 def testNative(platform) {
-    stage('Host Interp. Test') {
+    stage('Test Host Interp.') {
         withNativeTools(platform) {
             sh 'make test'
         }
     }
-    stage('Runtime Tests - Native') {
+    stage('Tests Native') {
         withNativeTools(platform) {
             dir("tests"){
-                createVenv(reqFile: "requirements.txt")
                 withVenv {
                     sh "pytest -s --hw-target=native"
                 }
@@ -50,7 +49,6 @@ def testXcore(hwTarget, toolsVersion) {
     stage("Test ${hwTarget}") {
         withTools(toolsVersion) {
             dir("tests"){
-                createVenv(reqFile: "requirements.txt")
                 withVenv {
                     sh "pytest -s --hw-target=${hwTarget}"
                 }
@@ -73,6 +71,9 @@ def buildAndTest(platform) {
             stage('Setup') {
                 checkoutScmShallow()
                 sh 'git submodule update --depth=1 --init --recursive --jobs 8'
+                dir('tests') {
+                    createVenv(reqFile: 'requirements.txt')
+                }
             }
 
             // Native

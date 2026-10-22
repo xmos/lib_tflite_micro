@@ -10,14 +10,11 @@ endif()
 set(MODEL_N_CORES 1)
 set(MODEL_IN_PATH "${CMAKE_CURRENT_LIST_DIR}/src/hello_world_int8.tflite")
 set(MODEL_OUT_PATH "${CMAKE_CURRENT_LIST_DIR}/src/hello_world_int8_opt.tflite")
-add_custom_command(
-  OUTPUT ${MODEL_OUT_PATH}
+execute_process(
   COMMAND ${XCORE_OPT_EXECUTABLE} ${MODEL_IN_PATH} -tc ${MODEL_N_CORES} -o ${MODEL_OUT_PATH} --xcore-target-arch=${ARCH_STR}
-  DEPENDS ${MODEL_IN_PATH}
-  COMMENT "Optimizing hello_world model for ${ARCH_STR}"
-  VERBATIM
+  WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+  COMMAND_ERROR_IS_FATAL ANY
 )
-add_custom_target(${TARGET_NAME}_model DEPENDS ${MODEL_OUT_PATH})
 
 add_executable(${TARGET_NAME}
   src/main.cpp

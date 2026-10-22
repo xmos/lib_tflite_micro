@@ -9,7 +9,7 @@ CWD = Path(__file__).resolve().parent
 
 INPUT_FILE = "input.bin"
 OUTPUT_FILE = "output.bin"
-PLOT_FILE = "comparison.png"
+PLOT_FILE = "comparison_{hw_target}.png"
 MAX_MSE = 0.01
 N_SINES = 2
 
@@ -35,7 +35,7 @@ def read_output(build_dir: Path, num_points: int):
     assert (outputs.size == num_points)
     return (outputs.astype(float) - OUTPUT_ZERO_POINT) * OUTPUT_SCALE
 
-def plot_results(build_dir: Path, angles, expected, predictions) -> None:
+def plot_results(angles, expected, predictions):
     figure, axis = plt.subplots()
     axis.plot(angles, expected, label="sin(x)")
     axis.plot(angles, predictions, label="Model prediction")
@@ -43,8 +43,7 @@ def plot_results(build_dir: Path, angles, expected, predictions) -> None:
     axis.set_ylabel("Output")
     axis.grid(True)
     axis.legend()
-    figure.savefig(CWD / PLOT_FILE)
-    plt.close(figure)
+    return figure
 
 def test_hello_world(hw_target: str) -> None:
     build_dir = CWD / "build" / hw_target
@@ -54,7 +53,9 @@ def test_hello_world(hw_target: str) -> None:
     angles, expected = generate_input(test_dir)
     build_run_sim(CWD, build_dir, test_dir, hw_target)
     predictions = read_output(test_dir, len(angles))
-    plot_results(test_dir, angles, expected, predictions)
+    figure = plot_results(angles, expected, predictions)
+    figure.savefig(CWD / PLOT_FILE.format(hw_target=hw_target))
+    plt.close(figure)
 
     mse = float(np.mean((expected - predictions) ** 2))
     assert mse < MAX_MSE, f"MSE {mse:.6f} exceeds {MAX_MSE}"

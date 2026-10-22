@@ -4,3 +4,6 @@
 pytest
 matplotlib
 numpy
+
+# pick the latest pre-release, for this package only
+xmos-ai-tools>=0.0.dev0

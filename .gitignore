@@ -21,3 +21,5 @@ lib/*
 .vscode/settings.json
 .vscode/tasks.json
 tests/comparison.png
+# generated from hello_world_int8.tflite
+tests/hello_world/src/hello_world_int8_opt.*

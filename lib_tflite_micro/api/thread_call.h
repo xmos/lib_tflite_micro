@@ -1,5 +1,6 @@
-#if !defined(__micro_thread_library_h__)
-#define __micro_thread_library_h__
+#pragma once
+
+#include "api.h"
 
 #include <stdint.h>
 #if defined(__xcore__) && defined(__riscv_xxcore)
@@ -10,14 +11,6 @@ typedef unsigned synchronizer_t;
 
 #ifdef __cplusplus
 extern "C" {
-#endif
-
-#define XCORE_MAX_NUM_THREADS 5
-
-#ifdef __XC__
-    #define UNSAFE unsafe
-#else
-    #define UNSAFE /**/
 #endif
 
 typedef struct { // THIS STRUCT MUST BE IN SYNC WITH ASSEMBLY CODE.
@@ -56,17 +49,19 @@ static inline void thread_store_sync(thread_info_t *ptr, uint32_t s) {
  * \param arg2      Third argument for the thread function
  * \param thread_id The thread_id to initialise; one of ptr[0]..ptr[3] above
  */
-#if defined(__xcore__) || defined(__riscv_xxcore)
-static inline void thread_variable_setup(void * arg1, void * arg2, uint32_t thread_id) {
-#if defined(__VX4A__) || defined(__VX4B__)
-    asm volatile("xm.tsetr %0, 11, %1" :: "r" (thread_id), "r" (arg1));
-    asm volatile("xm.tsetr %0, 12, %1" :: "r" (thread_id), "r" (arg2));
-    asm volatile("xm.tsetr %0, 24, %1" :: "r" (thread_id), "r" (1));
-#else
-    asm volatile("set t[%0]:r1, %1" :: "r" (thread_id), "r" (arg1));
-    asm volatile("set t[%0]:r2, %1" :: "r" (thread_id), "r" (arg2));
-    asm volatile("set t[%0]:r10, %1" :: "r" (thread_id), "r" (1));
-#endif
+#if defined(__xcore__)
+static inline 
+void thread_variable_setup(void * arg1, void * arg2, uint32_t thread_id) {
+  asm volatile("set t[%0]:r1, %1" :: "r" (thread_id), "r" (arg1));
+  asm volatile("set t[%0]:r2, %1" :: "r" (thread_id), "r" (arg2));
+  asm volatile("set t[%0]:r10, %1" :: "r" (thread_id), "r" (1));
+}
+#elif defined(__riscv_xxcore)
+static inline 
+void thread_variable_setup(void * arg1, void * arg2, uint32_t thread_id) {
+  asm volatile("xm.tsetr %0, 11, %1" :: "r" (thread_id), "r" (arg1));
+  asm volatile("xm.tsetr %0, 12, %1" :: "r" (thread_id), "r" (arg2));
+  asm volatile("xm.tsetr %0, 24, %1" :: "r" (thread_id), "r" (1));
 }
 #else
 extern void thread_variable_setup(void * arg1, void * arg2, uint32_t thread_id);
@@ -84,12 +79,10 @@ extern void thread_variable_setup(void * arg1, void * arg2, uint32_t thread_id);
  * \param ptr       Pointer to the thread info block held in the xcore
  * interpreter.
  */
-void thread_call(void * arg0, void * arg1, void * arg2,
-                 thread_function_pointer_t fp, thread_info_t *ptr);
+void thread_call(void * arg0, void * arg1, void * arg2, thread_function_pointer_t fp, thread_info_t *ptr);
+
 #ifdef __cplusplus
 };
 #endif
 
 #endif // __XC__
-
-#endif // __micro_thread_library_h__

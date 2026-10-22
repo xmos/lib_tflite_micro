@@ -1,7 +1,7 @@
 #ifndef XCORE_CONFIG_H_
 #define XCORE_CONFIG_H_
 
-#include "../src/thread_call.h"
+#include "thread_call.h"
 
 struct xc_context_config_t {
   // This is the thread count specified in the compiler.

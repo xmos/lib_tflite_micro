@@ -15,7 +15,7 @@ TOOLCHAINS = {
 
 
 def build_run_sim(source_dir: Path, build_dir: Path, test_dir: Path, hw_target: str):
-    configure = ["cmake", "-S", str(source_dir), "-B", str(build_dir)]
+    configure = ["cmake", "-S", str(source_dir), "-B", str(build_dir), "-G", "Unix Makefiles"]
     build = ["cmake", "--build", str(build_dir)]
     test = ["ctest", "--test-dir", str(test_dir), "-C", "Debug", "--output-on-failure", "--no-tests=error"]
     tch = TOOLCHAINS.get(hw_target, None)

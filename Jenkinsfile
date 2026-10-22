@@ -12,15 +12,6 @@ def withNativeTools(platform, Closure body) {
     }
 }
 
-def runtimeTests(target){
-    dir("tests"){
-        createVenv(reqFile: "requirements.txt")
-        withVenv {
-            sh "pytest -s --hw-target=${target}"
-        }
-    }
-}
-
 def buildNative(platform) {
     stage('Build Native') {
         withNativeTools(platform) {
@@ -37,7 +28,12 @@ def testNative(platform) {
     }
     stage('Runtime Tests - Native') {
         withNativeTools(platform) {
-            runtimeTests('native')
+            dir("tests"){
+                createVenv(reqFile: "requirements.txt")
+                withVenv {
+                    sh "pytest -s --hw-target=native"
+                }
+            }
         }
     }
 }
@@ -53,7 +49,12 @@ def buildXcore(makeTarget, toolsVersion) {
 def testXcore(hwTarget, toolsVersion) {
     stage("Test ${hwTarget}") {
         withTools(toolsVersion) {
-            runtimeTests(hwTarget)
+            dir("tests"){
+                createVenv(reqFile: "requirements.txt")
+                withVenv {
+                    sh "pytest -s --hw-target=${hwTarget}"
+                }
+            }
         }
     }
 }

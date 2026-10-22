@@ -36,7 +36,7 @@ set_target_properties(xtflitemicro PROPERTIES
 set(COMMON_DEFINITIONS TF_LITE_STATIC_MEMORY NO_INTERPRETER)
 if(NATIVE)
   set(COMMON_FEATURES cxx_std_17)
-else
+else()
   set(COMMON_FEATURES "")
 endif()
 set(COMMON_INCLUDES

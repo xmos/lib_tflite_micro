@@ -1,7 +1,9 @@
+import sys
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pytest
 
 from conftest import build_run_sim
 
@@ -46,6 +48,8 @@ def plot_results(angles, expected, predictions):
     return figure
 
 def test_hello_world(hw_target: str) -> None:
+    if hw_target == "native" and sys.platform == "win32":
+        pytest.skip("generated model code is not MSVC compatible")
     build_dir = CWD / "build" / hw_target
     test_dir = build_dir / "hello_world"
     test_dir.mkdir(parents=True, exist_ok=True)

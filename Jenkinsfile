@@ -13,7 +13,7 @@ def withNativeTools(platform, Closure body) {
 }
 
 def buildNative(platform) {
-    stage('Build Native') {
+    stage('build_native') {
         withNativeTools(platform) {
             sh 'make build'
         }

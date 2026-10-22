@@ -19,15 +19,9 @@ def buildAndTest(platform) {
                 sh 'git submodule update --depth=1 --init --recursive --jobs 8'
             }
 
-            stage('Build VX4 XCC') {
+            stage('Build VX4') {
                 withTools(params.TOOLS_VERSION_VX) {
                     sh 'make build_vx4'
-                }
-            }
-
-            stage('Build VX4 CLANG') {
-                withTools(params.TOOLS_VERSION_RVX) {
-                    sh 'make build_rvx4'
                 }
             }
 
@@ -80,13 +74,8 @@ pipeline {
         )
         string(
             name: 'TOOLS_VERSION_VX',
-            defaultValue: 'slipgate@develop',
-            description: 'The XTC Slipgate tools version'
-        )
-        string(
-            name: 'TOOLS_VERSION_RVX',
-            defaultValue: 'bob@develop',
-            description: 'The riscv-xcore-clang tools version'
+            defaultValue: '-j --repo arch_vx_slipgate -b master -a XTC 135',
+            description: 'VX XTC tools version'
         )
     }
 

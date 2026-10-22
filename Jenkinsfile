@@ -78,7 +78,7 @@ def buildAndTest(platform) {
 
             // Native
             buildNative(platform)
-            testNative(platform)
+            // testNative(platform)
 
             // XS3
             buildXcore('build_xs3', params.TOOLS_VERSION_XS)

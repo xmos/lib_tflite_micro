@@ -104,7 +104,7 @@ pipeline {
         )
         string(
             name: 'TOOLS_VERSION_VX',
-            defaultValue: '-j --repo arch_vx_slipgate -b master -a XTC 135',
+            defaultValue: 'slipgate@develop',
             description: 'VX XTC tools version'
         )
     }

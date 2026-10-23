@@ -364,6 +364,8 @@ void *Init(TfLiteContext *context, const char *buffer, size_t length) {
 }
 
 TfLiteStatus Prepare(TfLiteContext *context, TfLiteNode *node) {
+  const TfLiteEvalTensor *input_tensor = tflite_micro::micro::GetEvalInput(context, node, 0);
+  TF_LITE_ENSURE_EQ(context, input_tensor->dims->data[0], 1);
   return kTfLiteOk;
 }
 

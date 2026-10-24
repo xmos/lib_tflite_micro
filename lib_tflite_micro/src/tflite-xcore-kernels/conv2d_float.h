@@ -19,7 +19,7 @@ extern "C" {
  * @returns                     number of MACCs
  */
 extern int xc_fc_float_ref(float *outputs, float *inputs, float *kernels,
-                           int out_features, int input_features);
+                           int out_features, int input_features, int start, int end);
 
 /** Optimized function that calculates a fully connected.
  *
@@ -147,6 +147,45 @@ extern void xc_transpose_conv2d_float_kw5xh2_stride_h3_opt(
     float *outputs, float *inputs, float *kernels, float *biases, int out_w,
     int out_h, int out_depth, int input_w, int input_h, int input_depth,
     int out_depth_start, int out_depth_end);
+
+/** Function that calculates a fully connected. The kernels must be packed floats.
+ *
+ * @param  outputs              pointer to the output data, the output data will
+ * be stored as an array [out_features]
+ * @param  inputs               pointer to the input data, the input data must
+ * be stored as an array [input_features]
+ * @param  kernels              pointer to the kernels, the kernels
+ *                              must be stored as an array
+ *                              [out_features][input_features]
+ * @param  out_features         dimension 1 of the output array
+ * @param  input_features       dimension 1 of the input array
+ * @param  out_f_start          output features to start at
+ * @param  out_f_end            output features to end at plus one
+ * @returns                     number of MACCs
+ */
+extern int xc_fc_float_packed_ref(float *outputs, float *inputs, float *kernels,
+                                  int out_features, int input_features, int start,
+                                  int end);
+
+/** Optimized function that calculates a fully connected. The kernels must be packed floats.
+ *
+ * @param  outputs              pointer to the output data, the output data will
+ * be stored as an array [out_features]
+ * @param  inputs               pointer to the input data, the input data must
+ * be stored as an array [input_features]
+ * @param  kernels              pointer to the kernels, the kernels
+ *                              must be stored as an array
+ *                              [out_features][input_features]
+ * @param  out_features         dimension 1 of the output array
+ * @param  input_features       dimension 1 of the input array
+ * @param  out_f_start          output features to start at
+ * @param  out_f_end            output features to end at plus one
+ * @returns                     number of MACCs
+ */
+extern int xc_fc_float_packed_opt(float *outputs, float *inputs, float *kernels,
+                                  int out_features, int input_features, int out_f_start,
+                                  int out_f_end);
+
 
 #ifdef __cplusplus
 };

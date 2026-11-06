@@ -1,7 +1,7 @@
 include(FetchContent)
 
 set(LIB_NN_REPOSITORY       "https://github.com/xmos/lib_nn.git")
-set(LIB_NN_TAG              "develop")
+set(LIB_NN_TAG              "v0.7.0")
 set(LIB_XUD_REPOSITORY      "https://github.com/xmos/lib_xud.git")
 set(LIB_XUD_TAG             "v2.4.0")
 

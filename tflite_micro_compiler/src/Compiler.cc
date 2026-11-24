@@ -7,6 +7,7 @@
 
 #include "CodeWriter.h"
 #include "TypeToString.h"
+#include "lib_tflite_micro/api/api.h"
 #include "lib_nn/api/version.h"
 #include "lib_tflite_micro/api/version.h"
 #include "llvm/ADT/ArrayRef.h"

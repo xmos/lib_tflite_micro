@@ -51,6 +51,7 @@ list(APPEND XTFLIB_KERNEL_SOURCES  "${XTFLIB_SRC_DIR}/xcore_load_weights_wait.cc
 list(APPEND XTFLIB_KERNEL_SOURCES  "${XTFLIB_SRC_DIR}/xcore_load_store_tensor.cc")
 list(APPEND XTFLIB_KERNEL_SOURCES  "${XTFLIB_SRC_DIR}/xcore_lookup.cc")
 list(APPEND XTFLIB_KERNEL_SOURCES  "${XTFLIB_SRC_DIR}/xcore_softmax.cc")
+list(APPEND XTFLIB_KERNEL_SOURCES  "${XTFLIB_SRC_DIR}/xcore_batch_matmul.cc")
 list(APPEND XTFLIB_KERNEL_SOURCES  "${XTFLIB_SRC_DIR}/xcore_batched_softmax.cc")
 list(APPEND XTFLIB_KERNEL_SOURCES  "${XTFLIB_SRC_DIR}/xcore_slice.cc")
 list(APPEND XTFLIB_KERNEL_SOURCES  "${XTFLIB_SRC_DIR}/xcore_broadcast.cc")
@@ -110,6 +111,7 @@ list(APPEND TFLM_KERNEL_SOURCES  "${TFLM_SRC_DIR}/kernels/add_common.cc")
 list(APPEND TFLM_KERNEL_SOURCES  "${TFLM_SRC_DIR}/kernels/add_n.cc")
 list(APPEND TFLM_KERNEL_SOURCES  "${TFLM_SRC_DIR}/kernels/slice.cc")
 list(APPEND TFLM_KERNEL_SOURCES  "${TFLM_SRC_DIR}/kernels/arg_min_max.cc")
+list(APPEND TFLM_KERNEL_SOURCES  "${TFLM_SRC_DIR}/kernels/batch_matmul.cc")
 list(APPEND TFLM_KERNEL_SOURCES  "${TFLM_SRC_DIR}/kernels/batch_to_space_nd.cc")
 list(APPEND TFLM_KERNEL_SOURCES  "${TFLM_SRC_DIR}/kernels/broadcast_args.cc")
 list(APPEND TFLM_KERNEL_SOURCES  "${TFLM_SRC_DIR}/kernels/broadcast_to.cc")
@@ -223,6 +225,13 @@ list(APPEND ALL_SOURCES ${TFLM_KERNEL_SOURCES})
 # Include directories
 set(ALL_INCLUDES "")
 
+# XUD
+if(CMAKE_SYSTEM_PROCESSOR STREQUAL XCORE_XS3A OR CMAKE_SYSTEM_PROCESSOR STREQUAL XCORE_VX4)
+    list(APPEND ALL_INCLUDES  "${LIB_XUD_ROOT_DIR}/lib_xud/api")
+    list(APPEND ALL_INCLUDES  "${LIB_XUD_ROOT_DIR}/lib_xud/src/user")
+endif()
+
+# TFLM
 list(APPEND ALL_INCLUDES  "${LIB_NN_ROOT_DIR}")                 # Required by host; do not remove.
 list(APPEND ALL_INCLUDES  "${LIB_NN_ROOT_DIR}/lib_nn/api")      # Required by host; do not remove.
 list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/src")
@@ -232,6 +241,4 @@ list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/submodules/tflite-micro")
 list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/submodules/gemmlowp")
 list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/submodules/ruy")
 list(APPEND ALL_INCLUDES  "${TFLIB_DIR}/submodules/flatbuffers/include")
-list(APPEND ALL_INCLUDES  "${LIB_XUD_ROOT_DIR}/lib_xud/api")
-list(APPEND ALL_INCLUDES  "${LIB_XUD_ROOT_DIR}/lib_xud/src/user")
 list(APPEND ALL_INCLUDES  "${XMOS_TOOL_PATH}/target/include/")

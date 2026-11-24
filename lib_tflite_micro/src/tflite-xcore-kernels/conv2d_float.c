@@ -1,4 +1,5 @@
 #include "conv2d_float.h"
+#include "../../api/api.h"
 #include <assert.h>
 
 int xc_fc_float_ref(float *outputs, float *inputs, float *kernels,
@@ -77,7 +78,7 @@ int xc_conv2d_float_kw5xh2_stride_w3_ref(float *outputs, float *inputs,
   return cnt;
 }
 
-#if !defined(NN_USE_REF) && !defined(__VX4A__) && !defined(__VX4B__)
+#if defined(__XS3A__)
 void xc_conv2d_float_kw5xh2_stride_w3_opt(float *outputs, float *inputs,
                                           float *kernels, float *biases,
                                           int out_w, int out_h, int out_depth,
@@ -220,7 +221,7 @@ int xc_transpose_conv2d_float_kw5xh2_stride_h3_ref(
   return cnt;
 }
 
-#if !defined(NN_USE_REF) && !defined(__VX4A__) && !defined(__VX4B__)
+#if defined(__XS3A__)
 void xc_transpose_conv2d_float_kw5xh2_stride_h3_opt(
     float *outputs, float *inputs, float *kernels, float *biases, int out_w,
     int out_h, int out_depth, int input_w, int input_h, int input_depth,

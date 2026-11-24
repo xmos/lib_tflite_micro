@@ -1,6 +1,5 @@
 #include <assert.h>
 #include <stdio.h>
-#include <print.h>
 #include <string.h>
 #include <stdint.h>
 #include <platform.h>
@@ -8,6 +7,12 @@
 #include <xcore/chanend.h>
 #include "tile_ram_server.h"
 #include "memory_parallel_transport.h"
+
+#if defined(__xcore__) 
+#include <print.h>
+#else
+#define printstr(...) printf(__VA_ARGS__)
+#endif
 
 #define TMP_BUF_SIZE_IN_BYTES  1024
 
@@ -50,7 +55,7 @@ void tile_ram_server(chanend_t *c_tile_ram, flash_t *headers, int n_tile_ram,
             memory_parallel_send(c_tile_ram[i], &((uint8_t *)tile_ram)[byte_address], number_bytes);
         }
     }
-    #elif defined(__VX4A__) || defined(__VX4B__)
+    #elif defined(__VX4B__)
     assert(0 && "Tile Ram server not supported on VX4A!");
     #endif
 }

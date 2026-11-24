@@ -1,6 +1,8 @@
 #ifndef _FAST_FLASH_H_
 #define _FAST_FLASH_H_
 
+#include "api.h"
+
 #ifdef __XC__
 #define chanend_t chanend
 #else
@@ -9,7 +11,7 @@
 
 #ifdef __XS3A__
 #include <quadflash.h>
-#elif defined(__VX4A__) || defined(__VX4B__)
+#elif defined(__VX4B__)
 
 typedef struct {
   unsigned qspiCS;
@@ -23,7 +25,7 @@ typedef struct {
   unsigned int byte_count;    // Number of bytes to read/write
 } fl_QuadDeviceSpec;
 
-int fl_connectToDevice(fl_QSPIPorts *QSPI, const fl_QuadDeviceSpec spec[], unsigned n) { return -1; }
+static inline int fl_connectToDevice(fl_QSPIPorts *QSPI, const fl_QuadDeviceSpec spec[], unsigned n) { return -1; }
 
 #endif
 

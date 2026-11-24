@@ -1,8 +1,17 @@
+#if defined(__xcore__) 
+// NOTE: ioserver only supported on xcore platforms
+
 #include <xs1.h>
 #include <stdio.h>
-//#include <print.h>
 #include <xcore/parallel.h>
 #include "ioserver.h"
+
+#if defined(__xcore__) 
+#include <print.h>
+#else
+#define printstr(...) printf(__VA_ARGS__)
+#endif
+
 
 #include "xud.h"
 #include "xud_device.h"
@@ -315,3 +324,5 @@ void ioserver_usb_ep(chanend_t c_ep_out, chanend_t c_ep_in,
         }
     } // while(1)
 }
+
+#endif // defined(__xcore__) 

@@ -40,16 +40,20 @@ if(CMAKE_SYSTEM_PROCESSOR STREQUAL XCORE_XS3A)
         "-Wno-bidirectional-buffered-port"
     )
 # Riscv xcore
-elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL XCORE_VX4)
+elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL XCORE_VX4 OR CMAKE_SYSTEM_PROCESSOR STREQUAL riscv32)
     target_sources(${LIB_NAME} PRIVATE ${XTFLIB_XCORE_SOURCES})
-    set_target_properties(${LIB_NAME} PROPERTIES OUTPUT_NAME "${LIB_NAME}_vx4b")
+    if(CMAKE_SYSTEM_PROCESSOR STREQUAL XCORE_VX4)
+        set_target_properties(${LIB_NAME} PROPERTIES OUTPUT_NAME "${LIB_NAME}_vx4b")
+    else()
+        set_target_properties(${LIB_NAME} PROPERTIES OUTPUT_NAME "${LIB_NAME}_rvx4b")
+    endif()
+    target_link_options(${LIB_NAME} INTERFACE "-Wl,--gc-sections")
     set(BUILD_FLAGS
         "-O3"
         "-g"
         "-Wno-fptrgroup"
         "-ffunction-sections"
         "-fdata-sections"
-        "-Wl,--gc-sections"
     )
 # MSVC native
 elseif(MSVC)
@@ -96,6 +100,7 @@ install(DIRECTORY
     FILES_MATCHING PATTERN "*.h"
 )
 install(FILES
+    "${TFLIB_DIR}/api/api.h"
     "${TFLIB_DIR}/api/flash_server.h"
     "${TFLIB_DIR}/api/fast_flash.h"
     "${TFLIB_DIR}/api/ioserver.h"

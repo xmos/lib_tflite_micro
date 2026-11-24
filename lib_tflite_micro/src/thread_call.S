@@ -1,3 +1,5 @@
+#include "api.h"
+
 #define STACK_WORDS_PER_THREAD 1024
 #define STACK_BYTES_PER_THREAD 4096
 #ifdef NO_INTERPRETER
@@ -109,7 +111,7 @@ thread_call:
 
 
 
-#if defined(__VX4A__) || defined(__VX4B__)
+#if defined(__VX4B__)
 
     .globl  thread_client
     .resource_list_empty thread_client, "callees"

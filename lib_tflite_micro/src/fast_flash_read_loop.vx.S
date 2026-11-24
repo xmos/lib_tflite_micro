@@ -1,4 +1,6 @@
-#if defined(__VX4A__) || defined(__VX4B__)	
+#include "api.h"
+
+#if defined(__VX4B__)
 
 	.text
 

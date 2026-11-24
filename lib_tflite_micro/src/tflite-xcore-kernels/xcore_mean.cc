@@ -15,7 +15,7 @@ namespace micro {
 namespace xcore {
 namespace mean {
 
-typedef struct MeanWorkerArg0 {
+struct MeanWorkerArg0 {
   int input_offset;
   int output_offset;
   int start_dim_size;

@@ -25,8 +25,19 @@ std::string TFLMC_Compiler::getTensorName(int tensorIndex, int sg) const {
   return compiler_->getTensorName(tensorIndex, sg);
 }
 
-// Returns tensor arena size
+// Returns tensor arena size (persistent + non-persistent)
 size_t TFLMC_Compiler::getTensorArenaSize() const {
   return compiler_->getTensorArenaSize();
 }
+
+// Returns non-persistent arena size
+size_t TFLMC_Compiler::getNonPersistentArenaSize() const {
+  return compiler_->getNonPersistentArenaSize();
+}
+
+// Returns persistent arena size
+size_t TFLMC_Compiler::getPersistentArenaSize() const {
+  return compiler_->getPersistentArenaSize();
+}
+
 }  // namespace tflmc

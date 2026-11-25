@@ -78,19 +78,19 @@ def buildAndTest(platform) {
 
             // Native
             buildNative(platform)
-            // testNative(platform)
+            testNative(platform)
 
             // XS3
             buildXcore('build_xs3', params.TOOLS_VERSION_XS)
-            // testXcore('xs3', params.TOOLS_VERSION_XS)
+            testXcore('xs3', params.TOOLS_VERSION_XS)
 
             // VX4
             buildXcore('build_vx4', params.TOOLS_VERSION_VX)
-            // testXcore('vx4-xcc', params.TOOLS_VERSION_VX)
+            testXcore('vx4-xcc', params.TOOLS_VERSION_VX)
 
             // VX4 Clang
             buildXcore('build_rvx4', params.TOOLS_VERSION_RVX)
-            // testXcore('vx4-clang', params.TOOLS_VERSION_RVX)
+            testXcore('vx4-clang', params.TOOLS_VERSION_RVX)
 
             // Install
             buildInstall(params.TOOLS_VERSION_XS)
@@ -127,7 +127,7 @@ pipeline {
         string(
             name: 'TOOLS_VERSION_RVX',
             defaultValue: 'bob@develop',
-            description: 'VX XTC tools version'
+            description: 'VX clang tools version'
         )
     }
 
